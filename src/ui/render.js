@@ -31,27 +31,32 @@ export function renderAppShell() {
 
       <!-- BOTTOM NAV -->
       <nav class="bottom-nav">
-        <button class="nav-btn" data-action="copy">
-          <span class="nav-icon">📋</span>
-          <span class="nav-label">Copiar</span>
-        </button>
-        <button class="nav-btn" data-action="openPrsModal">
-          <span class="nav-icon">🎯</span>
-          <span class="nav-label">PRs</span>
-        </button>
-        <button class="nav-btn nav-btn-primary" data-action="loadPdf">
-          <span class="nav-icon">📄</span>
-          <span class="nav-label">PDF</span>
-        </button>
-        <button class="nav-btn" data-action="export">
-          <span class="nav-icon">💾</span>
-          <span class="nav-label">Exportar</span>
-        </button>
-        <button class="nav-btn" data-action="openSettingsModal">
-          <span class="nav-icon">⚙️</span>
-          <span class="nav-label">Config</span>
-        </button>
-      </nav>
+  <button class="nav-btn" data-action="workout:copy">
+    <span class="nav-icon">📋</span>
+    <span class="nav-label">Copiar</span>
+  </button>
+
+  <button class="nav-btn" data-action="modal:open" data-modal="prs">
+    <span class="nav-icon">🎯</span>
+    <span class="nav-label">PRs</span>
+  </button>
+
+  <button class="nav-btn nav-btn-primary" data-action="pdf:pick">
+    <span class="nav-icon">📄</span>
+    <span class="nav-label">PDF</span>
+  </button>
+
+  <button class="nav-btn" data-action="wod:mode">
+    <span class="nav-icon">🏋️</span>
+    <span class="nav-label">Modo</span>
+  </button>
+
+  <button class="nav-btn" data-action="workout:export">
+    <span class="nav-icon">💾</span>
+    <span class="nav-label">Exportar</span>
+  </button>
+</nav>
+
 
       <!-- MODALS CONTAINER -->
       <div id="ui-modals"></div>
@@ -75,11 +80,13 @@ export function renderAll(state = {}) {
   const weekBadge = `Semana ${state?.activeWeekNumber ?? '—'}`;
   const dayBadge = formatDay(state?.currentDay);
   const warnBadgeVisible = state?.workoutOfDay?.warnings?.length > 0;
+
   const weekChipsHtml = renderWeekChips(state);
   const mainHtml = renderMainContent(state);
-  const stateHtml = ''; // removido debug
-  const prsModalHtml = ''; // renderizado sob demanda
-  
+  const stateHtml = '';
+  const prsModalHtml = '';
+  const modalsHtml = renderModals(state);
+
   return {
     subtitle,
     weekBadge,
@@ -89,7 +96,15 @@ export function renderAll(state = {}) {
     mainHtml,
     stateHtml,
     prsModalHtml,
+    modalsHtml,
   };
+}
+
+function renderModals(state) {
+  const modal = state?.__ui?.modal;
+  if (modal === 'prs') return renderPrsModal(state?.prs || {});
+  if (modal === 'settings') return renderSettingsModal(state?.settings || {});
+  return '';
 }
 
 function formatDay(day) {
@@ -130,7 +145,7 @@ function renderWeekChips(state) {
       return `
         <button 
           class="week-chip ${isActive ? 'week-chip-active' : ''}"
-          data-action="selectWeek"
+          data-action="week:select"
           data-week="${w}"
           aria-pressed="${isActive}"
         >
@@ -143,15 +158,24 @@ function renderWeekChips(state) {
 
 function renderMainContent(state) {
   const workout = state?.workoutOfDay;
-  
-  if (!workout || !workout.blocks?.length) {
-    return renderEmptyState(state);
-  }
+
+  if (!workout || !workout.blocks?.length) return renderEmptyState(state);
+
+  const ui = state?.__ui || {};
+  const progress = ui.progress || { doneCount: 0, totalCount: 0 };
+  const trainingMode = !!ui.trainingMode;
 
   return `
-    <div class="workout-container">
+    <div class="workout-container" data-screen="workout" data-training-mode="${trainingMode ? '1' : '0'}">
       <div class="workout-header">
         <h2 class="workout-title">Treino • ${formatDay(state?.currentDay)}</h2>
+
+        <div class="wod-toolbar">
+          <button class="btn-secondary" data-action="wod:prev" ${trainingMode ? '' : 'disabled'}>←</button>
+          <div class="wod-progress" aria-live="polite">${progress.doneCount}/${progress.totalCount} concluídas</div>
+          <button class="btn-primary" data-action="wod:next" ${trainingMode ? '' : 'disabled'}>Próximo</button>
+        </div>
+
         ${workout.warnings?.length ? `
           <div class="workout-warnings">
             <span class="warning-badge">⚠️ ${workout.warnings.length} avisos</span>
@@ -159,7 +183,11 @@ function renderMainContent(state) {
         ` : ''}
       </div>
 
-      ${workout.blocks.map((block, idx) => renderWorkoutBlock(block, idx)).join('')}
+      ${workout.blocks.map((block, idx) => renderWorkoutBlock(block, idx, ui)).join('')}
+
+      <div class="wod-stickyNext">
+        <button class="btn-primary" data-action="wod:next">Próximo</button>
+      </div>
     </div>
   `;
 }
@@ -187,30 +215,39 @@ function renderEmptyState(state) {
   `;
 }
 
-function renderWorkoutBlock(block, index) {
+function renderWorkoutBlock(block, blockIndex, ui) {
   const lines = block.lines || [];
-  
   return `
-    <div class="workout-block">
-      ${lines.map((line, i) => renderWorkoutLine(line, i)).join('')}
-    </div>
+    <section class="workout-block" data-block-index="${blockIndex}">
+      ${lines.map((line, lineIndex) => renderWorkoutLine(line, blockIndex, lineIndex, ui)).join('')}
+    </section>
   `;
 }
 
-function renderWorkoutLine(line, index) {
+function renderWorkoutLine(line, blockIndex, lineIndex, ui) {
   const text = escapeHtml(line.text || '');
   const load = line.loadCalculation;
   const hasLoad = load && load.calculated && load.displayText;
   const isWarning = load?.warnings?.length > 0;
 
+  const lineId = `b${blockIndex}-l${lineIndex}`;
+  const done = !!ui?.done?.[lineId];
+  const active = ui?.activeLineId === lineId;
+
   return `
-    <div class="workout-line">
-      <div class="exercise-text">${text}</div>
-      ${hasLoad ? `
-        <div class="load-calc ${isWarning ? 'load-warning' : ''}">
-          → ${escapeHtml(load.displayText)}
-        </div>
-      ` : ''}
+    <div class="workout-line ${done ? 'is-done' : ''} ${active ? 'is-active' : ''}" data-line-id="${lineId}">
+      <button class="line-check" data-action="wod:toggle" data-line-id="${lineId}" aria-pressed="${done}">
+        ${done ? '✓' : '○'}
+      </button>
+
+      <button class="line-body" data-action="wod:toggle" data-line-id="${lineId}" aria-pressed="${done}">
+        <div class="exercise-text">${text}</div>
+        ${hasLoad ? `
+          <div class="load-calc ${isWarning ? 'load-warning' : ''}">
+            → ${escapeHtml(load.displayText)}
+          </div>
+        ` : ''}
+      </button>
     </div>
   `;
 }
