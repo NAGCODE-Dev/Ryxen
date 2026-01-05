@@ -1,7 +1,7 @@
 # 💪 Treino do Dia — PWA Offline-First
 
 > Visualizador inteligente de treinos de musculação com cálculo automático de cargas baseado em PRs.
-
+https://nikolasagc.github.io/CrossApp/
 ## 🎯 Visão
 
 Aplicativo Progressive Web App (PWA) **100% offline**, sem frameworks, sem build step, versionável e escalável. Pensado para evolução contínua, contribuições externas e manutenção de longo prazo.
