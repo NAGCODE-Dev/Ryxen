@@ -1038,3 +1038,23 @@ body.ui-trainingMode .load-calc {
     align-self: flex-end;
   }
 }
+/* Container da linha de PR */
+.pr-row{
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto auto; /* nome pode encolher */
+  column-gap: 0.5rem;
+}
+
+/* Nome do exercício */
+.pr-name{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Mobile: deixa o nome quebrar em 2 linhas em vez de cortar tão cedo */
+@media (max-width: 480px){
+  .pr-name{
+    white-space: normal;
+  }
+}
