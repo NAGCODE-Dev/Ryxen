@@ -1,7 +1,7 @@
 {
   "name": "CrossApp",
   "short_name": "CrossApp",
-  "description": "PWA offline-first para visualizar treinos de Crossfit",
+  "description": "App para visualizar treinos de Crossfit",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",
