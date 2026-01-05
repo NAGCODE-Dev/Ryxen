@@ -656,3 +656,307 @@ body.ui-trainingMode .exercise-text {
 body.ui-trainingMode .load-calc {
   font-size: 1.6rem;
 }
+/* ==============================
+   COMPACT MODE (mobile-first)
+   ============================== */
+
+.day-controls {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.75rem;
+}
+
+.day-controls .btn-secondary {
+  flex: 0 0 auto;
+  padding: 0.6rem 0.85rem;
+  border-radius: 0.9rem;
+  font-weight: 800;
+}
+
+.day-select {
+  width: auto;
+  max-width: 52vw;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.9rem;
+  border: 2px solid var(--border);
+  background: rgba(0,0,0,0.18);
+  color: var(--text-white);
+}
+
+/* Mobile: encolhe tudo */
+@media (max-width: 420px) {
+  :root {
+    --nav-height: 64px; /* era 72px */
+  }
+
+  .app-header {
+    padding: 1rem 0.9rem; /* era 1.5rem 1.25rem */
+  }
+
+  .app-title {
+    font-size: 1.35rem; /* era 1.75rem */
+    margin-bottom: 0.35rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .week-chips-container {
+    padding: 0.65rem 0;
+  }
+
+  .week-chips {
+    gap: 0.5rem;
+    padding: 0 0.9rem;
+  }
+
+  .week-chip {
+    padding: 0.55rem 1rem; /* era 0.875rem 1.75rem */
+    font-size: 0.85rem;
+    border-radius: 1.5rem;
+  }
+
+  .app-main {
+    padding: 0.9rem;
+  }
+
+  .workout-title {
+    font-size: 1.3rem; /* era 1.75rem */
+  }
+
+  .workout-block {
+    padding: 1rem;      /* era 1.5rem */
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .workout-line {
+    padding: 0.9rem;    /* era 1.25rem */
+    margin-bottom: 0.85rem;
+    border-radius: 0.85rem;
+  }
+
+  .exercise-text {
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .load-calc {
+    font-size: 1.15rem; /* era 1.375rem */
+  }
+
+  .nav-icon {
+    font-size: 1.35rem; /* era 1.5rem */
+  }
+
+  .nav-label {
+    font-size: 0.62rem;
+  }
+
+  .nav-btn {
+    padding: 0.4rem;
+  }
+
+  .nav-btn-primary {
+    margin: -0.35rem 0.4rem 0; /* reduz o “saltão” do botão PDF */
+    border-radius: 1.1rem 1.1rem 0 0;
+  }
+}
+/* ==============================
+   COMPACTAR SOMENTE O TREINO
+   ============================== */
+@media (max-width: 420px) {
+  /* Menos espaço vertical geral do treino */
+  .workout-header {
+    margin-bottom: 0.9rem; /* era 1.5rem */
+  }
+
+  .workout-block {
+    padding: 0.85rem;      /* era 1.5rem */
+    margin-bottom: 0.85rem;/* era 1.5rem */
+    border-radius: 0.95rem;
+  }
+
+  /* Card/linha mais baixo */
+  .workout-line {
+    padding: 0.75rem;      /* era 1.25rem */
+    margin-bottom: 0.4rem;/* era 1.25rem */
+    border-radius: 0.85rem;
+    border-left-width: 2px;
+  }
+
+  /* Texto ocupa menos espaço */
+  .exercise-text {
+    font-size: 0.92rem;    /* era 1rem */
+    line-height: 1;     /* era 1.6 */
+    margin-bottom: 0.1rem;/* era 0.75rem */
+  }
+
+  /* Carga menor e com menos “glow” */
+  .load-calc {
+    font-size: 1.05rem;    /* era 1.375rem */
+    text-shadow: none;     /* tira o brilho que “engorda” visualmente */
+  }
+}
+/* Modal só aparece quando tiver .isOpen */
+.modal-overlay { display: none; }
+.modal-overlay.isOpen { display: flex; }
+/* ==============================
+   COMPACTAR PERSONAL RECORDS
+   ============================== */
+@media (max-width: 420px) {
+  /* Modal mais compacto */
+  .modal-overlay { padding: 0.9rem; }
+  .modal-header { padding: 1rem; }
+  .modal-title { font-size: 1.2rem; }
+  .modal-body { padding: 1rem; }
+
+  /* Barra de busca menor */
+  .pr-search { margin-bottom: 0.9rem; }
+  .search-input {
+    padding: 0.75rem;
+    border-radius: 0.85rem;
+    font-size: 0.92rem;
+  }
+
+  /* Botões de ação menores (Exportar/Importar/Colar JSON etc.) */
+  .pr-actions { gap: 0.5rem; margin-bottom: 0.9rem; flex-wrap: wrap; }
+  .pr-actions .btn-secondary,
+  .pr-actions .btn-primary {
+    padding: 0.75rem;
+    border-radius: 0.85rem;
+    font-size: 0.9rem;
+  }
+
+  /* Itens da lista (cada PR) mais baixos */
+  .pr-list { gap: 0.5rem; margin-bottom: 1rem; }
+  .pr-item {
+    padding: 0.75rem;
+    border-radius: 0.85rem;
+    gap: 0.5rem;
+    grid-template-columns: 1fr 72px auto; /* label | input | ações */
+  }
+
+  .pr-label { font-size: 0.92rem; }
+  .pr-input {
+    width: 72px;
+    padding: 0.55rem;
+    border-radius: 0.7rem;
+    font-size: 1rem; /* era 1.125rem */
+  }
+
+  .pr-remove { padding: 0.35rem; font-size: 1.1rem; }
+
+  /* Área de adicionar novo PR */
+  .pr-add { gap: 0.55rem; }
+  .add-input {
+    padding: 0.75rem;
+    border-radius: 0.85rem;
+    font-size: 0.92rem;
+  }
+}
+/* ==============================
+   PR CARDS MAIS BAIXOS
+   ============================== */
+@media (max-width: 420px) {
+  .pr-item {
+    padding: 0.55rem 0.65rem;      /* era 1rem */
+    gap: 0.45rem;                  /* era 0.75rem */
+    border-radius: 0.75rem;        /* era 1rem */
+    align-items: center;
+  }
+
+  .pr-label {
+    line-height: 1.2;              /* reduz altura do texto */
+    font-size: 0.9rem;
+  }
+
+  .pr-input {
+    padding: 0.45rem 0.5rem;       /* era 0.75rem */
+    line-height: 1.1;
+  }
+
+  /* botão "Salvar" e lixeira não esticarem */
+  .pr-save,
+  .pr-remove {
+    padding: 0.3rem 0.45rem;
+    line-height: 1;
+  }
+}
+/* PR item: 4 colunas (label | input | salvar | remover) */
+.pr-item{
+  grid-template-columns: minmax(0, 1fr) 72px 86px 40px; /* era 1fr auto auto */
+  align-items: center;
+}
+
+/* Evita quebrar "SQUAT SNATCH" em 2 linhas */
+.pr-label{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botões menores (menos altura) */
+.pr-save{
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 0.85rem;
+}
+
+.pr-remove{
+  padding: 0.35rem;
+  font-size: 1.1rem;
+  justify-self: end;
+}
+
+/* Mobile: ainda mais compacto */
+@media (max-width: 420px){
+  .pr-item{
+    padding: 0.6rem 0.65rem; /* era 1rem */
+    gap: 0.45rem;           /* era 0.75rem */
+    border-radius: 0.85rem; /* era 1rem */
+    grid-template-columns: minmax(0, 1fr) 66px 78px 36px;
+  }
+  .pr-input{
+    width: 66px;
+    padding: 0.45rem 0.5rem;
+    font-size: 1rem;
+  }
+}
+/* PRs: manter tudo em 1 linha e reduzir altura do card */
+.pr-item{
+  grid-template-columns: minmax(0, 1fr) 80px 84px 40px; /* label | input | salvar | lixeira */
+  gap: 0.5rem;
+  padding: 0.75rem;              /* era 1rem */
+  border-radius: 0.9rem;         /* era 1rem */
+  align-items: center;
+}
+
+.pr-label{
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+.pr-input{
+  padding: 0.55rem 0.5rem;       /* era 0.75rem */
+  line-height: 1.1;
+  font-size: 1rem;               /* era 1.125rem */
+}
+
+.pr-save{
+  padding: 0.55rem 0.7rem;
+  line-height: 1;
+}
+
+.pr-remove{
+  grid-column: 4;
+  grid-row: 1;
+  justify-self: end;
+  padding: 0.35rem;
+  line-height: 1;
+}

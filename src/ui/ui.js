@@ -16,17 +16,19 @@ export async function mountUI({ root }) {
   const uiStorage = createStorage('ui-state', 5000);
 
   // Estado de UI (não depende do core)
-  let uiState = (await uiStorage.get('state')) || {};
-  uiState = normalizeUiState(uiState);
+  let uiState = normalizeUiState((await uiStorage.get('state')) || {});
+  await uiStorage.set('state', uiState);
+
+  const getUiState = () => uiState;
 
   const setUiState = async (next) => {
-    uiState = normalizeUiState({ ...uiState, ...next });
+    uiState = normalizeUiState({ ...uiState, ...(next || {}) });
     await uiStorage.set('state', uiState);
   };
 
   const patchUiState = async (fn) => {
     const current = normalizeUiState((await uiStorage.get('state')) || uiState);
-    const updated = normalizeUiState(fn(current) || current);
+    const updated = normalizeUiState((fn && fn(current)) || current);
     uiState = updated;
     await uiStorage.set('state', updated);
   };
@@ -38,21 +40,20 @@ export async function mountUI({ root }) {
     if (isBusy && message) toast(message);
   };
 
-  const pushEventLine = createEventLog(root.querySelector('#ui-events'));
+  const refs = getRefs(root);
+  const pushEventLine = createEventLog(refs.events);
 
   const rerender = async () => {
     const state = safeGetState();
 
     // Injeta estado de UI para o render (sem tocar no core)
-    const ui = await buildUiForRender(state, uiState);
-    state.__ui = ui;
+    state.__ui = buildUiForRender(state, uiState);
 
     // Training mode vira classe global (UX)
-    document.body.classList.toggle('ui-trainingMode', !!ui.trainingMode);
+    document.body.classList.toggle('ui-trainingMode', !!state.__ui.trainingMode);
 
     const view = renderAll(state);
 
-    const refs = getRefs(root);
     setText(refs.subtitle, view.subtitle);
     setHTML(refs.weekChips, view.weekChipsHtml);
     setHTML(refs.main, view.mainHtml);
@@ -76,7 +77,7 @@ export async function mountUI({ root }) {
     root,
     toast,
     rerender: () => rerender(),
-    getUiState: () => uiState,
+    getUiState,
     setUiState,
     patchUiState,
   });
@@ -89,33 +90,40 @@ export async function mountUI({ root }) {
   return {
     rerender,
     destroy() {
-      try {
-        destroyEvents?.();
-      } catch (e) {
-        console.warn('destroyEvents falhou', e);
-      }
+      try { destroyEvents?.(); } catch (e) { console.warn('destroyEvents falhou', e); }
     },
   };
 }
 
 function normalizeUiState(s) {
   const next = { ...(s || {}) };
+
   if (typeof next.trainingMode !== 'boolean') next.trainingMode = false;
   next.modal = next.modal || null; // 'prs' | 'settings' | null
+
   next.wod = next.wod && typeof next.wod === 'object' ? next.wod : {};
+
+  // Preferências simples (Config)
+  next.settings = next.settings && typeof next.settings === 'object' ? next.settings : {};
+  if (typeof next.settings.showLbsConversion !== 'boolean') next.settings.showLbsConversion = true;
+  if (typeof next.settings.showEmojis !== 'boolean') next.settings.showEmojis = true;
+  if (typeof next.settings.showObjectivesInWods !== 'boolean') next.settings.showObjectivesInWods = true;
+
   return next;
 }
 
-async function buildUiForRender(state, uiState) {
+function buildUiForRender(state, uiState) {
   const key = workoutKey(state);
-
   const wod = uiState.wod[key] || { activeLineId: null, done: {} };
+
   const lineIds = computeLineIdsFromState(state);
   const doneCount = lineIds.reduce((acc, id) => acc + (wod.done?.[id] ? 1 : 0), 0);
 
   return {
     modal: uiState.modal,
     trainingMode: uiState.trainingMode,
+    settings: uiState.settings,
+
     wodKey: key,
     activeLineId: wod.activeLineId,
     done: wod.done || {},
@@ -124,7 +132,7 @@ async function buildUiForRender(state, uiState) {
 }
 
 function computeLineIdsFromState(state) {
-  const blocks = state?.workoutOfDay?.blocks || [];
+  const blocks = state?.workoutOfDay?.blocks || state?.workout?.blocks || [];
   const ids = [];
   blocks.forEach((block, b) => {
     const lines = block?.lines || [];
@@ -147,6 +155,7 @@ function getRefs(root) {
     main: q('#ui-main'),
     modals: q('#ui-modals'),
     prsCount: q('#ui-prsCount'),
+    events: q('#ui-events'),
   };
 }
 
@@ -171,6 +180,7 @@ function safeGetState() {
 function ensureStylesheet(href) {
   const id = 'ui-styles';
   if (document.getElementById(id)) return;
+
   const link = document.createElement('link');
   link.id = id;
   link.rel = 'stylesheet';
