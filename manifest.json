@@ -1,6 +1,6 @@
 {
   "name": "CrossApp",
-  "short_name": "CA",
+  "short_name": "CrossApp",
   "description": "PWA offline-first para visualizar treinos de Crossfit",
   "start_url": "./index.html",
   "display": "standalone",
