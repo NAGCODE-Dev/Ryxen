@@ -153,7 +153,7 @@ function renderWeekChips(state) {
 }
 
 function renderMainContent(state) {
-  const workout = state?.workout || state?.workoutOfDay;
+  const workout = state?.workout ?? state?.workoutOfDay;
   if (!workout || !workout.blocks?.length) {
     return renderEmptyState(state);
   }
@@ -241,28 +241,28 @@ function renderWorkoutLine(line, lineId, ui) {
 
   const text = escapeHtml(rawText);
 
-  const loadObj =
-    (typeof line === 'object' && line) ? (line.loadCalculation ?? null) : null;
-
+  // novo: usa o formato { raw, calculated, hasWarning }
   const display =
-    loadObj?.displayText ??
-    loadObj?.calculatedText ??
-    (typeof line === 'object'
-      ? (line.calculatedText ?? line.calculated ?? '')
-      : '');
+    typeof line === 'object'
+      ? (line.calculated ?? '')
+      : '';
 
   const hasLoad = !!String(display || '').trim();
-  const isWarning = (loadObj?.warnings?.length ?? 0) > 0 || !!line?.warning;
+  const isWarning = !!(typeof line === 'object' && line.hasWarning);
+
+  const loadHtml = hasLoad
+    ? `
+      <div class="load-calc ${isWarning ? 'load-warning' : ''}">
+        ${escapeHtml(display)}
+      </div>
+    `
+    : '';
 
   if (!trainingMode) {
     return `
       <div class="workout-line" data-line-id="${escapeHtml(lineId)}">
         <div class="exercise-text">${text}</div>
-        ${hasLoad ? `
-          <div class="load-calc ${isWarning ? 'load-warning' : ''}">
-            → ${escapeHtml(display)}
-          </div>
-        ` : ''}
+        ${loadHtml}
       </div>
     `;
   }
@@ -291,16 +291,11 @@ function renderWorkoutLine(line, lineId, ui) {
         title="Selecionar/alternar"
       >
         <div class="exercise-text">${text}</div>
-        ${hasLoad ? `
-          <div class="load-calc ${isWarning ? 'load-warning' : ''}">
-            → ${escapeHtml(display)}
-          </div>
-        ` : ''}
+        ${loadHtml}
       </button>
     </div>
   `;
 }
-
 
 function renderPrsModal(prs = {}) {
   const entries = Object.entries(prs).sort((a, b) => a[0].localeCompare(b[0]));
