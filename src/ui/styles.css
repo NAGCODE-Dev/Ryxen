@@ -460,33 +460,32 @@ html, body {
   margin-bottom: 1.5rem;
 }
 
-.pr-item {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 0.75rem;
+.pr-item{
+  display: flex;
   align-items: center;
+  gap: 0.75rem;
   padding: 1rem;
   background: var(--bg-input);
   border-radius: 1rem;
   border: 1px solid var(--border);
 }
 
-.pr-label {
+/* Nome do exercício: usa o espaço que sobrar */
+.pr-label{
+  flex: 1 1 auto;
+  min-width: 0;
   font-weight: 700;
   color: var(--text-white);
   font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* fica numa linha só */
 }
 
-.pr-input {
+/* Campo do PR e botão não encolhem */
+.pr-input{
+  flex: 0 0 auto;
   width: 80px;
-  padding: 0.75rem;
-  background: var(--bg-dark);
-  border: 2px solid var(--border);
-  border-radius: 0.75rem;
-  color: var(--accent-green);
-  font-weight: 800;
-  font-size: 1.125rem;
-  text-align: center;
 }
 
 .pr-input:focus {
