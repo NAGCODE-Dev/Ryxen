@@ -6,14 +6,16 @@
 import { parseWorkoutText, getWorkoutByDay } from '../services/workoutService.js';
 import { getDayName } from '../utils/date.js';
 import { isValidDayName } from '../utils/validators.js';
+import { autoConvertWorkoutLbs } from '../services/loadCalculator.js';
 
 /**
  * Retorna treino do dia atual
  * @param {string} pdfText - Texto do PDF
  * @param {Date} date - Data de referência (default: hoje)
+ * @param {Object} preferences - Preferências do usuário
  * @returns {Object} Resultado com treino ou erro
  */
-export function getWorkoutOfDay(pdfText, date = new Date()) {
+export function getWorkoutOfDay(pdfText, date = new Date(), preferences = {}) {
   // Validações
   if (!pdfText || typeof pdfText !== 'string') {
     return {
@@ -55,7 +57,7 @@ export function getWorkoutOfDay(pdfText, date = new Date()) {
     }
     
     // Filtra por dia
-    const todayWorkout = getWorkoutByDay(allWorkouts, dayName);
+    let todayWorkout = getWorkoutByDay(allWorkouts, dayName);
     
     if (!todayWorkout) {
       return {
@@ -64,6 +66,15 @@ export function getWorkoutOfDay(pdfText, date = new Date()) {
         data: null,
         dayName: dayName,
       };
+    }
+    
+    // 🔥 CONVERSÃO AUTOMÁTICA LBS → KG (default: true)
+    if (preferences.autoConvertLbs !== false && todayWorkout.sections) {
+      todayWorkout.sections.forEach(section => {
+        if (section.lines && Array.isArray(section.lines)) {
+          section.lines = autoConvertWorkoutLbs(section.lines);
+        }
+      });
     }
     
     return {
@@ -86,9 +97,10 @@ export function getWorkoutOfDay(pdfText, date = new Date()) {
  * Retorna treino de um dia específico
  * @param {string} pdfText - Texto do PDF
  * @param {string} dayName - Nome do dia (Segunda, Terça, etc)
+ * @param {Object} preferences - Preferências do usuário
  * @returns {Object} Resultado
  */
-export function getWorkoutByDayName(pdfText, dayName) {
+export function getWorkoutByDayName(pdfText, dayName, preferences = {}) {
   if (!isValidDayName(dayName)) {
     return {
       success: false,
@@ -99,7 +111,16 @@ export function getWorkoutByDayName(pdfText, dayName) {
   
   try {
     const allWorkouts = parseWorkoutText(pdfText);
-    const workout = getWorkoutByDay(allWorkouts, dayName);
+    let workout = getWorkoutByDay(allWorkouts, dayName);
+    
+    // 🔥 CONVERSÃO AUTOMÁTICA LBS → KG
+    if (workout && preferences.autoConvertLbs !== false && workout.sections) {
+      workout.sections.forEach(section => {
+        if (section.lines && Array.isArray(section.lines)) {
+          section.lines = autoConvertWorkoutLbs(section.lines);
+        }
+      });
+    }
     
     return {
       success: true,
@@ -119,9 +140,10 @@ export function getWorkoutByDayName(pdfText, dayName) {
 /**
  * Retorna todos os treinos da semana
  * @param {string} pdfText - Texto do PDF
+ * @param {Object} preferences - Preferências do usuário
  * @returns {Object} Resultado com todos os treinos
  */
-export function getAllWorkouts(pdfText) {
+export function getAllWorkouts(pdfText, preferences = {}) {
   if (!pdfText || typeof pdfText !== 'string') {
     return {
       success: false,
@@ -131,7 +153,21 @@ export function getAllWorkouts(pdfText) {
   }
   
   try {
-    const workouts = parseWorkoutText(pdfText);
+    let workouts = parseWorkoutText(pdfText);
+    
+    // 🔥 CONVERSÃO AUTOMÁTICA LBS → KG em todos os treinos
+    if (preferences.autoConvertLbs !== false) {
+      workouts = workouts.map(workout => {
+        if (workout.sections) {
+          workout.sections.forEach(section => {
+            if (section.lines && Array.isArray(section.lines)) {
+              section.lines = autoConvertWorkoutLbs(section.lines);
+            }
+          });
+        }
+        return workout;
+      });
+    }
     
     return {
       success: true,

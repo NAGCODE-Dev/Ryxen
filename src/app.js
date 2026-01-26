@@ -506,6 +506,19 @@ async function processWorkoutFromWeek(week) {
     return;
   }
 
+  // 🔥 CONVERSÃO AUTOMÁTICA LBS → KG (ANTES de normalizar)
+  if (state.preferences.autoConvertLbs !== false && workout.blocks) {
+    const { autoConvertWorkoutLbs } = await import('./core/services/loadCalculator.js');
+    
+    workout.blocks.forEach(block => {
+      if (block.lines && Array.isArray(block.lines)) {
+        block.lines = autoConvertWorkoutLbs(block.lines);
+      }
+    });
+    
+    console.log('🔄 Conversão lbs→kg aplicada');
+  }
+
   // 🔥 CORREÇÃO: Normaliza MAS preserva objetos já processados
   const normalizedBlocks = workout.blocks.map(block => ({
     ...block,
@@ -634,6 +647,7 @@ async function processWorkoutFromWeek(week) {
 
   emit('workout:loaded', { workout, week: week.weekNumber });
 }
+
 // ========== PUBLIC ACTIONS ==========
 
 /**

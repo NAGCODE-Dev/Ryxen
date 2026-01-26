@@ -76,21 +76,6 @@ export function calculateLoad(exerciseName, percent, prs, options = {}) {
 }
 
 /**
- * Extrai percentual de uma linha (suporta @XX% e @?)
- * @param {string} line - Linha do treino (ex: "3x5 @80%")
- * @returns {number|string|null} Percentual, 'MAX' ou null
- */
-/**
- * Extrai percentual de uma linha (suporta @XX%, @?, e variações com x/séries)
- * @param {string} line - Linha do treino (ex: "3x5 @80%", "1@82% x4")
- * @returns {number|string|null} Percentual, 'MAX' ou null
- */
-/**
- * Extrai percentual de uma linha (suporta @XX%, @?, e variações com x/séries)
- * @param {string} line - Linha do treino (ex: "3x5 @80%", "1@82% x4")
- * @returns {number|string|null} Percentual, 'MAX' ou null
- */
-/**
  * Extrai percentual de uma linha - IGNORA tudo antes/depois
  * @param {string} line - Linha do treino (ex: "1@82% x4" → 82)
  * @returns {number|string|null} Percentual, 'MAX' ou null
@@ -219,13 +204,13 @@ export function formatLoadResult(result) {
  */
 export function calculateWorkoutLoads(workoutLines, prs, preferences = {}) {
   let lastExercise = null; // Mantém contexto do último exercício identificado
-  
+
   return workoutLines.map(line => {
     // Extrai string da linha
-    const lineStr = typeof line === 'object' 
-      ? (line?.raw || line?.text || '') 
+    const lineStr = typeof line === 'object'
+      ? (line?.raw || line?.text || '')
       : String(line);
-    
+
     // 🔥 Detecta se linha é nome de exercício (maiúsculas)
     const exerciseMatch = lineStr.match(/^([A-Z][A-Z\s]+)$/);
     if (exerciseMatch) {
@@ -240,24 +225,25 @@ export function calculateWorkoutLoads(workoutLines, prs, preferences = {}) {
         };
       }
     }
-    
-    // 🔥 Ignora linhas de descanso, mas mantém contexto
-    if (/REST|DESCANSO/i.test(lineStr)) {
+
+    // 🔥 CORREÇÃO: Ignora linhas de descanso, mas MANTÉM contexto (não reseta lastExercise)
+    if (/A\s+CADA\s+\d+\s+SEC|REST|DESCANSO|EVERY\s+\d+\s+SEC/i.test(lineStr)) {
       return {
         hasPercent: false,
         originalLine: lineStr,
         isRest: true
+        // NÃO reseta lastExercise aqui
       };
     }
-    
+
     // Processa linha normal (com ou sem percentual)
     const result = processExerciseLine(lineStr, prs, preferences, lastExercise);
-    
+
     // Atualiza contexto se linha identificou um exercício
     if (result.exercise) {
       lastExercise = result.exercise;
     }
-    
+
     return result;
   });
 }
@@ -311,4 +297,61 @@ export function convertLbsInLine(line) {
     kg: rounded,
     formatted: `${formatNumber(rounded, 1)}kg`,
   };
+}
+
+/**
+ * Converte automaticamente lbs para kg em uma linha (substitui inline)
+ * Usa a função convertLbsInLine existente
+ * @param {string} line - Linha com possível valor em lbs
+ * @returns {string} Linha convertida ou original
+ */
+export function autoConvertLbsInLine(line) {
+  if (!line || typeof line !== 'string') return line;
+  
+  // Suporta múltiplos valores: "95/65lbs", "95lbs/65lbs", etc
+  const multiLbsPattern = /(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*lbs?/i;
+  const multiMatch = line.match(multiLbsPattern);
+  
+  if (multiMatch) {
+    // Caso "95/65lbs" → "43.0/29.5kg"
+    const lbs1 = parseFloat(multiMatch[1]);
+    const lbs2 = parseFloat(multiMatch[2]);
+    const kg1 = roundToNearest(lbs1 / 2.20462, 2.5);
+    const kg2 = roundToNearest(lbs2 / 2.20462, 2.5);
+    
+    return line.replace(
+      multiLbsPattern,
+      `${formatNumber(kg1, 1)}/${formatNumber(kg2, 1)}kg`
+    );
+  }
+  
+  // Caso simples: usa a função existente
+  const result = convertLbsInLine(line);
+  
+  if (result.found) {
+    // Substitui "XXlbs" por "YYkg" na linha original
+    return line.replace(/\d+(?:\.\d+)?\s*lbs?/i, result.formatted);
+  }
+  
+  return line;
+}
+
+/**
+ * Processa todas as linhas de um treino convertendo lbs automaticamente
+ * @param {Array} lines - Array de linhas de treino
+ * @returns {Array} Linhas convertidas
+ */
+export function autoConvertWorkoutLbs(lines) {
+  return lines.map(line => {
+    if (typeof line === 'string') {
+      return autoConvertLbsInLine(line);
+    } else if (typeof line === 'object' && line?.raw) {
+      return {
+        ...line,
+        raw: autoConvertLbsInLine(line.raw),
+        text: autoConvertLbsInLine(line.text || line.raw)
+      };
+    }
+    return line;
+  });
 }
