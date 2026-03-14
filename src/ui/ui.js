@@ -54,7 +54,7 @@ export async function mountUI({ root }) {
     const state = safeGetState();
 
     // Injeta estado de UI para o render (sem tocar no core)
-    state.__ui = buildUiForRender(state, uiState);
+    state.__ui = buildUiForRender(state, uiState, uiBusy);
 
     // Training mode vira classe global (UX)
     document.body.classList.toggle('ui-trainingMode', !!state.__ui.trainingMode);
@@ -244,7 +244,7 @@ function normalizeUiState(s) {
   return next;
 }
 
-function buildUiForRender(state, uiState) {
+function buildUiForRender(state, uiState, uiBusy = false) {
   const key = workoutKey(state);
   const wod = uiState.wod[key] || { activeLineId: null, done: {} };
 
