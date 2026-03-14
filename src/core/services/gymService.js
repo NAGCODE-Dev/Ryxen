@@ -16,6 +16,14 @@ export async function listGymMembers(gymId) {
   return apiRequest(`/gyms/${gymId}/memberships`, { method: 'GET' });
 }
 
+export async function listGymGroups(gymId) {
+  return apiRequest(`/gyms/${gymId}/groups`, { method: 'GET' });
+}
+
+export async function createGymGroup(gymId, payload) {
+  return apiRequest(`/gyms/${gymId}/groups`, { method: 'POST', body: payload });
+}
+
 export async function publishGymWorkout(gymId, payload) {
   return apiRequest(`/gyms/${gymId}/workouts`, { method: 'POST', body: payload });
 }

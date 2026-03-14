@@ -16,6 +16,27 @@ export function applySecurityHeaders(_req, res, next) {
   next();
 }
 
+export function attachRequestLogger(req, res, next) {
+  const startedAt = Date.now();
+
+  res.on('finish', () => {
+    const durationMs = Date.now() - startedAt;
+    if (res.statusCode < 400) return;
+
+    console.error('[backend:request]', JSON.stringify({
+      requestId: req.requestId,
+      method: req.method,
+      path: req.originalUrl,
+      statusCode: res.statusCode,
+      durationMs,
+      userId: req.user?.userId || null,
+      ip: req.ip || null,
+    }));
+  });
+
+  next();
+}
+
 export function createRateLimiter({ windowMs, maxRequests, keyPrefix }) {
   return (req, res, next) => {
     const now = Date.now();

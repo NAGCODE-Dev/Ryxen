@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState } from 'https://esm.sh/react@18.3.1';
 import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
+import { inject } from 'https://esm.sh/@vercel/analytics@2.0.1';
+import { injectSpeedInsights } from 'https://esm.sh/@vercel/speed-insights@2.0.0';
 
 const STORAGE_KEYS = {
   token: 'crossapp-auth-token',
   profile: 'crossapp-user-profile',
   runtime: 'crossapp-runtime-config',
 };
+
+setupVercelObservability();
 
 function App() {
   const [token, setToken] = useState(readToken());
@@ -27,6 +31,7 @@ function App() {
     competitionLeaderboard: { competition: null, summary: null, leaderboard: [], events: [] },
     eventLeaderboard: { competition: null, event: null, benchmark: null, results: [] },
     members: [],
+    groups: [],
     selectedGymId: null,
     insights: null,
   });
@@ -35,10 +40,16 @@ function App() {
     gymSlug: '',
     memberEmail: '',
     memberRole: 'athlete',
+    groupName: '',
+    groupDescription: '',
+    selectedGroupMemberIds: [],
     workoutTitle: '',
     workoutDate: '',
     workoutBenchmarkSlug: '',
     workoutLines: '',
+    workoutAudienceMode: 'all',
+    targetMembershipIds: [],
+    targetGroupIds: [],
     benchmarkQuery: '',
     benchmarkCategory: '',
     benchmarkSource: '',
@@ -68,6 +79,54 @@ function App() {
     if (token) {
       loadDashboard();
     }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) return;
+    const googleClientId = window.__CROSSAPP_CONFIG__?.auth?.googleClientId || '';
+    const mount = document.getElementById('coach-google-signin');
+    if (!googleClientId || !mount) return;
+
+    let attempt = 0;
+    const timer = window.setInterval(() => {
+      if (!window.google?.accounts?.id) {
+        attempt += 1;
+        if (attempt > 8) window.clearInterval(timer);
+        return;
+      }
+
+      window.clearInterval(timer);
+      mount.innerHTML = '';
+      window.google.accounts.id.initialize({
+        client_id: googleClientId,
+        callback: async (response) => {
+          try {
+            const result = await apiRequest('/auth/google', {
+              method: 'POST',
+              body: { credential: response.credential },
+            });
+            if (result?.token) writeToken(result.token);
+            if (result?.user) writeProfile(result.user);
+            setToken(result.token || '');
+            setProfile(result.user || null);
+            setMessage('Sessão iniciada com Google');
+          } catch (err) {
+            setError(err.message || 'Erro ao autenticar com Google');
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+      window.google.accounts.id.renderButton(mount, {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'continue_with',
+        width: 320,
+      });
+    }, 300);
+
+    return () => window.clearInterval(timer);
   }, [token]);
 
   async function handleLogin(event) {
@@ -109,13 +168,16 @@ function App() {
       const gyms = gymsRes?.gyms || [];
       const selectedGymId = nextGymId || dashboard.selectedGymId || gyms[0]?.id || null;
       let members = [];
+      let groups = [];
       let insights = null;
       if (selectedGymId) {
-        const [membersRes, insightsRes] = await Promise.all([
+        const [membersRes, groupsRes, insightsRes] = await Promise.all([
           apiRequest(`/gyms/${selectedGymId}/memberships`),
+          apiRequest(`/gyms/${selectedGymId}/groups`),
           apiRequest(`/gyms/${selectedGymId}/insights`),
         ]);
         members = membersRes?.memberships || [];
+        groups = groupsRes?.groups || [];
         insights = insightsRes || null;
       }
 
@@ -132,6 +194,7 @@ function App() {
         competitionLeaderboard: dashboard.competitionLeaderboard || { competition: null, summary: null, leaderboard: [], events: [] },
         eventLeaderboard: dashboard.eventLeaderboard || { competition: null, event: null, benchmark: null, results: [] },
         members,
+        groups,
         selectedGymId,
         insights,
       });
@@ -188,6 +251,46 @@ function App() {
     }
   }
 
+  async function handleCreateGroup(event) {
+    event.preventDefault();
+    if (!dashboard.selectedGymId) return;
+    setLoading(true);
+    setError('');
+    try {
+      await apiRequest(`/gyms/${dashboard.selectedGymId}/groups`, {
+        method: 'POST',
+        body: {
+          name: forms.groupName,
+          description: forms.groupDescription,
+          memberIds: forms.selectedGroupMemberIds,
+        },
+      });
+      setForms((prev) => ({
+        ...prev,
+        groupName: '',
+        groupDescription: '',
+        selectedGroupMemberIds: [],
+      }));
+      setMessage('Grupo criado');
+      await loadDashboard(dashboard.selectedGymId);
+    } catch (err) {
+      setError(err.message || 'Erro ao criar grupo');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function toggleSelection(key, value) {
+    setForms((prev) => {
+      const current = Array.isArray(prev[key]) ? prev[key] : [];
+      const exists = current.includes(value);
+      return {
+        ...prev,
+        [key]: exists ? current.filter((item) => item !== value) : [...current, value],
+      };
+    });
+  }
+
   async function handlePublishWorkout(event) {
     event.preventDefault();
     if (!dashboard.selectedGymId) return;
@@ -204,6 +307,9 @@ function App() {
         body: {
           title: forms.workoutTitle,
           scheduledDate: forms.workoutDate,
+          audienceMode: forms.workoutAudienceMode,
+          targetMembershipIds: forms.targetMembershipIds,
+          targetGroupIds: forms.targetGroupIds,
           payload: {
             blocks: [{ type: 'PROGRAMMING', lines }],
             ...(forms.workoutBenchmarkSlug ? { benchmarkSlug: forms.workoutBenchmarkSlug.trim() } : {}),
@@ -216,6 +322,9 @@ function App() {
         workoutDate: '',
         workoutBenchmarkSlug: '',
         workoutLines: '',
+        workoutAudienceMode: 'all',
+        targetMembershipIds: [],
+        targetGroupIds: [],
       }));
       setMessage('Treino publicado');
       await loadDashboard(dashboard.selectedGymId);
@@ -489,6 +598,10 @@ function App() {
           }),
           React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading }, loading ? 'Entrando...' : 'Entrar')
         ),
+        React.createElement('div', { className: 'auth-google' },
+          React.createElement('div', { className: 'muted auth-dividerText' }, 'ou'),
+          React.createElement('div', { id: 'coach-google-signin' })
+        ),
         React.createElement('a', { className: 'portal-link', href: '/' }, 'Abrir app do atleta')
       )
     );
@@ -502,6 +615,9 @@ function App() {
   const renewAt = subscription?.renewAt || subscription?.renew_at || null;
   const daysRemaining = getDaysRemaining(renewAt);
   const billingTone = daysRemaining !== null && daysRemaining <= 7 ? 'warn' : (canCoachManage ? 'ok' : 'warn');
+  const canUseDeveloperTools = String(profile?.email || '').toLowerCase() === 'nagcode.contact@gmail.com';
+  const athleteMembers = dashboard.members.filter((member) => member.role === 'athlete' && member.status === 'active');
+  const showSkeleton = loading && !dashboard.gyms.length && !dashboard.feed.length && !dashboard.benchmarks.length;
 
   return React.createElement('div', { className: 'portal-shell' },
     React.createElement('aside', { className: 'sidebar' },
@@ -557,17 +673,21 @@ function App() {
         ),
         React.createElement('div', { className: 'billing-bannerActions' },
           React.createElement('button', { className: 'btn btn-primary', onClick: handleCheckout, disabled: loading }, 'Assinar Coach'),
-          React.createElement('button', { className: 'btn btn-secondary', onClick: handleActivateLocalPlan, disabled: loading }, 'Ativar local'),
+          canUseDeveloperTools ? React.createElement('button', { className: 'btn btn-secondary', onClick: handleActivateLocalPlan, disabled: loading }, 'Ativar local') : null,
           React.createElement('a', { className: 'btn btn-link', href: '/terms.html', target: '_blank', rel: 'noreferrer' }, 'Termos')
         )
       ),
       React.createElement('section', { className: 'grid stats-grid' },
-        statCard('Plano', planName),
-        statCard('Status', planStatus),
-        statCard('Gyms', String(dashboard.gyms.length)),
-        statCard('Treinos no feed', String(dashboard.feed.length)),
-        statCard('Atletas ativos', String(dashboard.insights?.stats?.athletes || 0)),
-        statCard('Resultados', String(dashboard.insights?.stats?.results || 0))
+        showSkeleton
+          ? Array.from({ length: 6 }, (_, index) => portalSkeletonCard(`stat-${index}`))
+          : [
+              statCard('Plano', planName),
+              statCard('Status', planStatus),
+              statCard('Gyms', String(dashboard.gyms.length)),
+              statCard('Treinos no feed', String(dashboard.feed.length)),
+              statCard('Atletas ativos', String(dashboard.insights?.stats?.athletes || 0)),
+              statCard('Resultados', String(dashboard.insights?.stats?.results || 0)),
+            ]
       ),
       React.createElement('section', { className: 'plan-grid' },
         planCard({
@@ -600,7 +720,9 @@ function App() {
         React.createElement('div', { className: 'card' },
           React.createElement('h3', null, 'Gyms'),
           React.createElement('div', { className: 'stack list-block' },
-            dashboard.gyms.map((gym) =>
+            showSkeleton
+              ? portalSkeletonList(3)
+              : dashboard.gyms.map((gym) =>
               React.createElement('button', {
                 key: gym.id,
                 className: `list-item ${dashboard.selectedGymId === gym.id ? 'selected' : ''}`,
@@ -609,7 +731,7 @@ function App() {
                 React.createElement('strong', null, gym.name),
                 React.createElement('span', null, `${gym.role} • ${gym.access?.warning || 'Acesso OK'}`)
               )
-            ),
+              ),
             dashboard.gyms.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhum gym criado ainda.') : null
           ),
           React.createElement('form', { className: 'stack', onSubmit: handleCreateGym },
@@ -631,12 +753,14 @@ function App() {
         React.createElement('div', { className: 'card' },
           React.createElement('h3', null, selectedGym ? `Membros de ${selectedGym.name}` : 'Membros'),
           React.createElement('div', { className: 'stack list-block' },
-            dashboard.members.map((member) =>
+            showSkeleton
+              ? portalSkeletonList(3)
+              : dashboard.members.map((member) =>
               React.createElement('div', { key: member.id, className: 'list-item static' },
                 React.createElement('strong', null, member.name || member.email || member.pending_email || 'Convidado'),
                 React.createElement('span', null, `${member.role} • ${member.status}`)
               )
-            ),
+              ),
             dashboard.members.length === 0 ? React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar membros.') : null
           ),
           React.createElement('form', { className: 'stack', onSubmit: handleAddMember },
@@ -659,8 +783,56 @@ function App() {
           )
         ),
         React.createElement('div', { className: 'card' },
+          React.createElement('h3', null, selectedGym ? `Grupos de ${selectedGym.name}` : 'Grupos'),
+          React.createElement('div', { className: 'stack list-block' },
+            showSkeleton
+              ? portalSkeletonList(2)
+              : dashboard.groups.map((group) =>
+              React.createElement('div', { key: group.id, className: 'list-item static' },
+                React.createElement('strong', null, group.name),
+                React.createElement('span', null, `${group.member_count || group.members?.length || 0} atleta(s)${group.description ? ` • ${group.description}` : ''}`)
+              )
+              ),
+            dashboard.groups.length === 0 ? React.createElement('p', { className: 'muted' }, 'Crie grupos para blocos especiais e planilhas separadas.') : null
+          ),
+          React.createElement('form', { className: 'stack' , onSubmit: handleCreateGroup },
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Nome do grupo',
+              value: forms.groupName,
+              onChange: (e) => setForms((prev) => ({ ...prev, groupName: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Descrição curta',
+              value: forms.groupDescription,
+              onChange: (e) => setForms((prev) => ({ ...prev, groupDescription: e.target.value })),
+            }),
+            React.createElement('div', { className: 'selection-grid' },
+              athleteMembers.length
+                ? athleteMembers.map((member) =>
+                    React.createElement('label', { key: member.id, className: 'check-row' },
+                      React.createElement('input', {
+                        type: 'checkbox',
+                        checked: forms.selectedGroupMemberIds.includes(member.id),
+                        onChange: () => toggleSelection('selectedGroupMemberIds', member.id),
+                      }),
+                      React.createElement('span', null,
+                        React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
+                        React.createElement('small', null, member.email || member.pending_email || '')
+                      )
+                    )
+                  )
+                : React.createElement('p', { className: 'muted' }, 'Nenhum atleta ativo disponível.')
+            ),
+            React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym || !forms.groupName }, 'Criar grupo')
+          )
+        ),
+        React.createElement('div', { className: 'card' },
           React.createElement('h3', null, selectedGym ? `Insights de ${selectedGym.name}` : 'Insights do gym'),
-          dashboard.insights
+          showSkeleton
+            ? React.createElement('div', { className: 'stack list-block' }, portalSkeletonList(4))
+            : dashboard.insights
             ? React.createElement('div', { className: 'stack list-block' },
                 React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Programação'),
@@ -669,6 +841,10 @@ function App() {
                 React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Competições'),
                   React.createElement('span', null, `${dashboard.insights.stats?.competitions || 0} no total • ${dashboard.insights.stats?.upcomingCompetitions || 0} próximas`)
+                ),
+                React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'Grupos'),
+                  React.createElement('span', null, `${dashboard.insights.stats?.groups || 0} grupo(s) ativos`)
                 ),
                 React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Benchmarks mais usados'),
@@ -704,6 +880,65 @@ function App() {
               value: forms.workoutLines,
               onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
             }),
+            React.createElement('div', { className: 'stack nested-card audience-card' },
+              React.createElement('strong', null, 'Audiência'),
+              React.createElement('div', { className: 'tabs' },
+                [
+                  ['all', 'Todos os atletas'],
+                  ['selected', 'Atletas específicos'],
+                  ['groups', 'Grupos'],
+                ].map(([value, label]) =>
+                  React.createElement('button', {
+                    key: value,
+                    type: 'button',
+                    className: `btn btn-chip ${forms.workoutAudienceMode === value ? 'is-active' : ''}`,
+                    onClick: () => setForms((prev) => ({ ...prev, workoutAudienceMode: value })),
+                  }, label)
+                )
+              ),
+              React.createElement('div', { className: 'selection-panels' },
+                React.createElement('div', { className: 'selection-panel' },
+                  React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
+                  React.createElement('div', { className: 'selection-grid' },
+                    athleteMembers.length
+                      ? athleteMembers.map((member) =>
+                          React.createElement('label', { key: member.id, className: 'check-row' },
+                            React.createElement('input', {
+                              type: 'checkbox',
+                              checked: forms.targetMembershipIds.includes(member.id),
+                              onChange: () => toggleSelection('targetMembershipIds', member.id),
+                            }),
+                            React.createElement('span', null,
+                              React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
+                              React.createElement('small', null, member.email || member.pending_email || '')
+                            )
+                          )
+                        )
+                      : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
+                  )
+                ),
+                React.createElement('div', { className: 'selection-panel' },
+                  React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
+                  React.createElement('div', { className: 'selection-grid' },
+                    dashboard.groups.length
+                      ? dashboard.groups.map((group) =>
+                          React.createElement('label', { key: group.id, className: 'check-row' },
+                            React.createElement('input', {
+                              type: 'checkbox',
+                              checked: forms.targetGroupIds.includes(group.id),
+                              onChange: () => toggleSelection('targetGroupIds', group.id),
+                            }),
+                            React.createElement('span', null,
+                              React.createElement('strong', null, group.name),
+                              React.createElement('small', null, `${group.member_count || group.members?.length || 0} atleta(s)`)
+                            )
+                          )
+                        )
+                      : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
+                  )
+                )
+              )
+            ),
             React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !selectedGym || !canCoachManage }, 'Publicar treino')
           )
         ),
@@ -753,13 +988,15 @@ function App() {
             React.createElement('span', { className: 'muted' }, `Página ${dashboard.benchmarkPagination.page || 1} de ${dashboard.benchmarkPagination.pages || 1}`)
           ),
           React.createElement('div', { className: 'stack list-block' },
-            dashboard.benchmarks.map((benchmark) =>
+            showSkeleton
+              ? portalSkeletonList(4)
+              : dashboard.benchmarks.map((benchmark) =>
               React.createElement('div', { key: benchmark.id, className: 'list-item static' },
                 React.createElement('strong', null, benchmark.name),
                 React.createElement('span', null, `${benchmark.category}${benchmark.year ? ` • ${benchmark.year}` : ''}${benchmark.official_source ? ` • ${benchmark.official_source}` : ''}`),
                 React.createElement('code', { className: 'inline-code' }, benchmark.slug)
               )
-            ),
+              ),
             dashboard.benchmarks.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhum benchmark encontrado para esse filtro.') : null
           ),
           React.createElement('div', { className: 'pager' },
@@ -778,12 +1015,14 @@ function App() {
         React.createElement('div', { className: 'card' },
           React.createElement('h3', null, 'Feed do app'),
           React.createElement('div', { className: 'stack list-block' },
-            dashboard.feed.map((item) =>
+            showSkeleton
+              ? portalSkeletonList(4)
+              : dashboard.feed.map((item) =>
               React.createElement('div', { key: item.id, className: 'list-item static' },
                 React.createElement('strong', null, item.title),
                 React.createElement('span', null, `${item.gym_name || ''}${item.benchmark?.name ? ` • ${item.benchmark.name}` : ''}`)
               )
-            ),
+              ),
             dashboard.feed.length === 0 ? React.createElement('p', { className: 'muted' }, 'Sem treinos publicados ainda.') : null
           )
         ),
@@ -992,6 +1231,22 @@ function statCard(label, value) {
   );
 }
 
+function portalSkeletonCard(key) {
+  return React.createElement('div', { key, className: 'stat-card card is-skeleton' },
+    React.createElement('div', { className: 'skeleton skeleton-line skeleton-line-sm' }),
+    React.createElement('div', { className: 'skeleton skeleton-line skeleton-line-lg' })
+  );
+}
+
+function portalSkeletonList(count = 3) {
+  return Array.from({ length: count }, (_, index) =>
+    React.createElement('div', { key: `sk-${index}`, className: 'list-item static is-skeleton' },
+      React.createElement('div', { className: 'skeleton skeleton-line skeleton-line-lg' }),
+      React.createElement('div', { className: 'skeleton skeleton-line' })
+    )
+  );
+}
+
 function planCard({ name, price, description, features = [], featured = false, action = null, loading = false }) {
   return React.createElement('div', { className: `plan-card ${featured ? 'plan-card-featured' : ''}` },
     React.createElement('span', { className: 'eyebrow' }, 'Plano'),
@@ -1084,3 +1339,22 @@ function readRuntimeConfig() {
 }
 
 createRoot(document.getElementById('coach-root')).render(React.createElement(App));
+
+function setupVercelObservability() {
+  if (window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
+  window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
+
+  inject({
+    mode: resolveVercelMode(),
+  });
+
+  injectSpeedInsights({
+    route: window.location.pathname,
+  });
+}
+
+function resolveVercelMode() {
+  const hostname = window.location.hostname;
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'development';
+  return 'production';
+}

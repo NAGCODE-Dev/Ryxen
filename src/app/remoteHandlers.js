@@ -1,5 +1,6 @@
 import {
   signIn,
+  signInWithGoogle,
   signOut,
   signUp,
   refreshSession,
@@ -13,6 +14,7 @@ import { pullLatestBackupPayload, pushBackupPayload, listSyncSnapshots } from '.
 import {
   addGymMember,
   createGym,
+  createGymGroup,
   getAccessContext,
   getAthleteDashboard,
   getGymInsights,
@@ -20,6 +22,7 @@ import {
   logAthletePr,
   syncAthletePrSnapshot,
   getWorkoutFeed,
+  listGymGroups,
   listGymMembers,
   publishGymWorkout,
 } from '../core/services/gymService.js';
@@ -36,7 +39,14 @@ import {
 import { getRuntimeConfig, setRuntimeConfig } from '../config/runtime.js';
 import { exportAppBackup, importAppBackup } from '../core/usecases/backupData.js';
 
-export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
+export function createRemoteHandlers({
+  getState,
+  setState,
+  selectActiveWeek,
+  syncCoachWorkoutFeed,
+  clearCoachWorkoutFeed,
+  applyImportedBackupData,
+}) {
   return {
     async handleSignUp(credentials) {
       return signUp(credentials);
@@ -44,6 +54,10 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
 
     async handleSignIn(credentials) {
       return signIn(credentials);
+    },
+
+    async handleSignInWithGoogle(payload) {
+      return signInWithGoogle(payload);
     },
 
     async handleRefreshSession() {
@@ -60,6 +74,7 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
 
     async handleSignOut() {
       await signOut();
+      await clearCoachWorkoutFeed?.();
       return { success: true };
     },
 
@@ -113,20 +128,10 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
       }
 
       const backup = parsed.data;
-      setState({
-        weeks: backup.weeks,
-        prs: backup.prs,
-        preferences: {
-          ...getState().preferences,
-          ...backup.preferences,
-        },
-        currentDay: backup.currentDay || getState().currentDay,
+      await applyImportedBackupData?.(backup, {
+        fileName: 'remote-sync',
+        source: 'sync-pull',
       });
-
-      if (backup.weeks?.length) {
-        const week = backup.activeWeekNumber || backup.weeks[0].weekNumber;
-        await selectActiveWeek(week);
-      }
 
       return { success: true, data: backup };
     },
@@ -165,6 +170,16 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
       return { success: true, data };
     },
 
+    async handleListGymGroups(gymId) {
+      const data = await listGymGroups(gymId);
+      return { success: true, data };
+    },
+
+    async handleCreateGymGroup(gymId, payload) {
+      const data = await createGymGroup(gymId, payload);
+      return { success: true, data };
+    },
+
     async handlePublishGymWorkout(gymId, payload) {
       const data = await publishGymWorkout(gymId, payload);
       return { success: true, data };
@@ -172,6 +187,7 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
 
     async handleGetWorkoutFeed() {
       const data = await getWorkoutFeed();
+      await syncCoachWorkoutFeed?.(data?.workouts || []);
       return { success: true, data };
     },
 

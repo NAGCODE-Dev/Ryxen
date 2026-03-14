@@ -16,6 +16,7 @@ PWA para importar programação de treino, calcular cargas, manter PRs, operar o
 - Cálculo automático de cargas a partir de PRs
 - Backup e restauração completos
 - Login, cadastro e sync remoto
+- Login com Google via Google Identity Services
 - Estrutura multi-tenant para `gym / coach / athlete`
 - Publicação de treinos do coach para atletas do gym
 - Reset de senha com código temporário
@@ -85,17 +86,21 @@ npm run start
 ## Deploy recomendado
 
 - frontend atleta + coach portal: `Vercel`
-- backend: `Railway`
-- banco: `Postgres gerenciado`
+- backend: `Render`
+- banco: `Supabase Postgres`
+- alternativa depois: `Railway`
 
 Arquivos relevantes:
 
 - `vercel.json`
+- `.env.vercel.example`
 - `config.js`
 - `config.example.js`
 - `scripts/build-static.mjs`
 - `backend/Dockerfile`
+- `render.yaml`
 - `backend/railway.json`
+- `docs/deploy/VERCEL_RENDER_SUPABASE.md`
 - `docs/deploy/VERCEL_RAILWAY.md`
 
 ## Testes
@@ -103,6 +108,25 @@ Arquivos relevantes:
 ```bash
 npm test
 ```
+
+## Semana de teste do coach
+
+Seed inicial de ambiente:
+
+```bash
+npm run seed:coach-trial
+```
+
+Smoke test automático:
+
+```bash
+npm run smoke:coach-trial
+```
+
+Documentos operacionais:
+
+- `docs/ops/COACH_TRIAL_WEEK_CHECKLIST.md`
+- `docs/ops/COACH_TRIAL_RUNBOOK.md`
 
 ## Conta admin local
 
@@ -128,7 +152,7 @@ APIs já preparadas para:
 
 ## Reset de senha
 
-- Em ambiente local, o backend pode expor o código na resposta se `EXPOSE_RESET_CODE=true`.
+- Em ambiente local, o backend só expõe o código na resposta para a conta de desenvolvimento e apenas se `EXPOSE_RESET_CODE=true`.
 - Se SMTP não estiver configurado, o backend usa conta de teste Ethereal e retorna `previewUrl` quando possível.
 
 ## Configuração importante
@@ -138,11 +162,11 @@ Backend `.env`:
 ```env
 PORT=8787
 DATABASE_URL=postgres://crossapp:crossapp@localhost:5432/crossapp
-JWT_SECRET=change-me
+JWT_SECRET=troque-por-uma-chave-forte
 FRONTEND_ORIGIN=http://localhost:8000
 SUPPORT_EMAIL=nagcode.contact@gmail.com
 ADMIN_EMAILS=nagcode.contact@gmail.com
-EXPOSE_RESET_CODE=true
+EXPOSE_RESET_CODE=false
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -187,3 +211,4 @@ Portal separado em framework:
 - Release/Rollback: `docs/ops/RELEASE_ROLLBACK_RUNBOOK.md`
 - Suporte: `docs/ops/SUPPORT_PLAYBOOK.md`
 - Deploy recomendado: `docs/deploy/VERCEL_RAILWAY.md`
+- Deploy sem custo inicial: `docs/deploy/VERCEL_RENDER_SUPABASE.md`

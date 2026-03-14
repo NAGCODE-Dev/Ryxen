@@ -51,7 +51,7 @@ __APP__.setRuntimeConfig({
 ## Teste rápido de assinatura (modo mock)
 
 1. Fazer signup/signin.
-2. Chamar endpoint `POST /billing/mock/activate` com Bearer token.
+2. `POST /billing/mock/activate` existe apenas para a conta de desenvolvimento (`nagcode.contact@gmail.com`).
 3. Consultar `GET /billing/status`.
 
 ## Reset de senha
@@ -59,7 +59,7 @@ __APP__.setRuntimeConfig({
 - `POST /auth/request-password-reset`
 - `POST /auth/confirm-password-reset`
 
-Se SMTP não estiver configurado, o backend usa Ethereal para preview de email e pode expor o código quando `EXPOSE_RESET_CODE=true`.
+Se SMTP não estiver configurado, o backend usa Ethereal para preview de email. O preview/código só é exposto para a conta de desenvolvimento e apenas quando `EXPOSE_RESET_CODE=true`.
 
 ## Admin
 
@@ -109,7 +109,15 @@ Frontend dedicado:
 Deploy recomendado:
 
 - frontend no Vercel
-- backend no Railway
+- backend no Render
+- banco no Supabase
+- alternativa depois: Railway
+
+Arquivos:
+
+- `../render.yaml`
+- `../docs/deploy/VERCEL_RENDER_SUPABASE.md`
+- `.env.render.example`
 - detalhes em `docs/deploy/VERCEL_RAILWAY.md`
 
 Seeds:

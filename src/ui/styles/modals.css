@@ -1,0 +1,139 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(8, 10, 13, 0.72);
+  backdrop-filter: blur(14px);
+  z-index: 12000;
+}
+
+.modal-overlay.isOpen {
+  display: flex;
+}
+
+.modal-container {
+  width: min(100%, 920px);
+  max-height: min(88vh, 920px);
+  border-radius: 30px;
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(18, 22, 28, 0.98), rgba(11, 14, 18, 0.98));
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal-container-auth {
+  width: min(100%, 980px);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--line);
+}
+
+.modal-title {
+  font-size: 1.06rem;
+  font-weight: 800;
+}
+
+.modal-close {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  max-height: calc(88vh - 78px);
+}
+
+.auth-switch .btn-secondary.isSelected,
+.btn-secondary.isSelected {
+  background: var(--bg-surface-3);
+  border-color: var(--line-strong);
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.google-signinMount {
+  min-height: 42px;
+}
+
+.auth-resetBox {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.reset-previewLink {
+  color: var(--text-primary);
+}
+
+@media (max-width: 640px) {
+  .modal-header {
+    padding: 14px 16px;
+  }
+
+  .modal-title {
+    font-size: 0.98rem;
+  }
+
+  .modal-close {
+    width: 36px;
+    height: 36px;
+  }
+
+  .modal-body {
+    padding: 14px 16px 18px;
+  }
+
+  .modal-body-auth {
+    gap: 12px;
+  }
+
+  .auth-switch {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .modal-container,
+  .modal-container-auth {
+    border-radius: 22px 22px 0 0;
+  }
+
+  .modal-header {
+    padding: 12px 14px;
+  }
+
+  .modal-body {
+    padding: 12px 14px 18px;
+  }
+}

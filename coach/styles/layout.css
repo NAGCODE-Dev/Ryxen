@@ -1,0 +1,234 @@
+.portal-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+}
+
+.sidebar {
+  padding: 24px;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(12,15,20,0.98), rgba(12,15,20,0.9));
+}
+
+.sidebar-title {
+  margin: 8px 0 18px;
+  font-size: 1.8rem;
+  line-height: 0.98;
+}
+
+.sidebar-copy {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.portal-main {
+  padding: 20px;
+}
+
+.hero,
+.card,
+.auth-card,
+.plan-card,
+.billing-banner,
+.profile-box,
+.sidebar-plan,
+.selection-panel,
+.audience-card,
+.nested-card {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.hero,
+.card,
+.auth-card,
+.plan-card,
+.billing-banner,
+.profile-box,
+.sidebar-plan,
+.selection-panel,
+.audience-card,
+.nested-card {
+  padding: 18px;
+}
+
+.hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.hero h2 {
+  margin: 6px 0 0;
+  font-size: 1.55rem;
+  line-height: 1.02;
+}
+
+.hero-copy {
+  margin: 8px 0 0;
+  color: var(--muted);
+  max-width: 680px;
+}
+
+.hero-pills,
+.tabs,
+.toolbar,
+.stack,
+.list-block,
+.plan-cardFeatures,
+.competition-events {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.portal-grid,
+.plan-grid,
+.dual-grid,
+.selection-panels {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.plan-grid {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.wide { grid-column: 1 / -1; }
+
+.sidebar-planValue,
+.stat-value,
+.billing-bannerTitle,
+.plan-cardPrice {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.18rem;
+  font-weight: 800;
+}
+
+.billing-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.billing-bannerActions,
+.benchmark-meta,
+.pager {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.list-item,
+.check-row {
+  width: 100%;
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+}
+
+.list-item.selected {
+  border-color: var(--line-strong);
+}
+
+.list-item.static {
+  cursor: default;
+}
+
+.list-item strong,
+.plan-cardTitle {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.inline-code,
+.plan-feature {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  font-size: 0.76rem;
+}
+
+.selection-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.check-row {
+  grid-template-columns: auto 1fr;
+  align-items: flex-start;
+}
+
+.check-row span {
+  display: grid;
+  gap: 4px;
+}
+
+.auth-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+}
+
+.portal-link {
+  color: var(--muted);
+}
+
+@supports (content-visibility: auto) {
+  .card,
+  .plan-card,
+  .billing-banner,
+  .profile-box,
+  .sidebar-plan,
+  .selection-panel,
+  .audience-card,
+  .nested-card,
+  .list-item,
+  .check-row {
+    content-visibility: auto;
+    contain-intrinsic-size: 160px;
+  }
+
+  .hero,
+  .stats-grid,
+  .portal-grid,
+  .plan-grid,
+  .dual-grid,
+  .selection-panels {
+    content-visibility: auto;
+    contain-intrinsic-size: 260px;
+  }
+}

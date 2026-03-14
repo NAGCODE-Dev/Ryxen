@@ -26,11 +26,12 @@ services:
     environment:
       PORT: 8787
       DATABASE_URL: postgres://crossapp:crossapp@db:5432/crossapp
-      JWT_SECRET: change-me-local
+      JWT_SECRET: ${JWT_SECRET:-crossapp-local-dev-secret}
       FRONTEND_ORIGIN: http://localhost:8000
       SUPPORT_EMAIL: nagcode.contact@gmail.com
       ADMIN_EMAILS: nagcode.contact@gmail.com
-      EXPOSE_RESET_CODE: "true"
+      DEV_EMAILS: nagcode.contact@gmail.com
+      EXPOSE_RESET_CODE: "false"
       SMTP_FROM: nagcode.contact@gmail.com
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}

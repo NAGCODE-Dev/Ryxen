@@ -1,3 +1,5 @@
+import { isDeveloperEmail } from '../core/utils/devAccess.js';
+
 export function renderAppShell() {
   return `
     <div class="app-container">
@@ -44,24 +46,7 @@ export function renderAppShell() {
       <!-- MODALS -->
       <div id="ui-modals"></div>
 
-      <div class="bottom-tools">
-        <button class="quick-action quick-action-primary" data-action="pdf:pick" type="button">
-          <span class="quick-actionIcon">PDF</span>
-          <span class="quick-actionLabel">Importar PDF</span>
-        </button>
-        <button class="quick-action" data-action="media:pick" type="button">
-          <span class="quick-actionIcon">OCR</span>
-          <span class="quick-actionLabel">Foto ou vídeo</span>
-        </button>
-        <button class="quick-action" data-action="workout:import" type="button">
-          <span class="quick-actionIcon">JSON</span>
-          <span class="quick-actionLabel">Importar</span>
-        </button>
-        <button class="quick-action" data-action="workout:export" type="button">
-          <span class="quick-actionIcon">EXP</span>
-          <span class="quick-actionLabel">Exportar</span>
-        </button>
-      </div>
+      <div id="ui-bottomTools"></div>
 
       <!-- BOTTOM NAV -->
       <nav class="bottom-nav">
@@ -76,6 +61,7 @@ export function renderAll(state = {}) {
   const headerAccountHtml = renderHeaderAccount(state);
   const weekChipsHtml = renderWeekChips(state);
   const mainHtml = renderMainContent(state);
+  const bottomToolsHtml = renderBottomTools(state);
   const bottomNavHtml = renderBottomNav(state);
   const modalsHtml = renderModals(state);
   
@@ -84,9 +70,36 @@ export function renderAll(state = {}) {
     headerAccountHtml,
     weekChipsHtml,
     mainHtml,
+    bottomToolsHtml,
     bottomNavHtml,
     modalsHtml,
   };
+}
+
+function renderBottomTools(state) {
+  const currentPage = state?.__ui?.currentPage || 'today';
+  if (currentPage !== 'today') return '';
+
+  return `
+    <div class="bottom-tools">
+      <button class="quick-action quick-action-primary" data-action="pdf:pick" type="button">
+        <span class="quick-actionIcon">PDF</span>
+        <span class="quick-actionLabel">Importar PDF</span>
+      </button>
+      <button class="quick-action" data-action="media:pick" type="button">
+        <span class="quick-actionIcon">OCR</span>
+        <span class="quick-actionLabel">Foto ou video</span>
+      </button>
+      <button class="quick-action" data-action="workout:import" type="button">
+        <span class="quick-actionIcon">JSON</span>
+        <span class="quick-actionLabel">Importar</span>
+      </button>
+      <button class="quick-action" data-action="workout:export" type="button">
+        <span class="quick-actionIcon">EXP</span>
+        <span class="quick-actionLabel">Exportar</span>
+      </button>
+    </div>
+  `;
 }
 
 function renderModals(state) {
@@ -100,6 +113,7 @@ function renderModals(state) {
   if (modal === 'auth') return renderAuthModal({
     auth: {
       ...(state?.__ui?.auth || {}),
+      isBusy: state?.__ui?.isBusy || false,
       passwordReset: state?.__ui?.passwordReset || {},
       admin: state?.__ui?.admin || {},
       athleteOverview: state?.__ui?.athleteOverview || {},
@@ -193,12 +207,35 @@ function renderMainContent(state) {
   const ui = state?.__ui || {};
   const trainingMode = !!ui.trainingMode;
   const progress = ui.progress || { doneCount: 0, totalCount: 0 };
+  const workoutContext = state?.workoutContext || {};
+  const showSourceToggle = !!workoutContext.canToggle;
+  const activeSource = workoutContext.activeSource || 'uploaded';
 
   return `
     <div class="workout-container">
       ${accessBanner}
       <div class="workout-header">
         <h2 class="workout-title">Treino • ${escapeHtml(formatDay(state?.currentDay))}</h2>
+        ${showSourceToggle ? `
+          <div class="coach-pillRow workout-sourceToggle">
+            <button
+              class="coach-pill ${activeSource === 'uploaded' ? 'isActive' : ''}"
+              data-action="workout:source"
+              data-source="uploaded"
+              type="button"
+            >
+              Planilha enviada
+            </button>
+            <button
+              class="coach-pill ${activeSource === 'coach' ? 'isActive' : ''}"
+              data-action="workout:source"
+              data-source="coach"
+              type="button"
+            >
+              Treino do coach
+            </button>
+          </div>
+        ` : ''}
 
         ${trainingMode ? `
           <div class="wod-toolbar">
@@ -300,18 +337,19 @@ function renderHistoryPage(state) {
   const athleteOverview = state?.__ui?.athleteOverview || {};
   const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
   const prHistory = athleteOverview?.prHistory || [];
+  const isBusy = !!state?.__ui?.isBusy;
 
   return `
-    <div class="workout-container">
+    <div class="workout-container page-stack page-stack-history">
       <div class="workout-header">
         <h2 class="workout-title">Histórico</h2>
         <div class="page-subtitle">Benchmark, PR e evolução recente.</div>
       </div>
 
-      <div class="coach-card coach-cardWide">
+      <section class="coach-card coach-cardWide page-section">
         <h3 class="coach-cardTitle">Evolução por benchmark</h3>
         <div class="trend-grid">
-          ${benchmarkHistory.length ? benchmarkHistory.map((item) => `
+          ${isBusy ? renderTrendSkeletons(4) : benchmarkHistory.length ? benchmarkHistory.map((item) => `
             <div class="trend-card">
               <div class="trend-cardHead">
                 <strong>${escapeHtml(item.name || item.slug || 'Benchmark')}</strong>
@@ -325,15 +363,15 @@ function renderHistoryPage(state) {
             </div>
           `).join('') : '<p class="account-hint">Registre benchmarks para gerar curva de evolução.</p>'}
         </div>
-      </div>
+      </section>
 
-      <div class="coach-card coach-cardWide">
+      <section class="coach-card coach-cardWide page-section">
         <h3 class="coach-cardTitle">Evolução de PRs</h3>
         <div class="page-actions">
           <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
         </div>
         <div class="trend-grid">
-          ${prHistory.length ? prHistory.map((item) => `
+          ${isBusy ? renderTrendSkeletons(3) : prHistory.length ? prHistory.map((item) => `
             <div class="trend-card">
               <div class="trend-cardHead">
                 <strong>${escapeHtml(item.exercise)}</strong>
@@ -347,7 +385,7 @@ function renderHistoryPage(state) {
             </div>
           `).join('') : '<p class="account-hint">Atualize seus PRs logado para construir histórico e evolução.</p>'}
         </div>
-      </div>
+      </section>
     </div>
   `;
 }
@@ -356,38 +394,39 @@ function renderCompetitionsPage(state) {
   const athleteOverview = state?.__ui?.athleteOverview || {};
   const items = athleteOverview?.upcomingCompetitions || [];
   const access = athleteOverview?.gymAccess || [];
+  const isBusy = !!state?.__ui?.isBusy;
 
   return `
-    <div class="workout-container">
+    <div class="workout-container page-stack page-stack-competitions">
       <div class="workout-header">
         <h2 class="workout-title">Competições</h2>
         <div class="page-subtitle">Agenda do box e status de acesso por gym.</div>
       </div>
 
       <div class="coach-grid">
-        <div class="coach-card coach-cardWide">
+        <section class="coach-card coach-cardWide page-section">
           <h3 class="coach-cardTitle">Próximas competições</h3>
           <div class="coach-list">
-            ${items.length ? items.map((item) => `
+            ${isBusy ? renderListSkeletons(4) : items.length ? items.map((item) => `
               <div class="coach-listItem static">
                 <strong>${escapeHtml(item.title || 'Competição')}</strong>
                 <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.starts_at))}${item.location ? ` • ${escapeHtml(item.location)}` : ''}</span>
               </div>
             `).join('') : '<p class="account-hint">Nenhuma competição próxima para seus gyms.</p>'}
           </div>
-        </div>
+        </section>
 
-        <div class="coach-card coach-cardWide">
+        <section class="coach-card coach-cardWide page-section">
           <h3 class="coach-cardTitle">Acesso por gym</h3>
           <div class="coach-list">
-            ${access.length ? access.map((item) => `
+            ${isBusy ? renderListSkeletons(3) : access.length ? access.map((item) => `
               <div class="coach-listItem static">
                 <strong>${escapeHtml(item.gymName || `Gym ${item.gymId}`)}</strong>
                 <span>${item.warning ? escapeHtml(item.warning) : 'Acesso ativo'}</span>
               </div>
             `).join('') : '<p class="account-hint">Nenhum gym vinculado à sua conta.</p>'}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   `;
@@ -399,54 +438,94 @@ function renderAccountPage(state) {
   const subscription = coachPortal?.subscription || null;
   const planName = subscription?.plan || subscription?.plan_id || 'free';
   const planStatus = subscription?.status || 'inactive';
+  const canUseDeveloperTools = isDeveloperEmail(profile?.email);
+  const isBusy = !!state?.__ui?.isBusy;
 
   if (!profile?.email) {
     return `
-      <div class="workout-container">
-        <div class="coach-card coach-cardWide">
+      <div class="workout-container page-stack page-stack-account">
+        <section class="coach-card coach-cardWide page-section">
           <h3 class="coach-cardTitle">Conta</h3>
           <p class="account-hint">Entre para sincronizar dados, acessar o Coach Portal e manter seu histórico salvo.</p>
           <div class="page-actions">
             <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar ou cadastrar</button>
           </div>
-        </div>
+        </section>
       </div>
     `;
   }
 
   return `
-    <div class="workout-container">
+    <div class="workout-container page-stack page-stack-account">
       <div class="coach-grid">
-        <div class="coach-card">
+        <section class="coach-card page-section">
           <h3 class="coach-cardTitle">Conta ativa</h3>
-          <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
-          <div class="account-email">${escapeHtml(profile.email || '')}</div>
+          ${isBusy ? renderAccountSkeleton() : `
+            <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
+            <div class="account-email">${escapeHtml(profile.email || '')}</div>
+          `}
           <div class="page-actions">
             <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar sessão</button>
             <button class="btn-secondary" data-action="auth:sync-push" type="button">Enviar sync</button>
             <button class="btn-secondary" data-action="auth:sync-pull" type="button">Baixar sync</button>
           </div>
-        </div>
+        </section>
 
-        <div class="coach-card">
+        <section class="coach-card page-section">
           <h3 class="coach-cardTitle">Plano</h3>
-          <div class="account-name">${escapeHtml(planName)}</div>
-          <div class="account-email">${escapeHtml(planStatus)}</div>
+          ${isBusy ? renderAccountSkeleton() : `
+            <div class="account-name">${escapeHtml(planName)}</div>
+            <div class="account-email">${escapeHtml(planStatus)}</div>
+          `}
           <div class="page-actions">
             <button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Assinar Coach</button>
-            <button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>
+            ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
           </div>
-        </div>
+        </section>
 
-        <div class="coach-card coach-cardWide">
+        <section class="coach-card coach-cardWide page-section">
           <h3 class="coach-cardTitle">Gestão da conta</h3>
           <div class="page-actions">
             <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Abrir painel completo</button>
             <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
             <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
           </div>
-        </div>
+        </section>
       </div>
+    </div>
+  `;
+}
+
+function renderListSkeletons(count = 3) {
+  return Array.from({ length: count }, () => `
+    <div class="coach-listItem static isSkeleton">
+      <div class="skeleton skeleton-line skeleton-line-lg"></div>
+      <div class="skeleton skeleton-line"></div>
+    </div>
+  `).join('');
+}
+
+function renderTrendSkeletons(count = 3) {
+  return Array.from({ length: count }, () => `
+    <div class="trend-card isSkeleton">
+      <div class="trend-cardHead">
+        <div class="skeleton skeleton-line skeleton-line-lg"></div>
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+      </div>
+      <div class="skeleton skeleton-chart"></div>
+      <div class="trend-meta">
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+        <div class="skeleton skeleton-line skeleton-line-sm"></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderAccountSkeleton() {
+  return `
+    <div class="sheet-stack isSkeleton">
+      <div class="skeleton skeleton-line skeleton-line-lg"></div>
+      <div class="skeleton skeleton-line"></div>
     </div>
   `;
 }
@@ -752,6 +831,7 @@ function renderSettingsModal(settings = {}) {
 function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
   const profile = auth?.profile || null;
   const isAuthenticated = !!profile?.email;
+  const isBusy = !!auth?.isBusy;
   const isSignup = authMode === 'signup';
   const reset = auth?.passwordReset || auth?.reset || {};
   const admin = auth?.admin || {};
@@ -770,6 +850,8 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const feed = coachPortal?.feed || [];
     const gymAccess = coachPortal?.gymAccess || [];
     const coachInsights = coachPortal?.insights || null;
+    const groups = coachPortal?.groups || [];
+    const athleteMembers = (coachPortal?.members || []).filter((member) => member.role === 'athlete' && member.status === 'active');
     const athleteStats = athleteOverview?.stats || {};
     const athleteResults = athleteOverview?.recentResults || [];
     const athleteCompetitions = athleteOverview?.upcomingCompetitions || [];
@@ -777,7 +859,8 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
     const prHistory = athleteOverview?.prHistory || [];
     const planName = subscription?.plan || subscription?.plan_id || 'free';
-    const planStatus = subscription?.status || 'inactive';
+  const planStatus = subscription?.status || 'inactive';
+  const canUseDeveloperTools = isDeveloperEmail(profile?.email);
     const renewAt = subscription?.renewAt || subscription?.renew_at || null;
     return `
       <div class="modal-overlay isOpen" id="ui-authModalBackdrop">
@@ -791,17 +874,27 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
             <div class="account-hero">
               <div class="account-heroIdentity">
                 <div class="account-heroEyebrow">Conta ativa</div>
-                <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
-                <div class="account-email">${escapeHtml(profile.email || '')}</div>
+                ${isBusy ? renderAccountSkeleton() : `
+                  <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
+                  <div class="account-email">${escapeHtml(profile.email || '')}</div>
+                `}
               </div>
               <div class="account-planCard">
                 <span class="account-planLabel">Plano Coach</span>
-                <strong class="account-planValue">${escapeHtml(planName)}</strong>
-                <span class="account-planMeta">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</span>
+                ${isBusy ? renderAccountSkeleton() : `
+                  <strong class="account-planValue">${escapeHtml(planName)}</strong>
+                  <span class="account-planMeta">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</span>
+                `}
               </div>
             </div>
 
             <div class="account-summaryGrid">
+              ${isBusy ? Array.from({ length: 4 }, () => `
+                <div class="summary-tile isSkeleton">
+                  <div class="skeleton skeleton-line skeleton-line-sm"></div>
+                  <div class="skeleton skeleton-line skeleton-line-lg"></div>
+                </div>
+              `).join('') : `
               <div class="summary-tile">
                 <span class="summary-label">Coach</span>
                 <strong class="summary-value">${canCoachManage ? 'Liberado' : 'Bloqueado'}</strong>
@@ -818,6 +911,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <span class="summary-label">Treinos</span>
                 <strong class="summary-value">${feed.length}</strong>
               </div>
+              `}
             </div>
 
             <section class="account-section athlete-overview">
@@ -851,7 +945,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <div class="coach-card">
                   <h3 class="coach-cardTitle">Resultados recentes</h3>
                   <div class="coach-list">
-                    ${athleteResults.length ? athleteResults.map((item) => `
+                    ${isBusy ? renderListSkeletons(3) : athleteResults.length ? athleteResults.map((item) => `
                       <div class="coach-listItem static">
                         <strong>${escapeHtml(item.benchmark_name || item.benchmark_slug || 'Benchmark')}</strong>
                         <span>${escapeHtml(item.score_display || '')} • ${escapeHtml(item.gym_name || 'Sem gym')} • ${escapeHtml(formatDateShort(item.created_at))}</span>
@@ -863,7 +957,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <div class="coach-card">
                   <h3 class="coach-cardTitle">Próximas competições</h3>
                   <div class="coach-list">
-                    ${athleteCompetitions.length ? athleteCompetitions.map((item) => `
+                    ${isBusy ? renderListSkeletons(3) : athleteCompetitions.length ? athleteCompetitions.map((item) => `
                       <div class="coach-listItem static">
                         <strong>${escapeHtml(item.title || 'Competição')}</strong>
                         <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.starts_at))}${item.location ? ` • ${escapeHtml(item.location)}` : ''}</span>
@@ -875,7 +969,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <div class="coach-card coach-cardWide">
                   <h3 class="coach-cardTitle">Treinos recentes do box</h3>
                   <div class="coach-list">
-                    ${athleteWorkouts.length ? athleteWorkouts.map((item) => `
+                    ${isBusy ? renderListSkeletons(3) : athleteWorkouts.length ? athleteWorkouts.map((item) => `
                       <div class="coach-listItem static">
                         <strong>${escapeHtml(item.title || 'Treino')}</strong>
                         <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.scheduled_date || item.published_at))}</span>
@@ -933,7 +1027,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 </div>
                 <div class="settings-actions coach-billingActions">
                   <button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Assinar Coach</button>
-                  <button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>
+                  ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
                 </div>
               ` : ''}
 
@@ -975,6 +1069,34 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   </div>
                 </div>
 
+                <div class="coach-card">
+                  <h3 class="coach-cardTitle">Grupos de atletas</h3>
+                  <div class="coach-list">
+                    ${groups.length ? groups.map((group) => `
+                      <div class="coach-listItem static">
+                        <strong>${escapeHtml(group.name)}</strong>
+                        <span>${Number(group.member_count || group.members?.length || 0)} atleta(s)${group.description ? ` • ${escapeHtml(group.description)}` : ''}</span>
+                      </div>
+                    `).join('') : '<p class="account-hint">Crie grupos para programações especiais, planilhas e blocos separados.</p>'}
+                  </div>
+                  <div class="auth-form">
+                    <input class="add-input" id="coach-group-name" type="text" placeholder="Nome do grupo" />
+                    <input class="add-input" id="coach-group-description" type="text" placeholder="Descrição curta opcional" />
+                    <div class="coach-selectionGrid">
+                      ${athleteMembers.length ? athleteMembers.map((member) => `
+                        <label class="coach-checkRow">
+                          <input type="checkbox" name="coach-group-members" value="${member.id}" />
+                          <span>
+                            <strong>${escapeHtml(member.name || member.email || member.pending_email || 'Atleta')}</strong>
+                            <small>${escapeHtml(member.email || member.pending_email || '')}</small>
+                          </span>
+                        </label>
+                      `).join('') : '<p class="account-hint">Adicione atletas ativos para montar grupos.</p>'}
+                    </div>
+                    <button class="btn-secondary" data-action="coach:create-group" type="button">Criar grupo</button>
+                  </div>
+                </div>
+
                 <div class="coach-card coach-cardWide">
                   <h3 class="coach-cardTitle">Publicar treino</h3>
                   <div class="auth-form">
@@ -982,6 +1104,56 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                     <input class="add-input" id="coach-workout-date" type="date" />
                     <input class="add-input" id="coach-workout-benchmark" type="text" placeholder="benchmark slug opcional (ex: fran)" />
                     <textarea class="add-input coach-textarea" id="coach-workout-lines" placeholder="Uma linha por exercício ou bloco&#10;BACK SQUAT&#10;5x5 @80"></textarea>
+                    <div class="coach-audienceBlock">
+                      <div class="coach-audienceHead">
+                        <strong>Audiência</strong>
+                        <span>Envie para todos, atletas específicos ou grupos.</span>
+                      </div>
+                      <div class="coach-pillRow coach-pillRow-inline">
+                        <label class="coach-radioPill">
+                          <input type="radio" name="coach-audience-mode" value="all" checked />
+                          <span>Todos os atletas</span>
+                        </label>
+                        <label class="coach-radioPill">
+                          <input type="radio" name="coach-audience-mode" value="selected" />
+                          <span>Atletas específicos</span>
+                        </label>
+                        <label class="coach-radioPill">
+                          <input type="radio" name="coach-audience-mode" value="groups" />
+                          <span>Grupos</span>
+                        </label>
+                      </div>
+                      <div class="coach-selectionPanels">
+                        <div class="coach-selectionPanel">
+                          <div class="coach-selectionTitle">Atletas</div>
+                          <div class="coach-selectionGrid">
+                            ${athleteMembers.length ? athleteMembers.map((member) => `
+                              <label class="coach-checkRow">
+                                <input type="checkbox" name="coach-target-members" value="${member.id}" />
+                                <span>
+                                  <strong>${escapeHtml(member.name || member.email || member.pending_email || 'Atleta')}</strong>
+                                  <small>${escapeHtml(member.email || member.pending_email || '')}</small>
+                                </span>
+                              </label>
+                            `).join('') : '<p class="account-hint">Nenhum atleta ativo neste gym.</p>'}
+                          </div>
+                        </div>
+                        <div class="coach-selectionPanel">
+                          <div class="coach-selectionTitle">Grupos</div>
+                          <div class="coach-selectionGrid">
+                            ${groups.length ? groups.map((group) => `
+                              <label class="coach-checkRow">
+                                <input type="checkbox" name="coach-target-groups" value="${group.id}" />
+                                <span>
+                                  <strong>${escapeHtml(group.name)}</strong>
+                                  <small>${Number(group.member_count || group.members?.length || 0)} atleta(s)</small>
+                                </span>
+                              </label>
+                            `).join('') : '<p class="account-hint">Crie pelo menos um grupo para usar envios segmentados.</p>'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <button class="btn-primary" data-action="coach:publish-workout" type="button">Publicar treino</button>
                   </div>
                 </div>
@@ -1034,6 +1206,10 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                     <div class="coach-listItem static">
                       <strong>Equipe técnica</strong>
                       <span>${Number(coachInsights?.stats?.coaches || 0)} coach(es) / owner(s)</span>
+                    </div>
+                    <div class="coach-listItem static">
+                      <strong>Grupos ativos</strong>
+                      <span>${Number(coachInsights?.stats?.groups || 0)} grupo(s) criado(s)</span>
                     </div>
                     ${(coachInsights?.topBenchmarks || []).map((item) => `
                       <div class="coach-listItem static">
@@ -1138,6 +1314,12 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
             </button>
           </form>
 
+          <div class="auth-divider"><span>ou</span></div>
+          <div class="google-signinBlock">
+            <div class="google-signinMount" id="ui-googleSignIn"></div>
+            <p class="account-hint google-signinHint">Entre com Google para criar ou acessar sua conta mais rápido.</p>
+          </div>
+
           ${!isSignup ? `
             <div class="auth-resetBox">
               <button class="btn-secondary" data-action="auth:reset-toggle" type="button">Esqueci minha senha</button>
@@ -1159,7 +1341,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   <input class="add-input" id="reset-code" type="text" placeholder="Código de 6 dígitos" value="${escapeHtml(reset.code || '')}" />
                   <input class="add-input" id="reset-newPassword" type="password" placeholder="Nova senha" />
                   <button class="btn-primary" data-action="auth:reset-confirm" type="button">Trocar senha</button>
-                  <p class="account-hint">Em ambiente local, o código pode aparecer aqui. Em produção, ele deve ser enviado por email${reset?.supportEmail ? ` via ${escapeHtml(reset.supportEmail)}` : ''}.</p>
+                  <p class="account-hint">O código é enviado por email${reset?.supportEmail ? ` via ${escapeHtml(reset.supportEmail)}` : ''}. Pré-visualizações de desenvolvimento só aparecem para a conta administradora.</p>
                 </div>
               ` : ''}
             </div>

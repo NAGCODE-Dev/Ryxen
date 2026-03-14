@@ -25,6 +25,7 @@ import { importPRs } from './core/usecases/importPRs.js';
 import { exportAppBackup, importAppBackup } from './core/usecases/backupData.js';
 import { addOrUpdatePR, removePR, listAllPRs } from './core/usecases/managePRs.js';
 import { hasStoredSession } from './core/services/authService.js';
+import { isDeveloperProfile } from './core/utils/devAccess.js';
 
 // Adapters
 import {
@@ -49,6 +50,11 @@ import {
   toWorkoutSections,
 } from './app/workoutHelpers.js';
 import { downloadFile } from './app/fileHelpers.js';
+import {
+  normalizeCoachWorkoutFeed,
+  pruneCoachWorkoutFeed,
+  resolveCoachWorkoutForDay,
+} from './app/coachWorkoutCache.js';
 import { exposeAppApi } from './app/publicApi.js';
 import { createRemoteHandlers } from './app/remoteHandlers.js';
 
@@ -69,10 +75,19 @@ const activeWeekStorage = createStorage('active-week', 100);
 const dayOverrideStorage = createStorage('day-override', 100);
 const pdfStorage = createStorage('workout-pdf', 2_000_000);
 const pdfMetaStorage = createStorage('workout-pdf-metadata', 1000);
+const coachWorkoutStorage = createStorage('coach-workout-cache', 300_000);
 
 const PDF_KEY = 'workout-pdf';
 const METADATA_KEY = 'workout-pdf-metadata';
-const remoteHandlers = createRemoteHandlers({ getState, setState, selectActiveWeek });
+const COACH_FEED_KEY = 'feed';
+const remoteHandlers = createRemoteHandlers({
+  getState,
+  setState,
+  selectActiveWeek,
+  syncCoachWorkoutFeed,
+  clearCoachWorkoutFeed,
+  applyImportedBackupData,
+});
 
 // ========== INICIALIZAÇÃO ==========
 
@@ -107,6 +122,7 @@ async function restoreSessionIfPossible() {
 
   try {
     await remoteHandlers.handleRefreshSession();
+    await remoteHandlers.handleGetWorkoutFeed();
     logDebug('🔐 Sessão restaurada');
   } catch (error) {
     await remoteHandlers.handleSignOut();
@@ -200,7 +216,7 @@ async function loadSavedWeeks() {
 
   if (!result.success) {
     logDebug('📄 Nenhuma semana salva');
-    setState({ ui: { activeScreen: 'welcome' } });
+    await applyPreferredWorkout({ fallbackToWelcome: true });
     return;
   }
 
@@ -294,7 +310,7 @@ export async function selectActiveWeek(weekNumber) {
 
   logDebug(`📅 Semana ativa: ${weekNumber}`);
 
-  await processWorkoutFromWeek(week);
+  await applyPreferredWorkout({ fallbackToWelcome: true });
   emit('week:changed', { weekNumber });
 
   return { success: true };
@@ -399,13 +415,13 @@ export async function handleImportWorkout(file) {
     });
     
     const state = getState();
+    await applyWorkoutToState(toWorkoutBlocks(workout), {
+      source: 'manual',
+      weekNumber: result.weekNumber || state.activeWeekNumber,
+      title: file?.name || '',
+    });
     setState({
-      workout: toWorkoutBlocks(workout),
       activeWeekNumber: result.weekNumber || state.activeWeekNumber,
-      ui: {
-        ...state.ui,
-        activeScreen: 'workout'
-      }
     });
     
     emit('workout:imported', { workout });
@@ -474,6 +490,7 @@ async function processWorkoutFromWeek(week) {
   if (dayName === 'Domingo') {
     setState({
       workout: null,
+      workoutMeta: null,
       ui: { ...state.ui, activeScreen: 'rest' }
     });
     logDebug('💤 Dia de descanso');
@@ -485,136 +502,32 @@ async function processWorkoutFromWeek(week) {
   if (!workout) {
     setState({
       workout: null,
+      workoutMeta: null,
       ui: { ...state.ui, activeScreen: 'welcome' }
     });
     logDebug(`⚠️ Nenhum treino para ${dayName} na semana ${week.weekNumber}`);
     return;
   }
 
-  // 🔥 CONVERSÃO AUTOMÁTICA LBS → KG (ANTES de normalizar)
-  if (state.preferences.autoConvertLbs !== false && workout.blocks) {
-    const { autoConvertWorkoutLbs } = await import('./core/services/loadCalculator.js');
-    
-    workout.blocks.forEach(block => {
-      if (block.lines && Array.isArray(block.lines)) {
-        block.lines = autoConvertWorkoutLbs(block.lines);
-      }
-    });
-    
-    logDebug('🔄 Conversão lbs→kg aplicada');
-  }
-
-  // 🔥 CORREÇÃO: Normaliza MAS preserva objetos já processados
-  const normalizedBlocks = normalizeWorkoutBlocks(workout.blocks);
-
-  logDebug('📋 Blocos normalizados:', normalizedBlocks.length);
-  logDebug('📋 Primeira linha:', normalizedBlocks[0]?.lines[0]);
-
-  // 🔥 Calcula cargas APENAS para linhas que NÃO têm calculated
-  let hasWarnings = false;
-  let blocksWithLoads = normalizedBlocks;
-
-  const workoutForCalc = {
-    day: workout.day,
-    sections: normalizedBlocks
-  };
-
-  try {
-    logDebug('🔢 Calculando cargas...');
-    logDebug('🔢 PRs disponíveis:', Object.keys(state.prs));
-    logDebug('🔢 Total de linhas:', normalizedBlocks.reduce((sum, b) => sum + b.lines.length, 0));
-
-    const loadResult = calculateLoads(workoutForCalc, state.prs, state.preferences);
-
-    logDebug('✅ calculateLoads result:', {
-      success: loadResult.success,
-      error: loadResult.error,
-      hasWarnings: loadResult.hasWarnings,
-      dataLength: loadResult.data?.length,
-      linesWithPercent: loadResult.linesWithPercent
-    });
-
-    if (!loadResult.success) {
-      console.error('❌ Falha ao calcular cargas:', loadResult.error);
-    } else if (!loadResult.data || loadResult.data.length === 0) {
-      console.warn('⚠️ Nenhum resultado de cálculo');
-    } else {
-      hasWarnings = loadResult.hasWarnings || false;
-
-      // 🔥 APLICA CARGAS CALCULADAS
-      let globalIndex = 0;
-
-      blocksWithLoads = normalizedBlocks.map(block => {
-        const newLines = block.lines.map(line => {
-          const result = loadResult.data[globalIndex++];
-
-          // Se linha JÁ tem calculated, preserva
-          if (isCalculatedLine(line)) {
-            return line;
-          }
-
-          // Se resultado tem cálculo, aplica
-          if (result && result.hasPercent && result.calculatedText) {
-            return {
-              raw: result.originalLine || line,
-              calculated: result.calculatedText,
-              hasWarning: result.isWarning || false,
-              isMax: result.isMax || false
-            };
-          }
-
-          // Marca cabeçalhos
-          if (result && result.isExerciseHeader) {
-            return {
-              raw: result.originalLine || line,
-              isHeader: true,
-              exercise: result.exercise
-            };
-          }
-
-          // Marca descanso
-          if (result && result.isRest) {
-            return {
-              raw: result.originalLine || line,
-              isRest: true
-            };
-          }
-
-          // Mantém linha original
-          return line;
-        });
-
-        return { ...block, lines: newLines };
-      });
-
-      logDebug('✅ Cargas aplicadas!');
-      logDebug('✅ Linha 20:', blocksWithLoads[0]?.lines[20]);
-    }
-  } catch (error) {
-    console.error('❌ Erro ao calcular cargas:', error);
-  }
-
-  // Salva workout com cargas calculadas
-  setState({
-    workout: {
-      ...workout,
-      blocks: blocksWithLoads
+  const applied = await applyWorkoutToState(workout, {
+    source: 'local',
+    weekNumber: week.weekNumber,
+    dayName,
+    context: {
+      ...buildWorkoutContext(state, null),
+      activeSource: 'uploaded',
     },
-    ui: {
-      ...state.ui,
-      activeScreen: 'workout',
-      hasWarnings: hasWarnings
-    }
   });
 
   logDebug('💪 Treino carregado:', {
     day: dayName,
     week: week.weekNumber,
-    blocks: blocksWithLoads.length,
-    totalLines: blocksWithLoads.reduce((sum, b) => sum + b.lines.length, 0)
+    blocks: applied.blocks.length,
+    totalLines: applied.blocks.reduce((sum, b) => sum + b.lines.length, 0)
   });
 
   emit('workout:loaded', { workout, week: week.weekNumber });
+  return applied;
 }
 
 // ========== PUBLIC ACTIONS ==========
@@ -734,6 +647,273 @@ export async function handleUniversalImport(file) {
     emit('media:error', { error: errorMsg, fileName: file.name });
     return { success: false, error: errorMsg };
   }
+}
+
+async function getCoachWorkoutCache() {
+  const saved = await coachWorkoutStorage.get(COACH_FEED_KEY);
+  const workouts = pruneCoachWorkoutFeed(saved?.workouts || []);
+
+  if (saved?.workouts?.length && workouts.length !== saved.workouts.length) {
+    await coachWorkoutStorage.set(COACH_FEED_KEY, {
+      updatedAt: new Date().toISOString(),
+      workouts,
+    });
+  }
+
+  return workouts;
+}
+
+async function getCoachWorkoutForCurrentDay(state = getState()) {
+  const feed = await getCoachWorkoutCache();
+  return resolveCoachWorkoutForDay(feed, state.currentDay);
+}
+
+async function syncCoachWorkoutFeed(workouts = []) {
+  const normalized = normalizeCoachWorkoutFeed(workouts, Date.now());
+  const existing = await getCoachWorkoutCache();
+  const byId = new Map();
+
+  existing.forEach((item) => {
+    const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
+    byId.set(key, item);
+  });
+
+  normalized.forEach((item) => {
+    const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
+    const current = byId.get(key);
+    byId.set(key, current ? {
+      ...item,
+      receivedAt: current.receivedAt,
+      expiresAt: current.expiresAt,
+    } : item);
+  });
+
+  const merged = pruneCoachWorkoutFeed(Array.from(byId.values()));
+  await coachWorkoutStorage.set(COACH_FEED_KEY, {
+    updatedAt: new Date().toISOString(),
+    workouts: merged,
+  });
+
+  await applyPreferredWorkout();
+
+  return {
+    success: true,
+    data: {
+      count: merged.length,
+    },
+  };
+}
+
+async function clearCoachWorkoutFeed() {
+  await coachWorkoutStorage.remove(COACH_FEED_KEY);
+  const state = getState();
+  if (state.workoutMeta?.source === 'coach') {
+    await applyPreferredWorkout({ fallbackToWelcome: true });
+  }
+  return { success: true };
+}
+
+async function processCoachWorkout(entry) {
+  const state = getState();
+  const payload = entry?.payload || {};
+  const context = buildWorkoutContext(state, entry);
+  const workout = {
+    day: state.currentDay,
+    title: entry?.title || payload?.title || state.currentDay,
+    description: entry?.description || payload?.description || '',
+    blocks: Array.isArray(payload?.blocks) ? payload.blocks : toWorkoutBlocks({
+      day: state.currentDay,
+      sections: Array.isArray(payload?.sections) ? payload.sections : [],
+    }).blocks,
+  };
+
+  const applied = await applyWorkoutToState(workout, {
+    source: 'coach',
+    coachWorkoutId: entry?.id || null,
+    gymId: entry?.gymId || null,
+    gymName: entry?.gymName || '',
+    title: entry?.title || '',
+    scheduledDate: entry?.scheduledDate || '',
+    receivedAt: entry?.receivedAt || '',
+    expiresAt: entry?.expiresAt || '',
+    context: {
+      ...context,
+      activeSource: 'coach',
+    },
+  });
+
+  emit('workout:loaded', {
+    workout,
+    source: 'coach',
+    coachWorkoutId: entry?.id || null,
+  });
+
+  logDebug('📨 Treino do coach aplicado:', {
+    workoutId: entry?.id,
+    gym: entry?.gymName,
+    scheduledDate: entry?.scheduledDate,
+    blocks: applied.blocks.length,
+  });
+
+  return applied;
+}
+
+async function applyWorkoutToState(workout, meta = {}) {
+  const state = getState();
+  const blocks = await buildWorkoutBlocksWithLoads(workout, state);
+
+  setState({
+    workout: {
+      ...workout,
+      day: workout?.day || state.currentDay,
+      blocks: blocks.blocksWithLoads,
+    },
+    workoutMeta: {
+      source: meta.source || 'local',
+      weekNumber: meta.weekNumber || null,
+      coachWorkoutId: meta.coachWorkoutId || null,
+      gymId: meta.gymId || null,
+      gymName: meta.gymName || '',
+      title: meta.title || workout?.title || '',
+      scheduledDate: meta.scheduledDate || '',
+      receivedAt: meta.receivedAt || '',
+      expiresAt: meta.expiresAt || '',
+    },
+    workoutContext: meta.context || state.workoutContext,
+    ui: {
+      ...state.ui,
+      activeScreen: 'workout',
+      hasWarnings: blocks.hasWarnings,
+    }
+  });
+
+  return blocks;
+}
+
+async function buildWorkoutBlocksWithLoads(workout, state = getState()) {
+  let blocks = Array.isArray(workout?.blocks)
+    ? normalizeWorkoutBlocks(workout.blocks)
+    : normalizeWorkoutBlocks(toWorkoutBlocks(workout).blocks);
+
+  if (state.preferences.autoConvertLbs !== false && blocks.length) {
+    const { autoConvertWorkoutLbs } = await import('./core/services/loadCalculator.js');
+    blocks = blocks.map((block) => ({
+      ...block,
+      lines: Array.isArray(block.lines) ? autoConvertWorkoutLbs(block.lines) : [],
+    }));
+    logDebug('🔄 Conversão lbs→kg aplicada');
+  }
+
+  let hasWarnings = false;
+  let blocksWithLoads = blocks;
+
+  try {
+    const loadResult = calculateLoads({
+      day: workout?.day || state.currentDay,
+      sections: blocks,
+    }, state.prs, state.preferences);
+
+    if (loadResult.success && Array.isArray(loadResult.data) && loadResult.data.length) {
+      hasWarnings = loadResult.hasWarnings || false;
+      let globalIndex = 0;
+
+      blocksWithLoads = blocks.map((block) => ({
+        ...block,
+        lines: block.lines.map((line) => {
+          const result = loadResult.data[globalIndex++];
+
+          if (isCalculatedLine(line)) return line;
+          if (result?.hasPercent && result.calculatedText) {
+            return {
+              raw: result.originalLine || line,
+              calculated: result.calculatedText,
+              hasWarning: result.isWarning || false,
+              isMax: result.isMax || false,
+            };
+          }
+          if (result?.isExerciseHeader) {
+            return {
+              raw: result.originalLine || line,
+              isHeader: true,
+              exercise: result.exercise,
+            };
+          }
+          if (result?.isRest) {
+            return {
+              raw: result.originalLine || line,
+              isRest: true,
+            };
+          }
+          return line;
+        }),
+      }));
+    }
+  } catch (error) {
+    console.error('❌ Erro ao calcular cargas:', error);
+  }
+
+  return { hasWarnings, blocksWithLoads, blocks };
+}
+
+async function applyPreferredWorkout(options = {}) {
+  const state = getState();
+  const coachWorkout = await getCoachWorkoutForCurrentDay(state);
+  const context = buildWorkoutContext(state, coachWorkout);
+
+  if (coachWorkout && (!context.uploadedPlanAvailable || context.preferredSource === 'coach')) {
+    await processCoachWorkout(coachWorkout);
+    return { success: true, source: 'coach' };
+  }
+
+  const week = getActiveWeekFromState(state);
+  if (week) {
+    const applied = await processWorkoutFromWeek(week);
+    setState({
+      workoutContext: {
+        ...context,
+        activeSource: 'uploaded',
+      },
+    });
+    return { success: true, source: 'local' };
+  }
+
+  if (state.workout && state.workoutMeta?.source === 'manual') {
+    await applyWorkoutToState(state.workout, {
+      ...(state.workoutMeta || { source: 'manual' }),
+      context: {
+        ...context,
+        activeSource: 'manual',
+      },
+    });
+    return { success: true, source: 'manual' };
+  }
+
+  if (state.currentDay === 'Domingo') {
+    setState({
+      workout: null,
+      workoutMeta: null,
+      workoutContext: {
+        ...context,
+        activeSource: 'rest',
+      },
+      ui: { ...state.ui, activeScreen: 'rest' },
+    });
+    return { success: true, source: 'rest' };
+  }
+
+  if (options.fallbackToWelcome) {
+    setState({
+      workout: null,
+      workoutMeta: null,
+      workoutContext: {
+        ...context,
+        activeSource: 'empty',
+      },
+      ui: { ...state.ui, activeScreen: 'welcome' },
+    });
+  }
+
+  return { success: true, source: 'empty' };
 }
 /**
  * Copiar treino
@@ -868,57 +1048,10 @@ export async function handleImportBackup(file) {
     if (!result.success) return result;
 
     const backup = result.data;
-    const currentState = getState();
-
-    // Persiste blocos de dados em storage
-    await prsStorage.set('prs', backup.prs);
-    await prefsStorage.set('preferences', {
-      ...currentState.preferences,
-      ...backup.preferences,
-    });
-    await pdfStorage.set(PDF_KEY, backup.weeks);
-    await pdfMetaStorage.set(METADATA_KEY, {
-      uploadedAt: new Date().toISOString(),
+    await applyImportedBackupData(backup, {
       fileName: file.name,
-      weeksCount: backup.weeks.length,
-      weekNumbers: backup.weeks.map(w => w.weekNumber),
       source: 'backup-import',
     });
-
-    if (backup.activeWeekNumber) {
-      await activeWeekStorage.set('active-week', backup.activeWeekNumber);
-    } else {
-      await activeWeekStorage.remove('active-week');
-    }
-
-    if (backup.currentDay) {
-      await dayOverrideStorage.set('custom-day', backup.currentDay);
-    } else {
-      await dayOverrideStorage.remove('custom-day');
-    }
-
-    // Atualiza state em memória
-    const mergedPreferences = {
-      ...currentState.preferences,
-      ...backup.preferences,
-    };
-
-    setState({
-      weeks: backup.weeks,
-      prs: backup.prs,
-      preferences: mergedPreferences,
-      currentDay: backup.currentDay || currentState.currentDay,
-      activeWeekNumber: backup.activeWeekNumber || null,
-      ui: {
-        ...currentState.ui,
-        activeScreen: backup.weeks.length ? 'workout' : 'welcome',
-      },
-    });
-
-    if (backup.weeks.length > 0) {
-      const preferredWeek = backup.activeWeekNumber || backup.weeks[0].weekNumber;
-      await selectActiveWeek(preferredWeek);
-    }
 
     emit('backup:imported', {
       weeksCount: backup.weeks.length,
@@ -941,12 +1074,73 @@ export async function handleImportBackup(file) {
   }
 }
 
+async function applyImportedBackupData(backup, options = {}) {
+  const currentState = getState();
+  const weeks = Array.isArray(backup?.weeks) ? backup.weeks : [];
+  const mergedPreferences = {
+    ...currentState.preferences,
+    ...(backup?.preferences || {}),
+  };
+
+  await prsStorage.set('prs', backup?.prs || {});
+  await prefsStorage.set('preferences', mergedPreferences);
+  await pdfStorage.set(PDF_KEY, weeks);
+  await pdfMetaStorage.set(METADATA_KEY, {
+    uploadedAt: new Date().toISOString(),
+    fileName: options.fileName || 'remote-sync',
+    weeksCount: weeks.length,
+    weekNumbers: weeks.map((week) => week.weekNumber),
+    source: options.source || 'sync-import',
+  });
+
+  if (backup?.activeWeekNumber) {
+    await activeWeekStorage.set('active-week', backup.activeWeekNumber);
+  } else {
+    await activeWeekStorage.remove('active-week');
+  }
+
+  if (backup?.currentDay) {
+    await dayOverrideStorage.set('custom-day', backup.currentDay);
+  } else {
+    await dayOverrideStorage.remove('custom-day');
+  }
+
+  setState({
+    weeks,
+    prs: backup?.prs || {},
+    preferences: mergedPreferences,
+    currentDay: backup?.currentDay || currentState.currentDay,
+    activeWeekNumber: backup?.activeWeekNumber || null,
+    workoutMeta: null,
+    ui: {
+      ...currentState.ui,
+      activeScreen: weeks.length ? 'workout' : 'welcome',
+    },
+  });
+
+  if (weeks.length > 0) {
+    const preferredWeek = backup?.activeWeekNumber || weeks[0].weekNumber;
+    await selectActiveWeek(preferredWeek);
+  } else {
+    await applyPreferredWorkout({ fallbackToWelcome: true });
+  }
+
+  return {
+    success: true,
+    imported: {
+      weeks: weeks.length,
+      prs: Object.keys(backup?.prs || {}).length,
+    },
+  };
+}
+
 /**
  * Cadastro/Login/Assinatura/Sync - integração comercial
  */
 export const {
   handleSignUp,
   handleSignIn,
+  handleSignInWithGoogle,
   handleRefreshSession,
   handleRequestPasswordReset,
   handleConfirmPasswordReset,
@@ -966,6 +1160,8 @@ export const {
   handleGetMyGyms,
   handleAddGymMember,
   handleListGymMembers,
+  handleListGymGroups,
+  handleCreateGymGroup,
   handlePublishGymWorkout,
   handleGetWorkoutFeed,
   handleGetAccessContext,
@@ -1203,10 +1399,10 @@ export async function loadDefaultPRs(merge = true) {
  * Expõe APIs para debug no console
  */
 function exposeDebugAPIs() {
-  exposeAppApi({
+  const profile = handleGetProfile()?.data || null;
+  const api = {
     // State
     getState,
-    debugState,
 
     // PDF Multi-week
     uploadMultiWeekPdf: handleMultiWeekPdfUpload,
@@ -1230,6 +1426,7 @@ function exposeDebugAPIs() {
     importBackup: handleImportBackup,
     signUp: handleSignUp,
     signIn: handleSignIn,
+    signInWithGoogle: handleSignInWithGoogle,
     refreshSession: handleRefreshSession,
     requestPasswordReset: handleRequestPasswordReset,
     confirmPasswordReset: handleConfirmPasswordReset,
@@ -1240,6 +1437,8 @@ function exposeDebugAPIs() {
     getMyGyms: handleGetMyGyms,
     addGymMember: handleAddGymMember,
     listGymMembers: handleListGymMembers,
+    listGymGroups: handleListGymGroups,
+    createGymGroup: handleCreateGymGroup,
     publishGymWorkout: handlePublishGymWorkout,
     getWorkoutFeed: handleGetWorkoutFeed,
     getAccessContext: handleGetAccessContext,
@@ -1283,7 +1482,13 @@ function exposeDebugAPIs() {
     // Events
     on,
     emit,
-  });
+  };
+
+  if (isDeveloperProfile(profile)) {
+    api.debugState = debugState;
+  }
+
+  exposeAppApi(api);
 
   logDebug('🐛 Debug APIs expostas: window.__APP__');
 }
@@ -1307,11 +1512,13 @@ async function clearAllPdfs() {
       weeks: [], 
       activeWeekNumber: null, 
       workout: null,
+      workoutMeta: null,
       ui: { activeScreen: 'welcome' }
     });
 
     // Limpa storage de semana ativa
     await activeWeekStorage.remove('active-week');
+    await applyPreferredWorkout({ fallbackToWelcome: true });
 
     emit('pdf:cleared');
     logDebug('✅ Todos os PDFs removidos');
@@ -1324,13 +1531,35 @@ async function clearAllPdfs() {
 }
 
 async function reprocessActiveWeek() {
-  const week = getActiveWeekFromState();
-  if (week) {
-    await processWorkoutFromWeek(week);
-  }
+  await applyPreferredWorkout({ fallbackToWelcome: true });
 }
 
 function getActiveWeekFromState(state = getState()) {
   if (!state.activeWeekNumber) return null;
   return state.weeks?.find((week) => week.weekNumber === state.activeWeekNumber) || null;
+}
+
+function hasUploadedMultiDayPlan(state = getState()) {
+  const weeks = Array.isArray(state?.weeks) ? state.weeks : [];
+  let totalDays = 0;
+
+  for (const week of weeks) {
+    totalDays += Array.isArray(week?.workouts) ? week.workouts.length : 0;
+    if (totalDays > 1) return true;
+  }
+
+  return false;
+}
+
+function buildWorkoutContext(state, coachWorkout) {
+  const uploadedPlanAvailable = hasUploadedMultiDayPlan(state);
+  const coachAvailable = !!coachWorkout;
+  const preferredSource = state?.preferences?.workoutPriority === 'coach' ? 'coach' : 'uploaded';
+
+  return {
+    coachAvailable,
+    uploadedPlanAvailable,
+    canToggle: coachAvailable && uploadedPlanAvailable,
+    preferredSource,
+  };
 }

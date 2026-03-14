@@ -9,6 +9,13 @@ let state = {
   activeWeekNumber: null,           // Número da semana ativa
   currentDay: null,                 // Nome do dia (Segunda, Terça, etc)
   workout: null,                    // Treino do dia atual
+  workoutMeta: null,                // Origem/metadados do treino atual
+  workoutContext: {
+    coachAvailable: false,
+    uploadedPlanAvailable: false,
+    canToggle: false,
+    preferredSource: 'uploaded',
+  },
   
   // PRs (Personal Records)
   prs: {},                          // { "BACK SQUAT": 100, ... }
@@ -19,6 +26,7 @@ let state = {
     autoConvertLbs: true,
     showEmojis: true,
     showGoals: true,
+    workoutPriority: 'uploaded',
     theme: 'dark',
   },
   
@@ -67,12 +75,20 @@ export function resetState() {
     activeWeekNumber: null,
     currentDay: null,
     workout: null,
+    workoutMeta: null,
+    workoutContext: {
+      coachAvailable: false,
+      uploadedPlanAvailable: false,
+      canToggle: false,
+      preferredSource: 'uploaded',
+    },
     prs: {},
     preferences: {
       showLbsConversion: true,
       autoConvertLbs: true,
       showEmojis: true,
       showGoals: true,
+      workoutPriority: 'uploaded',
       theme: 'dark',
     },
     ui: {

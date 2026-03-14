@@ -1,0 +1,243 @@
+@media (max-width: 640px) {
+  .app-header {
+    padding-top: calc(var(--safe-top) + 10px);
+    padding-bottom: 10px;
+  }
+
+  .header-content {
+    gap: 8px;
+  }
+
+  .app-title {
+    font-size: 1.28rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .day-controls {
+    grid-template-columns: 84px 1fr;
+  }
+
+  .week-chips-container {
+    top: calc(var(--safe-top) + 96px);
+    padding: 8px 0 6px;
+  }
+
+  .app-main {
+    padding: 14px 12px calc(var(--nav-height) + 108px + var(--safe-bottom));
+  }
+
+  .bottom-tools {
+    padding: 0 12px;
+    bottom: calc(var(--nav-height) + 10px + var(--safe-bottom));
+  }
+
+  .quick-action {
+    flex-basis: 138px;
+    padding: 11px 12px;
+  }
+
+  .bottom-nav {
+    padding-inline: 12px;
+  }
+
+  .bottom-navItems {
+    gap: 6px;
+    padding: 6px;
+    border-radius: 22px;
+  }
+
+  .nav-btn {
+    min-height: 52px;
+    border-radius: 16px;
+  }
+
+  .pr-item,
+  .account-summaryGrid,
+  .coach-selectionPanels,
+  .trend-grid,
+  .coach-grid,
+  .admin-stats,
+  .page-actions,
+  .admin-toolbar,
+  .account-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .modal-container,
+  .modal-container-auth {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 26px 26px 0 0;
+    border-bottom: 0;
+  }
+
+  body[data-page="account"] .app-main {
+    padding: 0 0 calc(var(--nav-height) + 20px + var(--safe-bottom));
+  }
+
+  body[data-page="account"] .workout-container {
+    gap: 0;
+  }
+
+  body[data-page="history"] .workout-container,
+  body[data-page="competitions"] .workout-container {
+    gap: 10px;
+  }
+
+  body[data-page="history"] .workout-header,
+  body[data-page="competitions"] .workout-header {
+    position: sticky;
+    top: calc(var(--safe-top) + 58px);
+    z-index: 20;
+    padding: 10px 12px;
+    background: linear-gradient(180deg, rgba(11, 14, 18, 0.96), rgba(11, 14, 18, 0.88));
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 0;
+  }
+
+  body[data-page="history"] .page-section,
+  body[data-page="competitions"] .page-section {
+    border-radius: 22px 22px 0 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+
+  body[data-page="account"] .workout-header {
+    position: sticky;
+    top: calc(var(--safe-top) + 58px);
+    z-index: 20;
+    padding: 12px 16px;
+    background: linear-gradient(180deg, rgba(11, 14, 18, 0.96), rgba(11, 14, 18, 0.88));
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 0;
+  }
+
+  body[data-page="account"] .account-section,
+  body[data-page="account"] .coach-card,
+  body[data-page="account"] .account-heroIdentity,
+  body[data-page="account"] .account-planCard,
+  body[data-page="account"] .summary-tile {
+    border-radius: 22px 22px 0 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+
+  body[data-page="account"] .page-section {
+    overflow: visible;
+  }
+
+  body[data-page="account"] .account-section,
+  body[data-page="account"] .coach-card,
+  body[data-page="account"] .account-hero,
+  body[data-page="account"] .account-summaryGrid,
+  body[data-page="account"] .settings-actions,
+  body[data-page="account"] .account-actions {
+    margin: 0;
+    padding-inline: 16px;
+  }
+
+  body[data-page="account"] .account-hero,
+  body[data-page="account"] .account-summaryGrid,
+  body[data-page="account"] .settings-actions,
+  body[data-page="account"] .account-actions {
+    display: grid;
+    gap: 10px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+
+  body[data-page="account"] .account-section {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+}
+
+@media (max-width: 420px) {
+  :root {
+    --nav-height: 68px;
+  }
+
+  .app-header {
+    padding-inline: 12px;
+  }
+
+  .header-topline {
+    align-items: flex-start;
+  }
+
+  .header-badge {
+    font-size: 0.64rem;
+    padding-inline: 8px;
+  }
+
+  .header-account-btn {
+    max-width: 132px;
+    min-height: 34px;
+    font-size: 0.72rem;
+  }
+
+  .app-title {
+    font-size: 1.14rem;
+  }
+
+  .day-controls {
+    grid-template-columns: 76px 1fr;
+    gap: 8px;
+  }
+
+  .day-autoBtn,
+  .day-select,
+  .btn-secondary,
+  .btn-primary,
+  .add-input,
+  .search-input,
+  .pr-input {
+    min-height: 42px;
+  }
+
+  .week-chip,
+  .week-chip-empty {
+    min-height: 34px;
+    padding-inline: 12px;
+    font-size: 0.74rem;
+  }
+
+  .workout-block,
+  .empty-state,
+  .auth-intro,
+  .reset-codePreview,
+  .summary-tile,
+  .account-section,
+  .account-heroIdentity,
+  .account-planCard,
+  .trend-card,
+  .coach-audienceBlock,
+  .coach-selectionPanel,
+  .coach-listItem,
+  .pr-item,
+  .admin-userRow {
+    padding: 13px;
+  }
+
+  .quick-action {
+    flex-basis: 128px;
+  }
+
+  .quick-actionLabel {
+    font-size: 0.82rem;
+  }
+
+  .nav-label {
+    font-size: 0.62rem;
+  }
+}

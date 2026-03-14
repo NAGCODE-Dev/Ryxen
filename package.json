@@ -6,6 +6,12 @@
   "scripts": {
     "build": "node scripts/build-static.mjs",
     "build:prod": "node scripts/build-static.mjs",
-    "test": "node --test __tests__/*.test.mjs"
+    "test": "node --test __tests__/*.test.mjs",
+    "seed:coach-trial": "node scripts/seed-coach-trial.mjs",
+    "smoke:coach-trial": "node scripts/smoke-coach-trial.mjs"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0"
   }
 }

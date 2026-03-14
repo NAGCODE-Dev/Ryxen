@@ -8,6 +8,9 @@ const STORAGE_KEY = 'crossapp-runtime-config';
 const defaults = {
   apiBaseUrl: '/api',
   telemetryEnabled: true,
+  auth: {
+    googleClientId: '',
+  },
   billing: {
     provider: 'stripe', // stripe | mercadopago
     successUrl: '',

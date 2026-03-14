@@ -1,0 +1,468 @@
+.workout-container {
+  display: grid;
+  gap: 14px;
+}
+
+.page-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.page-section {
+  overflow: hidden;
+}
+
+.workout-header {
+  display: grid;
+  gap: 10px;
+}
+
+.workout-title,
+.section-title {
+  font-size: 1.1rem;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.page-subtitle,
+.account-hint,
+.empty-state p,
+.athlete-accessBannerText,
+.note-text,
+.rest-text {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.workout-warnings,
+.page-actions,
+.pr-actions,
+.settings-actions,
+.auth-switch,
+.coach-pillRow,
+.coach-tabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.warning-badge,
+.coach-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.coach-pill.isGood,
+.athlete-accessBanner.isGood {
+  color: var(--ok);
+}
+
+.coach-pill.isWarn,
+.athlete-accessBanner.isWarn {
+  color: var(--warn);
+}
+
+.coach-pill.isActive {
+  color: var(--text-primary);
+  border-color: var(--line-strong);
+  background: var(--bg-surface-2);
+}
+
+.workout-sourceToggle {
+  margin-top: -2px;
+}
+
+.athlete-accessBanner {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.athlete-accessBannerTitle {
+  margin-bottom: 4px;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.workout-block,
+.workout-section-header,
+.workout-rest,
+.workout-note,
+.coach-card,
+.account-card,
+.summary-tile,
+.trend-card,
+.admin-statCard,
+.admin-userRow,
+.empty-state,
+.auth-intro,
+.reset-codePreview {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.workout-block,
+.empty-state,
+.auth-intro,
+.reset-codePreview {
+  padding: 16px;
+}
+
+.workout-section-header,
+.workout-rest,
+.workout-note {
+  padding: 14px 16px;
+}
+
+.workout-line {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-surface-2);
+}
+
+.workout-line:last-child {
+  margin-bottom: 0;
+}
+
+.workout-line.is-active {
+  border-color: var(--line-strong);
+  background: var(--bg-surface-3);
+}
+
+.workout-line.is-done {
+  opacity: 0.54;
+}
+
+.line-check {
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+}
+
+.line-body {
+  display: grid;
+  gap: 6px;
+}
+
+.exercise-text,
+.rest-content,
+.workout-note {
+  font-size: 0.92rem;
+  line-height: 1.48;
+}
+
+.load-calc {
+  color: var(--ok);
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.load-warning {
+  color: var(--warn);
+}
+
+.wod-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.wod-progress {
+  min-height: 38px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+.wod-stickyNext {
+  position: sticky;
+  bottom: 104px;
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10;
+}
+
+.btn-timer {
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-primary);
+}
+
+.empty-state {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.empty-icon,
+.rest-icon,
+.note-icon {
+  font-size: 1.5rem;
+}
+
+.pr-list,
+.coach-list,
+.admin-userList,
+.settings-group,
+.auth-form,
+.pr-add,
+.google-signinBlock,
+.auth-resetForm,
+.modal-body-auth,
+.trend-grid,
+.coach-grid,
+.admin-stats {
+  display: grid;
+  gap: 12px;
+}
+
+.pr-item,
+.coach-listItem,
+.admin-userRow {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-surface-2);
+}
+
+.pr-item {
+  grid-template-columns: 1fr 74px 40px;
+  align-items: center;
+}
+
+.pr-label,
+.coach-cardTitle,
+.admin-userName {
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.coach-listItem span,
+.admin-userEmail,
+.admin-userMeta {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.pr-remove {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,141,141,0.28);
+  background: rgba(255,141,141,0.08);
+  color: var(--danger);
+}
+
+.summary-tile,
+.account-section,
+.account-heroIdentity,
+.account-planCard,
+.trend-card,
+.coach-audienceBlock,
+.coach-selectionPanel {
+  padding: 16px;
+}
+
+.summary-label,
+.section-kicker,
+.account-heroEyebrow,
+.account-planLabel,
+.coach-selectionTitle,
+.coach-audienceHead,
+.admin-statLabel {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.summary-value,
+.account-planValue,
+.admin-statValue {
+  display: block;
+  margin-top: 6px;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.account-summaryGrid,
+.coach-selectionPanels,
+.trend-grid,
+.coach-grid,
+.admin-stats {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.coach-cardWide,
+.account-section,
+.account-hero,
+.account-summaryGrid-compact {
+  grid-column: 1 / -1;
+}
+
+.coach-audienceHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.coach-selectionGrid {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.coach-checkRow,
+.coach-radioPill,
+.settings-label {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-surface-2);
+}
+
+.coach-checkRow span,
+.coach-radioPill span {
+  display: grid;
+  gap: 4px;
+}
+
+.coach-checkRow small,
+.account-planMeta,
+.trend-meta span,
+.trend-cardHead span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.trend-cardHead,
+.trend-meta,
+.account-sectionHead,
+.account-adminHead,
+.admin-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
+.trend-chart {
+  display: block;
+  width: 100%;
+  height: 56px;
+}
+
+.sheet-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  animation: skeleton-shimmer 1.1s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.skeleton-line {
+  height: 10px;
+  width: 72%;
+}
+
+.skeleton-line-lg {
+  height: 12px;
+  width: 56%;
+}
+
+.skeleton-line-sm {
+  width: 34%;
+}
+
+.skeleton-chart {
+  height: 56px;
+  border-radius: 18px;
+}
+
+.isSkeleton .trend-cardHead,
+.isSkeleton .trend-meta {
+  align-items: center;
+}
+
+.trend-empty {
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+@supports (content-visibility: auto) {
+  .page-section,
+  .workout-block,
+  .workout-line,
+  .coach-card,
+  .account-card,
+  .summary-tile,
+  .trend-card,
+  .admin-userRow,
+  .pr-item,
+  .coach-listItem,
+  .empty-state {
+    content-visibility: auto;
+    contain-intrinsic-size: 140px;
+  }
+
+  .trend-card,
+  .account-section,
+  .coach-cardWide,
+  .account-hero,
+  .account-summaryGrid,
+  .coach-selectionPanels {
+    contain-intrinsic-size: 220px;
+  }
+}
