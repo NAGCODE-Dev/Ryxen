@@ -1,0 +1,10 @@
+backend
+docs
+docker-compose.yml
+nginx.conf
+6.pdf
+7.pdf
+*.pdf
+wget-log
+__tests__
+.github

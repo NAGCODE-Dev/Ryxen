@@ -26,3 +26,14 @@ export async function getBenchmarkLeaderboard(slug, params = {}) {
   const suffix = search.toString() ? `?${search.toString()}` : '';
   return apiRequest(`/leaderboards/benchmarks/${slug}${suffix}`, { method: 'GET' });
 }
+
+export async function getCompetitionLeaderboard(competitionId) {
+  return apiRequest(`/leaderboards/competitions/${competitionId}`, { method: 'GET' });
+}
+
+export async function getEventLeaderboard(eventId, params = {}) {
+  const search = new URLSearchParams();
+  if (params.limit) search.set('limit', String(params.limit));
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return apiRequest(`/leaderboards/events/${eventId}${suffix}`, { method: 'GET' });
+}

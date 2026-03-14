@@ -84,6 +84,8 @@ Endpoints principais:
 - `POST /competitions/:competitionId/events`
 - `POST /benchmarks/:slug/results`
 - `GET /leaderboards/benchmarks/:slug`
+- `GET /leaderboards/events/:eventId`
+- `GET /leaderboards/competitions/:competitionId`
 
 Parâmetros úteis em `GET /benchmarks`:
 
@@ -103,6 +105,12 @@ Regra de acesso:
 Frontend dedicado:
 
 - Coach Portal: `http://localhost:8000/coach/`
+
+Deploy recomendado:
+
+- frontend no Vercel
+- backend no Railway
+- detalhes em `docs/deploy/VERCEL_RAILWAY.md`
 
 Seeds:
 

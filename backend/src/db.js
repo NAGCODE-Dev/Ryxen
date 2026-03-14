@@ -156,9 +156,20 @@ export async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
+    CREATE TABLE IF NOT EXISTS athlete_pr_records (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      exercise TEXT NOT NULL,
+      value NUMERIC NOT NULL,
+      unit TEXT NOT NULL DEFAULT 'kg',
+      source TEXT NOT NULL DEFAULT 'manual',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+
     CREATE INDEX IF NOT EXISTS idx_competitions_starts_at ON competitions(starts_at DESC);
     CREATE INDEX IF NOT EXISTS idx_competition_events_date ON competition_events(event_date DESC);
     CREATE INDEX IF NOT EXISTS idx_benchmark_results_slug ON benchmark_results(benchmark_slug, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_athlete_pr_records_user_exercise ON athlete_pr_records(user_id, exercise, created_at DESC);
   `);
 
   for (const benchmark of BENCHMARK_SEED) {

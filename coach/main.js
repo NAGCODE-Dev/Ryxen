@@ -24,8 +24,11 @@ function App() {
     benchmarks: [],
     benchmarkPagination: { total: 0, page: 1, limit: 30, pages: 1 },
     leaderboard: { benchmark: null, results: [] },
+    competitionLeaderboard: { competition: null, summary: null, leaderboard: [], events: [] },
+    eventLeaderboard: { competition: null, event: null, benchmark: null, results: [] },
     members: [],
     selectedGymId: null,
+    insights: null,
   });
   const [forms, setForms] = useState({
     gymName: '',
@@ -49,6 +52,8 @@ function App() {
     eventDate: '',
     eventBenchmarkSlug: '',
     leaderboardSlug: 'fran',
+    competitionLeaderboardId: '',
+    eventLeaderboardId: '',
     resultBenchmarkSlug: '',
     resultScore: '',
     resultNotes: '',
@@ -104,9 +109,14 @@ function App() {
       const gyms = gymsRes?.gyms || [];
       const selectedGymId = nextGymId || dashboard.selectedGymId || gyms[0]?.id || null;
       let members = [];
+      let insights = null;
       if (selectedGymId) {
-        const membersRes = await apiRequest(`/gyms/${selectedGymId}/memberships`);
+        const [membersRes, insightsRes] = await Promise.all([
+          apiRequest(`/gyms/${selectedGymId}/memberships`),
+          apiRequest(`/gyms/${selectedGymId}/insights`),
+        ]);
         members = membersRes?.memberships || [];
+        insights = insightsRes || null;
       }
 
       setDashboard({
@@ -119,8 +129,11 @@ function App() {
         benchmarks: benchmarksRes?.benchmarks || [],
         benchmarkPagination: benchmarksRes?.pagination || { total: 0, page: 1, limit: 30, pages: 1 },
         leaderboard: dashboard.leaderboard || { benchmark: null, results: [] },
+        competitionLeaderboard: dashboard.competitionLeaderboard || { competition: null, summary: null, leaderboard: [], events: [] },
+        eventLeaderboard: dashboard.eventLeaderboard || { competition: null, event: null, benchmark: null, results: [] },
         members,
         selectedGymId,
+        insights,
       });
     } catch (err) {
       setError(err.message || 'Erro ao carregar portal');
@@ -385,6 +398,50 @@ function App() {
     }
   }
 
+  async function handleLoadCompetitionLeaderboard() {
+    if (!forms.competitionLeaderboardId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiRequest(`/leaderboards/competitions/${forms.competitionLeaderboardId}`);
+      setDashboard((prev) => ({
+        ...prev,
+        competitionLeaderboard: {
+          competition: res?.competition || null,
+          summary: res?.summary || null,
+          leaderboard: res?.leaderboard || [],
+          events: res?.events || [],
+        },
+      }));
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar ranking da competição');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLoadEventLeaderboard() {
+    if (!forms.eventLeaderboardId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await apiRequest(`/leaderboards/events/${forms.eventLeaderboardId}?limit=30`);
+      setDashboard((prev) => ({
+        ...prev,
+        eventLeaderboard: {
+          competition: res?.competition || null,
+          event: res?.event || null,
+          benchmark: res?.benchmark || null,
+          results: res?.results || [],
+        },
+      }));
+    } catch (err) {
+      setError(err.message || 'Erro ao carregar ranking do evento');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function handleLogout() {
     localStorage.removeItem(STORAGE_KEYS.token);
     localStorage.removeItem(STORAGE_KEYS.profile);
@@ -400,8 +457,11 @@ function App() {
         benchmarks: [],
         benchmarkPagination: { total: 0, page: 1, limit: 30, pages: 1 },
         leaderboard: { benchmark: null, results: [] },
+        competitionLeaderboard: { competition: null, summary: null, leaderboard: [], events: [] },
+        eventLeaderboard: { competition: null, event: null, benchmark: null, results: [] },
         members: [],
         selectedGymId: null,
+        insights: null,
       });
   }
 
@@ -505,7 +565,9 @@ function App() {
         statCard('Plano', planName),
         statCard('Status', planStatus),
         statCard('Gyms', String(dashboard.gyms.length)),
-        statCard('Treinos no feed', String(dashboard.feed.length))
+        statCard('Treinos no feed', String(dashboard.feed.length)),
+        statCard('Atletas ativos', String(dashboard.insights?.stats?.athletes || 0)),
+        statCard('Resultados', String(dashboard.insights?.stats?.results || 0))
       ),
       React.createElement('section', { className: 'plan-grid' },
         planCard({
@@ -595,6 +657,25 @@ function App() {
             ),
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym }, 'Adicionar membro')
           )
+        ),
+        React.createElement('div', { className: 'card' },
+          React.createElement('h3', null, selectedGym ? `Insights de ${selectedGym.name}` : 'Insights do gym'),
+          dashboard.insights
+            ? React.createElement('div', { className: 'stack list-block' },
+                React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'Programação'),
+                  React.createElement('span', null, `${dashboard.insights.stats?.workouts || 0} treino(s) no total • ${dashboard.insights.stats?.workoutsNext7Days || 0} nos próximos 7 dias`)
+                ),
+                React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'Competições'),
+                  React.createElement('span', null, `${dashboard.insights.stats?.competitions || 0} no total • ${dashboard.insights.stats?.upcomingCompetitions || 0} próximas`)
+                ),
+                React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'Benchmarks mais usados'),
+                  React.createElement('span', null, (dashboard.insights.topBenchmarks || []).length ? dashboard.insights.topBenchmarks.map((item) => `${item.name} (${item.total})`).join(' • ') : 'Sem volume suficiente ainda')
+                )
+              )
+            : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.')
         ),
         React.createElement('div', { className: 'card wide' },
           React.createElement('h3', null, 'Publicar treino'),
@@ -836,6 +917,66 @@ function App() {
                 onChange: (e) => setForms((prev) => ({ ...prev, resultNotes: e.target.value })),
               }),
               React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !forms.resultBenchmarkSlug || !forms.resultScore }, 'Salvar resultado')
+            )
+          ),
+          React.createElement('div', { className: 'grid dual-grid' },
+            React.createElement('div', { className: 'card nested-card stack' },
+              React.createElement('h4', null, 'Ranking da competição'),
+              React.createElement('select', {
+                className: 'field',
+                value: forms.competitionLeaderboardId,
+                onChange: (e) => setForms((prev) => ({ ...prev, competitionLeaderboardId: e.target.value })),
+              },
+                React.createElement('option', { value: '' }, 'Selecionar competição'),
+                dashboard.competitions.map((competition) =>
+                  React.createElement('option', { key: competition.id, value: competition.id }, competition.title)
+                )
+              ),
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleLoadCompetitionLeaderboard, disabled: loading || !forms.competitionLeaderboardId }, 'Carregar ranking'),
+              dashboard.competitionLeaderboard?.competition
+                ? React.createElement('div', { className: 'stack list-block' },
+                    React.createElement('strong', null, dashboard.competitionLeaderboard.competition.title),
+                    React.createElement('span', { className: 'muted' }, `${dashboard.competitionLeaderboard.summary?.events || 0} evento(s) • ${dashboard.competitionLeaderboard.summary?.athletesRanked || 0} atleta(s)`),
+                    (dashboard.competitionLeaderboard.leaderboard || []).map((result) =>
+                      React.createElement('div', { key: result.userId, className: 'list-item static leaderboard-item' },
+                        React.createElement('strong', null, `#${result.rank} ${result.name || result.email}`),
+                        React.createElement('span', null, `${result.totalPoints} pts • ${result.eventsCompleted} evento(s)`)
+                      )
+                    ),
+                    !(dashboard.competitionLeaderboard.leaderboard || []).length ? React.createElement('p', { className: 'muted' }, 'Sem resultados para esta competição.') : null
+                  )
+                : React.createElement('p', { className: 'muted' }, 'Selecione uma competição para ver o ranking agregado.')
+            ),
+            React.createElement('div', { className: 'card nested-card stack' },
+              React.createElement('h4', null, 'Ranking do evento'),
+              React.createElement('select', {
+                className: 'field',
+                value: forms.eventLeaderboardId,
+                onChange: (e) => setForms((prev) => ({ ...prev, eventLeaderboardId: e.target.value })),
+              },
+                React.createElement('option', { value: '' }, 'Selecionar evento'),
+                dashboard.competitions.flatMap((competition) =>
+                  Array.isArray(competition.events)
+                    ? competition.events.map((eventItem) =>
+                        React.createElement('option', { key: eventItem.id, value: eventItem.id }, `${competition.title} • ${eventItem.title}`)
+                      )
+                    : []
+                )
+              ),
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleLoadEventLeaderboard, disabled: loading || !forms.eventLeaderboardId }, 'Carregar evento'),
+              dashboard.eventLeaderboard?.event
+                ? React.createElement('div', { className: 'stack list-block' },
+                    React.createElement('strong', null, dashboard.eventLeaderboard.event.title),
+                    React.createElement('span', { className: 'muted' }, `${dashboard.eventLeaderboard.competition?.title || ''}${dashboard.eventLeaderboard.benchmark?.name ? ` • ${dashboard.eventLeaderboard.benchmark.name}` : ''}`),
+                    (dashboard.eventLeaderboard.results || []).map((result) =>
+                      React.createElement('div', { key: result.id, className: 'list-item static leaderboard-item' },
+                        React.createElement('strong', null, `#${result.rank} ${result.name || result.email}`),
+                        React.createElement('span', null, `${result.score_display}${result.points ? ` • ${result.points} pts` : ''}`)
+                      )
+                    ),
+                    !(dashboard.eventLeaderboard.results || []).length ? React.createElement('p', { className: 'muted' }, 'Sem resultados para este evento.') : null
+                  )
+                : React.createElement('p', { className: 'muted' }, 'Selecione um evento para ver o ranking.')
             )
           )
         )

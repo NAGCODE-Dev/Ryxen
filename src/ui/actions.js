@@ -1,7 +1,29 @@
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
 
-  async function loadCoachPortalSnapshot() {
+  const emptyCoachPortal = () => ({
+    subscription: null,
+    entitlements: [],
+    gymAccess: [],
+    gyms: [],
+    benchmarks: [],
+    benchmarkQuery: '',
+    benchmarkCategory: '',
+    feed: [],
+    selectedGymId: null,
+    members: [],
+    insights: null,
+  });
+
+  const emptyAthleteOverview = () => ({
+    stats: null,
+    recentResults: [],
+    upcomingCompetitions: [],
+    recentWorkouts: [],
+    gymAccess: [],
+  });
+
+  async function loadCoachPortalSnapshot(selectedGymId) {
     try {
       const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
         window.__APP__?.getSubscriptionStatus?.(),
@@ -12,20 +34,96 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         window.__APP__?.getWorkoutFeed?.(),
       ]);
 
+      const gyms = gymsResult?.data?.gyms || [];
+      const resolvedGymId = selectedGymId || gyms[0]?.id || null;
+      const [membersResult, insightsResult] = resolvedGymId
+        ? await Promise.all([
+            window.__APP__?.listGymMembers?.(resolvedGymId),
+            window.__APP__?.getGymInsights?.(resolvedGymId),
+          ])
+        : [null, null];
+
       return {
         subscription: subscriptionResult?.data || null,
         entitlements: entitlementsResult?.data?.entitlements || [],
         gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
-        gyms: gymsResult?.data?.gyms || [],
+        gyms,
         benchmarks: benchmarksResult?.data?.benchmarks || [],
         benchmarkQuery: '',
         benchmarkCategory: '',
         feed: feedResult?.data?.workouts || [],
-        selectedGymId: (gymsResult?.data?.gyms || [])[0]?.id || null,
-        members: [],
+        selectedGymId: resolvedGymId,
+        members: membersResult?.data?.memberships || [],
+        insights: insightsResult?.data || null,
       };
     } catch {
-      return { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], benchmarkQuery: '', benchmarkCategory: '', feed: [], selectedGymId: null, members: [] };
+      return emptyCoachPortal();
+    }
+  }
+
+  async function loadAthleteOverview() {
+    try {
+      const result = await window.__APP__?.getAthleteDashboard?.();
+      return result?.data || emptyAthleteOverview();
+    } catch {
+      return emptyAthleteOverview();
+    }
+  }
+
+  async function loadAccountSnapshot(profile, selectedGymId) {
+    const nextState = {
+      coachPortal: emptyCoachPortal(),
+      athleteOverview: emptyAthleteOverview(),
+      admin: { overview: null, query: '' },
+    };
+
+    if (!profile?.email) {
+      return nextState;
+    }
+
+    try {
+      const currentPrs = window.__APP__?.getState?.()?.prs || {};
+      if (currentPrs && Object.keys(currentPrs).length) {
+        await window.__APP__?.syncAthletePrSnapshot?.(currentPrs);
+      }
+    } catch {}
+
+    const [coachPortal, athleteOverview] = await Promise.all([
+      loadCoachPortalSnapshot(selectedGymId),
+      loadAthleteOverview(),
+    ]);
+
+    nextState.coachPortal = coachPortal;
+    nextState.athleteOverview = athleteOverview;
+
+    if (profile?.is_admin || profile?.isAdmin) {
+      try {
+        const adminResult = await window.__APP__?.getAdminOverview?.({ limit: 25 });
+        nextState.admin = { overview: adminResult?.data || null, query: '' };
+      } catch {
+        nextState.admin = { overview: null, query: '' };
+      }
+    }
+
+    return nextState;
+  }
+
+  async function syncAthletePrIfAuthenticated(exercise, value) {
+    const profile = window.__APP__?.getProfile?.()?.data || null;
+    if (!profile?.email) return null;
+
+    try {
+      await window.__APP__?.logAthletePr?.({
+        exercise,
+        value,
+        unit: 'kg',
+        source: 'app',
+      });
+      const athleteOverview = await loadAthleteOverview();
+      await patchUiState((s) => ({ ...s, athleteOverview }));
+      return athleteOverview;
+    } catch {
+      return null;
     }
   }
   
@@ -240,52 +338,8 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const modal = el.dataset.modal || null;
           if (modal === 'auth') {
             const profile = window.__APP__?.getProfile?.()?.data || null;
-            const nextState = { modal };
-            try {
-              const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
-                window.__APP__?.getSubscriptionStatus?.(),
-                window.__APP__?.getEntitlements?.(),
-                window.__APP__?.getAccessContext?.(),
-                window.__APP__?.getMyGyms?.(),
-                window.__APP__?.getBenchmarks?.({ limit: 20 }),
-                window.__APP__?.getWorkoutFeed?.(),
-              ]);
-              nextState.coachPortal = {
-                subscription: subscriptionResult?.data || null,
-                entitlements: entitlementsResult?.data?.entitlements || [],
-                gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
-                gyms: gymsResult?.data?.gyms || [],
-                benchmarks: benchmarksResult?.data?.benchmarks || [],
-                benchmarkQuery: '',
-                benchmarkCategory: '',
-                feed: feedResult?.data?.workouts || [],
-                selectedGymId: (gymsResult?.data?.gyms || [])[0]?.id || null,
-                members: [],
-              };
-            } catch {
-              nextState.coachPortal = { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], benchmarkQuery: '', benchmarkCategory: '', feed: [], selectedGymId: null, members: [] };
-            }
-            if (profile?.is_admin || profile?.isAdmin) {
-              try {
-                const adminResult = await window.__APP__?.getAdminOverview?.({ limit: 25 });
-                nextState.admin = { overview: adminResult?.data || null, query: '' };
-              } catch {
-                nextState.admin = { overview: null, query: '' };
-              }
-            }
-            await setUiState(nextState);
-            if (nextState.coachPortal?.selectedGymId) {
-              try {
-                const membersResult = await window.__APP__?.listGymMembers?.(nextState.coachPortal.selectedGymId);
-                await patchUiState((s) => ({
-                  ...s,
-                  coachPortal: {
-                    ...(s.coachPortal || {}),
-                    members: membersResult?.data?.memberships || [],
-                  },
-                }));
-              } catch {}
-            }
+            const snapshot = await loadAccountSnapshot(profile);
+            await setUiState({ modal, ...snapshot });
           } else {
             await setUiState({ modal });
           }
@@ -298,6 +352,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
         case 'modal:close': {
           await setUiState({ modal: null });
+          await rerender();
+          return;
+        }
+
+        case 'page:set': {
+          const page = String(el.dataset.page || 'today');
+          await patchUiState((s) => ({ ...s, currentPage: page }));
           await rerender();
           return;
         }
@@ -370,8 +431,9 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             throw new Error('Falha ao autenticar');
           }
 
-          const coachPortal = await loadCoachPortalSnapshot();
-          await setUiState({ modal: null, authMode: 'signin', coachPortal });
+          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+          const snapshot = await loadAccountSnapshot(profile);
+          await setUiState({ modal: null, authMode: 'signin', ...snapshot });
           toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
           await rerender();
           return;
@@ -437,8 +499,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           if (!result?.token && !result?.user) {
             throw new Error('Falha ao atualizar sessão');
           }
-          const coachPortal = await loadCoachPortalSnapshot();
-          await patchUiState((s) => ({ ...s, coachPortal }));
+          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+          const ui = getUiState?.() || {};
+          const snapshot = await loadAccountSnapshot(profile, ui?.coachPortal?.selectedGymId || null);
+          await patchUiState((s) => ({ ...s, ...snapshot }));
           toast('Sessão atualizada');
           await rerender();
           return;
@@ -453,45 +517,20 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         case 'billing:activate-local': {
           const plan = el.dataset.plan || 'coach';
           await window.__APP__.activateMockSubscription(plan);
-          const [subscriptionResult, entitlementsResult] = await Promise.all([
-            window.__APP__?.getSubscriptionStatus?.(),
-            window.__APP__?.getEntitlements?.(),
-          ]);
-          await patchUiState((s) => ({
-            ...s,
-            coachPortal: {
-              ...(s.coachPortal || {}),
-              subscription: subscriptionResult?.data || null,
-              entitlements: entitlementsResult?.data?.entitlements || [],
-              gymAccess: entitlementsResult?.data?.gymAccess || [],
-            },
-          }));
+          const profile = window.__APP__?.getProfile?.()?.data || null;
+          const ui = getUiState?.() || {};
+          const snapshot = await loadAccountSnapshot(profile, ui?.coachPortal?.selectedGymId || null);
+          await patchUiState((s) => ({ ...s, ...snapshot }));
           toast('Plano Coach local ativado');
           await rerender();
           return;
         }
 
         case 'coach:refresh': {
-          const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
-            window.__APP__?.getSubscriptionStatus?.(),
-            window.__APP__?.getEntitlements?.(),
-            window.__APP__?.getAccessContext?.(),
-            window.__APP__?.getMyGyms?.(),
-            window.__APP__?.getBenchmarks?.({ limit: 20 }),
-            window.__APP__?.getWorkoutFeed?.(),
-          ]);
-          await patchUiState((s) => ({
-            ...s,
-            coachPortal: {
-              ...(s.coachPortal || {}),
-              subscription: subscriptionResult?.data || null,
-              entitlements: entitlementsResult?.data?.entitlements || [],
-              gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
-              gyms: gymsResult?.data?.gyms || [],
-              benchmarks: benchmarksResult?.data?.benchmarks || [],
-              feed: feedResult?.data?.workouts || [],
-            },
-          }));
+          const profile = window.__APP__?.getProfile?.()?.data || null;
+          const ui = getUiState?.() || {};
+          const snapshot = await loadAccountSnapshot(profile, ui?.coachPortal?.selectedGymId || null);
+          await patchUiState((s) => ({ ...s, ...snapshot }));
           toast('Coach Portal atualizado');
           await rerender();
           return;
@@ -500,13 +539,17 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         case 'coach:select-gym': {
           const gymId = Number(el.dataset.gymId);
           if (!Number.isFinite(gymId)) return;
-          const membersResult = await window.__APP__.listGymMembers(gymId);
+          const [membersResult, insightsResult] = await Promise.all([
+            window.__APP__.listGymMembers(gymId),
+            window.__APP__?.getGymInsights?.(gymId),
+          ]);
           await patchUiState((s) => ({
             ...s,
             coachPortal: {
               ...(s.coachPortal || {}),
               selectedGymId: gymId,
               members: membersResult?.data?.memberships || [],
+              insights: insightsResult?.data || null,
             },
           }));
           await rerender();
@@ -518,14 +561,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const slug = String(root.querySelector('#coach-gym-slug')?.value || '').trim();
           if (!name || !slug) throw new Error('Informe nome e slug do gym');
           const result = await window.__APP__.createGym({ name, slug });
-          const gymsResult = await window.__APP__.getMyGyms();
+          const snapshot = await loadCoachPortalSnapshot(result?.data?.gym?.id || null);
           await patchUiState((s) => ({
             ...s,
-            coachPortal: {
-              ...(s.coachPortal || {}),
-              gyms: gymsResult?.data?.gyms || [],
-              selectedGymId: result?.data?.gym?.id || (gymsResult?.data?.gyms || [])[0]?.id || null,
-            },
+            coachPortal: snapshot,
           }));
           toast('Gym criado');
           await rerender();
@@ -540,12 +579,16 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const role = String(root.querySelector('#coach-member-role')?.value || 'athlete');
           if (!email) throw new Error('Informe o email do membro');
           await window.__APP__.addGymMember(gymId, { email, role });
-          const membersResult = await window.__APP__.listGymMembers(gymId);
+          const [membersResult, insightsResult] = await Promise.all([
+            window.__APP__.listGymMembers(gymId),
+            window.__APP__?.getGymInsights?.(gymId),
+          ]);
           await patchUiState((s) => ({
             ...s,
             coachPortal: {
               ...(s.coachPortal || {}),
               members: membersResult?.data?.memberships || [],
+              insights: insightsResult?.data || null,
             },
           }));
           toast('Membro adicionado');
@@ -568,12 +611,18 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             ...(benchmarkSlug ? { benchmarkSlug } : {}),
           };
           await window.__APP__.publishGymWorkout(gymId, { title, scheduledDate, payload });
-          const feedResult = await window.__APP__.getWorkoutFeed();
+          const [feedResult, insightsResult, athleteOverview] = await Promise.all([
+            window.__APP__.getWorkoutFeed(),
+            window.__APP__?.getGymInsights?.(gymId),
+            window.__APP__?.getAthleteDashboard?.(),
+          ]);
           await patchUiState((s) => ({
             ...s,
+            athleteOverview: athleteOverview?.data || s.athleteOverview,
             coachPortal: {
               ...(s.coachPortal || {}),
               feed: feedResult?.data?.workouts || [],
+              insights: insightsResult?.data || null,
             },
           }));
           toast('Treino publicado');
@@ -617,7 +666,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
         case 'auth:signout': {
           await window.__APP__.signOut();
-          await setUiState({ modal: null, authMode: 'signin', coachPortal: { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], feed: [], benchmarkQuery: '', benchmarkCategory: '', selectedGymId: null, members: [] } });
+          await setUiState({ modal: null, authMode: 'signin', coachPortal: emptyCoachPortal(), athleteOverview: emptyAthleteOverview(), admin: { overview: null, query: '' } });
           toast('Sessão encerrada');
           await rerender();
           return;
@@ -742,6 +791,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const exercise = rawName.toUpperCase();
           const result = window.__APP__.addPR(exercise, value);
           if (!result?.success) throw new Error(result?.error || 'Falha ao adicionar PR');
+          await syncAthletePrIfAuthenticated(exercise, value);
 
           if (nameEl) nameEl.value = '';
           if (valueEl) valueEl.value = '';
@@ -764,6 +814,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           const result = window.__APP__.addPR(ex, value);
           if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PR');
+          await syncAthletePrIfAuthenticated(ex, value);
 
           toast('PR atualizado');
           await rerender();

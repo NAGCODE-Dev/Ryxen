@@ -25,9 +25,11 @@ PWA para importar programação de treino, calcular cargas, manter PRs, operar o
 - Biblioteca de benchmarks com seed expandido, filtros e feed enriquecido
 - Resultados de benchmark com leaderboard por slug/gym
 - Calendário de competições com eventos vinculados a benchmark
+- Ranking por evento e ranking agregado por competição
 - Telemetria com consentimento
 - Base pronta para billing via Stripe/Mercado Pago
 - Página pública de planos em `pricing.html`
+- `config.js` para apontar o frontend para backend externo em produção
 
 ## Estrutura real do projeto
 
@@ -79,6 +81,22 @@ cp .env.example .env
 npm install
 npm run start
 ```
+
+## Deploy recomendado
+
+- frontend atleta + coach portal: `Vercel`
+- backend: `Railway`
+- banco: `Postgres gerenciado`
+
+Arquivos relevantes:
+
+- `vercel.json`
+- `config.js`
+- `config.example.js`
+- `scripts/build-static.mjs`
+- `backend/Dockerfile`
+- `backend/railway.json`
+- `docs/deploy/VERCEL_RAILWAY.md`
 
 ## Testes
 
@@ -151,6 +169,12 @@ Na UI da conta, o Coach Portal já expõe:
 
 Tudo via `window.__APP__` e APIs do backend.
 
+Rankings disponíveis:
+
+- `GET /leaderboards/benchmarks/:slug`
+- `GET /leaderboards/events/:eventId`
+- `GET /leaderboards/competitions/:competitionId`
+
 Portal separado em framework:
 
 - URL: `/coach/`
@@ -162,3 +186,4 @@ Portal separado em framework:
 - Backend/API: `docs/ops/BACKEND_INTEGRATION.md`
 - Release/Rollback: `docs/ops/RELEASE_ROLLBACK_RUNBOOK.md`
 - Suporte: `docs/ops/SUPPORT_PLAYBOOK.md`
+- Deploy recomendado: `docs/deploy/VERCEL_RAILWAY.md`

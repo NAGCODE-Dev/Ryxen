@@ -58,6 +58,7 @@ export async function mountUI({ root }) {
     setHTML(refs.headerAccount, view.headerAccountHtml);
     setHTML(refs.weekChips, view.weekChipsHtml);
     setHTML(refs.main, view.mainHtml);
+    setHTML(refs.bottomNav, view.bottomNavHtml);
     setHTML(refs.modals, view.modalsHtml);
 
     // Contador de PR (se existir no shell)
@@ -100,6 +101,7 @@ function normalizeUiState(s) {
   const next = { ...(s || {}) };
 
   if (typeof next.trainingMode !== 'boolean') next.trainingMode = false;
+  next.currentPage = ['today', 'history', 'competitions', 'account'].includes(next.currentPage) ? next.currentPage : 'today';
   next.modal = next.modal || null; // 'prs' | 'settings' | null
 
   next.wod = next.wod && typeof next.wod === 'object' ? next.wod : {};
@@ -112,15 +114,23 @@ function normalizeUiState(s) {
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
+  next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
+    ? next.athleteOverview
+    : { stats: null, recentResults: [], upcomingCompetitions: [], recentWorkouts: [], gymAccess: [] };
   next.coachPortal = next.coachPortal && typeof next.coachPortal === 'object'
     ? next.coachPortal
-    : { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], feed: [], benchmarkQuery: '', benchmarkCategory: '', selectedGymId: null, members: [] };
+    : { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], feed: [], benchmarkQuery: '', benchmarkCategory: '', selectedGymId: null, members: [], insights: null };
+  if (!Array.isArray(next.athleteOverview.recentResults)) next.athleteOverview.recentResults = [];
+  if (!Array.isArray(next.athleteOverview.upcomingCompetitions)) next.athleteOverview.upcomingCompetitions = [];
+  if (!Array.isArray(next.athleteOverview.recentWorkouts)) next.athleteOverview.recentWorkouts = [];
+  if (!Array.isArray(next.athleteOverview.gymAccess)) next.athleteOverview.gymAccess = [];
   if (!Array.isArray(next.coachPortal.members)) next.coachPortal.members = [];
   if (!Array.isArray(next.coachPortal.gyms)) next.coachPortal.gyms = [];
   if (!Array.isArray(next.coachPortal.benchmarks)) next.coachPortal.benchmarks = [];
   if (!Array.isArray(next.coachPortal.feed)) next.coachPortal.feed = [];
   if (!Array.isArray(next.coachPortal.gymAccess)) next.coachPortal.gymAccess = [];
   if (!Array.isArray(next.coachPortal.entitlements)) next.coachPortal.entitlements = [];
+  if (!next.coachPortal.insights || typeof next.coachPortal.insights !== 'object') next.coachPortal.insights = null;
   if (typeof next.coachPortal.benchmarkQuery !== 'string') next.coachPortal.benchmarkQuery = '';
   if (typeof next.coachPortal.benchmarkCategory !== 'string') next.coachPortal.benchmarkCategory = '';
   if (typeof next.coachPortal.selectedGymId !== 'number') next.coachPortal.selectedGymId = next.coachPortal.selectedGymId || null;
@@ -137,6 +147,7 @@ function buildUiForRender(state, uiState) {
 
   return {
     modal: uiState.modal,
+    currentPage: uiState.currentPage,
     trainingMode: uiState.trainingMode,
     settings: uiState.settings,
     authMode: uiState.authMode,
@@ -145,6 +156,7 @@ function buildUiForRender(state, uiState) {
     },
     passwordReset: uiState.passwordReset,
     admin: uiState.admin,
+    athleteOverview: uiState.athleteOverview,
     coachPortal: uiState.coachPortal,
 
     wodKey: key,
@@ -177,6 +189,7 @@ function getRefs(root) {
     headerAccount: q('#ui-headerAccount'),
     weekChips: q('#ui-weekChips'),
     main: q('#ui-main'),
+    bottomNav: q('#ui-bottomNav'),
     modals: q('#ui-modals'),
     prsCount: q('#ui-prsCount'),
   };

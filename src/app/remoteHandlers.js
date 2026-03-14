@@ -14,7 +14,11 @@ import {
   addGymMember,
   createGym,
   getAccessContext,
+  getAthleteDashboard,
+  getGymInsights,
   getMyGyms,
+  logAthletePr,
+  syncAthletePrSnapshot,
   getWorkoutFeed,
   listGymMembers,
   publishGymWorkout,
@@ -24,7 +28,9 @@ import {
   addCompetitionEvent,
   createCompetition,
   getBenchmarkLeaderboard,
+  getCompetitionLeaderboard,
   getCompetitionCalendar,
+  getEventLeaderboard,
   submitBenchmarkResult,
 } from '../core/services/competitionService.js';
 import { getRuntimeConfig, setRuntimeConfig } from '../config/runtime.js';
@@ -174,6 +180,26 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
       return { success: true, data };
     },
 
+    async handleGetAthleteDashboard() {
+      const data = await getAthleteDashboard();
+      return { success: true, data };
+    },
+
+    async handleGetGymInsights(gymId) {
+      const data = await getGymInsights(gymId);
+      return { success: true, data };
+    },
+
+    async handleLogAthletePr(payload) {
+      const data = await logAthletePr(payload);
+      return { success: true, data };
+    },
+
+    async handleSyncAthletePrSnapshot(prs) {
+      const data = await syncAthletePrSnapshot(prs);
+      return { success: true, data };
+    },
+
     async handleGetBenchmarks(params) {
       const data = await getBenchmarks(params);
       return { success: true, data };
@@ -201,6 +227,16 @@ export function createRemoteHandlers({ getState, setState, selectActiveWeek }) {
 
     async handleGetBenchmarkLeaderboard(slug, params) {
       const data = await getBenchmarkLeaderboard(slug, params);
+      return { success: true, data };
+    },
+
+    async handleGetCompetitionLeaderboard(competitionId) {
+      const data = await getCompetitionLeaderboard(competitionId);
+      return { success: true, data };
+    },
+
+    async handleGetEventLeaderboard(eventId, params) {
+      const data = await getEventLeaderboard(eventId, params);
       return { success: true, data };
     },
   };

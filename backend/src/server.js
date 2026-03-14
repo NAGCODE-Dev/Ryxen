@@ -603,6 +603,323 @@ app.get('/workouts/feed', authRequired, async (req, res) => {
   return res.json({ workouts: enriched });
 });
 
+app.post('/athletes/me/prs', authRequired, async (req, res) => {
+  const exercise = String(req.body?.exercise || '').trim().toUpperCase();
+  const value = Number(req.body?.value);
+  const unit = String(req.body?.unit || 'kg').trim().toLowerCase();
+  const source = String(req.body?.source || 'manual').trim().toLowerCase();
+
+  if (!exercise || !Number.isFinite(value) || value <= 0) {
+    return res.status(400).json({ error: 'exercise e value válidos são obrigatórios' });
+  }
+
+  const inserted = await pool.query(
+    `INSERT INTO athlete_pr_records (user_id, exercise, value, unit, source)
+     VALUES ($1,$2,$3,$4,$5)
+     RETURNING *`,
+    [req.user.userId, exercise, value, unit || 'kg', source || 'manual'],
+  );
+
+  return res.json({ prRecord: inserted.rows[0] });
+});
+
+app.post('/athletes/me/prs/snapshot', authRequired, async (req, res) => {
+  const prs = req.body?.prs;
+  if (!prs || typeof prs !== 'object' || Array.isArray(prs)) {
+    return res.status(400).json({ error: 'prs deve ser um objeto { EXERCISE: value }' });
+  }
+
+  const entries = Object.entries(prs)
+    .map(([exercise, value]) => [String(exercise || '').trim().toUpperCase(), Number(value)])
+    .filter(([exercise, value]) => exercise && Number.isFinite(value) && value > 0);
+
+  let insertedCount = 0;
+
+  for (const [exercise, value] of entries) {
+    const latest = await pool.query(
+      `SELECT value
+       FROM athlete_pr_records
+       WHERE user_id = $1 AND exercise = $2
+       ORDER BY created_at DESC
+       LIMIT 1`,
+      [req.user.userId, exercise],
+    );
+    const current = latest.rows[0] ? Number(latest.rows[0].value) : null;
+    if (current === value) continue;
+
+    await pool.query(
+      `INSERT INTO athlete_pr_records (user_id, exercise, value, unit, source)
+       VALUES ($1,$2,$3,'kg','snapshot')`,
+      [req.user.userId, exercise, value],
+    );
+    insertedCount += 1;
+  }
+
+  return res.json({ inserted: insertedCount, total: entries.length });
+});
+
+app.get('/athletes/me/dashboard', authRequired, async (req, res) => {
+  const memberships = await getUserMemberships(req.user.userId);
+  const gymIds = memberships.map((membership) => membership.gym_id);
+  const contexts = await getAccessContextForUser(req.user.userId);
+  const allowedGymIds = contexts
+    .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
+    .map((ctx) => ctx.membership.gym_id);
+
+  const [resultsRes, competitionsRes, workoutsRes, benchmarkTrendRes, prTrendRes, resultCountRes, competitionCountRes, workoutCountRes] = await Promise.all([
+    pool.query(
+      `SELECT
+        br.*,
+        b.name AS benchmark_name,
+        b.category AS benchmark_category,
+        g.name AS gym_name
+       FROM benchmark_results br
+       JOIN benchmark_library b ON b.slug = br.benchmark_slug
+       LEFT JOIN gyms g ON g.id = br.gym_id
+       WHERE br.user_id = $1
+       ORDER BY br.created_at DESC
+       LIMIT 8`,
+      [req.user.userId],
+    ),
+    allowedGymIds.length
+      ? pool.query(
+          `SELECT
+            c.id,
+            c.title,
+            c.location,
+            c.starts_at,
+            c.visibility,
+            g.name AS gym_name,
+            COUNT(ce.id)::int AS event_count
+           FROM competitions c
+           LEFT JOIN competition_events ce ON ce.competition_id = c.id
+           LEFT JOIN gyms g ON g.id = c.gym_id
+           WHERE c.gym_id = ANY($1::int[])
+             AND c.starts_at >= NOW() - INTERVAL '1 day'
+           GROUP BY c.id, g.name
+           ORDER BY c.starts_at ASC
+           LIMIT 6`,
+          [allowedGymIds],
+        )
+      : Promise.resolve({ rows: [] }),
+    allowedGymIds.length
+      ? pool.query(
+          `SELECT
+            w.id,
+            w.title,
+            w.scheduled_date,
+            w.published_at,
+            g.name AS gym_name
+           FROM workouts w
+           JOIN gyms g ON g.id = w.gym_id
+           WHERE w.gym_id = ANY($1::int[])
+           ORDER BY w.scheduled_date DESC, w.created_at DESC
+           LIMIT 8`,
+          [allowedGymIds],
+        )
+      : Promise.resolve({ rows: [] }),
+    pool.query(
+      `SELECT
+        br.benchmark_slug,
+        b.name AS benchmark_name,
+        b.score_type,
+        br.score_display,
+        br.score_value,
+        br.created_at
+       FROM benchmark_results br
+       JOIN benchmark_library b ON b.slug = br.benchmark_slug
+       WHERE br.user_id = $1
+       ORDER BY br.created_at DESC
+       LIMIT 60`,
+      [req.user.userId],
+    ),
+    pool.query(
+      `SELECT
+        exercise,
+        value,
+        unit,
+        source,
+        created_at
+       FROM athlete_pr_records
+       WHERE user_id = $1
+       ORDER BY created_at DESC
+       LIMIT 80`,
+      [req.user.userId],
+    ),
+    pool.query(
+      `SELECT COUNT(*)::int AS total
+       FROM benchmark_results
+       WHERE user_id = $1`,
+      [req.user.userId],
+    ),
+    allowedGymIds.length
+      ? pool.query(
+          `SELECT COUNT(*)::int AS total
+           FROM competitions
+           WHERE gym_id = ANY($1::int[])
+             AND starts_at >= NOW() - INTERVAL '1 day'`,
+          [allowedGymIds],
+        )
+      : Promise.resolve({ rows: [{ total: 0 }] }),
+    allowedGymIds.length
+      ? pool.query(
+          `SELECT COUNT(*)::int AS total
+           FROM workouts
+           WHERE gym_id = ANY($1::int[])`,
+          [allowedGymIds],
+        )
+      : Promise.resolve({ rows: [{ total: 0 }] }),
+  ]);
+
+  const benchmarkHistory = buildBenchmarkTrendSeries(benchmarkTrendRes.rows);
+  const prHistory = buildPrTrendSeries(prTrendRes.rows);
+  const prCurrent = prHistory.reduce((acc, item) => {
+    acc[item.exercise] = item.latestValue;
+    return acc;
+  }, {});
+
+  return res.json({
+    stats: {
+      gyms: gymIds.length,
+      activeGyms: allowedGymIds.length,
+      resultsLogged: Number(resultCountRes.rows[0]?.total || 0),
+      upcomingCompetitions: Number(competitionCountRes.rows[0]?.total || 0),
+      assignedWorkouts: Number(workoutCountRes.rows[0]?.total || 0),
+      trackedBenchmarks: benchmarkHistory.length,
+      trackedPrs: prHistory.length,
+    },
+    recentResults: resultsRes.rows,
+    upcomingCompetitions: competitionsRes.rows,
+    recentWorkouts: workoutsRes.rows,
+    benchmarkHistory,
+    prHistory,
+    prCurrent,
+    gymAccess: contexts.map((ctx) => ({
+      gymId: ctx.membership.gym_id,
+      gymName: ctx.membership.gym_name,
+      role: ctx.membership.role,
+      canAthletesUseApp: ctx?.access?.gymAccess?.canAthletesUseApp || false,
+      warning: ctx?.access?.gymAccess?.warning || null,
+    })),
+  });
+});
+
+app.get('/gyms/:gymId/insights', authRequired, async (req, res) => {
+  const gymId = Number(req.params.gymId);
+  if (!Number.isFinite(gymId)) {
+    return res.status(400).json({ error: 'gymId inválido' });
+  }
+
+  const manager = await requireGymManager(gymId, req.user.userId);
+  if (!manager.success) {
+    return res.status(manager.code).json({ error: manager.error });
+  }
+
+  const [membersRes, workoutsRes, competitionsRes, resultsRes, topBenchmarksRes] = await Promise.all([
+    pool.query(
+      `SELECT role, COUNT(*)::int AS total
+       FROM gym_memberships
+       WHERE gym_id = $1 AND status IN ('active', 'invited')
+       GROUP BY role`,
+      [gymId],
+    ),
+    pool.query(
+      `SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE scheduled_date >= CURRENT_DATE AND scheduled_date <= CURRENT_DATE + INTERVAL '7 days')::int AS next_7_days
+       FROM workouts
+       WHERE gym_id = $1`,
+      [gymId],
+    ),
+    pool.query(
+      `SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (WHERE starts_at >= NOW())::int AS upcoming
+       FROM competitions
+       WHERE gym_id = $1`,
+      [gymId],
+    ),
+    pool.query(
+      `SELECT
+        COUNT(*)::int AS total
+       FROM benchmark_results
+       WHERE gym_id = $1`,
+      [gymId],
+    ),
+    pool.query(
+      `SELECT
+        br.benchmark_slug AS slug,
+        b.name,
+        COUNT(*)::int AS total
+       FROM benchmark_results br
+       JOIN benchmark_library b ON b.slug = br.benchmark_slug
+       WHERE br.gym_id = $1
+       GROUP BY br.benchmark_slug, b.name
+       ORDER BY total DESC, b.name ASC
+       LIMIT 5`,
+      [gymId],
+    ),
+  ]);
+
+  const roleTotals = membersRes.rows.reduce((acc, row) => {
+    acc[row.role] = Number(row.total || 0);
+    return acc;
+  }, {});
+
+  const recentResults = await pool.query(
+    `SELECT
+      br.id,
+      br.benchmark_slug,
+      br.score_display,
+      br.created_at,
+      br.notes,
+      b.name AS benchmark_name,
+      u.name AS athlete_name,
+      u.email AS athlete_email
+     FROM benchmark_results br
+     JOIN benchmark_library b ON b.slug = br.benchmark_slug
+     JOIN users u ON u.id = br.user_id
+     WHERE br.gym_id = $1
+     ORDER BY br.created_at DESC
+     LIMIT 8`,
+    [gymId],
+  );
+
+  const upcomingCompetitions = await pool.query(
+    `SELECT
+      c.id,
+      c.title,
+      c.location,
+      c.starts_at,
+      COUNT(ce.id)::int AS event_count
+     FROM competitions c
+     LEFT JOIN competition_events ce ON ce.competition_id = c.id
+     WHERE c.gym_id = $1
+       AND c.starts_at >= NOW() - INTERVAL '1 day'
+     GROUP BY c.id
+     ORDER BY c.starts_at ASC
+     LIMIT 6`,
+    [gymId],
+  );
+
+  return res.json({
+    gymId,
+    access: manager.access?.gymAccess || null,
+    stats: {
+      athletes: roleTotals.athlete || 0,
+      coaches: (roleTotals.owner || 0) + (roleTotals.coach || 0),
+      workouts: Number(workoutsRes.rows[0]?.total || 0),
+      workoutsNext7Days: Number(workoutsRes.rows[0]?.next_7_days || 0),
+      competitions: Number(competitionsRes.rows[0]?.total || 0),
+      upcomingCompetitions: Number(competitionsRes.rows[0]?.upcoming || 0),
+      results: Number(resultsRes.rows[0]?.total || 0),
+    },
+    recentResults: recentResults.rows,
+    upcomingCompetitions: upcomingCompetitions.rows,
+    topBenchmarks: topBenchmarksRes.rows,
+  });
+});
+
 app.get('/competitions/calendar', authRequired, async (req, res) => {
   const gymId = Number(req.query.gymId || 0);
   const memberships = await getUserMemberships(req.user.userId);
@@ -798,6 +1115,188 @@ app.get('/leaderboards/benchmarks/:slug', authRequired, async (req, res) => {
   });
 });
 
+app.get('/leaderboards/events/:eventId', authRequired, async (req, res) => {
+  const eventId = Number(req.params.eventId);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
+  if (!Number.isFinite(eventId)) {
+    return res.status(400).json({ error: 'eventId inválido' });
+  }
+
+  const eventResult = await pool.query(
+    `SELECT
+      ce.*,
+      c.id AS competition_id,
+      c.title AS competition_title,
+      c.visibility,
+      c.gym_id
+     FROM competition_events ce
+     JOIN competitions c ON c.id = ce.competition_id
+     WHERE ce.id = $1
+     LIMIT 1`,
+    [eventId],
+  );
+  const eventRow = eventResult.rows[0];
+  if (!eventRow) {
+    return res.status(404).json({ error: 'Evento não encontrado' });
+  }
+
+  const access = await ensureCompetitionAccess(eventRow, req.user.userId);
+  if (!access.success) {
+    return res.status(access.code).json({ error: access.error });
+  }
+
+  const benchmark = eventRow.benchmark_slug ? await getBenchmarkBySlug(eventRow.benchmark_slug) : null;
+  const orderBy = resolveLeaderboardOrder(eventRow.score_type || benchmark?.score_type || 'reps');
+  const rows = await pool.query(
+    `SELECT
+      br.id,
+      br.score_display,
+      br.score_value,
+      br.tiebreak_seconds,
+      br.created_at,
+      u.id AS user_id,
+      u.name,
+      u.email
+     FROM benchmark_results br
+     JOIN users u ON u.id = br.user_id
+     WHERE br.competition_event_id = $1
+     ORDER BY ${orderBy}
+     LIMIT $2`,
+    [eventId, limit],
+  );
+
+  return res.json({
+    competition: {
+      id: eventRow.competition_id,
+      title: eventRow.competition_title,
+      visibility: eventRow.visibility,
+      gymId: eventRow.gym_id,
+    },
+    event: {
+      id: eventRow.id,
+      title: eventRow.title,
+      eventDate: eventRow.event_date,
+      scoreType: eventRow.score_type || benchmark?.score_type || null,
+      benchmarkSlug: eventRow.benchmark_slug,
+    },
+    benchmark,
+    results: rows.rows.map((row, index) => ({
+      ...row,
+      rank: index + 1,
+    })),
+  });
+});
+
+app.get('/leaderboards/competitions/:competitionId', authRequired, async (req, res) => {
+  const competitionId = Number(req.params.competitionId);
+  if (!Number.isFinite(competitionId)) {
+    return res.status(400).json({ error: 'competitionId inválido' });
+  }
+
+  const competitionResult = await pool.query(`SELECT * FROM competitions WHERE id = $1 LIMIT 1`, [competitionId]);
+  const competition = competitionResult.rows[0];
+  if (!competition) {
+    return res.status(404).json({ error: 'Competição não encontrada' });
+  }
+
+  const access = await ensureCompetitionAccess(competition, req.user.userId);
+  if (!access.success) {
+    return res.status(access.code).json({ error: access.error });
+  }
+
+  const eventsResult = await pool.query(
+    `SELECT id, title, benchmark_slug, score_type, event_date
+     FROM competition_events
+     WHERE competition_id = $1
+     ORDER BY event_date ASC, id ASC`,
+    [competitionId],
+  );
+  const events = eventsResult.rows;
+
+  const eventResults = [];
+  const totals = new Map();
+
+  for (const event of events) {
+    const benchmark = event.benchmark_slug ? await getBenchmarkBySlug(event.benchmark_slug) : null;
+    const orderBy = resolveLeaderboardOrder(event.score_type || benchmark?.score_type || 'reps');
+    const rows = await pool.query(
+      `SELECT
+        br.id,
+        br.score_display,
+        br.score_value,
+        br.tiebreak_seconds,
+        br.created_at,
+        u.id AS user_id,
+        u.name,
+        u.email
+       FROM benchmark_results br
+       JOIN users u ON u.id = br.user_id
+       WHERE br.competition_event_id = $1
+       ORDER BY ${orderBy}`,
+      [event.id],
+    );
+
+    const participants = rows.rows.length;
+    const ranked = rows.rows.map((row, index) => {
+      const rank = index + 1;
+      const points = Math.max(1, participants - index);
+      const key = String(row.user_id);
+      if (!totals.has(key)) {
+        totals.set(key, {
+          userId: row.user_id,
+          name: row.name,
+          email: row.email,
+          totalPoints: 0,
+          eventsCompleted: 0,
+          placements: [],
+        });
+      }
+      const athlete = totals.get(key);
+      athlete.totalPoints += points;
+      athlete.eventsCompleted += 1;
+      athlete.placements.push({
+        eventId: event.id,
+        eventTitle: event.title,
+        rank,
+        points,
+        scoreDisplay: row.score_display,
+      });
+      return {
+        ...row,
+        rank,
+        points,
+      };
+    });
+
+    eventResults.push({
+      event,
+      benchmark,
+      results: ranked,
+    });
+  }
+
+  const leaderboard = Array.from(totals.values())
+    .sort((a, b) => {
+      if (b.totalPoints !== a.totalPoints) return b.totalPoints - a.totalPoints;
+      if (b.eventsCompleted !== a.eventsCompleted) return b.eventsCompleted - a.eventsCompleted;
+      return a.name.localeCompare(b.name);
+    })
+    .map((item, index) => ({
+      ...item,
+      rank: index + 1,
+    }));
+
+  return res.json({
+    competition,
+    summary: {
+      events: events.length,
+      athletesRanked: leaderboard.length,
+    },
+    leaderboard,
+    events: eventResults,
+  });
+});
+
 app.post('/sync/push', authRequired, async (req, res) => {
   const { payload } = req.body || {};
   if (!payload || typeof payload !== 'object') {
@@ -905,6 +1404,23 @@ async function requireGymManager(gymId, userId) {
 
   const access = await getAccessContextForGym(gymId);
   return { success: true, membership, access };
+}
+
+async function ensureCompetitionAccess(competition, userId) {
+  if (!competition) {
+    return { success: false, code: 404, error: 'Competição não encontrada' };
+  }
+
+  if (competition.visibility === 'public') {
+    return { success: true };
+  }
+
+  const membership = await getMembershipForUser(competition.gym_id, userId);
+  if (!membership) {
+    return { success: false, code: 403, error: 'Sem acesso a esta competição' };
+  }
+
+  return { success: true, membership };
 }
 
 async function attachPendingMembershipsToUser(userId, email) {
@@ -1098,4 +1614,89 @@ async function enrichWorkoutWithBenchmark(workout) {
     ...workout,
     benchmark,
   };
+}
+
+function buildBenchmarkTrendSeries(rows = []) {
+  const bySlug = new Map();
+
+  for (const row of rows) {
+    const key = row.benchmark_slug;
+    if (!bySlug.has(key)) {
+      bySlug.set(key, {
+        slug: key,
+        name: row.benchmark_name || key,
+        scoreType: row.score_type || 'reps',
+        points: [],
+      });
+    }
+
+    bySlug.get(key).points.push({
+      label: row.score_display,
+      value: Number(row.score_value || 0),
+      createdAt: row.created_at,
+    });
+  }
+
+  return Array.from(bySlug.values())
+    .map((item) => {
+      const points = item.points
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .slice(-10);
+      const firstValue = points[0]?.value ?? null;
+      const lastValue = points[points.length - 1]?.value ?? null;
+      const hasTrend = points.length > 1;
+      const delta = hasTrend && firstValue !== null && lastValue !== null ? lastValue - firstValue : null;
+      const improvement = item.scoreType === 'for_time'
+        ? (delta !== null ? -delta : null)
+        : delta;
+
+      return {
+        ...item,
+        points,
+        latestLabel: points[points.length - 1]?.label || null,
+        latestValue: lastValue,
+        delta,
+        improvement,
+      };
+    })
+    .sort((a, b) => new Date(b.points[b.points.length - 1]?.createdAt || 0) - new Date(a.points[a.points.length - 1]?.createdAt || 0))
+    .slice(0, 4);
+}
+
+function buildPrTrendSeries(rows = []) {
+  const byExercise = new Map();
+
+  for (const row of rows) {
+    const key = row.exercise;
+    if (!byExercise.has(key)) {
+      byExercise.set(key, {
+        exercise: key,
+        unit: row.unit || 'kg',
+        points: [],
+      });
+    }
+
+    byExercise.get(key).points.push({
+      value: Number(row.value || 0),
+      source: row.source || 'manual',
+      createdAt: row.created_at,
+    });
+  }
+
+  return Array.from(byExercise.values())
+    .map((item) => {
+      const points = item.points
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+        .slice(-12);
+      const firstValue = points[0]?.value ?? null;
+      const lastValue = points[points.length - 1]?.value ?? null;
+      return {
+        ...item,
+        points,
+        latestValue: lastValue,
+        delta: points.length > 1 && firstValue !== null && lastValue !== null ? lastValue - firstValue : null,
+      };
+    })
+    .sort((a, b) => new Date(b.points[b.points.length - 1]?.createdAt || 0) - new Date(a.points[a.points.length - 1]?.createdAt || 0))
+    .slice(0, 6);
 }

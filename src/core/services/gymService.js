@@ -27,3 +27,19 @@ export async function getWorkoutFeed() {
 export async function getAccessContext() {
   return apiRequest('/access/context', { method: 'GET' });
 }
+
+export async function getAthleteDashboard() {
+  return apiRequest('/athletes/me/dashboard', { method: 'GET' });
+}
+
+export async function getGymInsights(gymId) {
+  return apiRequest(`/gyms/${gymId}/insights`, { method: 'GET' });
+}
+
+export async function logAthletePr(payload) {
+  return apiRequest('/athletes/me/prs', { method: 'POST', body: payload });
+}
+
+export async function syncAthletePrSnapshot(prs) {
+  return apiRequest('/athletes/me/prs/snapshot', { method: 'POST', body: { prs } });
+}

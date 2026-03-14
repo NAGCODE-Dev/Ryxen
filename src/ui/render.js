@@ -65,30 +65,7 @@ export function renderAppShell() {
 
       <!-- BOTTOM NAV -->
       <nav class="bottom-nav">
-        <button class="nav-btn" data-action="workout:copy" type="button">
-          <span class="nav-icon">⎘</span>
-          <span class="nav-label">Copiar</span>
-        </button>
-
-        <button class="nav-btn" data-action="modal:open" data-modal="prs" type="button">
-          <span class="nav-icon">PR</span>
-          <span class="nav-label">PRs</span>
-        </button>
-
-        <button class="nav-btn nav-btn-primary" data-action="wod:mode" type="button">
-          <span class="nav-icon">▶</span>
-          <span class="nav-label">Treino</span>
-        </button>
-
-        <button class="nav-btn" data-action="modal:open" data-modal="settings" type="button">
-          <span class="nav-icon">⚙</span>
-          <span class="nav-label">Config</span>
-        </button>
-
-        <button class="nav-btn" data-action="modal:open" data-modal="auth" type="button">
-          <span class="nav-icon">ID</span>
-          <span class="nav-label">Conta</span>
-        </button>
+        <div class="bottom-navItems" id="ui-bottomNav"></div>
       </nav>
     </div>
   `;
@@ -99,6 +76,7 @@ export function renderAll(state = {}) {
   const headerAccountHtml = renderHeaderAccount(state);
   const weekChipsHtml = renderWeekChips(state);
   const mainHtml = renderMainContent(state);
+  const bottomNavHtml = renderBottomNav(state);
   const modalsHtml = renderModals(state);
   
   return {
@@ -106,6 +84,7 @@ export function renderAll(state = {}) {
     headerAccountHtml,
     weekChipsHtml,
     mainHtml,
+    bottomNavHtml,
     modalsHtml,
   };
 }
@@ -123,6 +102,8 @@ function renderModals(state) {
       ...(state?.__ui?.auth || {}),
       passwordReset: state?.__ui?.passwordReset || {},
       admin: state?.__ui?.admin || {},
+      athleteOverview: state?.__ui?.athleteOverview || {},
+      coachPortal: state?.__ui?.coachPortal || {},
     },
     authMode,
   });
@@ -198,6 +179,11 @@ function renderWeekChips(state) {
 }
 
 function renderMainContent(state) {
+  const currentPage = state?.__ui?.currentPage || 'today';
+  if (currentPage === 'history') return renderHistoryPage(state);
+  if (currentPage === 'competitions') return renderCompetitionsPage(state);
+  if (currentPage === 'account') return renderAccountPage(state);
+
   const workout = state?.workout ?? state?.workoutOfDay;
   const accessBanner = renderAthleteAccessBanner(state);
   if (!workout || !workout.blocks?.length) {
@@ -241,6 +227,23 @@ function renderMainContent(state) {
       ${workout.blocks.map((block, b) => renderWorkoutBlock(block, b, ui)).join('')}
     </div>
   `;
+}
+
+function renderBottomNav(state) {
+  const currentPage = state?.__ui?.currentPage || 'today';
+  const items = [
+    { page: 'today', icon: '◉', label: 'Hoje' },
+    { page: 'history', icon: '↗', label: 'Histórico' },
+    { page: 'competitions', icon: '🏁', label: 'Competições' },
+    { page: 'account', icon: 'ID', label: 'Conta' },
+  ];
+
+  return items.map((item) => `
+    <button class="nav-btn ${currentPage === item.page ? 'nav-btn-active' : ''} ${item.page === 'today' ? 'nav-btn-primary' : ''}" data-action="page:set" data-page="${item.page}" type="button">
+      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-label">${item.label}</span>
+    </button>
+  `).join('');
 }
 
 function renderAthleteAccessBanner(state) {
@@ -289,6 +292,161 @@ function renderEmptyState(state) {
       <div class="empty-icon">😴</div>
       <h2>Sem treino para ${escapeHtml(day)}</h2>
       <p>Não há treino programado para este dia</p>
+    </div>
+  `;
+}
+
+function renderHistoryPage(state) {
+  const athleteOverview = state?.__ui?.athleteOverview || {};
+  const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
+  const prHistory = athleteOverview?.prHistory || [];
+
+  return `
+    <div class="workout-container">
+      <div class="workout-header">
+        <h2 class="workout-title">Histórico</h2>
+        <div class="page-subtitle">Benchmark, PR e evolução recente.</div>
+      </div>
+
+      <div class="coach-card coach-cardWide">
+        <h3 class="coach-cardTitle">Evolução por benchmark</h3>
+        <div class="trend-grid">
+          ${benchmarkHistory.length ? benchmarkHistory.map((item) => `
+            <div class="trend-card">
+              <div class="trend-cardHead">
+                <strong>${escapeHtml(item.name || item.slug || 'Benchmark')}</strong>
+                <span>${escapeHtml(item.latestLabel || 'Sem marca')}</span>
+              </div>
+              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), item.scoreType === 'for_time')}
+              <div class="trend-meta">
+                <span>${item.improvement === null ? 'Sem histórico suficiente' : `${item.improvement > 0 ? '+' : ''}${formatTrendValue(item.improvement, item.scoreType)}`}</span>
+                <span>${item.points.length} registro(s)</span>
+              </div>
+            </div>
+          `).join('') : '<p class="account-hint">Registre benchmarks para gerar curva de evolução.</p>'}
+        </div>
+      </div>
+
+      <div class="coach-card coach-cardWide">
+        <h3 class="coach-cardTitle">Evolução de PRs</h3>
+        <div class="page-actions">
+          <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
+        </div>
+        <div class="trend-grid">
+          ${prHistory.length ? prHistory.map((item) => `
+            <div class="trend-card">
+              <div class="trend-cardHead">
+                <strong>${escapeHtml(item.exercise)}</strong>
+                <span>${escapeHtml(String(item.latestValue ?? '—'))} ${escapeHtml(item.unit || 'kg')}</span>
+              </div>
+              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), false)}
+              <div class="trend-meta">
+                <span>${item.delta === null ? 'Sem histórico suficiente' : `${item.delta > 0 ? '+' : ''}${formatNumber(item.delta)} ${escapeHtml(item.unit || 'kg')}`}</span>
+                <span>${item.points.length} atualização(ões)</span>
+              </div>
+            </div>
+          `).join('') : '<p class="account-hint">Atualize seus PRs logado para construir histórico e evolução.</p>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCompetitionsPage(state) {
+  const athleteOverview = state?.__ui?.athleteOverview || {};
+  const items = athleteOverview?.upcomingCompetitions || [];
+  const access = athleteOverview?.gymAccess || [];
+
+  return `
+    <div class="workout-container">
+      <div class="workout-header">
+        <h2 class="workout-title">Competições</h2>
+        <div class="page-subtitle">Agenda do box e status de acesso por gym.</div>
+      </div>
+
+      <div class="coach-grid">
+        <div class="coach-card coach-cardWide">
+          <h3 class="coach-cardTitle">Próximas competições</h3>
+          <div class="coach-list">
+            ${items.length ? items.map((item) => `
+              <div class="coach-listItem static">
+                <strong>${escapeHtml(item.title || 'Competição')}</strong>
+                <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.starts_at))}${item.location ? ` • ${escapeHtml(item.location)}` : ''}</span>
+              </div>
+            `).join('') : '<p class="account-hint">Nenhuma competição próxima para seus gyms.</p>'}
+          </div>
+        </div>
+
+        <div class="coach-card coach-cardWide">
+          <h3 class="coach-cardTitle">Acesso por gym</h3>
+          <div class="coach-list">
+            ${access.length ? access.map((item) => `
+              <div class="coach-listItem static">
+                <strong>${escapeHtml(item.gymName || `Gym ${item.gymId}`)}</strong>
+                <span>${item.warning ? escapeHtml(item.warning) : 'Acesso ativo'}</span>
+              </div>
+            `).join('') : '<p class="account-hint">Nenhum gym vinculado à sua conta.</p>'}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderAccountPage(state) {
+  const profile = state?.__ui?.auth?.profile || null;
+  const coachPortal = state?.__ui?.coachPortal || {};
+  const subscription = coachPortal?.subscription || null;
+  const planName = subscription?.plan || subscription?.plan_id || 'free';
+  const planStatus = subscription?.status || 'inactive';
+
+  if (!profile?.email) {
+    return `
+      <div class="workout-container">
+        <div class="coach-card coach-cardWide">
+          <h3 class="coach-cardTitle">Conta</h3>
+          <p class="account-hint">Entre para sincronizar dados, acessar o Coach Portal e manter seu histórico salvo.</p>
+          <div class="page-actions">
+            <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar ou cadastrar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="workout-container">
+      <div class="coach-grid">
+        <div class="coach-card">
+          <h3 class="coach-cardTitle">Conta ativa</h3>
+          <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
+          <div class="account-email">${escapeHtml(profile.email || '')}</div>
+          <div class="page-actions">
+            <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar sessão</button>
+            <button class="btn-secondary" data-action="auth:sync-push" type="button">Enviar sync</button>
+            <button class="btn-secondary" data-action="auth:sync-pull" type="button">Baixar sync</button>
+          </div>
+        </div>
+
+        <div class="coach-card">
+          <h3 class="coach-cardTitle">Plano</h3>
+          <div class="account-name">${escapeHtml(planName)}</div>
+          <div class="account-email">${escapeHtml(planStatus)}</div>
+          <div class="page-actions">
+            <button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Assinar Coach</button>
+            <button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>
+          </div>
+        </div>
+
+        <div class="coach-card coach-cardWide">
+          <h3 class="coach-cardTitle">Gestão da conta</h3>
+          <div class="page-actions">
+            <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Abrir painel completo</button>
+            <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
+            <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -598,6 +756,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
   const reset = auth?.passwordReset || auth?.reset || {};
   const admin = auth?.admin || {};
   const coachPortal = auth?.coachPortal || {};
+  const athleteOverview = auth?.athleteOverview || {};
 
   if (isAuthenticated) {
     const isAdmin = !!profile?.is_admin || !!profile?.isAdmin;
@@ -610,6 +769,13 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const benchmarks = coachPortal?.benchmarks || [];
     const feed = coachPortal?.feed || [];
     const gymAccess = coachPortal?.gymAccess || [];
+    const coachInsights = coachPortal?.insights || null;
+    const athleteStats = athleteOverview?.stats || {};
+    const athleteResults = athleteOverview?.recentResults || [];
+    const athleteCompetitions = athleteOverview?.upcomingCompetitions || [];
+    const athleteWorkouts = athleteOverview?.recentWorkouts || [];
+    const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
+    const prHistory = athleteOverview?.prHistory || [];
     const planName = subscription?.plan || subscription?.plan_id || 'free';
     const planStatus = subscription?.status || 'inactive';
     const renewAt = subscription?.renewAt || subscription?.renew_at || null;
@@ -654,6 +820,73 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
               </div>
             </div>
 
+            <section class="account-section athlete-overview">
+              <div class="account-sectionHead">
+                <div>
+                  <div class="section-kicker">Athlete View</div>
+                  <strong>Resultado, agenda e treino recente</strong>
+                </div>
+              </div>
+
+              <div class="account-summaryGrid account-summaryGrid-compact">
+                <div class="summary-tile">
+                  <span class="summary-label">Resultados</span>
+                  <strong class="summary-value">${Number(athleteStats?.resultsLogged || 0)}</strong>
+                </div>
+                <div class="summary-tile">
+                  <span class="summary-label">Competições</span>
+                  <strong class="summary-value">${Number(athleteStats?.upcomingCompetitions || 0)}</strong>
+                </div>
+                <div class="summary-tile">
+                  <span class="summary-label">Treinos</span>
+                  <strong class="summary-value">${Number(athleteStats?.assignedWorkouts || 0)}</strong>
+                </div>
+                <div class="summary-tile">
+                  <span class="summary-label">Gyms ativos</span>
+                  <strong class="summary-value">${Number(athleteStats?.activeGyms || 0)}</strong>
+                </div>
+              </div>
+
+              <div class="coach-grid">
+                <div class="coach-card">
+                  <h3 class="coach-cardTitle">Resultados recentes</h3>
+                  <div class="coach-list">
+                    ${athleteResults.length ? athleteResults.map((item) => `
+                      <div class="coach-listItem static">
+                        <strong>${escapeHtml(item.benchmark_name || item.benchmark_slug || 'Benchmark')}</strong>
+                        <span>${escapeHtml(item.score_display || '')} • ${escapeHtml(item.gym_name || 'Sem gym')} • ${escapeHtml(formatDateShort(item.created_at))}</span>
+                      </div>
+                    `).join('') : '<p class="account-hint">Nenhum resultado registrado ainda.</p>'}
+                  </div>
+                </div>
+
+                <div class="coach-card">
+                  <h3 class="coach-cardTitle">Próximas competições</h3>
+                  <div class="coach-list">
+                    ${athleteCompetitions.length ? athleteCompetitions.map((item) => `
+                      <div class="coach-listItem static">
+                        <strong>${escapeHtml(item.title || 'Competição')}</strong>
+                        <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.starts_at))}${item.location ? ` • ${escapeHtml(item.location)}` : ''}</span>
+                      </div>
+                    `).join('') : '<p class="account-hint">Nenhuma competição próxima para seus gyms.</p>'}
+                  </div>
+                </div>
+
+                <div class="coach-card coach-cardWide">
+                  <h3 class="coach-cardTitle">Treinos recentes do box</h3>
+                  <div class="coach-list">
+                    ${athleteWorkouts.length ? athleteWorkouts.map((item) => `
+                      <div class="coach-listItem static">
+                        <strong>${escapeHtml(item.title || 'Treino')}</strong>
+                        <span>${escapeHtml(item.gym_name || '')} • ${escapeHtml(formatDateShort(item.scheduled_date || item.published_at))}</span>
+                      </div>
+                    `).join('') : '<p class="account-hint">Nenhum treino recente liberado para sua conta.</p>'}
+                  </div>
+                </div>
+
+              </div>
+            </section>
+
             <div class="settings-actions account-actions">
               <button class="btn-secondary" data-action="auth:sync-push" type="button">☁️ Enviar sync</button>
               <button class="btn-secondary" data-action="auth:sync-pull" type="button">📥 Baixar sync</button>
@@ -678,6 +911,14 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <div class="admin-statCard">
                   <span class="admin-statLabel">Status</span>
                   <span class="admin-statValue">${escapeHtml(planStatus)}</span>
+                </div>
+                <div class="admin-statCard">
+                  <span class="admin-statLabel">Atletas</span>
+                  <span class="admin-statValue">${Number(coachInsights?.stats?.athletes || 0)}</span>
+                </div>
+                <div class="admin-statCard">
+                  <span class="admin-statLabel">Resultados</span>
+                  <span class="admin-statValue">${Number(coachInsights?.stats?.results || 0)}</span>
                 </div>
               </div>
 
@@ -776,6 +1017,31 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                         <span>${escapeHtml(item.gym_name || '')}${item.benchmark?.name ? ` • ${escapeHtml(item.benchmark.name)}` : ''}</span>
                       </div>
                     `).join('') : '<p class="account-hint">Sem treinos publicados ainda.</p>'}
+                  </div>
+                </div>
+
+                <div class="coach-card">
+                  <h3 class="coach-cardTitle">Insights do gym</h3>
+                  <div class="coach-list">
+                    <div class="coach-listItem static">
+                      <strong>Próximos 7 dias</strong>
+                      <span>${Number(coachInsights?.stats?.workoutsNext7Days || 0)} treino(s) agendado(s)</span>
+                    </div>
+                    <div class="coach-listItem static">
+                      <strong>Competições</strong>
+                      <span>${Number(coachInsights?.stats?.upcomingCompetitions || 0)} próxima(s) • ${Number(coachInsights?.stats?.competitions || 0)} no total</span>
+                    </div>
+                    <div class="coach-listItem static">
+                      <strong>Equipe técnica</strong>
+                      <span>${Number(coachInsights?.stats?.coaches || 0)} coach(es) / owner(s)</span>
+                    </div>
+                    ${(coachInsights?.topBenchmarks || []).map((item) => `
+                      <div class="coach-listItem static">
+                        <strong>${escapeHtml(item.name || item.slug || 'Benchmark')}</strong>
+                        <span>${Number(item.total || 0)} resultado(s) registrados</span>
+                      </div>
+                    `).join('')}
+                    ${!(coachInsights?.topBenchmarks || []).length ? '<p class="account-hint">Ainda não há volume suficiente para gerar insights por benchmark.</p>' : ''}
                   </div>
                 </div>
               </div>
@@ -919,4 +1185,49 @@ function formatDateShort(value) {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+function formatNumber(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 1,
+  });
+}
+
+function formatTrendValue(value, scoreType) {
+  if (scoreType === 'for_time') return `${formatNumber(value)}s`;
+  return formatNumber(value);
+}
+
+function renderSparkline(values = [], lowerIsBetter = false) {
+  const points = values
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  if (points.length < 2) {
+    return '<div class="trend-empty">Sem dados suficientes</div>';
+  }
+
+  const width = 220;
+  const height = 64;
+  const padding = 6;
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = Math.max(1, max - min);
+  const coords = points.map((value, index) => {
+    const x = padding + (index * (width - padding * 2)) / Math.max(1, points.length - 1);
+    const normalized = (value - min) / range;
+    const y = height - padding - normalized * (height - padding * 2);
+    return [x, y];
+  });
+  const polyline = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const [lastX, lastY] = coords[coords.length - 1];
+  const stroke = lowerIsBetter ? '#7ee0a1' : '#ff9c71';
+
+  return `
+    <svg class="trend-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true">
+      <polyline points="${polyline}" fill="none" stroke="${stroke}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <circle cx="${lastX.toFixed(1)}" cy="${lastY.toFixed(1)}" r="4" fill="${stroke}"></circle>
+    </svg>
+  `;
 }
