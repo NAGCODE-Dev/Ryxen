@@ -412,15 +412,15 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     }
   }
 
-  async function handleCheckout() {
+  async function handleCheckout(planId = 'coach') {
     setLoading(true);
     setError('');
     try {
       const provider = resolveBillingProvider();
       if (provider === 'kiwify_link') {
-        const checkoutUrl = resolveKiwifyCheckoutUrl('coach');
+        const checkoutUrl = resolveKiwifyCheckoutUrl(planId);
         if (!checkoutUrl) {
-          throw new Error('Link da Kiwify não configurado para o plano Coach');
+          throw new Error(`Link da Kiwify não configurado para o plano ${String(planId).toUpperCase()}`);
         }
         window.location.href = checkoutUrl;
         return;
@@ -429,7 +429,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       const res = await apiRequest('/billing/checkout', {
         method: 'POST',
         body: {
-          planId: 'coach',
+          planId,
           provider,
           successUrl: `${window.location.origin}/coach/?billing=success`,
           cancelUrl: `${window.location.origin}/coach/?billing=cancel`,
@@ -899,7 +899,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
           )
         ),
         React.createElement('div', { className: 'billing-bannerActions' },
-          React.createElement('button', { className: 'btn btn-primary', onClick: handleCheckout, disabled: loading }, 'Assinar Coach'),
+        React.createElement('button', { className: 'btn btn-primary', onClick: () => handleCheckout('coach'), disabled: loading }, 'Assinar Coach'),
           canUseDeveloperTools ? React.createElement('button', { className: 'btn btn-secondary', onClick: handleActivateLocalPlan, disabled: loading }, 'Ativar local') : null,
           React.createElement('a', { className: 'btn btn-link', href: '/terms.html', target: '_blank', rel: 'noreferrer' }, 'Termos')
         )
@@ -920,29 +920,29 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       React.createElement('section', { className: 'plan-grid' },
         planCard({
           name: 'Coach Starter',
-          price: 'R$ 59/mês',
+          price: 'R$ 49,90/mês',
           description: 'Para começar a organizar treino, atletas e rotina do box.',
           features: ['Operação inicial', 'Treino e benchmarks', 'Atletas vinculados com mais recursos'],
           featured: false,
-          action: () => handleCheckout(),
+          action: () => handleCheckout('starter'),
           loading,
         }),
         planCard({
           name: 'Coach Pro',
-          price: 'R$ 119/mês',
+          price: 'R$ 119,90/mês',
           description: 'Plano principal para publicar programação e ampliar a experiência dos atletas.',
           features: ['Tudo do Starter', 'Gestão mais forte', 'Mais imports e histórico para atletas'],
           featured: true,
-          action: () => handleCheckout(),
+          action: () => handleCheckout('pro'),
           loading,
         }),
         planCard({
           name: 'Coach Performance',
-          price: 'R$ 199/mês',
+          price: 'R$ 199,90/mês',
           description: 'Para operação premium com mais folga, escala e experiência completa.',
           features: ['Tudo do Pro', 'Operação premium', 'Atletas com imports e histórico máximos'],
           featured: false,
-          action: () => handleCheckout(),
+          action: () => handleCheckout('performance'),
           loading,
         })
       ),
