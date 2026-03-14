@@ -243,7 +243,7 @@
             <div class="plan-kicker">Coach Starter</div>
             <span class="subtle">Operação inicial</span>
           </div>
-          <strong class="plan-price">R$ 59/mês</strong>
+          <strong class="plan-price">R$ 49,90/mês</strong>
           <h3>Starter</h3>
           <p>Para coaches e boxes que querem sair do improviso e começar a centralizar treino, atletas e rotina.</p>
           <div class="feature-list">
@@ -261,7 +261,7 @@
             <div class="plan-kicker">Coach Pro</div>
             <span class="subtle">Plano principal</span>
           </div>
-          <strong class="plan-price">R$ 119/mês</strong>
+          <strong class="plan-price">R$ 119,90/mês</strong>
           <h3>Pro</h3>
           <p>Para a operação principal do CrossApp: publicação consistente, gestão mais forte e mais valor percebido para os atletas.</p>
           <div class="feature-list">
@@ -270,7 +270,7 @@
             <div class="feature">Atletas vinculados com 30 imports/mês e 365 dias de histórico</div>
           </div>
           <div class="plan-actions">
-            <a class="btn btn-primary" data-plan-link="coach" href="#">Assinar Pro</a>
+            <a class="btn btn-primary" data-plan-link="pro" href="#">Assinar Pro</a>
           </div>
         </article>
 
@@ -279,7 +279,7 @@
             <div class="plan-kicker">Coach Performance</div>
             <span class="subtle">Operação premium</span>
           </div>
-          <strong class="plan-price">R$ 199/mês</strong>
+          <strong class="plan-price">R$ 199,90/mês</strong>
           <h3>Performance</h3>
           <p>Para boxes e coaches que querem máxima folga operacional, escala e experiência premium para toda a base.</p>
           <div class="feature-list">
@@ -327,9 +327,15 @@
     (function attachPlanLinks() {
       const billing = (window.__CROSSAPP_CONFIG__ || {}).billing || {};
       const links = billing.links || {};
+      const aliases = {
+        pro: ['pro', 'coach'],
+        coach: ['coach', 'pro'],
+        starter: ['starter'],
+        performance: ['performance'],
+      };
       document.querySelectorAll('[data-plan-link]').forEach((node) => {
         const key = node.getAttribute('data-plan-link');
-        const url = links[key] || '';
+        const url = (aliases[key] || [key]).map((candidate) => links[candidate]).find(Boolean) || '';
         if (url) {
           node.setAttribute('href', url);
           node.setAttribute('target', '_blank');
