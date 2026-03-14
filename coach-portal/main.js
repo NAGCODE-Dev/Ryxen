@@ -70,6 +70,11 @@ function App() {
     return () => window.clearInterval(timer);
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    handleBillingReturn(setMessage, setError);
+  }, [token]);
+
   async function handleLogin(event) {
     event.preventDefault();
     setLoading(true);
@@ -204,10 +209,62 @@ function writeProfile(profile) {
 function readRuntimeConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.runtime);
-    return raw ? JSON.parse(raw) : { apiBaseUrl: '/api' };
+    const fromStorage = raw ? JSON.parse(raw) : {};
+    return {
+      ...(window.__CROSSAPP_CONFIG__ || {}),
+      ...fromStorage,
+      billing: {
+        ...((window.__CROSSAPP_CONFIG__ || {}).billing || {}),
+        ...(fromStorage.billing || {}),
+      },
+    };
   } catch {
-    return { apiBaseUrl: '/api' };
+    return window.__CROSSAPP_CONFIG__ || { apiBaseUrl: '/api' };
   }
+}
+
+async function handleBillingReturn(setMessage, setError) {
+  const params = new URLSearchParams(window.location.search);
+  const billing = params.get('billing');
+  const provider = params.get('provider');
+  const paymentId = params.get('payment_id');
+
+  if (billing === 'success' && provider === 'mercadopago' && paymentId) {
+    try {
+      await apiRequest('/billing/mercadopago/confirm', {
+        method: 'POST',
+        body: { paymentId },
+      });
+      setMessage('Pagamento confirmado com Mercado Pago');
+      clearBillingParams(params);
+    } catch (err) {
+      setError(err.message || 'Erro ao confirmar pagamento Mercado Pago');
+    }
+    return;
+  }
+
+  if (billing === 'success' && provider === 'stripe') {
+    setMessage('Checkout concluído. Atualize o portal para refletir o plano.');
+    clearBillingParams(params);
+    return;
+  }
+
+  if (billing === 'cancel') {
+    setError('Checkout cancelado');
+    clearBillingParams(params);
+  }
+}
+
+function clearBillingParams(params) {
+  params.delete('billing');
+  params.delete('provider');
+  params.delete('payment_id');
+  params.delete('payment_status');
+  params.delete('status');
+  params.delete('merchant_order_id');
+  params.delete('preference_id');
+  const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+  window.history.replaceState({}, '', next);
 }
 
 function setupVercelObservability() {

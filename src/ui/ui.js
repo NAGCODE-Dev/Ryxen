@@ -205,7 +205,7 @@ function normalizeUiState(s) {
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
-    : { stats: null, recentResults: [], upcomingCompetitions: [], recentWorkouts: [], gymAccess: [] };
+    : { stats: null, recentResults: [], upcomingCompetitions: [], recentWorkouts: [], gymAccess: [], athleteBenefits: null };
   next.coachPortal = next.coachPortal && typeof next.coachPortal === 'object'
     ? next.coachPortal
     : {
@@ -226,6 +226,7 @@ function normalizeUiState(s) {
   if (!Array.isArray(next.athleteOverview.upcomingCompetitions)) next.athleteOverview.upcomingCompetitions = [];
   if (!Array.isArray(next.athleteOverview.recentWorkouts)) next.athleteOverview.recentWorkouts = [];
   if (!Array.isArray(next.athleteOverview.gymAccess)) next.athleteOverview.gymAccess = [];
+  if (!next.athleteOverview.athleteBenefits || typeof next.athleteOverview.athleteBenefits !== 'object') next.athleteOverview.athleteBenefits = null;
   if (!Array.isArray(next.coachPortal.members)) next.coachPortal.members = [];
   if (!Array.isArray(next.coachPortal.groups)) next.coachPortal.groups = [];
   if (!Array.isArray(next.coachPortal.gyms)) next.coachPortal.gyms = [];

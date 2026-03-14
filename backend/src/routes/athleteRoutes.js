@@ -3,6 +3,7 @@ import express from 'express';
 import { pool } from '../db.js';
 import { authRequired } from '../auth.js';
 import { getAccessContextForUser, getUserMemberships } from '../access.js';
+import { selectEffectiveAthleteBenefits } from '../accessPolicy.js';
 
 export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSeries }) {
   const router = express.Router();
@@ -92,6 +93,7 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
     const memberships = await getUserMemberships(req.user.userId);
     const gymIds = memberships.map((membership) => membership.gym_id);
     const contexts = await getAccessContextForUser(req.user.userId);
+    const athleteBenefits = selectEffectiveAthleteBenefits(contexts);
     const allowedGymIds = contexts
       .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
       .map((ctx) => ctx.membership.gym_id);
@@ -204,8 +206,32 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
         : Promise.resolve({ rows: [] }),
     ]);
 
-    const benchmarkHistory = buildBenchmarkTrendSeries(benchmarkTrendRes.rows);
-    const prHistory = sportType === 'cross' ? buildPrTrendSeries(prTrendRes.rows) : [];
+    const cutoffTime = athleteBenefits?.historyDays
+      ? Date.now() - Number(athleteBenefits.historyDays) * 24 * 60 * 60 * 1000
+      : null;
+
+    const withinHistoryWindow = (value) => {
+      if (!cutoffTime) return true;
+      const timestamp = new Date(value || 0).getTime();
+      if (!Number.isFinite(timestamp)) return false;
+      return timestamp >= cutoffTime;
+    };
+
+    const benchmarkHistory = buildBenchmarkTrendSeries(benchmarkTrendRes.rows)
+      .map((item) => ({
+        ...item,
+        points: (item.points || []).filter((point) => withinHistoryWindow(point.createdAt || point.date)),
+      }))
+      .filter((item) => item.points.length);
+
+    const prHistory = sportType === 'cross'
+      ? buildPrTrendSeries(prTrendRes.rows)
+        .map((item) => ({
+          ...item,
+          points: (item.points || []).filter((point) => withinHistoryWindow(point.createdAt || point.date)),
+        }))
+        .filter((item) => item.points.length)
+      : [];
     const prCurrent = prHistory.reduce((acc, item) => {
       acc[item.exercise] = item.latestValue;
       return acc;
@@ -221,21 +247,24 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
         trackedBenchmarks: benchmarkHistory.length,
         trackedPrs: prHistory.length,
         sportType,
+        athleteTier: athleteBenefits?.tier || 'base',
       },
-      recentResults: resultsRes.rows,
+      athleteBenefits,
+      recentResults: resultsRes.rows.filter((row) => withinHistoryWindow(row.created_at)),
       upcomingCompetitions: competitionsRes.rows,
-      recentWorkouts: workoutsRes.rows,
+      recentWorkouts: workoutsRes.rows.filter((row) => withinHistoryWindow(row.scheduled_date || row.published_at)),
       benchmarkHistory,
       prHistory,
       prCurrent,
-      runningHistory: runningHistoryRes.rows,
-      strengthHistory: strengthHistoryRes.rows,
+      runningHistory: runningHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
+      strengthHistory: strengthHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
       gymAccess: contexts.map((ctx) => ({
         gymId: ctx.membership.gym_id,
         gymName: ctx.membership.gym_name,
         role: ctx.membership.role,
         canAthletesUseApp: ctx?.access?.gymAccess?.canAthletesUseApp || false,
         warning: ctx?.access?.gymAccess?.warning || null,
+        athleteBenefits: ctx?.access?.athleteBenefits || null,
       })),
     });
   });

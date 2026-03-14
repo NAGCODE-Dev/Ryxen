@@ -416,11 +416,21 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     setLoading(true);
     setError('');
     try {
+      const provider = resolveBillingProvider();
+      if (provider === 'kiwify_link') {
+        const checkoutUrl = resolveKiwifyCheckoutUrl('coach');
+        if (!checkoutUrl) {
+          throw new Error('Link da Kiwify não configurado para o plano Coach');
+        }
+        window.location.href = checkoutUrl;
+        return;
+      }
+
       const res = await apiRequest('/billing/checkout', {
         method: 'POST',
         body: {
           planId: 'coach',
-          provider: 'stripe',
+          provider,
           successUrl: `${window.location.origin}/coach/?billing=success`,
           cancelUrl: `${window.location.origin}/coach/?billing=cancel`,
         },
@@ -909,29 +919,31 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       ),
       React.createElement('section', { className: 'plan-grid' },
         planCard({
-          name: 'Starter',
+          name: 'Coach Starter',
           price: 'R$ 59/mês',
-          description: 'Base para um box pequeno com operação inicial.',
-          features: ['1 gym', 'Feed e benchmarks', 'Até 25 atletas'],
+          description: 'Para começar a organizar treino, atletas e rotina do box.',
+          features: ['Operação inicial', 'Treino e benchmarks', 'Atletas vinculados com mais recursos'],
           featured: false,
-          action: null,
+          action: () => handleCheckout(),
+          loading,
         }),
         planCard({
-          name: 'Coach',
+          name: 'Coach Pro',
           price: 'R$ 119/mês',
-          description: 'Plano principal para publicar programação e liberar atletas.',
-          features: ['Gyms e membros', 'Programação completa', 'Controle de acesso'],
+          description: 'Plano principal para publicar programação e ampliar a experiência dos atletas.',
+          features: ['Tudo do Starter', 'Gestão mais forte', 'Mais imports e histórico para atletas'],
           featured: true,
           action: () => handleCheckout(),
           loading,
         }),
         planCard({
-          name: 'Pro',
+          name: 'Coach Performance',
           price: 'R$ 199/mês',
-          description: 'Para operação maior com analytics e expansão posterior.',
-          features: ['Múltiplos coaches', 'Mais atletas', 'Base para analytics'],
+          description: 'Para operação premium com mais folga, escala e experiência completa.',
+          features: ['Tudo do Pro', 'Operação premium', 'Atletas com imports e histórico máximos'],
           featured: false,
-          action: null,
+          action: () => handleCheckout(),
+          loading,
         })
       ),
       React.createElement('section', { className: 'grid portal-grid' },
@@ -1562,10 +1574,29 @@ function writeProfile(profile) {
 function readRuntimeConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.runtime);
-    return raw ? JSON.parse(raw) : { apiBaseUrl: '/api' };
+    const fromStorage = raw ? JSON.parse(raw) : {};
+    return {
+      ...(window.__CROSSAPP_CONFIG__ || {}),
+      ...fromStorage,
+      billing: {
+        ...((window.__CROSSAPP_CONFIG__ || {}).billing || {}),
+        ...(fromStorage.billing || {}),
+      },
+    };
   } catch {
-    return { apiBaseUrl: '/api' };
+    return window.__CROSSAPP_CONFIG__ || { apiBaseUrl: '/api' };
   }
+}
+
+function resolveBillingProvider() {
+  const cfg = readRuntimeConfig();
+  return cfg?.billing?.provider || 'stripe';
+}
+
+function resolveKiwifyCheckoutUrl(planId) {
+  const cfg = readRuntimeConfig();
+  const links = cfg?.billing?.links || {};
+  return links[String(planId || 'coach').trim().toLowerCase()] || '';
 }
 
 function getAvailableSportOptions(config) {

@@ -1,13 +1,14 @@
 import express from 'express';
 
 import { pool } from '../db.js';
-import { DEFAULT_BILLING_CANCEL_URL, DEFAULT_BILLING_SUCCESS_URL } from '../config.js';
+import { BACKEND_PUBLIC_URL, DEFAULT_BILLING_CANCEL_URL, DEFAULT_BILLING_SUCCESS_URL } from '../config.js';
 import { isDeveloperEmail } from '../devAccess.js';
 import { getAccessContextForUser, getSubscriptionAccessState } from '../access.js';
 import { buildEntitlements } from '../accessPolicy.js';
 import { authRequired } from '../auth.js';
+import { createMercadoPagoPreference, fetchMercadoPagoPayment, hasMercadoPagoConfigured, normalizeMercadoPagoStatus, resolveMercadoPagoPlan } from '../mercadopago.js';
 import { getStripeClient, getStripeWebhookSecret, hasStripeConfigured, resolveStripePriceId } from '../stripe.js';
-import { handleStripeWebhookEvent } from '../utils/subscriptionUtils.js';
+import { handleStripeWebhookEvent, upsertSubscriptionRecord } from '../utils/subscriptionUtils.js';
 
 export function createBillingWebhookRouter() {
   const router = express.Router();
@@ -34,6 +35,26 @@ export function createBillingWebhookRouter() {
     } catch (error) {
       console.error('[stripe:webhook] erro ao processar evento', error);
       return res.status(500).json({ error: 'Erro ao processar webhook Stripe' });
+    }
+  });
+
+  router.post('/mercadopago/webhook', express.json({ limit: '256kb' }), async (req, res) => {
+    try {
+      if (!hasMercadoPagoConfigured()) {
+        return res.status(200).json({ received: true, ignored: true });
+      }
+
+      const paymentId = resolveMercadoPagoPaymentId(req);
+      if (!paymentId) {
+        return res.status(200).json({ received: true, ignored: true });
+      }
+
+      const payment = await fetchMercadoPagoPayment(paymentId);
+      await syncMercadoPagoPayment(payment);
+      return res.json({ received: true });
+    } catch (error) {
+      console.error('[mercadopago:webhook] erro ao processar', error);
+      return res.status(500).json({ error: 'Erro ao processar webhook Mercado Pago' });
     }
   });
 
@@ -107,6 +128,50 @@ export function createBillingRouter() {
       return res.json({ checkoutUrl: session.url, mode: 'stripe', sessionId: session.id });
     }
 
+    if (selectedProvider === 'mercadopago' && hasMercadoPagoConfigured()) {
+      const plan = resolveMercadoPagoPlan(planId);
+      if (!plan?.amount) {
+        return res.status(400).json({ error: 'Preço Mercado Pago não configurado para este plano' });
+      }
+
+      const userResult = await pool.query(`SELECT id, email, name FROM users WHERE id = $1`, [req.user.userId]);
+      const user = userResult.rows[0] || null;
+      const externalReference = `coach:${req.user.userId}:${String(planId)}:${Date.now()}`;
+      const resolvedSuccessUrl = appendProviderQuery(successUrl || DEFAULT_BILLING_SUCCESS_URL, 'mercadopago');
+      const resolvedCancelUrl = appendProviderQuery(cancelUrl || DEFAULT_BILLING_CANCEL_URL, 'mercadopago');
+      const notificationUrl = BACKEND_PUBLIC_URL
+        ? new URL('/billing/mercadopago/webhook', BACKEND_PUBLIC_URL).toString()
+        : undefined;
+      const preference = await createMercadoPagoPreference({
+        title: `CrossApp ${String(planId).toUpperCase()}`,
+        planId,
+        amount: plan.amount,
+        payerEmail: user?.email || req.user.email,
+        externalReference,
+        successUrl: resolvedSuccessUrl,
+        cancelUrl: resolvedCancelUrl,
+        pendingUrl: resolvedSuccessUrl,
+        notificationUrl,
+        metadata: {
+          userId: String(req.user.userId),
+          planId: String(planId),
+        },
+      });
+
+      await pool.query(
+        `INSERT INTO subscriptions (
+          user_id, plan_id, status, provider, mercadopago_preference_id, mercadopago_external_reference, updated_at
+        ) VALUES ($1,$2,'pending','mercadopago',$3,$4,NOW())`,
+        [req.user.userId, String(planId), preference.id || null, externalReference],
+      );
+
+      return res.json({
+        checkoutUrl: preference.init_point || preference.sandbox_init_point,
+        mode: 'mercadopago',
+        preferenceId: preference.id || null,
+      });
+    }
+
     await pool.query(
       `INSERT INTO subscriptions (user_id, plan_id, status, provider, updated_at) VALUES ($1,$2,'pending',$3,NOW())`,
       [req.user.userId, String(planId), selectedProvider],
@@ -114,6 +179,26 @@ export function createBillingRouter() {
 
     const checkoutUrl = `${successUrl || cancelUrl || DEFAULT_BILLING_SUCCESS_URL}`;
     return res.json({ checkoutUrl, mode: 'mock' });
+  });
+
+  router.post('/mercadopago/confirm', authRequired, async (req, res) => {
+    if (!hasMercadoPagoConfigured()) {
+      return res.status(400).json({ error: 'Mercado Pago não configurado' });
+    }
+
+    const paymentId = String(req.body?.paymentId || '').trim();
+    if (!paymentId) {
+      return res.status(400).json({ error: 'paymentId é obrigatório' });
+    }
+
+    const payment = await fetchMercadoPagoPayment(paymentId);
+    const subscription = await syncMercadoPagoPayment(payment, req.user.userId);
+    return res.json({
+      success: true,
+      paymentId,
+      status: payment.status || 'unknown',
+      subscription,
+    });
   });
 
   router.get('/entitlements', authRequired, async (req, res) => {
@@ -169,4 +254,65 @@ export function createBillingRouter() {
   });
 
   return router;
+}
+
+function appendProviderQuery(urlString, provider) {
+  try {
+    const url = new URL(String(urlString || DEFAULT_BILLING_SUCCESS_URL));
+    url.searchParams.set('provider', provider);
+    return url.toString();
+  } catch {
+    return String(urlString || DEFAULT_BILLING_SUCCESS_URL);
+  }
+}
+
+function resolveMercadoPagoPaymentId(req) {
+  const candidates = [
+    req.body?.data?.id,
+    req.body?.id,
+    req.query?.['data.id'],
+    req.query?.id,
+  ];
+  const paymentId = candidates.find(Boolean);
+  return paymentId ? String(paymentId).trim() : '';
+}
+
+async function syncMercadoPagoPayment(payment, expectedUserId = null) {
+  const paymentId = String(payment?.id || '').trim();
+  const externalReference = String(payment?.external_reference || '').trim();
+  const [scope, userIdRaw, planIdRaw] = externalReference.split(':');
+  const userId = Number(userIdRaw || 0);
+  const planId = String(planIdRaw || payment?.metadata?.planId || 'coach');
+
+  if (scope !== 'coach' || !userId) {
+    throw new Error('Pagamento Mercado Pago sem external_reference compatível');
+  }
+
+  if (expectedUserId && Number(expectedUserId) !== userId) {
+    throw new Error('Pagamento não pertence ao usuário autenticado');
+  }
+
+  const status = normalizeMercadoPagoStatus(payment?.status);
+  const approvedAt = payment?.date_approved ? new Date(payment.date_approved) : new Date();
+  const renewAt = status === 'active'
+    ? new Date(approvedAt.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    : null;
+
+  await upsertSubscriptionRecord({
+    userId,
+    planId,
+    status,
+    provider: 'mercadopago',
+    mercadopagoPaymentId: paymentId || null,
+    mercadopagoPreferenceId: payment?.order?.id ? String(payment.order.id) : null,
+    mercadopagoExternalReference: externalReference || null,
+    renewAt,
+  });
+
+  return {
+    plan: planId,
+    status,
+    provider: 'mercadopago',
+    renewAt,
+  };
 }

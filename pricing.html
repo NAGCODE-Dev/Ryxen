@@ -3,211 +3,347 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="description" content="Planos do CrossApp para coaches e boxes.">
-  <title>CrossApp Planos</title>
+  <meta name="description" content="Planos do CrossApp para coaches e boxes. Atletas usam solo ou herdam mais recursos pelo plano do coach.">
+  <title>CrossApp | Planos para Coach</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #071018;
-      --panel: rgba(14, 24, 37, 0.82);
+      --bg: #06090d;
+      --panel: rgba(18, 24, 31, 0.9);
+      --panel-soft: rgba(255,255,255,0.03);
       --line: rgba(255,255,255,0.08);
-      --text: #f4f7fb;
-      --muted: rgba(244,247,251,0.68);
-      --orange: #ff7b47;
-      --blue: #4ba3ff;
-      --green: #35d08d;
-      --shadow: 0 24px 60px rgba(0,0,0,0.28);
+      --text: #f3f5f7;
+      --muted: rgba(243,245,247,0.7);
+      --accent: #edf1f5;
+      --accent-dark: #0d1218;
+      --shadow: 0 30px 80px rgba(0,0,0,0.35);
+      --radius: 24px;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: 'Space Grotesk', sans-serif;
+      font-family: 'Space Grotesk', system-ui, sans-serif;
       color: var(--text);
       background:
-        radial-gradient(circle at top left, rgba(255,123,71,0.18), transparent 28%),
-        radial-gradient(circle at right, rgba(75,163,255,0.16), transparent 24%),
-        linear-gradient(180deg, #071018 0%, #050c14 100%);
+        radial-gradient(circle at top left, rgba(255,255,255,0.04), transparent 24%),
+        linear-gradient(180deg, #06090d 0%, #0b1118 100%);
     }
+    a { color: inherit; text-decoration: none; }
     .page {
-      max-width: 1180px;
+      width: min(1180px, calc(100vw - 32px));
       margin: 0 auto;
-      padding: 32px 20px 60px;
+      padding: 32px 0 64px;
     }
-    .hero {
-      padding: 28px;
+    .hero, .note-card, .plan-card {
       border: 1px solid var(--line);
-      border-radius: 28px;
-      background: linear-gradient(135deg, rgba(255,123,71,0.16), rgba(75,163,255,0.12));
-      box-shadow: var(--shadow);
-    }
-    .eyebrow {
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      font-size: 12px;
-      color: var(--muted);
-      font-weight: 800;
-    }
-    h1 {
-      margin: 10px 0 12px;
-      font-size: clamp(2rem, 6vw, 4rem);
-      line-height: 0.94;
-      letter-spacing: -0.05em;
-    }
-    .hero p {
-      max-width: 700px;
-      color: var(--muted);
-      line-height: 1.6;
-      margin: 0;
-    }
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      margin-top: 24px;
-    }
-    .card {
-      padding: 22px;
-      border-radius: 24px;
-      border: 1px solid var(--line);
+      border-radius: var(--radius);
       background: var(--panel);
       box-shadow: var(--shadow);
     }
-    .card.featured {
-      background: linear-gradient(135deg, rgba(255,123,71,0.16), rgba(75,163,255,0.14)), var(--panel);
-      transform: translateY(-4px);
+    .hero {
+      padding: 32px;
+      display: grid;
+      gap: 18px;
     }
-    .price {
-      display: block;
-      margin: 14px 0 10px;
-      font-size: 2rem;
-      font-weight: 800;
-    }
-    .muted {
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    .features {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin: 18px 0 22px;
-    }
-    .feature {
-      padding: 10px 12px;
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 32px;
+      width: fit-content;
+      padding: 0 12px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.04);
-      font-size: 14px;
-      color: var(--text);
+      border: 1px solid var(--line);
+      background: var(--panel-soft);
+      color: var(--muted);
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
-    .cta-row {
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 4.6rem);
+      line-height: 0.94;
+      letter-spacing: -0.05em;
+      max-width: 12ch;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+    .hero-meta, .hero-actions {
       display: flex;
-      gap: 12px;
       flex-wrap: wrap;
-      margin-top: 24px;
+      gap: 10px;
     }
+    .hero-meta span,
     .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 46px;
-      padding: 0 18px;
-      border-radius: 14px;
-      text-decoration: none;
-      font-weight: 800;
+      min-height: 44px;
+      padding: 0 16px;
+      border-radius: 16px;
       border: 1px solid var(--line);
-      color: var(--text);
+    }
+    .hero-meta span {
+      color: var(--muted);
+      background: var(--panel-soft);
+      font-size: 0.9rem;
+    }
+    .btn {
+      font-weight: 800;
     }
     .btn-primary {
-      border: 0;
-      background: linear-gradient(135deg, var(--orange), var(--blue));
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: transparent;
     }
-    .note-grid {
+    .btn-secondary {
+      background: var(--panel-soft);
+      color: var(--text);
+    }
+    .section {
+      margin-top: 24px;
+    }
+    .section h2 {
+      margin: 0 0 8px;
+      font-size: 1.7rem;
+      letter-spacing: -0.04em;
+    }
+    .section p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .grid-3, .grid-2 {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 18px;
-      margin-top: 20px;
+      margin-top: 18px;
+    }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .plan-card {
+      padding: 22px;
+      display: grid;
+      gap: 14px;
+    }
+    .plan-card.featured {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(18,24,31,0.94));
+      border-color: rgba(255,255,255,0.14);
+    }
+    .plan-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .plan-kicker {
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+    .plan-price {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+    .plan-card h3 {
+      margin: 0;
+      font-size: 1.4rem;
+      letter-spacing: -0.04em;
+    }
+    .plan-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .feature-list {
+      display: grid;
+      gap: 10px;
+    }
+    .feature {
+      padding: 10px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--panel-soft);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+    .plan-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
     }
     .note-card {
-      padding: 20px;
-      border-radius: 20px;
-      border: 1px solid var(--line);
-      background: rgba(255,255,255,0.03);
+      padding: 22px;
+      display: grid;
+      gap: 10px;
     }
     .note-card strong {
-      display: block;
-      margin-bottom: 8px;
+      font-size: 1.02rem;
     }
-    @media (max-width: 900px) {
-      .pricing-grid,
-      .note-grid {
+    .note-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+    .subtle {
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    @media (max-width: 980px) {
+      .grid-3, .grid-2 {
         grid-template-columns: 1fr;
       }
-      .card.featured {
-        transform: none;
+      .page {
+        width: min(100vw - 24px, 100%);
+      }
+      .hero {
+        padding: 24px;
       }
     }
   </style>
 </head>
 <body>
+  <script src="./config.js"></script>
   <main class="page">
     <section class="hero">
       <div class="eyebrow">CrossApp Pricing</div>
-      <h1>Planos para coach, box e operação em escala.</h1>
-      <p>O atleta usa o app vinculado ao coach. O coach assina, publica a programação, libera o acesso do box e acompanha benchmarks, membros e distribuição do treino.</p>
-      <div class="cta-row">
+      <h1>Planos para coaches. Mais valor para os atletas.</h1>
+      <p>
+        No CrossApp, quem assina é o coach ou o box. Os atletas podem usar o app sozinhos no modo base
+        ou ganhar mais imports, histórico e rotina completa quando estão vinculados a um coach com plano ativo.
+      </p>
+      <div class="hero-meta">
+        <span>Atleta pode usar solo</span>
+        <span>Coach libera mais recursos</span>
+        <span>Competições liberadas em todos os níveis</span>
+      </div>
+      <div class="hero-actions">
         <a class="btn btn-primary" href="/coach/">Abrir Coach Portal</a>
-        <a class="btn" href="/">Abrir app do atleta</a>
+        <a class="btn btn-secondary" href="/sports/cross/">Abrir app Cross</a>
       </div>
     </section>
 
-    <section class="pricing-grid">
-      <article class="card">
-        <div class="eyebrow">Starter</div>
-        <strong class="price">R$ 59/mês</strong>
-        <p class="muted">Entrada para boxes menores que querem centralizar benchmark, feed e entrega básica de treinos.</p>
-        <div class="features">
-          <div class="feature">1 gym ativo</div>
-          <div class="feature">Até 25 atletas</div>
-          <div class="feature">Biblioteca de benchmarks</div>
-        </div>
-      </article>
+    <section class="section">
+      <h2>Planos do coach</h2>
+      <p>Escolha o plano conforme a maturidade da operação. Os benefícios extras dos atletas sobem junto com o plano ativo do coach.</p>
+      <div class="grid-3">
+        <article class="plan-card">
+          <div class="plan-top">
+            <div class="plan-kicker">Coach Starter</div>
+            <span class="subtle">Operação inicial</span>
+          </div>
+          <strong class="plan-price">R$ 59/mês</strong>
+          <h3>Starter</h3>
+          <p>Para coaches e boxes que querem sair do improviso e começar a centralizar treino, atletas e rotina.</p>
+          <div class="feature-list">
+            <div class="feature">Publicação de treinos e rotina básica do box</div>
+            <div class="feature">Gestão inicial de atletas e grupos</div>
+            <div class="feature">Atletas vinculados com 12 imports/mês e 90 dias de histórico</div>
+          </div>
+          <div class="plan-actions">
+            <a class="btn btn-primary" data-plan-link="starter" href="#">Assinar Starter</a>
+          </div>
+        </article>
 
-      <article class="card featured">
-        <div class="eyebrow">Coach</div>
-        <strong class="price">R$ 119/mês</strong>
-        <p class="muted">Plano principal para coaches que precisam publicar programação, gerenciar atletas e manter acesso do app.</p>
-        <div class="features">
-          <div class="feature">Programação completa do box</div>
-          <div class="feature">Gestão de membros</div>
-          <div class="feature">Controle de acesso por assinatura</div>
-          <div class="feature">Feed e benchmarks expandidos</div>
-        </div>
-      </article>
+        <article class="plan-card featured">
+          <div class="plan-top">
+            <div class="plan-kicker">Coach Pro</div>
+            <span class="subtle">Plano principal</span>
+          </div>
+          <strong class="plan-price">R$ 119/mês</strong>
+          <h3>Pro</h3>
+          <p>Para a operação principal do CrossApp: publicação consistente, gestão mais forte e mais valor percebido para os atletas.</p>
+          <div class="feature-list">
+            <div class="feature">Tudo do Starter</div>
+            <div class="feature">Mais controle operacional do coach e da rotina</div>
+            <div class="feature">Atletas vinculados com 30 imports/mês e 365 dias de histórico</div>
+          </div>
+          <div class="plan-actions">
+            <a class="btn btn-primary" data-plan-link="coach" href="#">Assinar Pro</a>
+          </div>
+        </article>
 
-      <article class="card">
-        <div class="eyebrow">Pro</div>
-        <strong class="price">R$ 199/mês</strong>
-        <p class="muted">Estrutura para operação maior, múltiplos coaches e recursos de analytics/comercial que entram na próxima camada.</p>
-        <div class="features">
-          <div class="feature">Mais coaches e atletas</div>
-          <div class="feature">Base para analytics avançado</div>
-          <div class="feature">Preparado para expansão comercial</div>
-        </div>
-      </article>
+        <article class="plan-card">
+          <div class="plan-top">
+            <div class="plan-kicker">Coach Performance</div>
+            <span class="subtle">Operação premium</span>
+          </div>
+          <strong class="plan-price">R$ 199/mês</strong>
+          <h3>Performance</h3>
+          <p>Para boxes e coaches que querem máxima folga operacional, escala e experiência premium para toda a base.</p>
+          <div class="feature-list">
+            <div class="feature">Tudo do Pro</div>
+            <div class="feature">Operação avançada com mais espaço de crescimento</div>
+            <div class="feature">Atletas vinculados com imports ilimitados e histórico completo</div>
+          </div>
+          <div class="plan-actions">
+            <a class="btn btn-primary" data-plan-link="performance" href="#">Assinar Performance</a>
+          </div>
+        </article>
+      </div>
     </section>
 
-    <section class="note-grid">
-      <article class="note-card">
-        <strong>Como funciona a cobrança</strong>
-        <p class="muted">O coach paga a assinatura. Os atletas usam o app enquanto o box estiver ativo. Quando a renovação se aproxima, o sistema avisa; quando vence, o acesso entra em modo de graça e depois em limitação.</p>
-      </article>
-      <article class="note-card">
-        <strong>Operação do produto</strong>
-        <p class="muted">O coach publica a programação, convida membros, consulta benchmarks e controla a rotina do box no Coach Portal. O atleta recebe o treino no app com cálculo de carga e histórico.</p>
-      </article>
+    <section class="section">
+      <h2>Como fica para o atleta</h2>
+      <p>O atleta não precisa estar vinculado a um coach para usar o app. Mas, quando está, ele herda mais capacidade e uma experiência mais completa.</p>
+      <div class="grid-2">
+        <article class="note-card">
+          <strong>Modo solo</strong>
+          <p>O atleta pode usar o app sozinho, registrar rotina e importar até 5 vezes por mês entre PDF, imagem, vídeo ou OCR. É o modo base do produto.</p>
+        </article>
+        <article class="note-card">
+          <strong>Vinculado a um coach</strong>
+          <p>Quando o atleta entra em um gym com plano ativo, ele herda mais imports, mais histórico e o fluxo completo de treino enviado pelo coach.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Cobrança simples agora</h2>
+      <div class="grid-2">
+        <article class="note-card">
+          <strong>Checkout por link</strong>
+          <p>O CrossApp pode abrir direto o checkout da Kiwify para cada plano. É o caminho mais simples para vender agora sem travar em integração complexa.</p>
+        </article>
+        <article class="note-card">
+          <strong>Liberação inicial</strong>
+          <p>O ideal no começo é validar a compra na Kiwify e liberar o plano do coach de forma controlada. Automação pode entrar depois, quando o fluxo estiver provado.</p>
+        </article>
+      </div>
     </section>
   </main>
+  <script>
+    (function attachPlanLinks() {
+      const billing = (window.__CROSSAPP_CONFIG__ || {}).billing || {};
+      const links = billing.links || {};
+      document.querySelectorAll('[data-plan-link]').forEach((node) => {
+        const key = node.getAttribute('data-plan-link');
+        const url = links[key] || '';
+        if (url) {
+          node.setAttribute('href', url);
+          node.setAttribute('target', '_blank');
+          node.setAttribute('rel', 'noopener noreferrer');
+          return;
+        }
+        node.classList.add('btn-secondary');
+        node.removeAttribute('href');
+        node.addEventListener('click', (event) => {
+          event.preventDefault();
+          alert('Link deste plano ainda não configurado.');
+        });
+      });
+    }());
+  </script>
 </body>
 </html>

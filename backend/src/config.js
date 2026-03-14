@@ -41,6 +41,7 @@ export const GOOGLE_CLIENT_ID = String(process.env.GOOGLE_CLIENT_ID || '').trim(
 export const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, IS_PRODUCTION);
 export const DEFAULT_BILLING_SUCCESS_URL = String(process.env.BILLING_SUCCESS_URL || FRONTEND_ORIGIN || 'http://localhost:8000').trim();
 export const DEFAULT_BILLING_CANCEL_URL = String(process.env.BILLING_CANCEL_URL || FRONTEND_ORIGIN || 'http://localhost:8000').trim();
+export const BACKEND_PUBLIC_URL = String(process.env.BACKEND_PUBLIC_URL || '').trim();
 
 export function validateConfig() {
   if (!DATABASE_URL) {

@@ -10,6 +10,17 @@ export async function getSubscriptionStatus() {
 
 export async function createCheckoutSession(planId) {
   const cfg = getRuntimeConfig();
+  if ((cfg.billing?.provider || 'stripe') === 'kiwify_link') {
+    const checkoutUrl = resolveKiwifyCheckoutUrl(planId, cfg);
+    if (!checkoutUrl) {
+      throw new Error('Link da Kiwify não configurado para este plano');
+    }
+    return {
+      checkoutUrl,
+      mode: 'kiwify_link',
+    };
+  }
+
   const payload = {
     planId,
     provider: cfg.billing?.provider || 'stripe',
@@ -36,4 +47,10 @@ export async function activateMockSubscription(planId = 'coach') {
     method: 'POST',
     body: { planId, provider: 'mock' },
   });
+}
+
+function resolveKiwifyCheckoutUrl(planId, cfg) {
+  const links = cfg?.billing?.links || {};
+  const key = String(planId || 'coach').trim().toLowerCase();
+  return links[key] || '';
 }

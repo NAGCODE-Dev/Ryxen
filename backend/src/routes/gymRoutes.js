@@ -3,6 +3,7 @@ import express from 'express';
 import { pool } from '../db.js';
 import { authRequired } from '../auth.js';
 import { getAccessContextForGym, getAccessContextForUser, getMembershipForUser, getUserMemberships } from '../access.js';
+import { selectEffectiveAthleteBenefits } from '../accessPolicy.js';
 
 export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }) {
   const router = express.Router();
@@ -63,10 +64,12 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
   router.get('/access/context', authRequired, async (req, res) => {
     const gyms = await getAccessContextForUser(req.user.userId);
     return res.json({
+      athleteBenefits: selectEffectiveAthleteBenefits(gyms),
       gyms: gyms.map((ctx) => ({
         membership: ctx.membership,
         gymAccess: ctx.access?.gymAccess || null,
         ownerSubscription: ctx.access?.ownerSubscription || null,
+        athleteBenefits: ctx.access?.athleteBenefits || null,
       })),
     });
   });

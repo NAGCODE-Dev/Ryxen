@@ -6,6 +6,7 @@ const rootDir = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   root: rootDir,
+  base: '/coach/',
   build: {
     outDir: resolve(rootDir, '../dist/coach'),
     emptyOutDir: false,

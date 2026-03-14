@@ -43,6 +43,27 @@
   min-height: 100%;
 }
 
+@media (max-width: 980px) {
+  .summary-strip,
+  .summary-strip-4,
+  .page-stack-account .coach-grid,
+  .page-stack-competitions .coach-grid,
+  .page-stack-history .trend-grid,
+  .page-stack-account .page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .page-stack-account .coach-grid,
+  .page-stack-competitions .coach-grid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .coach-listCompact .coach-listItem {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

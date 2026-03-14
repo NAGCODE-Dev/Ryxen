@@ -9,7 +9,7 @@
 }
 
 .page-section {
-  overflow: hidden;
+  min-width: 0;
 }
 
 .workout-header {
@@ -60,25 +60,39 @@
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
   box-shadow: var(--shadow-md);
+  overflow: hidden;
 }
 
 .page-foldSummary {
   list-style: none;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px;
+  display: block;
+  padding: 0;
   cursor: pointer;
+  min-width: 0;
 }
 
 .page-foldSummary::-webkit-details-marker {
   display: none;
 }
 
+.page-foldSummary::marker {
+  content: '';
+}
+
+.page-foldSummaryRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px 18px;
+}
+
 .page-foldHead {
   display: grid;
   gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .page-foldTitle {
@@ -96,6 +110,8 @@
   color: var(--text-muted);
   font-size: 1rem;
   transition: transform 160ms ease;
+  flex: 0 0 auto;
+  margin-top: 1px;
 }
 
 .page-fold[open] .page-foldChevron {
@@ -103,12 +119,17 @@
 }
 
 .page-foldBody {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  padding: 16px 18px 18px;
   border-top: 1px solid var(--line);
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   box-shadow: none;
+}
+
+.page-foldBody > * {
+  min-width: 0;
 }
 
 .warning-badge,
@@ -309,6 +330,10 @@
   gap: 12px;
 }
 
+.coach-listCompact {
+  gap: 8px;
+}
+
 .pr-item,
 .coach-listItem,
 .admin-userRow {
@@ -318,6 +343,23 @@
   border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--bg-surface-2);
+  min-width: 0;
+}
+
+.coach-listCompact .coach-listItem {
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.85fr);
+  align-items: start;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.coach-listCompact .coach-listItem strong {
+  line-height: 1.2;
+}
+
+.coach-listCompact .coach-listItem span {
+  font-size: 0.8rem;
+  line-height: 1.45;
 }
 
 .pr-item {
@@ -387,12 +429,37 @@
   font-weight: 800;
 }
 
+.summary-tileCompact {
+  gap: 6px;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.summary-tileCompact .summary-value {
+  margin-top: 0;
+  font-size: 0.98rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summary-detail {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
 .account-summaryGrid,
 .coach-selectionPanels,
 .trend-grid,
 .coach-grid,
 .admin-stats {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.page-stack-history .trend-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .coach-cardWide,
@@ -450,6 +517,17 @@
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+}
+
+.page-stack-history .trend-card,
+.page-stack-competitions .summary-tile,
+.page-stack-account .summary-tile {
+  box-shadow: none;
+}
+
+.trend-cardHead > *,
+.trend-meta > * {
+  min-width: 0;
 }
 
 .trend-chart {

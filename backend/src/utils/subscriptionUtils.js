@@ -14,14 +14,30 @@ export async function upsertSubscriptionRecord({
   stripeCustomerId,
   stripeSubscriptionId,
   stripePriceId,
+  mercadopagoPaymentId,
+  mercadopagoPreferenceId,
+  mercadopagoExternalReference,
   renewAt,
 }) {
   if (!userId) return;
 
-  const existing = await pool.query(
-    `SELECT id FROM subscriptions WHERE stripe_subscription_id = $1 LIMIT 1`,
-    [stripeSubscriptionId],
-  );
+  let existing = { rows: [] };
+  if (stripeSubscriptionId) {
+    existing = await pool.query(
+      `SELECT id FROM subscriptions WHERE stripe_subscription_id = $1 LIMIT 1`,
+      [stripeSubscriptionId],
+    );
+  } else if (mercadopagoPaymentId) {
+    existing = await pool.query(
+      `SELECT id FROM subscriptions WHERE mercadopago_payment_id = $1 LIMIT 1`,
+      [mercadopagoPaymentId],
+    );
+  } else if (mercadopagoExternalReference) {
+    existing = await pool.query(
+      `SELECT id FROM subscriptions WHERE mercadopago_external_reference = $1 ORDER BY updated_at DESC LIMIT 1`,
+      [mercadopagoExternalReference],
+    );
+  }
 
   if (existing.rows[0]?.id) {
     await pool.query(
@@ -31,10 +47,24 @@ export async function upsertSubscriptionRecord({
            provider = $4,
            stripe_customer_id = $5,
            stripe_price_id = $6,
-           renew_at = $7,
+           mercadopago_payment_id = $7,
+           mercadopago_preference_id = $8,
+           mercadopago_external_reference = $9,
+           renew_at = $10,
            updated_at = NOW()
        WHERE id = $1`,
-      [existing.rows[0].id, planId, status, provider, stripeCustomerId, stripePriceId, renewAt],
+      [
+        existing.rows[0].id,
+        planId,
+        status,
+        provider,
+        stripeCustomerId,
+        stripePriceId,
+        mercadopagoPaymentId || null,
+        mercadopagoPreferenceId || null,
+        mercadopagoExternalReference || null,
+        renewAt,
+      ],
     );
     return;
   }
@@ -48,10 +78,25 @@ export async function upsertSubscriptionRecord({
       stripe_customer_id,
       stripe_subscription_id,
       stripe_price_id,
+      mercadopago_payment_id,
+      mercadopago_preference_id,
+      mercadopago_external_reference,
       renew_at,
       updated_at
-    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NOW())`,
-    [userId, planId, status, provider, stripeCustomerId, stripeSubscriptionId, stripePriceId, renewAt],
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW())`,
+    [
+      userId,
+      planId,
+      status,
+      provider,
+      stripeCustomerId,
+      stripeSubscriptionId,
+      stripePriceId,
+      mercadopagoPaymentId || null,
+      mercadopagoPreferenceId || null,
+      mercadopagoExternalReference || null,
+      renewAt,
+    ],
   );
 }
 

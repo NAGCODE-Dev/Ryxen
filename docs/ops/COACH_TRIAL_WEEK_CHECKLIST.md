@@ -21,9 +21,11 @@ Checklist objetivo para liberar o app para 1 semana de teste com coach real.
 
 ## 3. Assinatura
 
-- [ ] Definido se a semana usa Stripe real ou ambiente de teste
+- [ ] Definido se a semana usa link Kiwify, mock local ou outro provider
 - [ ] Coach tem acesso ativo para publicar treinos
 - [ ] `billing/status` retorna plano/status esperados
+- [ ] Botão `Assinar Coach` abre o checkout correto
+- [ ] Fluxo manual de validação do pagamento está combinado
 
 ## 4. Seed inicial
 

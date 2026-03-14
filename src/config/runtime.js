@@ -28,9 +28,15 @@ const defaults = {
     googleClientId: '',
   },
   billing: {
-    provider: 'stripe', // stripe | mercadopago
+    provider: 'stripe', // stripe | mercadopago | kiwify_link
     successUrl: '',
     cancelUrl: '',
+    links: {
+      starter: '',
+      pro: '',
+      coach: '',
+      performance: '',
+    },
   },
 };
 

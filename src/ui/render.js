@@ -1,3 +1,4 @@
+import { getAthleteImportUsage, normalizeAthleteBenefits } from '../core/services/athleteBenefitUsage.js';
 import { isDeveloperEmail } from '../core/utils/devAccess.js';
 
 export function renderAppShell() {
@@ -296,8 +297,8 @@ function renderEmptyState(state) {
     return `
       <div class="empty-state">
         <div class="empty-icon">📋</div>
-        <h2>Seu treino ainda não entrou</h2>
-        <p>Importe uma planilha ou entre na sua conta para receber o treino enviado pelo coach.</p>
+        <h2>Comece no seu ritmo</h2>
+        <p>Use o app sozinho importando sua planilha ou entre na conta para receber o treino enviado pelo coach e liberar mais recursos.</p>
         <div class="page-actions page-actions-inline">
           <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Adicionar treino</button>
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
@@ -324,22 +325,30 @@ function renderHistoryPage(state) {
   const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
   const prHistory = athleteOverview?.prHistory || [];
   const isBusy = !!state?.__ui?.isBusy;
+  const benchmarkPoints = benchmarkHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
+  const prPoints = prHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
 
   return `
     <div class="workout-container page-stack page-stack-history">
       ${renderPageHero({
         eyebrow: 'Histórico',
         title: 'Sua evolução no box',
-        subtitle: 'Acompanhe benchmarks, PRs e consistência. Quanto mais você registra, melhor o app trabalha por você.',
+        subtitle: 'Benchmarks, PRs e consistência em uma leitura diária mais direta.',
         actions: `
           <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Sincronizar conta</button>
         `,
       })}
 
+      <div class="summary-strip summary-strip-3">
+        ${renderSummaryTile('Benchmarks', isBusy ? '...' : String(benchmarkHistory.length), 'modalidades com histórico')}
+        ${renderSummaryTile('PRs', isBusy ? '...' : String(prHistory.length), 'movimentos acompanhados')}
+        ${renderSummaryTile('Registros', isBusy ? '...' : String(benchmarkPoints + prPoints), 'entradas acumuladas')}
+      </div>
+
       ${renderPageFold({
         title: 'Evolução por benchmark',
-        subtitle: 'Veja como seus resultados acumulam progresso ao longo do tempo.',
+        subtitle: 'Progressão dos benchmarks mais registrados.',
         content: `
         <div class="trend-grid">
           ${isBusy ? renderTrendSkeletons(4) : benchmarkHistory.length ? benchmarkHistory.map((item) => `
@@ -361,7 +370,7 @@ function renderHistoryPage(state) {
 
       ${renderPageFold({
         title: 'Evolução de PRs',
-        subtitle: 'Gerencie cargas base e mantenha o cálculo do app útil no dia a dia.',
+        subtitle: 'Progressão das suas cargas de referência.',
         content: `
         <div class="page-actions">
           <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
@@ -392,24 +401,32 @@ function renderCompetitionsPage(state) {
   const items = athleteOverview?.upcomingCompetitions || [];
   const access = athleteOverview?.gymAccess || [];
   const isBusy = !!state?.__ui?.isBusy;
+  const activeGyms = access.filter((item) => item?.warning ? false : true).length;
+  const blockedGyms = access.filter((item) => item?.warning).length;
 
   return `
     <div class="workout-container page-stack page-stack-competitions">
       ${renderPageHero({
         eyebrow: 'Competições',
         title: 'Agenda competitiva do seu box',
-        subtitle: 'Veja o que seu coach publicar para o box, acompanhe eventos futuros e entenda o status do seu acesso.',
+        subtitle: 'Agenda publicada pelo coach e leitura rápida do seu acesso.',
         actions: `
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Entrar para sincronizar</button>
         `,
       })}
 
+      <div class="summary-strip summary-strip-3">
+        ${renderSummaryTile('Eventos', isBusy ? '...' : String(items.length), 'competições próximas')}
+        ${renderSummaryTile('Gyms ativos', isBusy ? '...' : String(activeGyms), 'com acesso ok')}
+        ${renderSummaryTile('Alertas', isBusy ? '...' : String(blockedGyms), 'gyms com aviso')}
+      </div>
+
       <div class="coach-grid">
         ${renderPageFold({
           title: 'Próximas competições',
-          subtitle: 'Agenda competitiva publicada pelos boxes aos quais sua conta está ligada.',
+          subtitle: 'Próximos eventos vinculados à sua conta.',
           content: `
-          <div class="coach-list">
+          <div class="coach-list coach-listCompact">
             ${isBusy ? renderListSkeletons(4) : items.length ? items.map((item) => `
               <div class="coach-listItem static">
                 <strong>${escapeHtml(item.title || 'Competição')}</strong>
@@ -422,9 +439,9 @@ function renderCompetitionsPage(state) {
 
         ${renderPageFold({
           title: 'Acesso por gym',
-          subtitle: 'Entenda por que você está vendo ou não vendo treinos e eventos.',
+          subtitle: 'Status atual do vínculo com cada box.',
           content: `
-          <div class="coach-list">
+          <div class="coach-list coach-listCompact">
             ${isBusy ? renderListSkeletons(3) : access.length ? access.map((item) => `
               <div class="coach-listItem static">
                 <strong>${escapeHtml(item.gymName || `Gym ${item.gymId}`)}</strong>
@@ -445,8 +462,11 @@ function renderAccountPage(state) {
   const subscription = coachPortal?.subscription || null;
   const planName = subscription?.plan || subscription?.plan_id || 'free';
   const planStatus = subscription?.status || 'inactive';
+  const renewAt = subscription?.renewAt || subscription?.renew_at || null;
   const canUseDeveloperTools = isDeveloperEmail(profile?.email);
   const isBusy = !!state?.__ui?.isBusy;
+  const athleteBenefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
+  const importUsage = getAthleteImportUsage(athleteBenefits, 'pdf');
 
   if (!profile?.email) {
     return `
@@ -454,17 +474,24 @@ function renderAccountPage(state) {
         ${renderPageHero({
           eyebrow: 'Conta',
           title: 'Sincronize seu treino com o coach',
-          subtitle: 'Entrando na conta, você salva histórico, recebe treinos do box e mantém seus PRs sincronizados entre dispositivos.',
+          subtitle: 'Use o app no modo solo ou conecte sua conta a um coach para receber treino, ganhar mais imports e liberar uma rotina mais forte.',
           actions: `
             <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar ou cadastrar</button>
           `,
         })}
+
+        <div class="summary-strip summary-strip-3">
+          ${renderSummaryTile('Solo', '5 imports', 'PDF ou mídia por mês')}
+          ${renderSummaryTile('Coach', 'Mais recursos', 'benefícios herdados do plano')}
+          ${renderSummaryTile('Portal', 'Separado', 'operação do coach')}
+        </div>
+
         <div class="coach-grid">
           ${renderPageFold({
             title: 'O que você libera',
-            subtitle: 'Valor diário da conta no app do atleta.',
+            subtitle: 'O valor prático da conta no uso diário.',
             content: `
-            <div class="coach-list">
+            <div class="coach-list coach-listCompact">
               <div class="coach-listItem static">
                 <strong>Sync entre dispositivos</strong>
                 <span>Seus dados não ficam presos em um aparelho.</span>
@@ -482,7 +509,7 @@ function renderAccountPage(state) {
           })}
           ${renderPageFold({
             title: 'Se você é coach',
-            subtitle: 'No app principal você entra como qualquer usuário e acessa o portal separado quando precisar operar o box.',
+            subtitle: 'A conta é a mesma, a operação fica no portal separado.',
             content: `
             <p class="account-hint">Use a mesma conta para abrir o Coach Portal e publicar treinos para atletas, grupos e planilhas especiais.</p>
             <div class="page-actions">
@@ -507,10 +534,18 @@ function renderAccountPage(state) {
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
         `,
       })}
+
+      <div class="summary-strip summary-strip-4">
+        ${renderSummaryTile('Conta', isBusy ? '...' : escapeHtml(profile.name || 'Sem nome'), isBusy ? '' : escapeHtml(profile.email || ''))}
+        ${renderSummaryTile('Plano', isBusy ? '...' : escapeHtml(planName), isBusy ? '' : escapeHtml(planStatus))}
+        ${renderSummaryTile('Benefício atleta', isBusy ? '...' : athleteBenefits.label, isBusy ? '' : 'herdado do plano do coach')}
+        ${renderSummaryTile('Importações', isBusy ? '...' : (importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : (importUsage.unlimited ? 'PDF e mídia sem limite' : `${importUsage.used} uso(s) neste mês`))}
+      </div>
+
       <div class="coach-grid">
         ${renderPageFold({
           title: 'Sessão e identidade',
-          subtitle: 'Seu perfil, sync e controles pessoais.',
+          subtitle: 'Perfil e sincronização.',
           content: `
           ${isBusy ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
@@ -526,12 +561,30 @@ function renderAccountPage(state) {
 
         ${renderPageFold({
           title: 'Plano do coach',
-          subtitle: 'A assinatura do coach libera a operação do box e o acesso dos atletas.',
+          subtitle: 'Libera operação do box e acesso dos atletas.',
           content: `
           ${isBusy ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(planName)}</div>
-            <div class="account-email">${escapeHtml(planStatus)}</div>
+            <div class="account-email">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</div>
           `}
+          <div class="coach-list coach-listCompact">
+            <div class="coach-listItem static">
+              <strong>Seu nível no app</strong>
+              <span>${escapeHtml(athleteBenefits.label)}${athleteBenefits.inherited ? ' • herdado do coach' : ' • modo base'}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Imports neste mês</strong>
+              <span>${importUsage.unlimited ? 'PDF e mídia ilimitados' : `${importUsage.remaining} restante(s) de ${importUsage.limit}`}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Como funciona a cota</strong>
+              <span>${importUsage.unlimited ? 'Você pode importar PDF, imagem, vídeo e OCR sem limite mensal.' : 'A mesma cota vale para PDF, imagem, vídeo e OCR.'}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Histórico visível</strong>
+              <span>${athleteBenefits.historyDays === null ? 'Completo' : `${athleteBenefits.historyDays} dias`}</span>
+            </div>
+          </div>
           <div class="page-actions">
             <button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Assinar Coach</button>
             ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
@@ -541,7 +594,7 @@ function renderAccountPage(state) {
 
         ${renderPageFold({
           title: 'Ferramentas da conta',
-          subtitle: 'Atalhos para operação, suporte e painel completo.',
+          subtitle: 'Atalhos de operação e suporte.',
           content: `
           <div class="page-actions">
             <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Abrir painel completo</button>
@@ -579,6 +632,21 @@ function renderTodayPageIntro(state) {
       `,
       footer: hasWeeks ? `<div class="week-chips">${renderWeekChips(state)}</div>` : '',
     })}
+    ${renderAthleteBenefitsStrip(state)}
+  `;
+}
+
+function renderAthleteBenefitsStrip(state) {
+  const benefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
+  const importUsage = getAthleteImportUsage(benefits, 'pdf');
+  const historyValue = benefits.historyDays === null ? 'Completo' : `${benefits.historyDays} dias`;
+
+  return `
+    <div class="summary-strip summary-strip-3">
+      ${renderSummaryTile('Seu nível', benefits.label, benefits.inherited ? 'benefício herdado do coach' : 'modo base do atleta')}
+      ${renderSummaryTile('Imports no mês', importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`, importUsage.unlimited ? 'PDF ou mídia sem limite' : `${importUsage.used} usado(s) entre PDF e mídia`)}
+      ${renderSummaryTile('Histórico', historyValue, 'competições liberadas')}
+    </div>
   `;
 }
 
@@ -600,13 +668,15 @@ function renderPageFold({ title, subtitle = '', content = '', open = true }) {
   return `
     <details class="page-fold page-section" ${open ? 'open' : ''}>
       <summary class="page-foldSummary">
-        <div class="page-foldHead">
-          <strong class="page-foldTitle">${escapeHtml(title || '')}</strong>
-          ${subtitle ? `<span class="page-foldSubtitle">${escapeHtml(subtitle)}</span>` : ''}
+        <div class="page-foldSummaryRow">
+          <div class="page-foldHead">
+            <strong class="page-foldTitle">${escapeHtml(title || '')}</strong>
+            ${subtitle ? `<span class="page-foldSubtitle">${escapeHtml(subtitle)}</span>` : ''}
+          </div>
+          <span class="page-foldChevron">⌄</span>
         </div>
-        <span class="page-foldChevron">⌄</span>
       </summary>
-      <div class="page-foldBody coach-card coach-cardWide">
+      <div class="page-foldBody">
         ${content}
       </div>
     </details>
@@ -680,6 +750,16 @@ function renderAccountSkeleton() {
     <div class="sheet-stack isSkeleton">
       <div class="skeleton skeleton-line skeleton-line-lg"></div>
       <div class="skeleton skeleton-line"></div>
+    </div>
+  `;
+}
+
+function renderSummaryTile(label, value, detail = '') {
+  return `
+    <div class="summary-tile summary-tileCompact">
+      <span class="summary-label">${escapeHtml(label || '')}</span>
+      <strong class="summary-value">${escapeHtml(value || '')}</strong>
+      ${detail ? `<span class="summary-detail">${escapeHtml(detail || '')}</span>` : ''}
     </div>
   `;
 }

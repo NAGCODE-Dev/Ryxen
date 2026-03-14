@@ -8,5 +8,11 @@ window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || {
     provider: 'stripe',
     successUrl: '',
     cancelUrl: '',
+    links: {
+      starter: '',
+      pro: '',
+      coach: '',
+      performance: '',
+    },
   },
 };

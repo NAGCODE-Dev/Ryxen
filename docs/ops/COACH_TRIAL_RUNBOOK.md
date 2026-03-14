@@ -8,6 +8,9 @@ Preparar e acompanhar uma semana de uso real por um coach sem improviso operacio
 
 1. Publicar frontend, backend e banco.
 2. Rodar migrations.
+3. Configurar o provider de cobrança.
+   - Se usar `Kiwify`, preencher os links de checkout no frontend.
+   - No início, a liberação do plano pode ser manual após confirmação do pagamento.
 3. Popular ambiente com dados de teste:
 
 ```bash
@@ -65,6 +68,8 @@ O atleta deve conseguir:
 - falhas de publicação de treino
 - falhas de sync
 - falhas de import PDF/OCR
+- abertura correta do checkout do coach
+- tempo entre pagamento confirmado e acesso liberado
 
 ## Quando pausar o teste
 

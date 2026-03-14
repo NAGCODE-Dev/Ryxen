@@ -14,11 +14,18 @@
   }
 
   .page-heroTitle {
-    font-size: 1.28rem;
+    font-size: 1.18rem;
+  }
+
+  body[data-page="history"] .page-heroTitle,
+  body[data-page="competitions"] .page-heroTitle,
+  body[data-page="account"] .page-heroTitle {
+    font-size: 1.04rem;
   }
 
   .page-heroSubtitle {
-    font-size: 0.84rem;
+    font-size: 0.8rem;
+    line-height: 1.45;
   }
 
   .page-heroActions {
@@ -63,6 +70,8 @@
   }
 
   .pr-item,
+  .summary-strip,
+  .summary-strip-4,
   .account-summaryGrid,
   .coach-selectionPanels,
   .trend-grid,
@@ -113,10 +122,8 @@
   body[data-page="today"] .empty-state,
   body[data-page="today"] .workout-block,
   body[data-page="today"] .athlete-accessBanner {
-    border-left: 0;
-    border-right: 0;
-    border-radius: 22px 22px 0 0;
-    box-shadow: none;
+    border-radius: 18px;
+    box-shadow: var(--shadow-sm);
   }
 
   body[data-page="account"] .workout-container,
@@ -126,7 +133,11 @@
   }
 
   .page-foldSummary {
-    padding: 14px 16px;
+    padding: 0;
+  }
+
+  .app-main {
+    padding: 14px 12px calc(var(--nav-height) + 18px + var(--safe-bottom));
   }
 }
 
@@ -155,7 +166,14 @@
   }
 
   .page-heroTitle {
-    font-size: 1.14rem;
+    font-size: 1.04rem;
+    line-height: 1.04;
+  }
+
+  body[data-page="history"] .page-heroTitle,
+  body[data-page="competitions"] .page-heroTitle,
+  body[data-page="account"] .page-heroTitle {
+    font-size: 0.98rem;
   }
 
   .day-autoBtn,
@@ -199,6 +217,23 @@
 
   .quick-actionLabel {
     font-size: 0.82rem;
+  }
+
+  .page-foldSummaryRow,
+  .page-foldBody {
+    padding-inline: 14px;
+  }
+
+  .page-foldTitle {
+    font-size: 0.94rem;
+  }
+
+  .page-foldSubtitle,
+  .coach-listCompact .coach-listItem span,
+  .summary-detail,
+  .account-hint {
+    font-size: 0.76rem;
+    line-height: 1.4;
   }
 
   .nav-label {

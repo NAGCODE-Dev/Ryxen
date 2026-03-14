@@ -30,6 +30,12 @@ const runtimeConfig = {
     provider: process.env.CROSSAPP_BILLING_PROVIDER || 'stripe',
     successUrl: process.env.CROSSAPP_BILLING_SUCCESS_URL || '',
     cancelUrl: process.env.CROSSAPP_BILLING_CANCEL_URL || '',
+    links: {
+      starter: process.env.CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL || '',
+      pro: process.env.CROSSAPP_KIWIFY_CHECKOUT_PRO_URL || '',
+      coach: process.env.CROSSAPP_KIWIFY_CHECKOUT_COACH_URL || '',
+      performance: process.env.CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL || '',
+    },
   },
 };
 

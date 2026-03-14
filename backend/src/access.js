@@ -1,4 +1,5 @@
 import { pool } from './db.js';
+import { getAthleteBenefitProfile } from './accessPolicy.js';
 
 export async function getUserMemberships(userId) {
   const result = await pool.query(
@@ -81,6 +82,10 @@ export async function getAccessContextForGym(gymId) {
       canAthletesUseApp: ownerSubscription?.accessTier === 'active' || ownerSubscription?.accessTier === 'grace',
       warning: resolveGymWarning(ownerSubscription),
     },
+    athleteBenefits: getAthleteBenefitProfile({
+      ownerSubscription,
+      canAthletesUseApp: ownerSubscription?.accessTier === 'active' || ownerSubscription?.accessTier === 'grace',
+    }),
   };
 }
 

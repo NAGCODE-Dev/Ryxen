@@ -1,4 +1,10 @@
 import { isDeveloperEmail, isDeveloperProfile } from '../core/utils/devAccess.js';
+import {
+  canConsumeAthleteImport,
+  consumeAthleteImport,
+  getAthleteImportUsage,
+  normalizeAthleteBenefits,
+} from '../core/services/athleteBenefitUsage.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
@@ -24,7 +30,31 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     upcomingCompetitions: [],
     recentWorkouts: [],
     gymAccess: [],
+    athleteBenefits: null,
   });
+
+  function resolveAthleteBenefits(uiState, accessContext = null) {
+    const overviewBenefits = uiState?.athleteOverview?.athleteBenefits || null;
+    const accessBenefits = accessContext?.data?.athleteBenefits || accessContext?.athleteBenefits || null;
+    return normalizeAthleteBenefits(overviewBenefits || accessBenefits || null);
+  }
+
+  async function guardAthleteImport(kind, uiState) {
+    const profile = window.__APP__?.getProfile?.()?.data || null;
+    const accessContext = profile?.email ? await window.__APP__?.getAccessContext?.() : null;
+    const benefits = resolveAthleteBenefits(uiState, accessContext);
+    const usage = getAthleteImportUsage(benefits, kind);
+
+    if (!canConsumeAthleteImport(benefits, kind)) {
+      throw new Error(
+        usage.limit === null
+          ? 'Seu plano atual não permite mais importações neste período'
+          : `Limite mensal atingido: ${usage.used}/${usage.limit} importações entre PDF e mídia. Seu nível atual é ${benefits.label}.`,
+      );
+    }
+
+    return { benefits, usage };
+  }
 
   async function loadCoachPortalSnapshot(selectedGymId) {
     try {
@@ -182,15 +212,20 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       switch (action) {
         // ----- PDF / semana / treino -----
         case 'pdf:pick': {
+          const ui = getUiState?.() || {};
+          const importPolicy = await guardAthleteImport('pdf', ui);
           await setUiState({ modal: null });
           const file = await pickPdfFile();
           if (!file) return;
           await window.__APP__.uploadMultiWeekPdf(file);
+          consumeAthleteImport(importPolicy.benefits, 'pdf');
           await rerender();
           return;
         }
 
         case 'media:pick': {
+          const ui = getUiState?.() || {};
+          const importPolicy = await guardAthleteImport('media', ui);
           await setUiState({ modal: null });
           const file = await pickUniversalFile();
           if (!file) return;
@@ -204,6 +239,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             throw new Error(result?.error || 'Falha ao importar arquivo');
           }
 
+          consumeAthleteImport(importPolicy.benefits, 'media');
           toast('Arquivo importado');
           await rerender();
           return;

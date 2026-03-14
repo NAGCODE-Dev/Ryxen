@@ -66,12 +66,24 @@ textarea:focus-visible,
 
 .app-container {
   width: 100%;
-  max-width: 640px;
+  max-width: 980px;
   min-height: 100%;
   margin: 0 auto;
   background: linear-gradient(180deg, rgba(13, 17, 22, 0.94), rgba(9, 12, 16, 0.98));
   border-inline: 1px solid var(--line);
   backdrop-filter: blur(18px);
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    max-width: 760px;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-container {
+    max-width: 100%;
+  }
 }
 
 .loading-screen {

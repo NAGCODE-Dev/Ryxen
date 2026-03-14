@@ -57,9 +57,9 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
     <main class="hub-shell">
       <section class="hub-hero">
         <div class="hub-kicker">CrossApp Hub</div>
-        <h1>Escolha a modalidade e entre no app certo para o treino do dia.</h1>
+        <h1>Use sozinho ou conectado ao seu coach, sem complicar a rotina.</h1>
         <p class="hub-lead">
-          Mantenha o uso diário simples: cada modalidade abre em uma experiência própria, com métricas, histórico e linguagem certos para aquele esporte.
+          O CrossApp funciona de dois jeitos: como app diário do atleta no modo solo, ou como experiência ampliada quando você está vinculado a um coach que publica treino, organiza grupos e libera mais recursos.
         </p>
         <div class="hub-actions">
           <a class="hub-primaryAction" href="${escapeHtml(lastSportUrl)}" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}">
@@ -68,10 +68,16 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
           <a class="hub-secondaryAction" href="/coach/">Abrir Coach Portal</a>
         </div>
         <div class="hub-meta">
-          <span>Coach publica por modalidade</span>
-          <span>Atleta usa um app focado</span>
+          <span>Use solo com 5 imports/mês</span>
+          <span>Coach ativo libera mais recursos</span>
           <span>${hasBeta ? 'Beta disponível para modalidades extras' : 'Fluxo principal focado em Cross'}</span>
         </div>
+      </section>
+
+      <section class="hub-grid hub-grid-onboarding">
+        ${renderGuideCard('1. Escolha sua rotina', 'Entre direto no app da modalidade que faz sentido para o seu dia. Hoje o fluxo principal está em Cross.')}
+        ${renderGuideCard('2. Use sozinho ou com coach', 'Sozinho você já importa planilha, registra treino e acompanha histórico. Com coach ativo, o app libera mais imports e treino enviado pelo box.')}
+        ${renderGuideCard('3. Coach opera no portal', 'A parte operacional fica separada no Coach Portal: grupos, atletas, publicação e rotina do box.')}
       </section>
 
       <section class="hub-grid">
@@ -86,6 +92,15 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
         })).join('')}
       </section>
     </main>
+  `;
+}
+
+function renderGuideCard(title, description) {
+  return `
+    <article class="hub-card hub-card-guide">
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
+    </article>
   `;
 }
 
