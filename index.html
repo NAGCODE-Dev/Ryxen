@@ -46,6 +46,14 @@
   </footer>
 
   <script src="./config.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "@vercel/analytics": "https://esm.sh/@vercel/analytics@2.0.1",
+        "@vercel/speed-insights": "https://esm.sh/@vercel/speed-insights@2.0.0"
+      }
+    }
+  </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <!-- Main Script (ES Module) -->
   <script type="module" src="./src/main.js"></script>

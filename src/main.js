@@ -8,8 +8,8 @@
  */
 
 import { init } from './app.js';
-import { inject } from 'https://esm.sh/@vercel/analytics@2.0.1';
-import { injectSpeedInsights } from 'https://esm.sh/@vercel/speed-insights@2.0.0';
+import { inject } from '@vercel/analytics';
+import { injectSpeedInsights } from '@vercel/speed-insights';
 import { mountConsentBanner } from './ui/consent.js';
 import { flushTelemetry, trackError, trackEvent } from './core/services/telemetryService.js';
 import { isDeveloperProfile } from './core/utils/devAccess.js';
@@ -54,19 +54,8 @@ function setupVercelObservability() {
   if (window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
   window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
 
-  inject({
-    mode: resolveVercelMode(),
-  });
-
-  injectSpeedInsights({
-    route: window.location.pathname,
-  });
-}
-
-function resolveVercelMode() {
-  const hostname = window.location.hostname;
-  if (hostname === 'localhost' || hostname === '127.0.0.1') return 'development';
-  return 'production';
+  inject();
+  injectSpeedInsights();
 }
 
 function registerServiceWorker() {

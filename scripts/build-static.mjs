@@ -16,7 +16,6 @@ const filesToCopy = [
 
 const dirsToCopy = [
   'src',
-  'coach',
   'icons',
 ];
 
@@ -48,7 +47,6 @@ const frontendConfig = `window.__CROSSAPP_CONFIG__ = ${JSON.stringify(runtimeCon
 await writeFile(path.join(distDir, 'config.js'), frontendConfig, 'utf8');
 
 await patchHtml(path.join(distDir, 'index.html'));
-await patchHtml(path.join(distDir, 'coach', 'index.html'));
 
 console.log(`[build-static] dist ready at ${distDir}`);
 

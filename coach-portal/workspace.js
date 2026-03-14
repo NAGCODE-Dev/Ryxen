@@ -1,7 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'https://esm.sh/react@18.3.1';
-import { createRoot } from 'https://esm.sh/react-dom@18.3.1/client';
-import { inject } from '@vercel/analytics';
-import { injectSpeedInsights } from '@vercel/speed-insights';
+import React, { useEffect, useMemo, useState } from 'react';
+import '../coach/styles.css';
 
 const STORAGE_KEYS = {
   token: 'crossapp-auth-token',
@@ -9,15 +7,12 @@ const STORAGE_KEYS = {
   runtime: 'crossapp-runtime-config',
 };
 
-setupVercelObservability();
-
-function App() {
-  const [token, setToken] = useState(readToken());
-  const [profile, setProfile] = useState(readProfile());
+export default function CoachWorkspace({ profile: initialProfile = null, onLogout = null } = {}) {
+  const token = readToken();
+  const profile = initialProfile || readProfile();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [login, setLogin] = useState({ email: '', password: '' });
   const [dashboard, setDashboard] = useState({
     subscription: null,
     entitlements: [],
@@ -80,77 +75,6 @@ function App() {
       loadDashboard();
     }
   }, [token]);
-
-  useEffect(() => {
-    if (token) return;
-    const googleClientId = window.__CROSSAPP_CONFIG__?.auth?.googleClientId || '';
-    const mount = document.getElementById('coach-google-signin');
-    if (!googleClientId || !mount) return;
-
-    let attempt = 0;
-    const timer = window.setInterval(() => {
-      if (!window.google?.accounts?.id) {
-        attempt += 1;
-        if (attempt > 8) window.clearInterval(timer);
-        return;
-      }
-
-      window.clearInterval(timer);
-      mount.innerHTML = '';
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async (response) => {
-          try {
-            const result = await apiRequest('/auth/google', {
-              method: 'POST',
-              body: { credential: response.credential },
-            });
-            if (result?.token) writeToken(result.token);
-            if (result?.user) writeProfile(result.user);
-            setToken(result.token || '');
-            setProfile(result.user || null);
-            setMessage('Sessão iniciada com Google');
-          } catch (err) {
-            setError(err.message || 'Erro ao autenticar com Google');
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-      window.google.accounts.id.renderButton(mount, {
-        theme: 'outline',
-        size: 'large',
-        shape: 'pill',
-        text: 'continue_with',
-        width: 320,
-      });
-    }, 300);
-
-    return () => window.clearInterval(timer);
-  }, [token]);
-
-  async function handleLogin(event) {
-    event.preventDefault();
-    setLoading(true);
-    setError('');
-    setMessage('');
-    try {
-      const result = await apiRequest('/auth/signin', {
-        method: 'POST',
-        body: login,
-        token: '',
-      });
-      if (result?.token) writeToken(result.token);
-      if (result?.user) writeProfile(result.user);
-      setToken(result.token || '');
-      setProfile(result.user || null);
-      setMessage('Sessão iniciada');
-    } catch (err) {
-      setError(err.message || 'Erro ao entrar');
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function loadDashboard(nextGymId = null) {
     setLoading(true);
@@ -552,59 +476,7 @@ function App() {
   }
 
   function handleLogout() {
-    localStorage.removeItem(STORAGE_KEYS.token);
-    localStorage.removeItem(STORAGE_KEYS.profile);
-    setToken('');
-    setProfile(null);
-      setDashboard({
-        subscription: null,
-        entitlements: [],
-        gymAccess: [],
-        gyms: [],
-        feed: [],
-        competitions: [],
-        benchmarks: [],
-        benchmarkPagination: { total: 0, page: 1, limit: 30, pages: 1 },
-        leaderboard: { benchmark: null, results: [] },
-        competitionLeaderboard: { competition: null, summary: null, leaderboard: [], events: [] },
-        eventLeaderboard: { competition: null, event: null, benchmark: null, results: [] },
-        members: [],
-        selectedGymId: null,
-        insights: null,
-      });
-  }
-
-  if (!token) {
-    return React.createElement('div', { className: 'portal-shell auth-shell' },
-      React.createElement('div', { className: 'auth-card' },
-        React.createElement('div', { className: 'eyebrow' }, 'CrossApp'),
-        React.createElement('h1', null, 'Coach Portal'),
-        React.createElement('p', { className: 'muted' }, 'Portal separado do atleta, usando a mesma API e a mesma sessão.'),
-        error ? React.createElement('div', { className: 'notice error' }, error) : null,
-        React.createElement('form', { className: 'stack', onSubmit: handleLogin },
-          React.createElement('input', {
-            className: 'field',
-            type: 'email',
-            placeholder: 'Email',
-            value: login.email,
-            onChange: (e) => setLogin((prev) => ({ ...prev, email: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            type: 'password',
-            placeholder: 'Senha',
-            value: login.password,
-            onChange: (e) => setLogin((prev) => ({ ...prev, password: e.target.value })),
-          }),
-          React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading }, loading ? 'Entrando...' : 'Entrar')
-        ),
-        React.createElement('div', { className: 'auth-google' },
-          React.createElement('div', { className: 'muted auth-dividerText' }, 'ou'),
-          React.createElement('div', { id: 'coach-google-signin' })
-        ),
-        React.createElement('a', { className: 'portal-link', href: '/' }, 'Abrir app do atleta')
-      )
-    );
+    if (typeof onLogout === 'function') onLogout();
   }
 
   const canCoachManage = dashboard.entitlements.includes('coach_portal');
@@ -1336,14 +1208,4 @@ function readRuntimeConfig() {
   } catch {
     return { apiBaseUrl: '/api' };
   }
-}
-
-createRoot(document.getElementById('coach-root')).render(React.createElement(App));
-
-function setupVercelObservability() {
-  if (window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
-  window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
-
-  inject();
-  injectSpeedInsights();
 }
