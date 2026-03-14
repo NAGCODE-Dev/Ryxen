@@ -6,6 +6,12 @@
 import { isValidWorkout } from '../services/workoutService.js';
 import { getTimestamp } from '../utils/date.js';
 
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+const logDebug = (...args) => {
+  if (DEBUG) console.log(...args);
+};
+
 /**
  * Exporta treino para JSON
  * @param {Object} workout - Treino
@@ -30,8 +36,7 @@ export function exportWorkout(workout, metadata = {}) {
       ...metadata,
     };
     
-    // 🔥 ADICIONAR LOG PARA DEBUG
-    console.log('📦 Payload para JSON.stringify:', {
+    logDebug('📦 Payload para JSON.stringify:', {
       day: payload.day,
       sections: payload.sections.length,
       firstSection: payload.sections[0],
@@ -41,7 +46,7 @@ export function exportWorkout(workout, metadata = {}) {
     
     const json = JSON.stringify(payload, null, 2);
     
-    console.log('✅ JSON gerado:', json.substring(0, 500)); // Primeiros 500 chars
+    logDebug('✅ JSON gerado:', json.substring(0, 500));
     
     return {
       success: true,

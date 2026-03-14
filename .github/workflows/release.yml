@@ -1,0 +1,31 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (ex: v1.5.0)"
+        required: true
+      environment:
+        description: "Target environment"
+        required: true
+        default: "production"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create Tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+      - name: Release Note
+        run: |
+          echo "Release ${{ github.event.inputs.version }} para ${{ github.event.inputs.environment }}"
+          echo "Para rollback, reimplantar tag anterior estável (ver docs/ops/RELEASE_ROLLBACK_RUNBOOK.md)."

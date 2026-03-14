@@ -1,15 +1,25 @@
 /**
  * PDF Reader
  * Extrai texto bruto de arquivos PDF
- * Depende de PDF.js (carregado globalmente via CDN)
+ * Usa PDF.js via módulo local
  */
+
+import * as pdfjsLib from '../../libs/pdf.mjs';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  new URL('../../libs/pdf.worker.mjs', import.meta.url).toString();
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+const logDebug = (...args) => {
+  if (DEBUG) console.log(...args);
+};
 
 /**
  * Verifica se PDF.js está disponível
  * @returns {boolean}
  */
 export function isPdfJsAvailable() {
-  return typeof window.pdfjsLib !== 'undefined';
+  return !!pdfjsLib?.getDocument;
 }
 
 /**
@@ -45,7 +55,7 @@ export async function extractTextFromFile(file) {
     const arrayBuffer = await readFileAsArrayBuffer(file);
     
     // Carrega PDF
-    const pdf = await window.pdfjsLib.getDocument({
+    const pdf = await pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
     }).promise;
@@ -77,7 +87,7 @@ export async function extractTextFromFile(file) {
       throw new Error('PDF vazio ou texto não extraído');
     }
     
-    console.log('✅ Texto extraído:', trimmedText.length, 'caracteres');
+    logDebug('✅ Texto extraído:', trimmedText.length, 'caracteres');
     
     return trimmedText;
     
@@ -171,7 +181,7 @@ export async function extractMetadata(file) {
   try {
     const arrayBuffer = await readFileAsArrayBuffer(file);
     
-    const pdf = await window.pdfjsLib.getDocument({
+    const pdf = await pdfjsLib.getDocument({
       data: arrayBuffer,
       verbosity: 0,
     }).promise;
@@ -218,6 +228,6 @@ export function getInfo() {
     name: 'PDF Reader',
     library: 'PDF.js',
     available: isPdfJsAvailable(),
-    version: isPdfJsAvailable() ? window.pdfjsLib.version : 'N/A',
+    version: isPdfJsAvailable() ? pdfjsLib.version : 'N/A',
   };
 };

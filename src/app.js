@@ -9,12 +9,6 @@
  * - Expor APIs para UI
  */
 // app.js
-import * as pdfjsLib from './libs/pdf.mjs';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  new URL('./libs/pdf.worker.mjs', import.meta.url).toString();
-
-console.log('📦 app.js carregado');
 
 // ========== IMPORTS ==========
 
@@ -28,29 +22,57 @@ import { copyWorkout } from './core/usecases/copyWorkout.js';
 import { exportWorkout, importWorkout } from './core/usecases/exportWorkout.js';
 import { exportPRs } from './core/usecases/exportPRs.js';
 import { importPRs } from './core/usecases/importPRs.js';
+import { exportAppBackup, importAppBackup } from './core/usecases/backupData.js';
 import { addOrUpdatePR, removePR, listAllPRs } from './core/usecases/managePRs.js';
+import { hasStoredSession } from './core/services/authService.js';
 
 // Adapters
 import {
   saveMultiWeekPdf,
+  saveParsedWeeks,
   loadParsedWeeks,
   getPdfInfo
 } from './adapters/pdf/pdfRepository.js';
 
-import { getWorkoutFromWeek } from './adapters/pdf/customPdfParser.js';
+import {
+  getWorkoutFromWeek,
+} from './adapters/pdf/customPdfParser.js';
 import { createStorage } from './adapters/storage/storageFactory.js';
 import { isPdfJsAvailable } from './adapters/pdf/pdfReader.js';
+import { isImageFile, extractTextFromImageFile } from './adapters/media/ocrReader.js';
+import { isVideoFile, extractTextFromVideoFile } from './adapters/media/videoTextReader.js';
+import {
+  isCalculatedLine,
+  normalizeWorkoutBlocks,
+  parseTextIntoWeeks,
+  toWorkoutBlocks,
+  toWorkoutSections,
+} from './app/workoutHelpers.js';
+import { downloadFile } from './app/fileHelpers.js';
+import { exposeAppApi } from './app/publicApi.js';
+import { createRemoteHandlers } from './app/remoteHandlers.js';
 
 // Utils
-import { getDayName, isRestDay } from './core/utils/date.js';
+import { getDayName } from './core/utils/date.js';
 
-console.log('📦 Imports OK');
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+const logDebug = (...args) => {
+  if (DEBUG) console.log(...args);
+};
 
 // ========== STORAGES ==========
 
 const prsStorage = createStorage('prs', 5000);
 const prefsStorage = createStorage('preferences', 1000);
 const activeWeekStorage = createStorage('active-week', 100);
+const dayOverrideStorage = createStorage('day-override', 100);
+const pdfStorage = createStorage('workout-pdf', 2_000_000);
+const pdfMetaStorage = createStorage('workout-pdf-metadata', 1000);
+
+const PDF_KEY = 'workout-pdf';
+const METADATA_KEY = 'workout-pdf-metadata';
+const remoteHandlers = createRemoteHandlers({ getState, setState, selectActiveWeek });
 
 // ========== INICIALIZAÇÃO ==========
 
@@ -58,24 +80,37 @@ const activeWeekStorage = createStorage('active-week', 100);
  * Inicializa aplicação
  */
 export async function init() {
-  console.log('🚀 Iniciando aplicação...');
+  logDebug('🚀 Iniciando aplicação...');
 
   try {
     checkDependencies();
     await loadPersistedState();
-    updateCurrentDay();
+    await restoreSessionIfPossible();
+    await updateCurrentDay();
     await loadSavedWeeks();
     setupEventListeners();
     exposeDebugAPIs();
 
     emit('app:ready', { state: getState() });
-    console.log('✅ Aplicação inicializada');
+    logDebug('✅ Aplicação inicializada');
 
     return { success: true };
 
   } catch (error) {
     console.error('❌ Erro ao inicializar:', error);
     return { success: false, error: error.message };
+  }
+}
+
+async function restoreSessionIfPossible() {
+  if (!hasStoredSession()) return;
+
+  try {
+    await remoteHandlers.handleRefreshSession();
+    logDebug('🔐 Sessão restaurada');
+  } catch (error) {
+    await remoteHandlers.handleSignOut();
+    console.warn('Falha ao restaurar sessão:', error?.message || error);
   }
 }
 
@@ -89,7 +124,7 @@ function checkDependencies() {
     throw new Error('Nenhum storage disponível');
   }
 
-  console.log('✅ Dependências verificadas');
+  logDebug('✅ Dependências verificadas');
 }
 
 /**
@@ -101,7 +136,7 @@ async function loadPersistedState() {
     const savedPRs = await prsStorage.get('prs');
     if (savedPRs && typeof savedPRs === 'object') {
       setState({ prs: savedPRs });
-      console.log(`📊 ${Object.keys(savedPRs).length} PRs carregados`);
+      logDebug(`📊 ${Object.keys(savedPRs).length} PRs carregados`);
     }
 
     // Carrega preferências
@@ -113,7 +148,7 @@ async function loadPersistedState() {
           ...savedPrefs,
         },
       });
-      console.log('⚙️ Preferências carregadas');
+      logDebug('⚙️ Preferências carregadas');
     }
 
   } catch (error) {
@@ -125,7 +160,6 @@ async function loadPersistedState() {
  */
 async function updateCurrentDay() {
   // Verifica se há override manual
-  const dayOverrideStorage = createStorage('day-override', 100);
   const customDay = await dayOverrideStorage.get('custom-day');
   
   const dayName = customDay || getDayName();
@@ -133,16 +167,11 @@ async function updateCurrentDay() {
   setState({ currentDay: dayName });
   
   if (customDay) {
-    console.log(`📅 Dia atual: ${dayName} (manual)`);
+    logDebug(`📅 Dia atual: ${dayName} (manual)`);
   } else {
-    console.log(`📅 Dia atual: ${dayName} (automático)`);
+    logDebug(`📅 Dia atual: ${dayName} (automático)`);
   }
 }
-
-/**
- * Permite usuário escolher dia manualmente
- * @param {string} dayName - Nome do dia ('Segunda', 'Terça', etc)
- * @returns {Object}
 
 /**
  * Volta para dia automático (sistema)
@@ -150,23 +179,16 @@ async function updateCurrentDay() {
  */
 export async function resetToAutoDay() {
   // Remove override
-  const prefsStorage = createStorage('day-override', 100);
-  await prefsStorage.remove('custom-day');
+  await dayOverrideStorage.remove('custom-day');
   
   // Volta para dia do sistema
   const systemDay = getDayName();
   setState({ currentDay: systemDay });
   
   // Reprocessa
-  const state = getState();
-  if (state.activeWeekNumber) {
-    const week = state.weeks?.find(w => w.weekNumber === state.activeWeekNumber);
-    if (week) {
-      await processWorkoutFromWeek(week);
-    }
-  }
+  await reprocessActiveWeek();
   
-  console.log(`📅 Voltou para dia automático: ${systemDay}`);
+  logDebug(`📅 Voltou para dia automático: ${systemDay}`);
   
   return { success: true, day: systemDay };
 }
@@ -177,7 +199,7 @@ async function loadSavedWeeks() {
   const result = await loadParsedWeeks();
 
   if (!result.success) {
-    console.log('📄 Nenhuma semana salva');
+    logDebug('📄 Nenhuma semana salva');
     setState({ ui: { activeScreen: 'welcome' } });
     return;
   }
@@ -190,21 +212,9 @@ async function loadSavedWeeks() {
 
   await selectActiveWeek(activeWeek);
 
-  console.log('📄 Semanas carregadas:', metadata?.weekNumbers || weeks.map(w => w.weekNumber));
+  logDebug('📄 Semanas carregadas:', metadata?.weekNumbers || weeks.map(w => w.weekNumber));
 }
 
-/**
- * Setup de event listeners
- */
-/**
- * Setup de event listeners
- */
-/**
- * Setup de event listeners
- */
-/**
- * Setup de event listeners
- */
 /**
  * Setup de event listeners
  */
@@ -237,20 +247,16 @@ function setupEventListeners() {
     }
   });
   
-  console.log('🎧 Event listeners configurados');
+  logDebug('🎧 Event listeners configurados');
 }
 
-/**
- * Processa treino do dia de uma semana específica
- * @param {Object} week - Semana parseada
- */
 /**
  * Salva PRs no storage
  */
 async function savePRsToStorage(prs) {
   try {
     await prsStorage.set('prs', prs);
-    console.log('💾 PRs salvos:', Object.keys(prs).length);
+    logDebug('💾 PRs salvos:', Object.keys(prs).length);
   } catch (error) {
     console.warn('Erro ao salvar PRs:', error);
   }
@@ -262,7 +268,7 @@ async function savePRsToStorage(prs) {
 async function savePreferencesToStorage(preferences) {
   try {
     await prefsStorage.set('preferences', preferences);
-    console.log('💾 Preferências salvas');
+    logDebug('💾 Preferências salvas');
   } catch (error) {
     console.warn('Erro ao salvar preferências:', error);
   }
@@ -286,7 +292,7 @@ export async function selectActiveWeek(weekNumber) {
   setState({ activeWeekNumber: weekNumber });
   await activeWeekStorage.set('active-week', weekNumber);
 
-  console.log(`📅 Semana ativa: ${weekNumber}`);
+  logDebug(`📅 Semana ativa: ${weekNumber}`);
 
   await processWorkoutFromWeek(week);
   emit('week:changed', { weekNumber });
@@ -312,21 +318,14 @@ export async function setCustomDay(dayName) {
   setState({ currentDay: dayName });
   
   // Salva preferência (para persistir após reload)
-  const dayOverrideStorage = createStorage('day-override', 100);
   await dayOverrideStorage.set('custom-day', dayName);
   
   // Reprocessa treino
-  const state = getState();
-  if (state.activeWeekNumber) {
-    const week = state.weeks?.find(w => w.weekNumber === state.activeWeekNumber);
-    if (week) {
-      await processWorkoutFromWeek(week);
-    }
-  }
+  await reprocessActiveWeek();
   
   emit('day:changed', { dayName, manual: true });
   
-  console.log(`📅 Dia alterado manualmente para: ${dayName}`);
+  logDebug(`📅 Dia alterado manualmente para: ${dayName}`);
   
   return { success: true, day: dayName };
 }
@@ -362,7 +361,7 @@ export async function handleImportPRsFromCSV(csvString, merge = true) {
     format: 'CSV',
   });
   
-  console.log(`📥 PRs importados do CSV: ${parseResult.imported} exercícios`);
+  logDebug(`📥 PRs importados do CSV: ${parseResult.imported} exercícios`);
   
   if (parseResult.errors) {
     console.warn('⚠️ Avisos:', parseResult.errors);
@@ -393,25 +392,15 @@ export async function handleImportWorkout(file) {
     
     const workout = result.data;
     
-    console.log('📥 Treino importado:', {
+    logDebug('📥 Treino importado:', {
       day: workout.day,
       sections: workout.sections.length,
       weekNumber: result.weekNumber
     });
     
-    // Converte sections → blocks
-    const blocks = workout.sections.map(s => ({
-      type: s.type || 'DEFAULT',
-      lines: s.lines
-    }));
-    
-    // Salva no estado
     const state = getState();
     setState({
-      workout: {
-        day: workout.day,
-        blocks: blocks
-      },
+      workout: toWorkoutBlocks(workout),
       activeWeekNumber: result.weekNumber || state.activeWeekNumber,
       ui: {
         ...state.ui,
@@ -421,7 +410,7 @@ export async function handleImportWorkout(file) {
     
     emit('workout:imported', { workout });
     
-    console.log('✅ Treino importado com sucesso');
+    logDebug('✅ Treino importado com sucesso');
     return { success: true };
     
   } catch (error) {
@@ -453,7 +442,7 @@ export async function handleExportPRsToCSV() {
   
   emit('prs:exported', { count: result.count, format: 'CSV' });
   
-  console.log('💾 PRs exportados (CSV):', result.filename);
+  logDebug('💾 PRs exportados (CSV):', result.filename);
   
   return { success: true, filename: result.filename };
 }
@@ -468,15 +457,11 @@ export async function downloadPRsTemplate() {
   const template = getCSVTemplate();
   downloadFile(template, 'prs-template.csv', 'text/csv');
   
-  console.log('📥 Template CSV baixado');
+  logDebug('📥 Template CSV baixado');
   
   return { success: true };
 }
 
-/**
- * Processa treino do dia de uma semana específica
- * @param {Object} week - Semana parseada
- */
 /**
  * Processa treino do dia de uma semana específica
  * @param {Object} week - Semana parseada
@@ -491,7 +476,7 @@ async function processWorkoutFromWeek(week) {
       workout: null,
       ui: { ...state.ui, activeScreen: 'rest' }
     });
-    console.log('💤 Dia de descanso');
+    logDebug('💤 Dia de descanso');
     return;
   }
 
@@ -502,7 +487,7 @@ async function processWorkoutFromWeek(week) {
       workout: null,
       ui: { ...state.ui, activeScreen: 'welcome' }
     });
-    console.log(`⚠️ Nenhum treino para ${dayName} na semana ${week.weekNumber}`);
+    logDebug(`⚠️ Nenhum treino para ${dayName} na semana ${week.weekNumber}`);
     return;
   }
 
@@ -516,30 +501,14 @@ async function processWorkoutFromWeek(week) {
       }
     });
     
-    console.log('🔄 Conversão lbs→kg aplicada');
+    logDebug('🔄 Conversão lbs→kg aplicada');
   }
 
   // 🔥 CORREÇÃO: Normaliza MAS preserva objetos já processados
-  const normalizedBlocks = workout.blocks.map(block => ({
-    ...block,
-    lines: block.lines.map(line => {
-      // Se já é objeto com calculated, mantém
-      if (typeof line === 'object' && line !== null && line.calculated) {
-        return line;
-      }
-      
-      // Se é objeto sem calculated, extrai string
-      if (typeof line === 'object' && line !== null) {
-        return String(line.raw || line.text || '');
-      }
-      
-      // Se já é string, mantém
-      return String(line);
-    })
-  }));
+  const normalizedBlocks = normalizeWorkoutBlocks(workout.blocks);
 
-  console.log('📋 Blocos normalizados:', normalizedBlocks.length);
-  console.log('📋 Primeira linha:', normalizedBlocks[0]?.lines[0]);
+  logDebug('📋 Blocos normalizados:', normalizedBlocks.length);
+  logDebug('📋 Primeira linha:', normalizedBlocks[0]?.lines[0]);
 
   // 🔥 Calcula cargas APENAS para linhas que NÃO têm calculated
   let hasWarnings = false;
@@ -551,13 +520,13 @@ async function processWorkoutFromWeek(week) {
   };
 
   try {
-    console.log('🔢 Calculando cargas...');
-    console.log('🔢 PRs disponíveis:', Object.keys(state.prs));
-    console.log('🔢 Total de linhas:', normalizedBlocks.reduce((sum, b) => sum + b.lines.length, 0));
+    logDebug('🔢 Calculando cargas...');
+    logDebug('🔢 PRs disponíveis:', Object.keys(state.prs));
+    logDebug('🔢 Total de linhas:', normalizedBlocks.reduce((sum, b) => sum + b.lines.length, 0));
 
     const loadResult = calculateLoads(workoutForCalc, state.prs, state.preferences);
 
-    console.log('✅ calculateLoads result:', {
+    logDebug('✅ calculateLoads result:', {
       success: loadResult.success,
       error: loadResult.error,
       hasWarnings: loadResult.hasWarnings,
@@ -580,7 +549,7 @@ async function processWorkoutFromWeek(week) {
           const result = loadResult.data[globalIndex++];
 
           // Se linha JÁ tem calculated, preserva
-          if (typeof line === 'object' && line.calculated) {
+          if (isCalculatedLine(line)) {
             return line;
           }
 
@@ -618,8 +587,8 @@ async function processWorkoutFromWeek(week) {
         return { ...block, lines: newLines };
       });
 
-      console.log('✅ Cargas aplicadas!');
-      console.log('✅ Linha 20:', blocksWithLoads[0]?.lines[20]);
+      logDebug('✅ Cargas aplicadas!');
+      logDebug('✅ Linha 20:', blocksWithLoads[0]?.lines[20]);
     }
   } catch (error) {
     console.error('❌ Erro ao calcular cargas:', error);
@@ -638,7 +607,7 @@ async function processWorkoutFromWeek(week) {
     }
   });
 
-  console.log('💪 Treino carregado:', {
+  logDebug('💪 Treino carregado:', {
     day: dayName,
     week: week.weekNumber,
     blocks: blocksWithLoads.length,
@@ -656,7 +625,7 @@ async function processWorkoutFromWeek(week) {
  * @returns {Promise<Object>}
  */
 export async function handleMultiWeekPdfUpload(file) {
-  console.log('📤 Uploading multi-week PDF:', file.name);
+  logDebug('📤 Uploading multi-week PDF:', file.name);
 
   emit('pdf:uploading', { fileName: file.name });
 
@@ -679,7 +648,7 @@ export async function handleMultiWeekPdfUpload(file) {
       weekNumbers: weeks.map(w => w.weekNumber),
     });
 
-    console.log('✅ PDF multi-semana carregado:', weeks.map(w => w.weekNumber));
+    logDebug('✅ PDF multi-semana carregado:', weeks.map(w => w.weekNumber));
 
     return { success: true, weeks };
 
@@ -691,6 +660,79 @@ export async function handleMultiWeekPdfUpload(file) {
       success: false,
       error: errorMsg,
     };
+  }
+}
+
+/**
+ * Importa arquivo genérico (PDF, texto, imagem OCR, vídeo OCR)
+ * @param {File} file
+ * @returns {Promise<Object>}
+ */
+export async function handleUniversalImport(file) {
+  if (!file) {
+    return { success: false, error: 'Arquivo não fornecido' };
+  }
+
+  const type = file.type || '';
+
+  // PDF continua no fluxo dedicado
+  if (type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    return handleMultiWeekPdfUpload(file);
+  }
+
+  emit('media:uploading', { fileName: file.name, type });
+
+  try {
+    let rawText = '';
+    let source = 'text';
+
+    if (isImageFile(file)) {
+      source = 'image';
+      rawText = await extractTextFromImageFile(file);
+    } else if (isVideoFile(file)) {
+      source = 'video';
+      rawText = await extractTextFromVideoFile(file);
+    } else if (type.startsWith('text/') || file.name.match(/\.(txt|md|csv|json)$/i)) {
+      source = 'text';
+      rawText = await file.text();
+    } else {
+      throw new Error(`Formato não suportado: ${type || file.name}`);
+    }
+
+    const parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
+    if (!parsedWeeks.length) {
+      throw new Error('Não foi possível identificar treinos no conteúdo importado');
+    }
+
+    const saveResult = await saveParsedWeeks(parsedWeeks, {
+      fileName: file.name,
+      fileSize: file.size,
+      source,
+    });
+
+    if (!saveResult.success) throw new Error(saveResult.error || 'Falha ao salvar treino importado');
+
+    const weeks = saveResult.data.parsedWeeks;
+    setState({ weeks });
+    const weekResult = await selectActiveWeek(weeks[0].weekNumber);
+    if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
+
+    emit('media:uploaded', {
+      fileName: file.name,
+      type: source,
+      weeksCount: weeks.length,
+      weekNumbers: weeks.map((w) => w.weekNumber),
+    });
+
+    return {
+      success: true,
+      weeks,
+      source,
+    };
+  } catch (error) {
+    const errorMsg = error.message || 'Erro ao importar mídia';
+    emit('media:error', { error: errorMsg, fileName: file.name });
+    return { success: false, error: errorMsg };
   }
 }
 /**
@@ -735,7 +777,7 @@ export async function handleCopyWorkout() {
 
     emit('workout:copied', { lineCount: result.lineCount });
 
-    console.log('📋 Treino copiado');
+    logDebug('📋 Treino copiado');
 
     return { success: true };
 
@@ -747,20 +789,196 @@ export async function handleCopyWorkout() {
   }
 }
 
+/**
+ * Atualiza preferências globais do app e reprocessa treino atual
+ * @param {Object} nextPreferences - Atualizações parciais de preferências
+ * @returns {Promise<Object>}
+ */
+export async function handleUpdatePreferences(nextPreferences = {}) {
+  if (!nextPreferences || typeof nextPreferences !== 'object') {
+    return { success: false, error: 'Preferências inválidas' };
+  }
+
+  try {
+    const state = getState();
+    const merged = {
+      ...state.preferences,
+      ...nextPreferences,
+    };
+
+    setState({ preferences: merged });
+
+    await reprocessActiveWeek();
+
+    emit('preferences:changed', { preferences: merged });
+
+    return { success: true, data: merged };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Erro ao atualizar preferências',
+    };
+  }
+}
+
+/**
+ * Exporta backup completo da aplicação
+ * @returns {Promise<Object>}
+ */
+export async function handleExportBackup() {
+  try {
+    const state = getState();
+    const result = exportAppBackup(state, {
+      weeksCount: state.weeks?.length || 0,
+      prsCount: Object.keys(state.prs || {}).length,
+    });
+
+    if (!result.success) return result;
+
+    downloadFile(result.json, result.filename, 'application/json');
+    emit('backup:exported', {
+      filename: result.filename,
+      weeksCount: state.weeks?.length || 0,
+      prsCount: Object.keys(state.prs || {}).length,
+    });
+
+    return { success: true, filename: result.filename };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Erro ao exportar backup',
+    };
+  }
+}
+
+/**
+ * Importa backup completo da aplicação
+ * @param {File} file - Arquivo de backup JSON
+ * @returns {Promise<Object>}
+ */
+export async function handleImportBackup(file) {
+  try {
+    if (!file) {
+      return { success: false, error: 'Arquivo não fornecido' };
+    }
+
+    const json = await file.text();
+    const result = importAppBackup(json);
+
+    if (!result.success) return result;
+
+    const backup = result.data;
+    const currentState = getState();
+
+    // Persiste blocos de dados em storage
+    await prsStorage.set('prs', backup.prs);
+    await prefsStorage.set('preferences', {
+      ...currentState.preferences,
+      ...backup.preferences,
+    });
+    await pdfStorage.set(PDF_KEY, backup.weeks);
+    await pdfMetaStorage.set(METADATA_KEY, {
+      uploadedAt: new Date().toISOString(),
+      fileName: file.name,
+      weeksCount: backup.weeks.length,
+      weekNumbers: backup.weeks.map(w => w.weekNumber),
+      source: 'backup-import',
+    });
+
+    if (backup.activeWeekNumber) {
+      await activeWeekStorage.set('active-week', backup.activeWeekNumber);
+    } else {
+      await activeWeekStorage.remove('active-week');
+    }
+
+    if (backup.currentDay) {
+      await dayOverrideStorage.set('custom-day', backup.currentDay);
+    } else {
+      await dayOverrideStorage.remove('custom-day');
+    }
+
+    // Atualiza state em memória
+    const mergedPreferences = {
+      ...currentState.preferences,
+      ...backup.preferences,
+    };
+
+    setState({
+      weeks: backup.weeks,
+      prs: backup.prs,
+      preferences: mergedPreferences,
+      currentDay: backup.currentDay || currentState.currentDay,
+      activeWeekNumber: backup.activeWeekNumber || null,
+      ui: {
+        ...currentState.ui,
+        activeScreen: backup.weeks.length ? 'workout' : 'welcome',
+      },
+    });
+
+    if (backup.weeks.length > 0) {
+      const preferredWeek = backup.activeWeekNumber || backup.weeks[0].weekNumber;
+      await selectActiveWeek(preferredWeek);
+    }
+
+    emit('backup:imported', {
+      weeksCount: backup.weeks.length,
+      prsCount: Object.keys(backup.prs).length,
+      version: result.version,
+    });
+
+    return {
+      success: true,
+      imported: {
+        weeks: backup.weeks.length,
+        prs: Object.keys(backup.prs).length,
+      },
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message || 'Erro ao importar backup',
+    };
+  }
+}
+
+/**
+ * Cadastro/Login/Assinatura/Sync - integração comercial
+ */
+export const {
+  handleSignUp,
+  handleSignIn,
+  handleRefreshSession,
+  handleRequestPasswordReset,
+  handleConfirmPasswordReset,
+  handleSignOut,
+  handleGetProfile,
+  handleGetAdminOverview,
+  handleOpenCheckout,
+  handleGetSubscriptionStatus,
+  handleGetEntitlements,
+  handleActivateMockSubscription,
+  handleSyncPush,
+  handleSyncPull,
+  handleListSyncSnapshots,
+  handleGetRuntimeConfig,
+  handleSetRuntimeConfig,
+  handleCreateGym,
+  handleGetMyGyms,
+  handleAddGymMember,
+  handleListGymMembers,
+  handlePublishGymWorkout,
+  handleGetWorkoutFeed,
+  handleGetAccessContext,
+  handleGetBenchmarks,
+  handleGetCompetitionCalendar,
+  handleCreateCompetition,
+  handleAddCompetitionEvent,
+  handleSubmitBenchmarkResult,
+  handleGetBenchmarkLeaderboard,
+} = remoteHandlers;
 
 
-/**
- * Exportar treino
- * @returns {Object}
- */
-/**
- * Exportar treino
- * @returns {Object}
- */
-/**
- * Exportar treino
- * @returns {Object}
- */
+
 /**
  * Exportar treino
  * @returns {Object}
@@ -771,7 +989,7 @@ export function handleExportWorkout() {
   // 🔥 Pega o workout do estado (JÁ com cargas calculadas)
   const workout = state.workout;
   
-  console.log('📤 [EXPORT] Estado completo:', {
+  logDebug('📤 [EXPORT] Estado completo:', {
     hasWorkout: !!workout,
     workoutKeys: workout ? Object.keys(workout) : [],
     day: workout?.day,
@@ -790,15 +1008,9 @@ export function handleExportWorkout() {
   }
 
   // 🔥 Adapta estrutura: blocks → sections (PRESERVA objetos!)
-  const workoutForExport = {
-    day: workout.day,
-    sections: workout.blocks.map(block => ({
-      type: block.type || 'DEFAULT',
-      lines: block.lines // 🔥 NÃO toca nas linhas!
-    }))
-  };
+  const workoutForExport = toWorkoutSections(workout);
 
-  console.log('📤 [EXPORT] Workout para exportação:', {
+  logDebug('📤 [EXPORT] Workout para exportação:', {
     day: workoutForExport.day,
     sectionsLength: workoutForExport.sections.length,
     firstSection: workoutForExport.sections[0],
@@ -816,12 +1028,12 @@ export function handleExportWorkout() {
     return result;
   }
 
-  console.log('✅ JSON gerado (preview):', result.json.substring(0, 500));
+  logDebug('✅ JSON gerado (preview):', result.json.substring(0, 500));
 
   downloadFile(result.json, result.filename, 'application/json');
   emit('workout:exported', { filename: result.filename });
 
-  console.log('✅ Treino exportado:', result.filename);
+  logDebug('✅ Treino exportado:', result.filename);
   return { success: true };
 }
 
@@ -847,7 +1059,7 @@ export function handleAddPR(exerciseName, load) {
     isNew: result.isNew,
   });
 
-  console.log(`💪 PR ${result.isNew ? 'adicionado' : 'atualizado'}:`, exerciseName, load);
+  logDebug(`💪 PR ${result.isNew ? 'adicionado' : 'atualizado'}:`, exerciseName, load);
 
   return { success: true };
 }
@@ -869,7 +1081,7 @@ export function handleRemovePR(exerciseName) {
 
   emit('pr:removed', { exercise: exerciseName });
 
-  console.log('🗑️ PR removido:', exerciseName);
+  logDebug('🗑️ PR removido:', exerciseName);
 
   return { success: true };
 }
@@ -899,7 +1111,7 @@ export function handleExportPRs() {
 
   emit('prs:exported', { count: result.count });
 
-  console.log('💾 PRs exportados:', result.count);
+  logDebug('💾 PRs exportados:', result.count);
 
   return { success: true };
 }
@@ -927,7 +1139,7 @@ export function handleImportPRs(jsonString) {
     total: result.total,
   });
 
-  console.log('📥 PRs importados:', result.imported);
+  logDebug('📥 PRs importados:', result.imported);
 
   return { success: true };
 }
@@ -962,7 +1174,7 @@ export async function loadDefaultPRs(merge = true) {
       merged: merge 
     });
     
-    console.log(`📥 PRs padrão carregados: ${Object.keys(finalPRs).length} exercícios${merge ? ` (+${added} novos)` : ''}`);
+    logDebug(`📥 PRs padrão carregados: ${Object.keys(finalPRs).length} exercícios${merge ? ` (+${added} novos)` : ''}`);
     
     return {
       success: true,
@@ -985,13 +1197,14 @@ export async function loadDefaultPRs(merge = true) {
  * Expõe APIs para debug no console
  */
 function exposeDebugAPIs() {
-  window.__APP__ = {
+  exposeAppApi({
     // State
     getState,
     debugState,
 
     // PDF Multi-week
     uploadMultiWeekPdf: handleMultiWeekPdfUpload,
+    importFromFile: handleUniversalImport,
     clearAllPdfs,
     selectWeek: selectActiveWeek,
     getWeeks: () => getState().weeks,
@@ -1001,11 +1214,44 @@ function exposeDebugAPIs() {
     setDay: setCustomDay,
     resetDay: resetToAutoDay,
     getCurrentDay: () => getState().currentDay,
+    setPreferences: handleUpdatePreferences,
 
     // Workout
     copyWorkout: handleCopyWorkout,
     exportWorkout: handleExportWorkout,
     importWorkout: handleImportWorkout,
+    exportBackup: handleExportBackup,
+    importBackup: handleImportBackup,
+    signUp: handleSignUp,
+    signIn: handleSignIn,
+    refreshSession: handleRefreshSession,
+    requestPasswordReset: handleRequestPasswordReset,
+    confirmPasswordReset: handleConfirmPasswordReset,
+    signOut: handleSignOut,
+    getProfile: handleGetProfile,
+    getAdminOverview: handleGetAdminOverview,
+    createGym: handleCreateGym,
+    getMyGyms: handleGetMyGyms,
+    addGymMember: handleAddGymMember,
+    listGymMembers: handleListGymMembers,
+    publishGymWorkout: handlePublishGymWorkout,
+    getWorkoutFeed: handleGetWorkoutFeed,
+    getAccessContext: handleGetAccessContext,
+    getBenchmarks: handleGetBenchmarks,
+    getCompetitionCalendar: handleGetCompetitionCalendar,
+    createCompetition: handleCreateCompetition,
+    addCompetitionEvent: handleAddCompetitionEvent,
+    submitBenchmarkResult: handleSubmitBenchmarkResult,
+    getBenchmarkLeaderboard: handleGetBenchmarkLeaderboard,
+    openCheckout: handleOpenCheckout,
+    getSubscriptionStatus: handleGetSubscriptionStatus,
+    getEntitlements: handleGetEntitlements,
+    activateMockSubscription: handleActivateMockSubscription,
+    syncPush: handleSyncPush,
+    syncPull: handleSyncPull,
+    listSyncSnapshots: handleListSyncSnapshots,
+    getRuntimeConfig: handleGetRuntimeConfig,
+    setRuntimeConfig: handleSetRuntimeConfig,
     // PRs
     addPR: handleAddPR,
     removePR: handleRemovePR,
@@ -1025,19 +1271,16 @@ function exposeDebugAPIs() {
     // Events
     on,
     emit,
-  };
+  });
 
-  console.log('🐛 Debug APIs expostas: window.__APP__');
+  logDebug('🐛 Debug APIs expostas: window.__APP__');
 }
-/**
- * Limpa todos os PDFs salvos
- */
 /**
  * Limpa todos os PDFs salvos
  */
 async function clearAllPdfs() {
   try {
-    console.log('🗑️ Limpando todos os PDFs...');
+    logDebug('🗑️ Limpando todos os PDFs...');
 
     const { clearAllPdfs: clearPdfs } = await import('./adapters/pdf/pdfRepository.js');
     const result = await clearPdfs();
@@ -1059,7 +1302,7 @@ async function clearAllPdfs() {
     await activeWeekStorage.remove('active-week');
 
     emit('pdf:cleared');
-    console.log('✅ Todos os PDFs removidos');
+    logDebug('✅ Todos os PDFs removidos');
 
     return { success: true };
   } catch (error) {
@@ -1067,24 +1310,15 @@ async function clearAllPdfs() {
     return { success: false, error: error.message };
   }
 }
-// ========== HELPERS ==========
 
-/**
- * Cria download de arquivo
- * @param {string} content - Conteúdo do arquivo
- * @param {string} filename - Nome do arquivo
- * @param {string} mimeType - MIME type
- */
-function downloadFile(content, filename, mimeType) {
-  const blob = new Blob([content], { type: mimeType });
-  const url = URL.createObjectURL(blob);
+async function reprocessActiveWeek() {
+  const week = getActiveWeekFromState();
+  if (week) {
+    await processWorkoutFromWeek(week);
+  }
+}
 
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-
-  URL.revokeObjectURL(url);
+function getActiveWeekFromState(state = getState()) {
+  if (!state.activeWeekNumber) return null;
+  return state.weeks?.find((week) => week.weekNumber === state.activeWeekNumber) || null;
 }

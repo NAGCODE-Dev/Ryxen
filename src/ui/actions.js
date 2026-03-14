@@ -1,5 +1,33 @@
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
+
+  async function loadCoachPortalSnapshot() {
+    try {
+      const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
+        window.__APP__?.getSubscriptionStatus?.(),
+        window.__APP__?.getEntitlements?.(),
+        window.__APP__?.getAccessContext?.(),
+        window.__APP__?.getMyGyms?.(),
+        window.__APP__?.getBenchmarks?.({ limit: 20 }),
+        window.__APP__?.getWorkoutFeed?.(),
+      ]);
+
+      return {
+        subscription: subscriptionResult?.data || null,
+        entitlements: entitlementsResult?.data?.entitlements || [],
+        gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
+        gyms: gymsResult?.data?.gyms || [],
+        benchmarks: benchmarksResult?.data?.benchmarks || [],
+        benchmarkQuery: '',
+        benchmarkCategory: '',
+        feed: feedResult?.data?.workouts || [],
+        selectedGymId: (gymsResult?.data?.gyms || [])[0]?.id || null,
+        members: [],
+      };
+    } catch {
+      return { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], benchmarkQuery: '', benchmarkCategory: '', feed: [], selectedGymId: null, members: [] };
+    }
+  }
   
   // Busca de PRs (filtra em tempo real)
   root.addEventListener('input', (e) => {
@@ -41,6 +69,24 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const file = await pickPdfFile();
           if (!file) return;
           await window.__APP__.uploadMultiWeekPdf(file);
+          await rerender();
+          return;
+        }
+
+        case 'media:pick': {
+          const file = await pickUniversalFile();
+          if (!file) return;
+
+          if (typeof window.__APP__?.importFromFile !== 'function') {
+            throw new Error('Importação universal não disponível');
+          }
+
+          const result = await window.__APP__.importFromFile(file);
+          if (!result?.success) {
+            throw new Error(result?.error || 'Falha ao importar arquivo');
+          }
+
+          toast('Arquivo importado');
           await rerender();
           return;
         }
@@ -143,13 +189,110 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
+        case 'backup:export': {
+          if (typeof window.__APP__?.exportBackup !== 'function') {
+            throw new Error('Backup não disponível nesta versão');
+          }
+
+          const result = await window.__APP__.exportBackup();
+          if (!result?.success) throw new Error(result?.error || 'Falha ao exportar backup');
+
+          toast('Backup exportado');
+          return;
+        }
+
+        case 'backup:import': {
+          if (typeof window.__APP__?.importBackup !== 'function') {
+            throw new Error('Restauração não disponível nesta versão');
+          }
+
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.json,application/json';
+          input.style.display = 'none';
+
+          input.addEventListener('change', async (e2) => {
+            const file = e2.target.files?.[0];
+            if (!file) return;
+
+            try {
+              const result = await window.__APP__.importBackup(file);
+              if (!result?.success) {
+                throw new Error(result?.error || 'Falha ao restaurar backup');
+              }
+              toast('Backup restaurado');
+              await rerender();
+            } catch (err) {
+              toast(err?.message || 'Erro ao restaurar backup');
+              console.error(err);
+            } finally {
+              document.body.removeChild(input);
+            }
+          }, { once: true });
+
+          document.body.appendChild(input);
+          input.click();
+          return;
+        }
+
         // ----- Modais -----
         case 'modal:open': {
           const modal = el.dataset.modal || null;
-          await setUiState({ modal });
+          if (modal === 'auth') {
+            const profile = window.__APP__?.getProfile?.()?.data || null;
+            const nextState = { modal };
+            try {
+              const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
+                window.__APP__?.getSubscriptionStatus?.(),
+                window.__APP__?.getEntitlements?.(),
+                window.__APP__?.getAccessContext?.(),
+                window.__APP__?.getMyGyms?.(),
+                window.__APP__?.getBenchmarks?.({ limit: 20 }),
+                window.__APP__?.getWorkoutFeed?.(),
+              ]);
+              nextState.coachPortal = {
+                subscription: subscriptionResult?.data || null,
+                entitlements: entitlementsResult?.data?.entitlements || [],
+                gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
+                gyms: gymsResult?.data?.gyms || [],
+                benchmarks: benchmarksResult?.data?.benchmarks || [],
+                benchmarkQuery: '',
+                benchmarkCategory: '',
+                feed: feedResult?.data?.workouts || [],
+                selectedGymId: (gymsResult?.data?.gyms || [])[0]?.id || null,
+                members: [],
+              };
+            } catch {
+              nextState.coachPortal = { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], benchmarkQuery: '', benchmarkCategory: '', feed: [], selectedGymId: null, members: [] };
+            }
+            if (profile?.is_admin || profile?.isAdmin) {
+              try {
+                const adminResult = await window.__APP__?.getAdminOverview?.({ limit: 25 });
+                nextState.admin = { overview: adminResult?.data || null, query: '' };
+              } catch {
+                nextState.admin = { overview: null, query: '' };
+              }
+            }
+            await setUiState(nextState);
+            if (nextState.coachPortal?.selectedGymId) {
+              try {
+                const membersResult = await window.__APP__?.listGymMembers?.(nextState.coachPortal.selectedGymId);
+                await patchUiState((s) => ({
+                  ...s,
+                  coachPortal: {
+                    ...(s.coachPortal || {}),
+                    members: membersResult?.data?.memberships || [],
+                  },
+                }));
+              } catch {}
+            }
+          } else {
+            await setUiState({ modal });
+          }
           await rerender();
 
           if (modal === 'prs') root.querySelector('#ui-prsSearch')?.focus();
+          if (modal === 'auth') root.querySelector('#auth-email')?.focus();
           return;
         }
 
@@ -178,12 +321,329 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const showEmojis = !!root.querySelector('#setting-showEmojis')?.checked;
           const showObjectivesInWods = !!root.querySelector('#setting-showObjectives')?.checked;
 
+          if (typeof window.__APP__?.setPreferences === 'function') {
+            const corePrefsResult = await window.__APP__.setPreferences({
+              showLbsConversion,
+              showEmojis,
+              showGoals: showObjectivesInWods,
+              autoConvertLbs: showLbsConversion,
+            });
+
+            if (!corePrefsResult?.success) {
+              throw new Error(corePrefsResult?.error || 'Falha ao salvar preferências');
+            }
+          }
+
           await setUiState({
             settings: { showLbsConversion, showEmojis, showObjectivesInWods },
             modal: null,
           });
 
           toast('Configurações salvas');
+          await rerender();
+          return;
+        }
+
+        case 'auth:switch': {
+          const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
+          await setUiState({ authMode: mode });
+          await rerender();
+          root.querySelector('#auth-email')?.focus();
+          return;
+        }
+
+        case 'auth:submit': {
+          const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
+          const name = String(root.querySelector('#auth-name')?.value || '').trim();
+          const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();
+          const password = String(root.querySelector('#auth-password')?.value || '');
+
+          if (!email) throw new Error('Informe seu email');
+          if (!password || password.length < 6) throw new Error('Use uma senha com pelo menos 6 caracteres');
+          if (mode === 'signup' && !name) throw new Error('Informe seu nome');
+
+          const result = mode === 'signup'
+            ? await window.__APP__.signUp({ name, email, password })
+            : await window.__APP__.signIn({ email, password });
+
+          if (!result?.token && !result?.user) {
+            throw new Error('Falha ao autenticar');
+          }
+
+          const coachPortal = await loadCoachPortalSnapshot();
+          await setUiState({ modal: null, authMode: 'signin', coachPortal });
+          toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
+          await rerender();
+          return;
+        }
+
+        case 'auth:reset-toggle': {
+          await patchUiState((s) => ({
+            ...s,
+            passwordReset: {
+              ...(s.passwordReset || {}),
+              open: !(s.passwordReset?.open),
+            },
+          }));
+          await rerender();
+          root.querySelector('#reset-email')?.focus();
+          return;
+        }
+
+        case 'auth:reset-request': {
+          const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
+          if (!email) throw new Error('Informe o email da conta');
+
+          const result = await window.__APP__.requestPasswordReset({ email });
+          await patchUiState((s) => ({
+            ...s,
+            passwordReset: {
+              ...(s.passwordReset || {}),
+              open: true,
+              email,
+              previewCode: result?.previewCode || '',
+              previewUrl: result?.delivery?.previewUrl || '',
+              supportEmail: result?.supportEmail || '',
+            },
+          }));
+          toast(result?.previewCode ? 'Código gerado' : 'Pedido de recuperação enviado');
+          await rerender();
+          return;
+        }
+
+        case 'auth:reset-confirm': {
+          const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
+          const code = String(root.querySelector('#reset-code')?.value || '').trim();
+          const newPassword = String(root.querySelector('#reset-newPassword')?.value || '');
+
+          if (!email || !code || !newPassword) {
+            throw new Error('Preencha email, código e nova senha');
+          }
+
+          const result = await window.__APP__.confirmPasswordReset({ email, code, newPassword });
+          if (!result?.success) throw new Error(result?.error || 'Falha ao redefinir senha');
+
+          await patchUiState((s) => ({
+            ...s,
+            passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
+          }));
+          toast('Senha atualizada');
+          await rerender();
+          return;
+        }
+
+        case 'auth:refresh': {
+          const result = await window.__APP__.refreshSession();
+          if (!result?.token && !result?.user) {
+            throw new Error('Falha ao atualizar sessão');
+          }
+          const coachPortal = await loadCoachPortalSnapshot();
+          await patchUiState((s) => ({ ...s, coachPortal }));
+          toast('Sessão atualizada');
+          await rerender();
+          return;
+        }
+
+        case 'billing:checkout': {
+          const plan = el.dataset.plan || 'coach';
+          await window.__APP__.openCheckout(plan);
+          return;
+        }
+
+        case 'billing:activate-local': {
+          const plan = el.dataset.plan || 'coach';
+          await window.__APP__.activateMockSubscription(plan);
+          const [subscriptionResult, entitlementsResult] = await Promise.all([
+            window.__APP__?.getSubscriptionStatus?.(),
+            window.__APP__?.getEntitlements?.(),
+          ]);
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              subscription: subscriptionResult?.data || null,
+              entitlements: entitlementsResult?.data?.entitlements || [],
+              gymAccess: entitlementsResult?.data?.gymAccess || [],
+            },
+          }));
+          toast('Plano Coach local ativado');
+          await rerender();
+          return;
+        }
+
+        case 'coach:refresh': {
+          const [subscriptionResult, entitlementsResult, accessResult, gymsResult, benchmarksResult, feedResult] = await Promise.all([
+            window.__APP__?.getSubscriptionStatus?.(),
+            window.__APP__?.getEntitlements?.(),
+            window.__APP__?.getAccessContext?.(),
+            window.__APP__?.getMyGyms?.(),
+            window.__APP__?.getBenchmarks?.({ limit: 20 }),
+            window.__APP__?.getWorkoutFeed?.(),
+          ]);
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              subscription: subscriptionResult?.data || null,
+              entitlements: entitlementsResult?.data?.entitlements || [],
+              gymAccess: entitlementsResult?.data?.gymAccess || accessResult?.data?.gyms || [],
+              gyms: gymsResult?.data?.gyms || [],
+              benchmarks: benchmarksResult?.data?.benchmarks || [],
+              feed: feedResult?.data?.workouts || [],
+            },
+          }));
+          toast('Coach Portal atualizado');
+          await rerender();
+          return;
+        }
+
+        case 'coach:select-gym': {
+          const gymId = Number(el.dataset.gymId);
+          if (!Number.isFinite(gymId)) return;
+          const membersResult = await window.__APP__.listGymMembers(gymId);
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              selectedGymId: gymId,
+              members: membersResult?.data?.memberships || [],
+            },
+          }));
+          await rerender();
+          return;
+        }
+
+        case 'coach:create-gym': {
+          const name = String(root.querySelector('#coach-gym-name')?.value || '').trim();
+          const slug = String(root.querySelector('#coach-gym-slug')?.value || '').trim();
+          if (!name || !slug) throw new Error('Informe nome e slug do gym');
+          const result = await window.__APP__.createGym({ name, slug });
+          const gymsResult = await window.__APP__.getMyGyms();
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              gyms: gymsResult?.data?.gyms || [],
+              selectedGymId: result?.data?.gym?.id || (gymsResult?.data?.gyms || [])[0]?.id || null,
+            },
+          }));
+          toast('Gym criado');
+          await rerender();
+          return;
+        }
+
+        case 'coach:add-member': {
+          const ui = getUiState?.() || {};
+          const gymId = Number(ui?.coachPortal?.selectedGymId);
+          if (!Number.isFinite(gymId)) throw new Error('Selecione um gym');
+          const email = String(root.querySelector('#coach-member-email')?.value || '').trim().toLowerCase();
+          const role = String(root.querySelector('#coach-member-role')?.value || 'athlete');
+          if (!email) throw new Error('Informe o email do membro');
+          await window.__APP__.addGymMember(gymId, { email, role });
+          const membersResult = await window.__APP__.listGymMembers(gymId);
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              members: membersResult?.data?.memberships || [],
+            },
+          }));
+          toast('Membro adicionado');
+          await rerender();
+          return;
+        }
+
+        case 'coach:publish-workout': {
+          const ui = getUiState?.() || {};
+          const gymId = Number(ui?.coachPortal?.selectedGymId);
+          if (!Number.isFinite(gymId)) throw new Error('Selecione um gym');
+          const title = String(root.querySelector('#coach-workout-title')?.value || '').trim();
+          const scheduledDate = String(root.querySelector('#coach-workout-date')?.value || '').trim();
+          const benchmarkSlug = String(root.querySelector('#coach-workout-benchmark')?.value || '').trim();
+          const rawLines = String(root.querySelector('#coach-workout-lines')?.value || '').trim();
+          if (!title || !scheduledDate || !rawLines) throw new Error('Informe título, data e conteúdo do treino');
+          const lines = rawLines.split('\n').map((line) => line.trim()).filter(Boolean);
+          const payload = {
+            blocks: [{ type: 'PROGRAMMING', lines }],
+            ...(benchmarkSlug ? { benchmarkSlug } : {}),
+          };
+          await window.__APP__.publishGymWorkout(gymId, { title, scheduledDate, payload });
+          const feedResult = await window.__APP__.getWorkoutFeed();
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              feed: feedResult?.data?.workouts || [],
+            },
+          }));
+          toast('Treino publicado');
+          await rerender();
+          return;
+        }
+
+        case 'benchmarks:refresh': {
+          const ui = getUiState?.() || {};
+          const q = String(root.querySelector('#coach-benchmark-query')?.value || '').trim();
+          const category = String(ui?.coachPortal?.benchmarkCategory || '').trim();
+          const result = await window.__APP__.getBenchmarks({ q, category, limit: 30 });
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              benchmarks: result?.data?.benchmarks || [],
+              benchmarkQuery: q,
+            },
+          }));
+          await rerender();
+          return;
+        }
+
+        case 'benchmarks:filter': {
+          const category = String(el.dataset.category || '');
+          const q = String(root.querySelector('#coach-benchmark-query')?.value || '').trim();
+          const result = await window.__APP__.getBenchmarks({ q, category, limit: 30 });
+          await patchUiState((s) => ({
+            ...s,
+            coachPortal: {
+              ...(s.coachPortal || {}),
+              benchmarks: result?.data?.benchmarks || [],
+              benchmarkQuery: q,
+              benchmarkCategory: category,
+            },
+          }));
+          await rerender();
+          return;
+        }
+
+        case 'auth:signout': {
+          await window.__APP__.signOut();
+          await setUiState({ modal: null, authMode: 'signin', coachPortal: { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], feed: [], benchmarkQuery: '', benchmarkCategory: '', selectedGymId: null, members: [] } });
+          toast('Sessão encerrada');
+          await rerender();
+          return;
+        }
+
+        case 'auth:sync-push': {
+          const result = await window.__APP__.syncPush();
+          if (!result?.success) throw new Error(result?.error || 'Falha ao enviar sync');
+          toast('Sync enviado');
+          await rerender();
+          return;
+        }
+
+        case 'auth:sync-pull': {
+          const result = await window.__APP__.syncPull();
+          if (!result?.success) throw new Error(result?.error || 'Falha ao baixar sync');
+          toast('Sync atualizado');
+          await rerender();
+          return;
+        }
+
+        case 'admin:refresh': {
+          const query = String(root.querySelector('#admin-search')?.value || '').trim();
+          const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
+          await setUiState({ admin: { overview: result?.data || null, query } });
+          toast('Painel admin atualizado');
           await rerender();
           return;
         }
@@ -432,6 +892,18 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       await rerender();
     }
   });
+
+  root.addEventListener('keydown', async (e) => {
+    if (e.key !== 'Enter') return;
+    const target = e.target;
+    if (!target?.closest?.('#ui-authForm')) return;
+    e.preventDefault();
+
+    const ui = getUiState?.() || {};
+    const mode = ui.authMode === 'signup' ? 'signup' : 'signin';
+    const trigger = root.querySelector(`[data-action="auth:submit"][data-mode="${mode}"]`);
+    trigger?.click();
+  });
 }
 
 function workoutKeyFromAppState() {
@@ -498,6 +970,44 @@ function pickPdfFile() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/pdf';
+    input.style.display = 'none';
+
+    const cleanup = () => {
+      try { document.body.removeChild(input); } catch {}
+    };
+
+    input.addEventListener('change', (e) => {
+      const file = e.target.files?.[0] || null;
+      cleanup();
+      resolve(file);
+    }, { once: true });
+
+    input.addEventListener('cancel', () => {
+      cleanup();
+      resolve(null);
+    }, { once: true });
+
+    document.body.appendChild(input);
+    input.click();
+  });
+}
+
+function pickUniversalFile() {
+  return new Promise((resolve) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = [
+      'application/pdf',
+      'text/plain',
+      'text/csv',
+      'application/json',
+      'image/*',
+      'video/*',
+      '.txt',
+      '.md',
+      '.csv',
+      '.json',
+    ].join(',');
     input.style.display = 'none';
 
     const cleanup = () => {

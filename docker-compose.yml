@@ -1,0 +1,61 @@
+services:
+  db:
+    image: postgres:16
+    container_name: crossapp-postgres
+    environment:
+      POSTGRES_USER: crossapp
+      POSTGRES_PASSWORD: crossapp
+      POSTGRES_DB: crossapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - crossapp_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crossapp -d crossapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    image: node:20-alpine
+    container_name: crossapp-backend
+    working_dir: /app/backend
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npm run start"
+    environment:
+      PORT: 8787
+      DATABASE_URL: postgres://crossapp:crossapp@db:5432/crossapp
+      JWT_SECRET: change-me-local
+      FRONTEND_ORIGIN: http://localhost:8000
+      SUPPORT_EMAIL: nagcode.contact@gmail.com
+      ADMIN_EMAILS: nagcode.contact@gmail.com
+      EXPOSE_RESET_CODE: "true"
+      SMTP_FROM: nagcode.contact@gmail.com
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_COACH: ${STRIPE_PRICE_COACH:-}
+      STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO:-}
+      STRIPE_PRICE_STARTER: ${STRIPE_PRICE_STARTER:-}
+    ports:
+      - "8787:8787"
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    image: nginx:alpine
+    container_name: crossapp-frontend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  crossapp_pgdata:

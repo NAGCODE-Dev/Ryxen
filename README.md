@@ -1,170 +1,164 @@
+# CrossApp
 
-# CrossApp 🏋️
+PWA para importar programação de treino, calcular cargas, manter PRs, operar offline e sincronizar conta entre dispositivos.
 
-Progressive Web App para rastreamento e gestão de treinos de CrossFit, com cálculo automático de cargas baseado em recordes pessoais.
+## Stack
 
-https://nikolasagc.github.io/CrossApp/
+- Frontend: HTML, CSS, JavaScript modular
+- PWA: `manifest.json` + `sw.js`
+- Parsing: PDF.js + OCR para imagem/vídeo
+- Persistência local: `localStorage` e `IndexedDB`
+- Backend: Node.js + Express + Postgres
 
-## 📋 Sobre o Projeto
+## Funcionalidades
 
-CrossApp é uma aplicação web progressiva (PWA) desenvolvida para atletas de CrossFit que desejam acompanhar seus treinos diários, calcular cargas de trabalho com base em percentuais dos seus recordes pessoais (PRs) e manter um histórico completo de performance.
+- Importação de `PDF`, `txt`, `csv`, `json`, imagem e vídeo
+- Cálculo automático de cargas a partir de PRs
+- Backup e restauração completos
+- Login, cadastro e sync remoto
+- Estrutura multi-tenant para `gym / coach / athlete`
+- Publicação de treinos do coach para atletas do gym
+- Reset de senha com código temporário
+- Painel admin básico para usuários/assinaturas
+- Billing Stripe com webhook e bloqueio automático do coach
+- Grace period de assinatura com estados de acesso para coach/atleta
+- Biblioteca de benchmarks com seed expandido, filtros e feed enriquecido
+- Resultados de benchmark com leaderboard por slug/gym
+- Calendário de competições com eventos vinculados a benchmark
+- Telemetria com consentimento
+- Base pronta para billing via Stripe/Mercado Pago
+- Página pública de planos em `pricing.html`
 
-A aplicação permite importar PDFs de programação de treinos, extrai automaticamente os exercícios e percentuais, e calcula as cargas personalizadas para cada movimento baseado nos seus PRs cadastrados.
+## Estrutura real do projeto
 
-## ✨ Funcionalidades
-
-- **Importação de PDFs**: Parse automático de planilhas de treino em formato PDF
-- **Cálculo de Cargas**: Conversão automática de percentuais em cargas reais (kg/lbs)
-- **Recordes Pessoais**: Cadastro e gerenciamento de PRs para todos os movimentos
-- **Treino do Dia**: Visualização clara e responsiva do WOD (Workout of the Day)
-- **Histórico**: Rastreamento de treinos realizados e progressão ao longo do tempo
-- **Modo Offline**: Funciona sem conexão à internet graças ao Service Worker
-- **Responsivo**: Interface otimizada para mobile e desktop
-
-## 🚀 Tecnologias Utilizadas
-
-- **JavaScript ES6+**: Código moderno com async/await e módulos
-- **PWA**: Service Workers para funcionalidade offline
-- **PDF.js**: Parsing e extração de texto de documentos PDF
-- **IndexedDB/LocalStorage**: Persistência de dados local
-- **HTML5/CSS3**: Interface responsiva e moderna
-- **Vanilla JS**: Sem dependência de frameworks pesados
-
-## 📦 Estrutura do Projeto
-
+```text
+.
+├── backend/
+│   └── src/
+├── docs/
+├── src/
+│   ├── adapters/
+│   ├── config/
+│   ├── core/
+│   ├── data/
+│   ├── libs/
+│   └── ui/
+├── __tests__/
+├── docker-compose.yml
+├── nginx.conf
+├── sw.js
+└── index.html
 ```
-CrossApp/
-├── index.html              # Página principal
-├── manifest.json           # Manifesto PWA
-├── service-worker.js       # Service Worker para cache offline
-├── css/
-│   └── styles.css          # Estilos da aplicação
-├── js/
-│   ├── app.js              # Lógica principal
-│   ├── pdf-parser.js       # Parser de PDF
-│   ├── load-calculator.js  # Cálculo de cargas
-│   └── storage.js          # Gerenciamento de dados
-└── assets/
-    └── icons/              # Ícones para PWA
-```
 
-## 🔧 Instalação e Uso
+## Rodar local
 
-### Requisitos
+### Com Docker
 
-- Navegador moderno com suporte a PWA (Chrome, Firefox, Safari, Edge)
-- Servidor web local ou hospedagem HTTPS (obrigatório para Service Workers)
-
-### Instalação Local
-
-1. Clone o repositório:
 ```bash
-git clone https://github.com/NikolasAGC/CrossApp.git
-cd CrossApp
+docker compose up -d
 ```
 
-2. Inicie um servidor local:
+- App: `http://localhost:8000`
+- API via nginx: `http://localhost:8000/api`
+- Backend direto: `http://localhost:8787`
+- Postgres: `localhost:5432`
+
+### Sem Docker
+
+Frontend:
+
 ```bash
-# Usando Python 3
 python -m http.server 8000
-
-# Usando Node.js (http-server)
-npx http-server -p 8000
 ```
 
-3. Acesse `http://localhost:8000` no navegador
+Backend:
 
-### Instalação como PWA
-
-1. Acesse a aplicação no navegador
-2. Clique no ícone de instalação na barra de endereços
-3. Confirme a instalação
-4. Use como aplicativo nativo!
-
-## 💡 Como Usar
-
-### 1. Cadastrar Recordes Pessoais
-
-- Acesse a seção de "PRs" ou "Recordes"
-- Adicione seus recordes para movimentos como:
-  - Squat Snatch
-  - Power Snatch
-  - Clean & Jerk
-  - Back Squat
-  - Front Squat, etc.
-
-### 2. Importar Treino
-
-- Clique em "Importar PDF" ou "Novo Treino"
-- Selecione o arquivo PDF da programação
-- O sistema irá extrair automaticamente os exercícios e percentuais
-
-### 3. Visualizar Cargas
-
-- As cargas serão calculadas automaticamente baseadas nos seus PRs
-- Visualize o treino do dia com as cargas personalizadas
-- Marque como concluído ao finalizar
-
-## 🏗️ Arquitetura
-
-### Parser de PDF
-Utiliza PDF.js para extrair texto dos PDFs de programação e identifica:
-- Movimentos e exercícios
-- Percentuais de carga (ex: 70%, 85%, 90%)
-- Séries e repetições
-- Tempo de descanso
-
-### Calculadora de Cargas
-Recebe os percentuais e PRs cadastrados, retornando:
-- Carga em kg ou lbs
-- Arredondamento inteligente baseado nas anilhas disponíveis
-- Conversão automática entre unidades
-
-### Persistência
-- **LocalStorage**: Configurações e preferências
-- **IndexedDB**: Histórico de treinos e dados volumosos
-- **Cache API**: Assets estáticos via Service Worker
-
-## 🎯 Roadmap
-
-- [ ] Integração com análise de movimento via ML
-- [ ] Gráficos de progressão e analytics
-- [ ] Compartilhamento de treinos
-- [ ] Exportação de dados (CSV/JSON)
-- [ ] Timer integrado (AMRAP, EMOM, Tabata)
-- [ ] Modo dark/light theme
-
-## 🐛 Debug e Desenvolvimento
-
-### Console de Debug
-```javascript
-// Verificar dados armazenados
-console.log(localStorage);
-
-// Testar parser
-await parsePDF(file);
-
-// Limpar cache
-caches.keys().then(names => names.forEach(name => caches.delete(name)));
+```bash
+cd backend
+cp .env.example .env
+npm install
+npm run start
 ```
 
-## 👨‍💻 Desenvolvedor
+## Testes
 
-**Nikolas AG**
-- GitHub: [@NikolasAGC](https://github.com/NikolasAGC)
-- Estudante de Desenvolvimento - IFSP
-- Atleta de CrossFit
+```bash
+npm test
+```
 
-## 📄 Licença
+## Conta admin local
 
-Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
+- O primeiro usuário criado vira admin.
+- O email `nagcode.contact@gmail.com` também recebe perfil admin por padrão.
 
-## 🙏 Agradecimentos
+## Multi-tenant
 
-- Comunidade CrossFit de Itapetininga
-- Mozilla PDF.js
-- Desenvolvedores da comunidade PWA
+APIs já preparadas para:
 
----
+- criar `gym`
+- adicionar `coach` ou `athlete` ao gym
+- publicar treino para o gym
+- consultar feed de treinos do atleta
+- consultar contexto de acesso baseado na assinatura do coach
 
-**Desenvolvido com 💪 por um atleta, para atletas**
+## Benchmarks
+
+- Seed inicial organizada por categoria em `backend/src/benchmarks/`
+- Cobertura atual: `Girls`, `Hero` e `Open`
+- Busca com paginação e ordenação via `GET /benchmarks?q=&category=&source=&sort=&page=&limit=`
+- Coach Portal já consome filtros por categoria, fonte e ordenação
+
+## Reset de senha
+
+- Em ambiente local, o backend pode expor o código na resposta se `EXPOSE_RESET_CODE=true`.
+- Se SMTP não estiver configurado, o backend usa conta de teste Ethereal e retorna `previewUrl` quando possível.
+
+## Configuração importante
+
+Backend `.env`:
+
+```env
+PORT=8787
+DATABASE_URL=postgres://crossapp:crossapp@localhost:5432/crossapp
+JWT_SECRET=change-me
+FRONTEND_ORIGIN=http://localhost:8000
+SUPPORT_EMAIL=nagcode.contact@gmail.com
+ADMIN_EMAILS=nagcode.contact@gmail.com
+EXPOSE_RESET_CODE=true
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=nagcode.contact@gmail.com
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_COACH=
+STRIPE_PRICE_PRO=
+STRIPE_PRICE_STARTER=
+```
+
+## Coach Portal
+
+Na UI da conta, o Coach Portal já expõe:
+
+- status da assinatura
+- criação de gym
+- gestão de membros
+- publicação de treino
+- benchmark library
+- feed do app
+
+Tudo via `window.__APP__` e APIs do backend.
+
+Portal separado em framework:
+
+- URL: `/coach/`
+- frontend: [coach/index.html](/home/nagc/Downloads/CrossApp/coach/index.html)
+- runtime: [coach/main.js](/home/nagc/Downloads/CrossApp/coach/main.js)
+
+## Documentação complementar
+
+- Backend/API: `docs/ops/BACKEND_INTEGRATION.md`
+- Release/Rollback: `docs/ops/RELEASE_ROLLBACK_RUNBOOK.md`
+- Suporte: `docs/ops/SUPPORT_PLAYBOOK.md`
