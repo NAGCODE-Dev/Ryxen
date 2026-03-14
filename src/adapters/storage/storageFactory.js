@@ -9,6 +9,12 @@
 import * as localStorageAdapter from './localStorageAdapter.js';
 import * as indexedDbAdapter from './indexedDbAdapter.js';
 
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+const logDebug = (...args) => {
+  if (DEBUG) console.log(...args);
+};
+
 // Limite para trocar de localStorage para IndexedDB
 const INDEXEDDB_THRESHOLD = 4 * 1024 * 1024; // 4MB
 
@@ -21,23 +27,23 @@ const INDEXEDDB_THRESHOLD = 4 * 1024 * 1024; // 4MB
 export function createStorage(key = '', estimatedSize = 0) {
   // Se IndexedDB não disponível, usa localStorage
   if (!indexedDbAdapter.isAvailable()) {
-    console.log('📦 Storage: localStorage (IndexedDB não disponível)');
+    logDebug('📦 Storage: localStorage (IndexedDB não disponível)');
     return localStorageAdapter;
   }
   
   // Se localStorage não disponível, força IndexedDB
   if (!localStorageAdapter.isAvailable()) {
-    console.log('📦 Storage: IndexedDB (localStorage não disponível)');
+    logDebug('📦 Storage: IndexedDB (localStorage não disponível)');
     return indexedDbAdapter;
   }
   
   // Decide baseado em tamanho
   if (estimatedSize > INDEXEDDB_THRESHOLD) {
-    console.log(`📦 Storage: IndexedDB (${formatBytes(estimatedSize)} > 4MB)`);
+    logDebug(`📦 Storage: IndexedDB (${formatBytes(estimatedSize)} > 4MB)`);
     return indexedDbAdapter;
   }
   
-  console.log(`📦 Storage: localStorage (${formatBytes(estimatedSize)} ≤ 4MB)`);
+  logDebug(`📦 Storage: localStorage (${formatBytes(estimatedSize)} ≤ 4MB)`);
   return localStorageAdapter;
 }
 
@@ -93,7 +99,7 @@ export async function migrateData(key, fromAdapter, toAdapter) {
     await toAdapter.set(key, value);
     await fromAdapter.remove(key);
     
-    console.log(`✅ Migrado: ${key} (${fromAdapter.getInfo().name} → ${toAdapter.getInfo().name})`);
+    logDebug(`✅ Migrado: ${key} (${fromAdapter.getInfo().name} → ${toAdapter.getInfo().name})`);
     return true;
     
   } catch (error) {
@@ -129,7 +135,7 @@ export async function clearAllStorages() {
   if (errors.length > 0) {
     console.warn('Alguns storages não puderam ser limpos:', errors);
   } else {
-    console.log('✅ Todos os storages limpos');
+    logDebug('✅ Todos os storages limpos');
   }
 }
 

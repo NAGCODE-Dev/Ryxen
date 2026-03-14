@@ -16,6 +16,7 @@ let state = {
   // Preferências do usuário
   preferences: {
     showLbsConversion: true,
+    autoConvertLbs: true,
     showEmojis: true,
     showGoals: true,
     theme: 'dark',
@@ -69,6 +70,7 @@ export function resetState() {
     prs: {},
     preferences: {
       showLbsConversion: true,
+      autoConvertLbs: true,
       showEmojis: true,
       showGoals: true,
       theme: 'dark',

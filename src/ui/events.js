@@ -35,6 +35,25 @@ export function bindAppEvents({ pushEventLine, rerender, toast, setBusy }) {
       rerender?.();
     }],
 
+    ['media:uploading', (data) => {
+      busy(true, 'Processando arquivo...');
+      pushEventLine?.(`Importando: ${data?.fileName || ''}`.trim());
+    }],
+
+    ['media:uploaded', (data) => {
+      busy(false);
+      pushEventLine?.(`Importado (${data?.weeksCount ?? '?'} semanas)`);
+      toast?.(`Importado via ${data?.type || 'arquivo'}`);
+      rerender?.();
+    }],
+
+    ['media:error', (data) => {
+      busy(false);
+      pushEventLine?.(`Erro de importação: ${data?.error || 'desconhecido'}`);
+      toast?.(data?.error || 'Erro na importação');
+      rerender?.();
+    }],
+
     ['pdf:cleared', () => {
       busy(false);
       pushEventLine?.('Todos os PDFs removidos');
@@ -76,10 +95,28 @@ export function bindAppEvents({ pushEventLine, rerender, toast, setBusy }) {
     ['prs:exported', (data) => {
       pushEventLine?.(`PRs exportados: ${data?.count ?? '?'}`);
     }],
+
+    ['backup:exported', (data) => {
+      pushEventLine?.(`Backup exportado: ${data?.filename || 'arquivo'}`);
+      toast?.('Backup salvo');
+    }],
+
+    ['backup:imported', (data) => {
+      pushEventLine?.(`Backup restaurado (${data?.weeksCount ?? 0} semanas)`);
+      toast?.('Backup restaurado');
+      rerender?.();
+    }],
   ];
 
-  handlers.forEach(([eventName, handler]) => on(eventName, handler));
+  const unsubscribers = handlers.map(([eventName, handler]) => on(eventName, handler));
 
-  // Se o teu eventBus retornar "unsubscribe", dá pra guardar e retornar um destroy real.
-  return () => {};
+  return () => {
+    unsubscribers.forEach((unsubscribe) => {
+      try {
+        unsubscribe?.();
+      } catch (error) {
+        console.warn('Falha ao remover listener:', error);
+      }
+    });
+  };
 }

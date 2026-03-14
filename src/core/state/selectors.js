@@ -16,7 +16,7 @@ export function getTodayWorkout() {
     return null;
   }
   
-  return state.workout.find(w => w.day === state.currentDay);
+  return state.workout;
 }
 
 /**
@@ -30,8 +30,14 @@ export function getMissingPRs() {
   
   const exercisesInWorkout = new Set();
   
-  workout.sections?.forEach(section => {
-    section.lines?.forEach(line => {
+  const blocks = workout.blocks || workout.sections || [];
+
+  blocks.forEach(section => {
+    section.lines?.forEach(rawLine => {
+      const line = typeof rawLine === 'string'
+        ? rawLine
+        : String(rawLine?.raw || rawLine?.text || '');
+
       // Busca por padrões de exercício (maiúsculas, etc)
       const match = line.match(/\b([A-Z][A-Z\s]+)\b/);
       if (match) {
@@ -51,7 +57,7 @@ export function getMissingPRs() {
  */
 export function isWorkoutReady() {
   const state = getState();
-  return !!(state.pdfText && state.currentDay && state.workout);
+  return !!(state.weeks?.length && state.currentDay && state.workout);
 }
 
 /**
@@ -73,8 +79,8 @@ export function getWorkoutStats() {
   }
   
   return {
-    sections: workout.sections?.length || 0,
-    exercises: workout.sections?.reduce((acc, s) => acc + (s.lines?.length || 0), 0) || 0,
+    sections: workout.blocks?.length || workout.sections?.length || 0,
+    exercises: (workout.blocks || workout.sections || []).reduce((acc, s) => acc + (s.lines?.length || 0), 0),
     sets: 0, // TODO: calcular sets totais
   };
 }

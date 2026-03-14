@@ -8,6 +8,8 @@
  */
 
 import { init } from './app.js';
+import { mountConsentBanner } from './ui/consent.js';
+import { flushTelemetry, trackError, trackEvent } from './core/services/telemetryService.js';
 
 if (window.__TREINO_BOOTSTRAPPED__) {
   // Evita double-boot caso o script seja incluído duas vezes acidentalmente.
@@ -18,13 +20,19 @@ if (window.__TREINO_BOOTSTRAPPED__) {
 }
 
 async function bootstrap() {
+  setupGlobalTelemetryHandlers();
   registerServiceWorker();
+  mountConsentBanner();
 
   const result = await init();
   if (!result?.success) {
+    trackError(result?.error || 'init_failed', { stage: 'bootstrap' });
     renderError(result?.error || 'Erro desconhecido');
     return;
   }
+
+  trackEvent('app_initialized', { success: true });
+  flushTelemetry().catch(() => {});
 
   // Debug opcional (não interfere no uso normal):
   // /?debug=1 mantém o painel antigo para inspeção rápida.
@@ -43,8 +51,13 @@ function registerServiceWorker() {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('./sw.js')
-      .then((reg) => console.log('✅ Service Worker registrado:', reg.scope))
-      .catch((err) => console.error('❌ Erro no Service Worker:', err));
+      .then((reg) => {
+        trackEvent('service_worker_registered', { scope: reg.scope });
+      })
+      .catch((err) => {
+        trackError(err, { stage: 'service_worker_register' });
+        console.error('Erro no Service Worker:', err);
+      });
   });
 }
 
@@ -177,4 +190,18 @@ function escapeHtml(str) {
 
 function wait(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function setupGlobalTelemetryHandlers() {
+  window.addEventListener('error', (event) => {
+    trackError(event?.error || event?.message || 'window_error', {
+      source: event?.filename || null,
+      line: event?.lineno || null,
+      column: event?.colno || null,
+    });
+  });
+
+  window.addEventListener('unhandledrejection', (event) => {
+    trackError(event?.reason || 'unhandled_rejection', { source: 'promise' });
+  });
 }

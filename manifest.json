@@ -1,13 +1,18 @@
 {
+  "id": "/CrossApp/",
   "name": "CrossApp",
   "short_name": "CrossApp",
-  "description": "App para visualizar treinos de Crossfit",
+  "description": "PWA para planejamento, cálculo de cargas e gestão de treinos de CrossFit.",
+  "lang": "pt-BR",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#1a1a2e",
   "theme_color": "#1a1a2e",
   "orientation": "portrait-primary",
-    "icons": [
+  "categories": ["sports", "health", "fitness", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",

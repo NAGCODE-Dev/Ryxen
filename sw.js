@@ -1,141 +1,161 @@
 /**
  * Service Worker
- * Versão: 2.0.0 (Multi-week)
+ * Versão: 3.1.0
  */
 
-const CACHE_NAME = 'treino-v2';
-
-// Lista APENAS arquivos essenciais que sabemos que existem
-const ASSETS = [
+const CACHE_NAME = 'crossapp-v3-1';
+const CORE_ASSETS = [
   './',
   './index.html',
+  './manifest.json',
+  './privacy.html',
+  './terms.html',
+  './support.html',
   './src/main.js',
   './src/app.js',
+  './src/config/runtime.js',
+  './src/ui/ui.js',
+  './src/ui/render.js',
+  './src/ui/actions.js',
+  './src/ui/events.js',
+  './src/ui/consent.js',
+  './src/ui/styles.css',
+  './src/core/services/apiClient.js',
+  './src/core/services/authService.js',
+  './src/core/services/subscriptionService.js',
+  './src/core/services/syncService.js',
+  './src/core/services/telemetryService.js',
+  './src/core/usecases/backupData.js',
+  './src/adapters/media/ocrReader.js',
+  './src/adapters/media/videoTextReader.js',
+  './src/libs/pdf.mjs',
+  './src/libs/pdf.worker.mjs',
+  './icons/icon-192.png',
+  './icons/icon-512.png',
 ];
 
-// Install: tenta cachear, mas não falha se algum arquivo não existir
-self.addEventListener('install', event => {
-  console.log('⚙️ Service Worker: Installing...');
-  
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('📦 Service Worker: Caching core assets...');
-        
-        // Cacheia arquivos um por um, ignorando falhas
-        return Promise.allSettled(
-          ASSETS.map(url => 
-            cache.add(url).catch(err => {
-              console.warn('⚠️ Falha ao cachear:', url);
-              return null;
-            })
-          )
-        );
-      })
-      .then(() => {
-        console.log('✅ Service Worker: Core assets cached');
-        return self.skipWaiting();
-      })
-      .catch(error => {
-        console.error('❌ Service Worker: Install failed', error);
-      })
-  );
+self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    await Promise.allSettled(CORE_ASSETS.map((asset) => cache.add(asset)));
+    await self.skipWaiting();
+  })());
 });
 
-// Activate: limpa caches antigos
-self.addEventListener('activate', event => {
-  console.log('⚙️ Service Worker: Activating...');
-  
-  event.waitUntil(
-    caches.keys()
-      .then(cacheNames => {
-        return Promise.all(
-          cacheNames
-            .filter(cacheName => cacheName !== CACHE_NAME)
-            .map(cacheName => {
-              console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-        );
-      })
-      .then(() => {
-        console.log('✅ Service Worker: Activated');
-        return self.clients.claim();
-      })
-  );
+self.addEventListener('activate', (event) => {
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames
+        .filter((cacheName) => cacheName !== CACHE_NAME)
+        .map((cacheName) => caches.delete(cacheName)),
+    );
+    await self.clients.claim();
+  })());
 });
 
-// Fetch: Network First com fallback para cache
-self.addEventListener('fetch', event => {
-  // Ignora requests não-GET
-  if (event.request.method !== 'GET') {
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  if (request.method !== 'GET') return;
+  if (url.origin !== self.location.origin) return;
+
+  if (url.pathname.startsWith('/api/')) {
+    event.respondWith(networkOnly(request));
     return;
   }
-  
-  // Ignora URLs especiais
-  if (!event.request.url.startsWith('http')) {
+
+  // Navegação: network-first com fallback para shell
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request, './index.html'));
     return;
   }
-  
-  // Ignora PDF.js CDN (sempre buscar da rede)
-  if (event.request.url.includes('cdnjs.cloudflare.com')) {
+
+  // Arquivos estáticos: stale-while-revalidate
+  if (isStaticAsset(request)) {
+    event.respondWith(staleWhileRevalidate(request));
     return;
   }
-  
-  event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Se resposta OK, atualiza cache em background
-        if (response && response.status === 200 && response.type === 'basic') {
-          const responseClone = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseClone);
-            })
-            .catch(() => {
-              // Ignora erros de cache
-            });
-        }
-        
-        return response;
-      })
-      .catch(() => {
-        // Network falhou, busca no cache
-        return caches.match(event.request)
-          .then(cachedResponse => {
-            if (cachedResponse) {
-              console.log('📦 Servindo do cache:', event.request.url);
-              return cachedResponse;
-            }
-            
-            // Se é navegação e não tem cache, retorna index.html
-            if (event.request.mode === 'navigate') {
-              return caches.match('./index.html');
-            }
-            
-            // Retorna resposta offline genérica
-            return new Response('Offline - Conteúdo não disponível', {
-              status: 503,
-              statusText: 'Service Unavailable',
-              headers: new Headers({
-                'Content-Type': 'text/plain'
-              })
-            });
-          });
-      })
-  );
+
+  // API/JSON/outros: network-first com fallback cache
+  event.respondWith(networkFirst(request));
 });
 
-// Message: permite controle via postMessage
-self.addEventListener('message', event => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    console.log('⏭️ Service Worker: Skipping waiting...');
+self.addEventListener('message', (event) => {
+  if (!event.data) return;
+
+  if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-  
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
-    console.log('🗑️ Service Worker: Clearing cache...');
-    caches.delete(CACHE_NAME);
+
+  if (event.data.type === 'CLEAR_CACHE') {
+    event.waitUntil(caches.delete(CACHE_NAME));
   }
 });
+
+function isStaticAsset(request) {
+  const destination = request.destination;
+  return (
+    destination === 'script'
+    || destination === 'style'
+    || destination === 'image'
+    || destination === 'font'
+    || destination === 'worker'
+  );
+}
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  const networkPromise = fetch(request)
+    .then((response) => {
+      if (isCacheable(response)) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => null);
+
+  return cached || networkPromise || offlineResponse();
+}
+
+async function networkFirst(request, fallbackUrl) {
+  const cache = await caches.open(CACHE_NAME);
+  try {
+    const response = await fetch(request);
+    if (isCacheable(response)) {
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    if (fallbackUrl) {
+      const fallback = await cache.match(fallbackUrl);
+      if (fallback) return fallback;
+    }
+
+    const cached = await cache.match(request);
+    return cached || offlineResponse();
+  }
+}
+
+async function networkOnly(request) {
+  try {
+    return await fetch(request);
+  } catch {
+    return offlineResponse('Sem conexão com a API.');
+  }
+}
+
+function isCacheable(response) {
+  return response && response.status === 200 && (response.type === 'basic' || response.type === 'cors');
+}
+
+function offlineResponse(message = 'Offline - conteúdo indisponível.') {
+  return new Response(message, {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+  });
+}

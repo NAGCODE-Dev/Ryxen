@@ -6,6 +6,8 @@
  */
 
 const events = new Map();
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
 
 /**
  * Registra um listener para um evento
@@ -63,6 +65,7 @@ export function clear(eventName) {
  * Debug: lista eventos ativos
  */
 export function debug() {
+  if (!DEBUG) return;
   console.group('📡 Event Bus');
   events.forEach((handlers, eventName) => {
     console.log(`${eventName}: ${handlers.size} listener(s)`);

@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="description" content="Planos do CrossApp para coaches e boxes.">
+  <title>CrossApp Planos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #071018;
+      --panel: rgba(14, 24, 37, 0.82);
+      --line: rgba(255,255,255,0.08);
+      --text: #f4f7fb;
+      --muted: rgba(244,247,251,0.68);
+      --orange: #ff7b47;
+      --blue: #4ba3ff;
+      --green: #35d08d;
+      --shadow: 0 24px 60px rgba(0,0,0,0.28);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Space Grotesk', sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255,123,71,0.18), transparent 28%),
+        radial-gradient(circle at right, rgba(75,163,255,0.16), transparent 24%),
+        linear-gradient(180deg, #071018 0%, #050c14 100%);
+    }
+    .page {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+    .hero {
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(135deg, rgba(255,123,71,0.16), rgba(75,163,255,0.12));
+      box-shadow: var(--shadow);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    h1 {
+      margin: 10px 0 12px;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 0.94;
+      letter-spacing: -0.05em;
+    }
+    .hero p {
+      max-width: 700px;
+      color: var(--muted);
+      line-height: 1.6;
+      margin: 0;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 24px;
+    }
+    .card {
+      padding: 22px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+    .card.featured {
+      background: linear-gradient(135deg, rgba(255,123,71,0.16), rgba(75,163,255,0.14)), var(--panel);
+      transform: translateY(-4px);
+    }
+    .price {
+      display: block;
+      margin: 14px 0 10px;
+      font-size: 2rem;
+      font-weight: 800;
+    }
+    .muted {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .features {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin: 18px 0 22px;
+    }
+    .feature {
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      font-size: 14px;
+      color: var(--text);
+    }
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 0 18px;
+      border-radius: 14px;
+      text-decoration: none;
+      font-weight: 800;
+      border: 1px solid var(--line);
+      color: var(--text);
+    }
+    .btn-primary {
+      border: 0;
+      background: linear-gradient(135deg, var(--orange), var(--blue));
+    }
+    .note-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .note-card {
+      padding: 20px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+    }
+    .note-card strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 900px) {
+      .pricing-grid,
+      .note-grid {
+        grid-template-columns: 1fr;
+      }
+      .card.featured {
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <div class="eyebrow">CrossApp Pricing</div>
+      <h1>Planos para coach, box e operação em escala.</h1>
+      <p>O atleta usa o app vinculado ao coach. O coach assina, publica a programação, libera o acesso do box e acompanha benchmarks, membros e distribuição do treino.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="/coach/">Abrir Coach Portal</a>
+        <a class="btn" href="/">Abrir app do atleta</a>
+      </div>
+    </section>
+
+    <section class="pricing-grid">
+      <article class="card">
+        <div class="eyebrow">Starter</div>
+        <strong class="price">R$ 59/mês</strong>
+        <p class="muted">Entrada para boxes menores que querem centralizar benchmark, feed e entrega básica de treinos.</p>
+        <div class="features">
+          <div class="feature">1 gym ativo</div>
+          <div class="feature">Até 25 atletas</div>
+          <div class="feature">Biblioteca de benchmarks</div>
+        </div>
+      </article>
+
+      <article class="card featured">
+        <div class="eyebrow">Coach</div>
+        <strong class="price">R$ 119/mês</strong>
+        <p class="muted">Plano principal para coaches que precisam publicar programação, gerenciar atletas e manter acesso do app.</p>
+        <div class="features">
+          <div class="feature">Programação completa do box</div>
+          <div class="feature">Gestão de membros</div>
+          <div class="feature">Controle de acesso por assinatura</div>
+          <div class="feature">Feed e benchmarks expandidos</div>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="eyebrow">Pro</div>
+        <strong class="price">R$ 199/mês</strong>
+        <p class="muted">Estrutura para operação maior, múltiplos coaches e recursos de analytics/comercial que entram na próxima camada.</p>
+        <div class="features">
+          <div class="feature">Mais coaches e atletas</div>
+          <div class="feature">Base para analytics avançado</div>
+          <div class="feature">Preparado para expansão comercial</div>
+        </div>
+      </article>
+    </section>
+
+    <section class="note-grid">
+      <article class="note-card">
+        <strong>Como funciona a cobrança</strong>
+        <p class="muted">O coach paga a assinatura. Os atletas usam o app enquanto o box estiver ativo. Quando a renovação se aproxima, o sistema avisa; quando vence, o acesso entra em modo de graça e depois em limitação.</p>
+      </article>
+      <article class="note-card">
+        <strong>Operação do produto</strong>
+        <p class="muted">O coach publica a programação, convida membros, consulta benchmarks e controla a rotina do box no Coach Portal. O atleta recebe o treino no app com cálculo de carga e histórico.</p>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

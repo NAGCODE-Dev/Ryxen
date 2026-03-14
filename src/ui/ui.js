@@ -55,6 +55,7 @@ export async function mountUI({ root }) {
     const view = renderAll(state);
 
     setText(refs.subtitle, view.subtitle);
+    setHTML(refs.headerAccount, view.headerAccountHtml);
     setHTML(refs.weekChips, view.weekChipsHtml);
     setHTML(refs.main, view.mainHtml);
     setHTML(refs.modals, view.modalsHtml);
@@ -108,6 +109,21 @@ function normalizeUiState(s) {
   if (typeof next.settings.showLbsConversion !== 'boolean') next.settings.showLbsConversion = true;
   if (typeof next.settings.showEmojis !== 'boolean') next.settings.showEmojis = true;
   if (typeof next.settings.showObjectivesInWods !== 'boolean') next.settings.showObjectivesInWods = true;
+  next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
+  next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
+  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
+  next.coachPortal = next.coachPortal && typeof next.coachPortal === 'object'
+    ? next.coachPortal
+    : { subscription: null, entitlements: [], gymAccess: [], gyms: [], benchmarks: [], feed: [], benchmarkQuery: '', benchmarkCategory: '', selectedGymId: null, members: [] };
+  if (!Array.isArray(next.coachPortal.members)) next.coachPortal.members = [];
+  if (!Array.isArray(next.coachPortal.gyms)) next.coachPortal.gyms = [];
+  if (!Array.isArray(next.coachPortal.benchmarks)) next.coachPortal.benchmarks = [];
+  if (!Array.isArray(next.coachPortal.feed)) next.coachPortal.feed = [];
+  if (!Array.isArray(next.coachPortal.gymAccess)) next.coachPortal.gymAccess = [];
+  if (!Array.isArray(next.coachPortal.entitlements)) next.coachPortal.entitlements = [];
+  if (typeof next.coachPortal.benchmarkQuery !== 'string') next.coachPortal.benchmarkQuery = '';
+  if (typeof next.coachPortal.benchmarkCategory !== 'string') next.coachPortal.benchmarkCategory = '';
+  if (typeof next.coachPortal.selectedGymId !== 'number') next.coachPortal.selectedGymId = next.coachPortal.selectedGymId || null;
 
   return next;
 }
@@ -123,6 +139,13 @@ function buildUiForRender(state, uiState) {
     modal: uiState.modal,
     trainingMode: uiState.trainingMode,
     settings: uiState.settings,
+    authMode: uiState.authMode,
+    auth: {
+      profile: safeGetProfile(),
+    },
+    passwordReset: uiState.passwordReset,
+    admin: uiState.admin,
+    coachPortal: uiState.coachPortal,
 
     wodKey: key,
     activeLineId: wod.activeLineId,
@@ -151,6 +174,7 @@ function getRefs(root) {
   const q = (sel) => root.querySelector(sel);
   return {
     subtitle: q('#ui-subtitle'),
+    headerAccount: q('#ui-headerAccount'),
     weekChips: q('#ui-weekChips'),
     main: q('#ui-main'),
     modals: q('#ui-modals'),
@@ -173,6 +197,15 @@ function safeGetState() {
     return window.__APP__?.getState ? window.__APP__.getState() : {};
   } catch {
     return {};
+  }
+}
+
+function safeGetProfile() {
+  try {
+    const result = window.__APP__?.getProfile?.();
+    return result?.data || null;
+  } catch {
+    return null;
   }
 }
 

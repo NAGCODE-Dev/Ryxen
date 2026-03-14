@@ -4,12 +4,18 @@
  */
 
 import { createStorage } from '../storage/storageFactory.js';
-import { extractTextFromFile, validatePdfFile, extractMetadata } from './pdfReader.js';
+import { extractTextFromFile, validatePdfFile } from './pdfReader.js';
 import { cleanPdfText } from './pdfParser.js';
+import { parseMultiWeekPdf } from './customPdfParser.js';
 import { getTimestamp } from '../../core/utils/date.js';
 
 const PDF_KEY = 'workout-pdf';
 const METADATA_KEY = 'workout-pdf-metadata';
+const DEBUG = typeof window !== 'undefined'
+  && new URLSearchParams(window.location.search).get('debug') === '1';
+const logDebug = (...args) => {
+  if (DEBUG) console.log(...args);
+};
 
 /**
  * Salva PDF (extrai texto e persiste)
@@ -31,7 +37,7 @@ export async function savePdf(file) {
     const cleanedText = cleanPdfText(rawText);
     const parsedWeeks = parseMultiWeekPdf(cleanedText);
 
-    console.log('📦 Semanas parseadas do PDF:', parsedWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas parseadas do PDF:', parsedWeeks.map(w => w.weekNumber));
 
     if (!parsedWeeks || parsedWeeks.length === 0) {
       return { success: false, error: 'Nenhuma semana detectada no PDF' };
@@ -41,7 +47,7 @@ export async function savePdf(file) {
     const existingResult = await loadPdf();
     const existingWeeks = existingResult.success ? (existingResult.data?.weeks || []) : [];
 
-    console.log('📦 Semanas existentes:', existingWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas existentes:', existingWeeks.map(w => w.weekNumber));
 
     // 🔥 MESCLA (acumula sem duplicar)
     const allWeeksMap = new Map();
@@ -59,11 +65,11 @@ export async function savePdf(file) {
     const mergedWeeks = Array.from(allWeeksMap.values())
       .sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
 
-    console.log('📦 Semanas após merge:', mergedWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas após merge:', mergedWeeks.map(w => w.weekNumber));
 
     // Salva todas as semanas
     const storage = createStorage(PDF_KEY, JSON.stringify(mergedWeeks).length);
-    await storage.set(PDF_KEY, JSON.stringify(mergedWeeks));
+    await storage.set(PDF_KEY, mergedWeeks);
 
     // Atualiza metadados
     const metadata = {
@@ -77,7 +83,7 @@ export async function savePdf(file) {
     const metaStorage = createStorage(METADATA_KEY, 1000);
     await metaStorage.set(METADATA_KEY, metadata);
 
-    console.log('✅ PDF salvo com acúmulo:', { 
+    logDebug('✅ PDF salvo com acúmulo:', {
       novas: parsedWeeks.length, 
       total: mergedWeeks.length 
     });
@@ -104,7 +110,11 @@ export async function loadPdf() {
       return { success: false, error: 'Nenhum PDF salvo', data: null };
     }
 
-    const weeks = JSON.parse(data);
+    const weeks = normalizeWeeksData(data);
+    if (!weeks) {
+      return { success: false, error: 'Formato de semanas inválido', data: null };
+    }
+
     const metaStorage = createStorage(METADATA_KEY, 0);
     const metadata = await metaStorage.get(METADATA_KEY);
 
@@ -121,7 +131,7 @@ export async function clearAllPdfs() {
     const metaStorage = createStorage(METADATA_KEY, 0);
     await metaStorage.remove(METADATA_KEY);
 
-    console.log('🗑️ Todos os PDFs removidos');
+    logDebug('🗑️ Todos os PDFs removidos');
     return { success: true };
   } catch (error) {
     console.error('❌ Erro ao limpar PDFs:', error);
@@ -153,7 +163,7 @@ export async function removePdf() {
     const metaStorage = createStorage(METADATA_KEY, 0);
     await metaStorage.remove(METADATA_KEY);
     
-    console.log('✅ PDF removido');
+    logDebug('✅ PDF removido');
   } catch (error) {
     console.warn('Erro ao remover PDF:', error);
   }
@@ -209,17 +219,7 @@ export async function updatePdf(file) {
   // Salva novo
   return await savePdf(file);
 }
-import { parseMultiWeekPdf, validateCustomPdfFormat, detectWeekNumbers } from './customPdfParser.js';
 
-/**
- * Salva PDF com suporte a múltiplas semanas
- * @param {File} file - Arquivo PDF
- * @returns {Promise<Object>}
-/**
- * Salva PDF com suporte a múltiplas semanas
- * @param {File} file - Arquivo PDF
- * @returns {Promise<Object>}
- */
 /**
  * Salva PDF multi-semana COM ACÚMULO
  */
@@ -235,12 +235,12 @@ export async function saveMultiWeekPdf(file) {
       return { success: false, error: 'PDF vazio ou com muito pouco texto' };
     }
 
-    console.log('📝 Texto bruto extraído:', rawText.length, 'chars');
-    console.log('📝 Primeiros 200 chars:', rawText.substring(0, 200));
+    logDebug('📝 Texto bruto extraído:', rawText.length, 'chars');
+    logDebug('📝 Primeiros 200 chars:', rawText.substring(0, 200));
 
     const cleanedText = cleanPdfText(rawText);
-    console.log('🧹 Texto limpo:', cleanedText.length, 'chars');
-    console.log('🧹 Primeiros 200 chars:', cleanedText.substring(0, 200));
+    logDebug('🧹 Texto limpo:', cleanedText.length, 'chars');
+    logDebug('🧹 Primeiros 200 chars:', cleanedText.substring(0, 200));
 
     const parsedWeeks = parseMultiWeekPdf(cleanedText);
 
@@ -248,13 +248,13 @@ export async function saveMultiWeekPdf(file) {
       return { success: false, error: 'Nenhuma semana detectada no PDF' };
     }
 
-    console.log('📦 Semanas parseadas do novo PDF:', parsedWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas parseadas do novo PDF:', parsedWeeks.map(w => w.weekNumber));
 
     // 🔥 CARREGA SEMANAS EXISTENTES
     const existingResult = await loadParsedWeeks();
     const existingWeeks = existingResult.success ? (existingResult.data?.weeks || []) : [];
 
-    console.log('📦 Semanas já salvas:', existingWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas já salvas:', existingWeeks.map(w => w.weekNumber));
 
     // 🔥 MESCLA (acumula sem duplicar)
     const allWeeksMap = new Map();
@@ -272,12 +272,11 @@ export async function saveMultiWeekPdf(file) {
     const mergedWeeks = Array.from(allWeeksMap.values())
       .sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
 
-    console.log('📦 Semanas após merge:', mergedWeeks.map(w => w.weekNumber));
+    logDebug('📦 Semanas após merge:', mergedWeeks.map(w => w.weekNumber));
 
-    // Salva TODAS as semanas
-    // Salva TODAS as semanas (linha ~277)
-const storage = createStorage(PDF_KEY, JSON.stringify(mergedWeeks).length);
-await storage.set(PDF_KEY, mergedWeeks);  // ← SEM JSON.stringify!
+    // Salva todas as semanas como objeto/array (sem stringificar manualmente)
+    const storage = createStorage(PDF_KEY, JSON.stringify(mergedWeeks).length);
+    await storage.set(PDF_KEY, mergedWeeks);
 
     // Atualiza metadados
     const metadata = {
@@ -291,7 +290,7 @@ await storage.set(PDF_KEY, mergedWeeks);  // ← SEM JSON.stringify!
     const metaStorage = createStorage(METADATA_KEY, 1000);
     await metaStorage.set(METADATA_KEY, metadata);
 
-    console.log('✅ PDF multi-semana salvo:', { 
+    logDebug('✅ PDF multi-semana salvo:', {
       novas: parsedWeeks.length, 
       totalAgora: mergedWeeks.length 
     });
@@ -308,17 +307,61 @@ await storage.set(PDF_KEY, mergedWeeks);  // ← SEM JSON.stringify!
   }
 }
 
-
-
 /**
- * Carrega semanas parseadas
+ * Salva semanas parseadas diretamente (texto/OCR/etc)
+ * @param {Array} parsedWeeks
+ * @param {Object} sourceMeta
  * @returns {Promise<Object>}
  */
+export async function saveParsedWeeks(parsedWeeks, sourceMeta = {}) {
+  if (!Array.isArray(parsedWeeks) || parsedWeeks.length === 0) {
+    return { success: false, error: 'Nenhuma semana válida para salvar' };
+  }
+
+  try {
+    const existingResult = await loadParsedWeeks();
+    const existingWeeks = existingResult.success ? (existingResult.data?.weeks || []) : [];
+
+    const allWeeksMap = new Map();
+    existingWeeks.forEach((w) => {
+      if (w?.weekNumber) allWeeksMap.set(w.weekNumber, w);
+    });
+    parsedWeeks.forEach((w) => {
+      if (w?.weekNumber) allWeeksMap.set(w.weekNumber, w);
+    });
+
+    const mergedWeeks = Array.from(allWeeksMap.values())
+      .sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
+
+    const storage = createStorage(PDF_KEY, JSON.stringify(mergedWeeks).length);
+    await storage.set(PDF_KEY, mergedWeeks);
+
+    const metadata = {
+      uploadedAt: getTimestamp(),
+      fileName: sourceMeta.fileName || 'imported-text',
+      fileSize: sourceMeta.fileSize || 0,
+      weeksCount: mergedWeeks.length,
+      weekNumbers: mergedWeeks.map((w) => w.weekNumber),
+      source: sourceMeta.source || 'text',
+    };
+
+    const metaStorage = createStorage(METADATA_KEY, 1000);
+    await metaStorage.set(METADATA_KEY, metadata);
+
+    return {
+      success: true,
+      data: {
+        parsedWeeks: mergedWeeks,
+        metadata,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: `Erro ao salvar semanas: ${error.message}` };
+  }
+}
 /**
  * Carrega todas as semanas salvas
- */
-/**
- * Carrega todas as semanas salvas
+ * @returns {Promise<Object>}
  */
 export async function loadParsedWeeks() {
   try {
@@ -329,18 +372,8 @@ export async function loadParsedWeeks() {
       return { success: false, error: 'Nenhum PDF salvo', data: null };
     }
 
-    // 🔥 CORREÇÃO: storage.get() JÁ RETORNA OBJETO PARSEADO
-    let weeks;
-    if (typeof data === 'string') {
-      weeks = JSON.parse(data);
-    } else if (Array.isArray(data)) {
-      weeks = data;
-    } else {
-      console.warn('⚠️ Formato inesperado:', typeof data, data);
-      return { success: false, error: 'Formato inválido', data: null };
-    }
-
-    if (!Array.isArray(weeks)) {
+    const weeks = normalizeWeeksData(data);
+    if (!weeks) {
       console.warn('⚠️ Semanas não é array:', weeks);
       return { success: false, error: 'Formato inválido', data: null };
     }
@@ -348,11 +381,20 @@ export async function loadParsedWeeks() {
     const metaStorage = createStorage(METADATA_KEY, 0);
     const metadata = await metaStorage.get(METADATA_KEY);
 
-    console.log('📦 loadParsedWeeks retornou:', weeks.map(w => w.weekNumber));
+    logDebug('📦 loadParsedWeeks retornou:', weeks.map(w => w.weekNumber));
 
     return { success: true, data: { weeks, metadata } };
   } catch (error) {
     console.error('❌ Erro ao carregar semanas:', error);
     return { success: false, error: `Erro ao carregar: ${error.message}`, data: null };
+  }
+}
+
+function normalizeWeeksData(data) {
+  try {
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
   }
 }
