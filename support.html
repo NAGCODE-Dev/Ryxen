@@ -3,26 +3,62 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CrossApp - Suporte</title>
-  <style>
-    body { font-family: system-ui, sans-serif; margin: 0; background: #f8fafc; color: #0f172a; }
-    main { max-width: 860px; margin: 0 auto; padding: 24px; }
-    .card { background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
-  </style>
+  <meta name="description" content="Suporte oficial do CrossApp para app do atleta, Coach Portal, benchmarks, competições e cobrança.">
+  <meta name="keywords" content="crossapp suporte, coach portal suporte, app do atleta suporte">
+  <meta property="og:title" content="CrossApp | Suporte oficial">
+  <meta property="og:description" content="Canal oficial para acesso, sincronização, benchmarks, competições, checkout e operação do Coach Portal.">
+  <meta name="twitter:title" content="CrossApp | Suporte oficial">
+  <meta name="twitter:description" content="Canal oficial para acesso, sincronização, benchmarks, competições, checkout e operação do Coach Portal.">
+  <title>CrossApp | Suporte oficial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/public/site-shell.css">
 </head>
-<body>
-  <main>
-    <h1>Suporte CrossApp</h1>
-    <div class="card">
-      <p>Canal principal: <a href="mailto:nagcode.contact@gmail.com">nagcode.contact@gmail.com</a></p>
-      <p>Para agilizar, informe: plano, horário do erro, print e passos para reproduzir.</p>
-    </div>
-    <div class="card">
-      <h2>Prioridades</h2>
-      <p>P0: indisponibilidade total / cobrança quebrada</p>
-      <p>P1: função principal degradada</p>
-      <p>P2/P3: melhorias e dúvidas</p>
-    </div>
+<body class="public-page" data-public-page="support">
+  <div id="public-shell-header"></div>
+  <main class="public-main">
+    <section class="public-hero">
+      <div class="public-kicker">CrossApp Support</div>
+      <h1 class="public-title">Suporte para o app do atleta, Coach Portal e cobrança.</h1>
+      <p class="public-lead">Use este canal para problemas de acesso, sincronização, publicação de treino, benchmarks, competições e checkout. O objetivo aqui é resolver rápido, com contexto suficiente para agir.</p>
+      <div class="public-actions">
+        <a class="public-btn public-btnPrimary" href="mailto:nagcode.contact@gmail.com">Falar com o suporte</a>
+        <a class="public-btn" href="/pricing.html">Ver planos</a>
+      </div>
+    </section>
+
+    <section class="public-section">
+      <div class="public-grid public-grid3">
+        <article class="public-card">
+          <h2>Canal principal</h2>
+          <p class="public-body"><a href="mailto:nagcode.contact@gmail.com">nagcode.contact@gmail.com</a></p>
+          <p class="public-body">Ao abrir o contato, envie o máximo de contexto útil já no primeiro email.</p>
+        </article>
+
+        <article class="public-card">
+          <h2>O que enviar</h2>
+          <div class="public-featureList">
+            <div class="public-feature">Email da conta usada no CrossApp</div>
+            <div class="public-feature">Módulo afetado: app, coach, benchmark, competição ou cobrança</div>
+            <div class="public-feature">Horário aproximado do problema</div>
+            <div class="public-feature">Print ou gravação curta</div>
+            <div class="public-feature">Passos para reproduzir</div>
+          </div>
+        </article>
+
+        <article class="public-card">
+          <h2>Prioridade</h2>
+          <div class="public-featureList">
+            <div class="public-feature"><strong>P0</strong> · app indisponível, login quebrado, cobrança falhando</div>
+            <div class="public-feature"><strong>P1</strong> · treino, benchmark ou portal degradado</div>
+            <div class="public-feature"><strong>P2</strong> · ajustes, dúvidas e melhorias</div>
+          </div>
+        </article>
+      </div>
+    </section>
   </main>
+  <div id="public-shell-footer"></div>
+  <script type="module" src="/src/public/site-shell.js"></script>
 </body>
 </html>

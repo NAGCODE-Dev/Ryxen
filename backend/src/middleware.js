@@ -2,6 +2,22 @@ import crypto from 'crypto';
 
 const rateBuckets = new Map();
 
+function sanitizeLoggedPath(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return raw;
+
+  try {
+    const parsed = new URL(raw, 'http://localhost');
+    ['token', 'webhook_token', 'signature'].forEach((key) => {
+      if (parsed.searchParams.has(key)) parsed.searchParams.set(key, '[redacted]');
+    });
+    return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return raw
+      .replace(/([?&](?:token|webhook_token|signature)=)[^&]*/gi, '$1[redacted]');
+  }
+}
+
 export function attachRequestMeta(req, res, next) {
   req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
   res.setHeader('X-Request-Id', req.requestId);
@@ -26,7 +42,7 @@ export function attachRequestLogger(req, res, next) {
     console.error('[backend:request]', JSON.stringify({
       requestId: req.requestId,
       method: req.method,
-      path: req.originalUrl,
+      path: sanitizeLoggedPath(req.originalUrl),
       statusCode: res.statusCode,
       durationMs,
       userId: req.user?.userId || null,

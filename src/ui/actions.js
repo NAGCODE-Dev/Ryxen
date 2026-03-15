@@ -1,4 +1,3 @@
-import { isDeveloperEmail, isDeveloperProfile } from '../core/utils/devAccess.js';
 import {
   canConsumeAthleteImport,
   consumeAthleteImport,
@@ -11,9 +10,20 @@ import {
   peekCheckoutIntent,
   queueCheckoutIntent,
 } from '../core/services/subscriptionService.js';
+import { handleDiscoveryAction } from './action-domains/discovery.js';
+import { handleAuthAccountAction } from './action-domains/auth-account.js';
+import { handleWorkoutAction, setupWorkoutBindings } from './action-domains/workout.js';
+import { handlePrsSettingsAction, setupPrsSettingsBindings } from './action-domains/prs-settings.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
+
+  function resetOpenModalScroll() {
+    const body = root.querySelector('.modal-overlay.isOpen .modal-body');
+    if (body) body.scrollTop = 0;
+    const container = root.querySelector('.modal-overlay.isOpen .modal-container, .modal-overlay.isOpen .modal-container-auth');
+    if (container) container.scrollTop = 0;
+  }
 
   const emptyCoachPortal = () => ({
     subscription: null,
@@ -31,6 +41,29 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     recentWorkouts: [],
     gymAccess: [],
     athleteBenefits: null,
+  });
+
+  const emptyBenchmarkBrowser = () => ({
+    items: [],
+    pagination: { total: 0, page: 1, limit: 12, pages: 1 },
+    category: 'girls',
+    query: '',
+    sort: 'year_desc',
+    loading: false,
+    selectedSlug: '',
+    selectedBenchmark: null,
+    leaderboard: [],
+    currentUserResult: null,
+    leaderboardLoading: false,
+  });
+
+  const emptyCompetitionBrowser = () => ({
+    items: [],
+    loading: false,
+    selectedCompetitionId: null,
+    selectedEventId: null,
+    competitionLeaderboard: null,
+    eventLeaderboard: null,
   });
 
   function resolveAthleteBenefits(uiState, accessContext = null) {
@@ -61,12 +94,23 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   let lastAccountSnapshotKey = '';
   let lastAccountSnapshotAt = 0;
   let athleteOverviewFullTask = null;
+  let benchmarkBrowserTask = null;
+  let competitionBrowserTask = null;
 
   function normalizeCheckoutPlan(planId) {
     const normalized = String(planId || '').trim().toLowerCase();
     return ['athlete_plus', 'starter', 'pro', 'coach', 'performance'].includes(normalized)
       ? normalized
       : '';
+  }
+
+  function validatePlanActivation(userId, planId) {
+    if (!Number.isFinite(userId) || userId <= 0) {
+      throw new Error('Usuário inválido');
+    }
+    if (!['athlete_plus', 'starter', 'pro', 'performance'].includes(planId)) {
+      throw new Error('Plano inválido');
+    }
   }
 
   function stripCheckoutParamsFromUrl() {
@@ -281,6 +325,177 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   }
 
+  async function loadBenchmarkBrowserSnapshot(overrides = {}) {
+    const ui = getUiState?.() || {};
+    const current = ui?.benchmarkBrowser || emptyBenchmarkBrowser();
+    const profile = window.__APP__?.getProfile?.()?.data || null;
+    if (!profile?.email) {
+      return emptyBenchmarkBrowser();
+    }
+
+    const category = typeof overrides.category === 'string' ? overrides.category : current.category || 'girls';
+    const page = Number(overrides.page || current.pagination?.page || 1);
+    const sort = String(overrides.sort || current.sort || 'year_desc');
+    const requestedSelectedSlug = typeof overrides.selectedSlug === 'string' ? overrides.selectedSlug : current.selectedSlug;
+
+    const benchmarkResponse = await measureAsync('benchmark.browser.list', () => window.__APP__?.getBenchmarks?.({
+      category: category || undefined,
+      sort,
+      page,
+      limit: 12,
+    }));
+    const items = benchmarkResponse?.data?.benchmarks || [];
+    const pagination = benchmarkResponse?.data?.pagination || { total: 0, page: 1, limit: 12, pages: 1 };
+    const selectedSlug = requestedSelectedSlug && items.some((item) => item.slug === requestedSelectedSlug)
+      ? requestedSelectedSlug
+      : (items[0]?.slug || '');
+
+    let selectedBenchmark = items.find((item) => item.slug === selectedSlug) || null;
+    let leaderboard = [];
+    let currentUserResult = null;
+
+    if (selectedSlug) {
+      const leaderboardResponse = await measureAsync('benchmark.browser.leaderboard', () => window.__APP__?.getBenchmarkLeaderboard?.(selectedSlug, { limit: 10 }));
+      selectedBenchmark = leaderboardResponse?.data?.benchmark || selectedBenchmark;
+      leaderboard = leaderboardResponse?.data?.results || [];
+      currentUserResult = leaderboardResponse?.data?.currentUser || null;
+    }
+
+    return {
+      items,
+      pagination,
+      category,
+      query: '',
+      sort,
+      loading: false,
+      selectedSlug,
+      selectedBenchmark,
+      leaderboard,
+      currentUserResult,
+      leaderboardLoading: false,
+    };
+  }
+
+  async function hydrateBenchmarkBrowserInBackground(overrides = {}) {
+    try {
+      const profile = window.__APP__?.getProfile?.()?.data || null;
+      if (!profile?.email) return;
+
+      if (!benchmarkBrowserTask) {
+        await patchUiState((s) => ({
+          ...s,
+          benchmarkBrowser: {
+            ...(s?.benchmarkBrowser || emptyBenchmarkBrowser()),
+            loading: true,
+          },
+        }));
+        await rerender();
+        benchmarkBrowserTask = loadBenchmarkBrowserSnapshot(overrides);
+      }
+
+      const nextBenchmarkBrowser = await benchmarkBrowserTask;
+      await patchUiState((s) => ({ ...s, benchmarkBrowser: nextBenchmarkBrowser }));
+      await rerender();
+    } catch (error) {
+      console.warn('Falha ao carregar biblioteca de benchmarks:', error?.message || error);
+      await patchUiState((s) => ({
+        ...s,
+        benchmarkBrowser: {
+          ...(s?.benchmarkBrowser || emptyBenchmarkBrowser()),
+          loading: false,
+          leaderboardLoading: false,
+        },
+      }));
+      await rerender();
+    } finally {
+      benchmarkBrowserTask = null;
+    }
+  }
+
+  async function loadCompetitionBrowserSnapshot(overrides = {}) {
+    const ui = getUiState?.() || {};
+    const current = ui?.competitionBrowser || emptyCompetitionBrowser();
+    const profile = window.__APP__?.getProfile?.()?.data || null;
+    if (!profile?.email) {
+      return emptyCompetitionBrowser();
+    }
+
+    const calendarResponse = await measureAsync('competition.browser.calendar', () => window.__APP__?.getCompetitionCalendar?.({}));
+    const items = calendarResponse?.data?.competitions || [];
+    const requestedCompetitionId = Number(overrides.selectedCompetitionId || current.selectedCompetitionId || items[0]?.id || 0) || null;
+    const selectedCompetition = items.find((item) => Number(item.id) === requestedCompetitionId) || items[0] || null;
+    const selectedCompetitionId = Number(selectedCompetition?.id || 0) || null;
+    const availableEvents = Array.isArray(selectedCompetition?.events) ? selectedCompetition.events : [];
+    const requestedEventId = Number(overrides.selectedEventId || current.selectedEventId || 0) || null;
+    const selectedEvent = availableEvents.find((item) => Number(item.id) === requestedEventId) || availableEvents[0] || null;
+    const selectedEventId = Number(selectedEvent?.id || 0) || null;
+
+    let competitionLeaderboard = null;
+    let eventLeaderboard = null;
+
+    if (selectedCompetitionId && availableEvents.length) {
+      try {
+        const res = await measureAsync('competition.browser.competition-leaderboard', () => window.__APP__?.getCompetitionLeaderboard?.(selectedCompetitionId));
+        competitionLeaderboard = res?.data || null;
+      } catch {
+        competitionLeaderboard = null;
+      }
+    }
+
+    if (selectedEventId) {
+      try {
+        const res = await measureAsync('competition.browser.event-leaderboard', () => window.__APP__?.getEventLeaderboard?.(selectedEventId, { limit: 20 }));
+        eventLeaderboard = res?.data || null;
+      } catch {
+        eventLeaderboard = null;
+      }
+    }
+
+    return {
+      items,
+      loading: false,
+      selectedCompetitionId,
+      selectedEventId,
+      competitionLeaderboard,
+      eventLeaderboard,
+    };
+  }
+
+  async function hydrateCompetitionBrowserInBackground(overrides = {}) {
+    try {
+      const profile = window.__APP__?.getProfile?.()?.data || null;
+      if (!profile?.email) return;
+
+      if (!competitionBrowserTask) {
+        await patchUiState((s) => ({
+          ...s,
+          competitionBrowser: {
+            ...(s?.competitionBrowser || emptyCompetitionBrowser()),
+            loading: true,
+          },
+        }));
+        await rerender();
+        competitionBrowserTask = loadCompetitionBrowserSnapshot(overrides);
+      }
+
+      const nextCompetitionBrowser = await competitionBrowserTask;
+      await patchUiState((s) => ({ ...s, competitionBrowser: nextCompetitionBrowser }));
+      await rerender();
+    } catch (error) {
+      console.warn('Falha ao carregar calendário de competições:', error?.message || error);
+      await patchUiState((s) => ({
+        ...s,
+        competitionBrowser: {
+          ...(s?.competitionBrowser || emptyCompetitionBrowser()),
+          loading: false,
+        },
+      }));
+      await rerender();
+    } finally {
+      competitionBrowserTask = null;
+    }
+  }
+
   async function syncAthletePrIfAuthenticated(exercise, value) {
     const profile = window.__APP__?.getProfile?.()?.data || null;
     if (!profile?.email) return null;
@@ -300,30 +515,49 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   }
 
-  // Busca de PRs (filtra em tempo real)
-  root.addEventListener('input', (e) => {
-    const t = e.target;
-    if (!t || t.id !== 'ui-prsSearch') return;
-    filterPrs(root, t.value);
-  });
+  function normalizeBenchmarkScoreInput(scoreType, rawValue) {
+    const value = String(rawValue || '');
+    const normalizedType = String(scoreType || '').trim().toLowerCase();
 
-  function filterPrs(root, query) {
-    const q = String(query || '').trim().toUpperCase();
-    const table = root.querySelector('#ui-prsTable');
-    if (!table) return;
-
-    const items = Array.from(table.querySelectorAll('.pr-item'));
-    let visible = 0;
-
-    for (const item of items) {
-      const ex = String(item.getAttribute('data-exercise') || '').toUpperCase();
-      const show = !q || ex.includes(q);
-      item.style.display = show ? '' : 'none';
-      if (show) visible++;
+    if (normalizedType === 'for_time') {
+      const digits = value.replace(/\D/g, '').slice(0, 6);
+      if (!digits) return '';
+      if (digits.length <= 2) return digits;
+      if (digits.length <= 4) return `${digits.slice(0, digits.length - 2)}:${digits.slice(-2)}`;
+      return `${digits.slice(0, digits.length - 4)}:${digits.slice(-4, -2)}:${digits.slice(-2)}`;
     }
 
-    const countEl = root.querySelector('#ui-prsCount');
-    if (countEl) countEl.textContent = `${visible} PRs`;
+    if (normalizedType === 'rounds_reps') {
+      const cleaned = value.replace(/[^\d+]/g, '');
+      const [rounds = '', reps = ''] = cleaned.split('+');
+      return reps ? `${rounds}+${reps.replace(/\+/g, '')}` : rounds;
+    }
+
+    if (normalizedType === 'load') {
+      return value.replace(/[^0-9., kgblKGBl]/g, '').replace(/\s{2,}/g, ' ').trim();
+    }
+
+    return value.replace(/[^\d.,-]/g, '').trim();
+  }
+
+  function validateBenchmarkScoreInput(scoreType, rawValue) {
+    const value = String(rawValue || '').trim();
+    const normalizedType = String(scoreType || '').trim().toLowerCase();
+    if (!value) return 'Informe o seu resultado';
+
+    if (normalizedType === 'for_time') {
+      return /^(\d{1,2}:)?\d{1,2}:\d{2}$/.test(value) ? '' : 'Use tempo no formato mm:ss ou hh:mm:ss';
+    }
+
+    if (normalizedType === 'rounds_reps') {
+      return /^\d+\+\d+$/.test(value) ? '' : 'Use rounds + reps no formato 15+12';
+    }
+
+    if (normalizedType === 'load' || normalizedType === 'reps') {
+      return /\d/.test(value) ? '' : 'Informe um valor numérico válido';
+    }
+
+    return '';
   }
 
   // Clicks (delegação)
@@ -334,206 +568,78 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const action = el.dataset.action;
 
     try {
+      const discoveryHandled = await handleDiscoveryAction(action, el, {
+        root,
+        getUiState,
+        patchUiState,
+        rerender,
+        emptyBenchmarkBrowser,
+        emptyCompetitionBrowser,
+        hydrateAthleteOverviewFullInBackground,
+        hydrateBenchmarkBrowserInBackground,
+        hydrateCompetitionBrowserInBackground,
+        validateBenchmarkScoreInput,
+        toast,
+      });
+      if (discoveryHandled) return;
+
+      const workoutHandled = await handleWorkoutAction(action, el, {
+        root,
+        getUiState,
+        setUiState,
+        patchUiState,
+        rerender,
+        toast,
+        guardAthleteImport,
+        consumeAthleteImport,
+        pickPdfFile,
+        pickUniversalFile,
+        ensureActiveLine,
+        workoutKeyFromAppState,
+        getLineIdsFromDOM,
+        pickNextId,
+        pickPrevId,
+        getActiveLineIdFromUi,
+        scrollToLine,
+        startRestTimer,
+      });
+      if (workoutHandled) return;
+
+      const prsSettingsHandled = await handlePrsSettingsAction(action, el, {
+        root,
+        getUiState,
+        setUiState,
+        patchUiState,
+        rerender,
+        toast,
+        syncAthletePrIfAuthenticated,
+        loadAthleteOverview,
+        cssEscape,
+      });
+      if (prsSettingsHandled) return;
+
+      const authHandled = await handleAuthAccountAction(action, el, {
+        root,
+        getUiState,
+        setUiState,
+        patchUiState,
+        rerender,
+        toast,
+        normalizeCheckoutPlan,
+        hasCheckoutAuth,
+        queueCheckoutIntent,
+        emptyCoachPortal,
+        emptyAthleteOverview,
+        emptyCompetitionBrowser,
+        loadAccountSnapshot,
+        mergeAthleteOverviewSnapshot,
+        maybeResumePendingCheckout,
+        hydrateAccountSnapshotInBackground,
+        validatePlanActivation,
+      });
+      if (authHandled) return;
+
       switch (action) {
-        // ----- PDF / semana / treino -----
-        case 'pdf:pick': {
-          const ui = getUiState?.() || {};
-          const importPolicy = await guardAthleteImport('pdf', ui);
-          await setUiState({ modal: null });
-          const file = await pickPdfFile();
-          if (!file) return;
-          await window.__APP__.uploadMultiWeekPdf(file);
-          consumeAthleteImport(importPolicy.benefits, 'pdf');
-          await rerender();
-          return;
-        }
-
-        case 'media:pick': {
-          const ui = getUiState?.() || {};
-          const importPolicy = await guardAthleteImport('media', ui);
-          await setUiState({ modal: null });
-          const file = await pickUniversalFile();
-          if (!file) return;
-
-          if (typeof window.__APP__?.importFromFile !== 'function') {
-            throw new Error('Importação universal não disponível');
-          }
-
-          const result = await window.__APP__.importFromFile(file);
-          if (!result?.success) {
-            throw new Error(result?.error || 'Falha ao importar arquivo');
-          }
-
-          consumeAthleteImport(importPolicy.benefits, 'media');
-          toast('Arquivo importado');
-          await rerender();
-          return;
-        }
-
-        case 'pdf:clear': {
-          const ok = confirm(
-            '⚠️ Limpar todos os PDFs salvos?\n\n' +
-            'Isso removerá todas as semanas carregadas. Esta ação não pode ser desfeita.'
-          );
-          if (!ok) return;
-
-          const result = await window.__APP__.clearAllPdfs();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao limpar PDFs');
-
-          toast('Todos os PDFs removidos');
-          await rerender();
-          return;
-        }
-
-        case 'week:select': {
-          const week = Number(el.dataset.week);
-          if (!Number.isFinite(week)) return;
-
-          await window.__APP__.selectWeek(week);
-          await rerender();
-          return;
-        }
-
-        case 'day:auto': {
-          if (typeof window.__APP__?.resetDay === 'function') {
-            const result = await window.__APP__.resetDay();
-            if (result?.success === false) throw new Error(result?.error || 'Falha ao voltar para automático');
-          } else if (typeof window.__APP__?.setDay === 'function') {
-            const result = await window.__APP__.setDay('');
-            if (result?.success === false) throw new Error(result?.error || 'Falha ao voltar para automático');
-          }
-          toast('Dia automático');
-          await rerender();
-          return;
-        }
-
-        case 'workout:source': {
-          const source = String(el.dataset.source || 'uploaded').trim().toLowerCase();
-          const nextPriority = source === 'coach' ? 'coach' : 'uploaded';
-
-          if (typeof window.__APP__?.setPreferences !== 'function') {
-            throw new Error('Alternância de treino indisponível');
-          }
-
-          const result = await window.__APP__.setPreferences({ workoutPriority: nextPriority });
-          if (!result?.success) {
-            throw new Error(result?.error || 'Falha ao alternar fonte do treino');
-          }
-
-          toast(nextPriority === 'coach' ? 'Mostrando treino do coach' : 'Mostrando planilha enviada');
-          await rerender();
-          return;
-        }
-
-        case 'workout:copy': {
-          const st = window.__APP__?.getState?.() || {};
-          const blocks = st?.workoutOfDay?.blocks || st?.workout?.blocks || [];
-          if (!blocks.length) {
-            toast('Nenhum treino carregado');
-            return;
-          }
-
-          const result = await window.__APP__.copyWorkout();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao copiar');
-
-          toast('Treino copiado');
-          return;
-        }
-
-        case 'workout:export': {
-          await setUiState({ modal: null });
-          const st = window.__APP__?.getState?.() || {};
-          const blocks = st?.workoutOfDay?.blocks || st?.workout?.blocks || [];
-          if (!blocks.length) {
-            toast('Nenhum treino carregado');
-            return;
-          }
-
-          const result = window.__APP__.exportWorkout();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao exportar');
-
-          toast('Exportado');
-          return;
-        }
-
-        case 'workout:import': {
-          await setUiState({ modal: null });
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.json,application/json';
-          input.style.display = 'none';
-          
-          input.addEventListener('change', async (e2) => {
-            const file = e2.target.files?.[0];
-            if (!file) return;
-            
-            try {
-              const result = await window.__APP__.importWorkout(file);
-              if (result?.success) {
-                toast('✅ Treino importado!'); // 🔥 ADICIONA TOAST
-                await rerender();
-              } else {
-                toast(result?.error || 'Erro ao importar');
-              }
-            } catch (err) {
-              toast(err?.message || 'Erro ao importar');
-              console.error(err);
-            } finally {
-              document.body.removeChild(input);
-            }
-          }, { once: true });
-          
-          document.body.appendChild(input);
-          input.click();
-          return;
-        }
-
-        case 'backup:export': {
-          if (typeof window.__APP__?.exportBackup !== 'function') {
-            throw new Error('Backup não disponível nesta versão');
-          }
-
-          const result = await window.__APP__.exportBackup();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao exportar backup');
-
-          toast('Backup exportado');
-          return;
-        }
-
-        case 'backup:import': {
-          if (typeof window.__APP__?.importBackup !== 'function') {
-            throw new Error('Restauração não disponível nesta versão');
-          }
-
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.json,application/json';
-          input.style.display = 'none';
-
-          input.addEventListener('change', async (e2) => {
-            const file = e2.target.files?.[0];
-            if (!file) return;
-
-            try {
-              const result = await window.__APP__.importBackup(file);
-              if (!result?.success) {
-                throw new Error(result?.error || 'Falha ao restaurar backup');
-              }
-              toast('Backup restaurado');
-              await rerender();
-            } catch (err) {
-              toast(err?.message || 'Erro ao restaurar backup');
-              console.error(err);
-            } finally {
-              document.body.removeChild(input);
-            }
-          }, { once: true });
-
-          document.body.appendChild(input);
-          input.click();
-          return;
-        }
-
         // ----- Modais -----
         case 'modal:open': {
           const modal = el.dataset.modal || null;
@@ -541,6 +647,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             const profile = window.__APP__?.getProfile?.()?.data || null;
             await setUiState({ modal });
             await rerender();
+            resetOpenModalScroll();
             hydrateAccountSnapshotInBackground(profile);
             if (modal === 'auth') root.querySelector('#auth-email')?.focus();
             return;
@@ -548,6 +655,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             await setUiState({ modal });
           }
           await rerender();
+          resetOpenModalScroll();
 
           if (modal === 'prs') root.querySelector('#ui-prsSearch')?.focus();
           if (modal === 'auth') root.querySelector('#auth-email')?.focus();
@@ -560,473 +668,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
-        case 'exercise:help': {
-          const label = String(el.dataset.exercise || '').trim();
-          const directUrl = String(el.dataset.url || '').trim();
-          const fallbackUrl = label
-            ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${label} exercise tutorial`)}` 
-            : '';
-          const url = directUrl || fallbackUrl;
-          if (!url) throw new Error('Vídeo de execução indisponível para este movimento');
-
-          const popup = window.open(url, '_blank', 'noopener,noreferrer');
-          if (!popup) {
-            window.location.href = url;
-          }
-          return;
-        }
-
-        case 'page:set': {
-          const page = String(el.dataset.page || 'today');
-          await patchUiState((s) => ({ ...s, currentPage: page }));
-          await rerender();
-          if (page === 'history') {
-            hydrateAthleteOverviewFullInBackground();
-          }
-          return;
-        }
-
-        case 'prs:open': {
-          await setUiState({ modal: 'prs' });
-          await rerender();
-          root.querySelector('#ui-prsSearch')?.focus();
-          return;
-        }
-
-        case 'prs:close': {
-          await setUiState({ modal: null });
-          await rerender();
-          return;
-        }
-
-        // ----- Config -----
-        case 'settings:save': {
-          const showLbsConversion = !!root.querySelector('#setting-showLbsConversion')?.checked;
-          const showEmojis = !!root.querySelector('#setting-showEmojis')?.checked;
-          const showObjectivesInWods = !!root.querySelector('#setting-showObjectives')?.checked;
-
-          if (typeof window.__APP__?.setPreferences === 'function') {
-            const corePrefsResult = await window.__APP__.setPreferences({
-              showLbsConversion,
-              showEmojis,
-              showGoals: showObjectivesInWods,
-              autoConvertLbs: showLbsConversion,
-            });
-
-            if (!corePrefsResult?.success) {
-              throw new Error(corePrefsResult?.error || 'Falha ao salvar preferências');
-            }
-          }
-
-          await setUiState({
-            settings: { showLbsConversion, showEmojis, showObjectivesInWods },
-            modal: null,
-          });
-
-          toast('Configurações salvas');
-          await rerender();
-          return;
-        }
-
-        case 'auth:switch': {
-          const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
-          await setUiState({ authMode: mode });
-          await rerender();
-          root.querySelector('#auth-email')?.focus();
-          return;
-        }
-
-        case 'auth:submit': {
-          const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
-          const name = String(root.querySelector('#auth-name')?.value || '').trim();
-          const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();
-          const password = String(root.querySelector('#auth-password')?.value || '');
-
-          if (!email) throw new Error('Informe seu email');
-          if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
-          if (mode === 'signup' && !name) throw new Error('Informe seu nome');
-
-          const result = mode === 'signup'
-            ? await window.__APP__.signUp({ name, email, password })
-            : await window.__APP__.signIn({ email, password });
-
-          if (!result?.token && !result?.user) {
-            throw new Error('Falha ao autenticar');
-          }
-
-          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
-          await setUiState({ modal: null, authMode: 'signin' });
-          toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
-          await rerender();
-          hydrateAccountSnapshotInBackground(profile);
-          if (await maybeResumePendingCheckout()) return;
-          return;
-        }
-
-        case 'auth:reset-toggle': {
-          await patchUiState((s) => ({
-            ...s,
-            passwordReset: {
-              ...(s.passwordReset || {}),
-              open: !(s.passwordReset?.open),
-            },
-          }));
-          await rerender();
-          root.querySelector('#reset-email')?.focus();
-          return;
-        }
-
-        case 'auth:reset-request': {
-          const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
-          if (!email) throw new Error('Informe o email da conta');
-
-          const result = await window.__APP__.requestPasswordReset({ email });
-          const showDeveloperPreview = isDeveloperEmail(email);
-          await patchUiState((s) => ({
-            ...s,
-            passwordReset: {
-              ...(s.passwordReset || {}),
-              open: true,
-              email,
-              previewCode: showDeveloperPreview ? (result?.previewCode || '') : '',
-              previewUrl: showDeveloperPreview ? (result?.delivery?.previewUrl || '') : '',
-              supportEmail: result?.supportEmail || '',
-            },
-          }));
-          toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Pedido de recuperação enviado');
-          await rerender();
-          return;
-        }
-
-        case 'auth:reset-confirm': {
-          const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
-          const code = String(root.querySelector('#reset-code')?.value || '').trim();
-          const newPassword = String(root.querySelector('#reset-newPassword')?.value || '');
-
-          if (!email || !code || !newPassword) {
-            throw new Error('Preencha email, código e nova senha');
-          }
-
-          const result = await window.__APP__.confirmPasswordReset({ email, code, newPassword });
-          if (!result?.success) throw new Error(result?.error || 'Falha ao redefinir senha');
-
-          await patchUiState((s) => ({
-            ...s,
-            passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
-          }));
-          toast('Senha atualizada');
-          await rerender();
-          return;
-        }
-
-        case 'auth:refresh': {
-          const result = await window.__APP__.refreshSession();
-          if (!result?.token && !result?.user) {
-            throw new Error('Falha ao atualizar sessão');
-          }
-          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
-          const ui = getUiState?.() || {};
-          toast('Sessão atualizada');
-          await rerender();
-          hydrateAccountSnapshotInBackground(profile, ui?.coachPortal?.selectedGymId || null);
-          if (await maybeResumePendingCheckout()) return;
-          return;
-        }
-
-        case 'billing:checkout': {
-          const plan = normalizeCheckoutPlan(el.dataset.plan || 'coach') || 'coach';
-          const profile = window.__APP__?.getProfile?.()?.data || null;
-          if (!profile?.email || !hasCheckoutAuth()) {
-            queueCheckoutIntent(plan, {
-              source: 'app',
-              returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-            });
-            await patchUiState((s) => ({ ...s, modal: 'auth', authMode: 'signin' }));
-            toast('Entre para continuar no checkout');
-            await rerender();
-            return;
-          }
-          await window.__APP__.openCheckout(plan);
-          return;
-        }
-
-        case 'billing:activate-local': {
-          const profile = window.__APP__?.getProfile?.()?.data || null;
-          if (!isDeveloperProfile(profile)) {
-            throw new Error('Recurso restrito ao ambiente de desenvolvimento');
-          }
-
-          const plan = el.dataset.plan || 'coach';
-          await window.__APP__.activateMockSubscription(plan);
-          const ui = getUiState?.() || {};
-          const snapshot = await loadAccountSnapshot(profile, ui?.coachPortal?.selectedGymId || null);
-          await patchUiState((s) => ({
-            ...s,
-            ...snapshot,
-            athleteOverview: mergeAthleteOverviewSnapshot(snapshot?.athleteOverview, s?.athleteOverview),
-          }));
-          toast('Plano Coach local ativado');
-          await rerender();
-          return;
-        }
-
-        case 'auth:signout': {
-          await window.__APP__.signOut();
-          await setUiState({ modal: null, authMode: 'signin', coachPortal: emptyCoachPortal(), athleteOverview: emptyAthleteOverview(), admin: { overview: null, query: '' } });
-          toast('Sessão encerrada');
-          await rerender();
-          return;
-        }
-
-        case 'auth:sync-push': {
-          const result = await window.__APP__.syncPush();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao enviar sync');
-          toast('Sync enviado');
-          await rerender();
-          return;
-        }
-
-        case 'auth:sync-pull': {
-          const result = await window.__APP__.syncPull();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao baixar sync');
-          toast('Sync atualizado');
-          await rerender();
-          return;
-        }
-
-        case 'admin:refresh': {
-          const query = String(root.querySelector('#admin-search')?.value || '').trim();
-          const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
-          await setUiState({ admin: { overview: result?.data || null, query } });
-          toast('Painel admin atualizado');
-          await rerender();
-          return;
-        }
-
-        case 'admin:activate-plan': {
-          const userId = Number(el.dataset.userId);
-          const planId = String(el.dataset.planId || '').trim().toLowerCase();
-          if (!Number.isFinite(userId) || userId <= 0) {
-            throw new Error('Usuário inválido');
-          }
-          if (!['athlete_plus', 'starter', 'pro', 'performance'].includes(planId)) {
-            throw new Error('Plano inválido');
-          }
-
-          const confirmed = confirm(`Ativar plano ${planId} para este usuário por 30 dias?`);
-          if (!confirmed) return;
-
-          await window.__APP__.activateCoachSubscription(userId, planId, 30);
-          const query = String(root.querySelector('#admin-search')?.value || '').trim();
-          const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
-          await setUiState({ admin: { overview: result?.data || null, query } });
-          toast(`Plano ${planId} ativado`);
-          await rerender();
-          return;
-        }
-
-        // ----- Modo treino / checklist -----
-        case 'wod:mode': {
-          await patchUiState((s) => ({ ...s, trainingMode: !s.trainingMode }));
-          await rerender();
-          await ensureActiveLine(root, patchUiState);
-          return;
-        }
-
-        case 'wod:toggle': {
-          const lineId = el.dataset.lineId;
-          if (!lineId) return;
-
-          await patchUiState((s) => {
-            const st = { ...s };
-            const key = workoutKeyFromAppState();
-            st.wod = st.wod || {};
-            const wod = st.wod[key] || { activeLineId: null, done: {} };
-            wod.done = wod.done || {};
-            wod.done[lineId] = !wod.done[lineId];
-            wod.activeLineId = lineId;
-            st.wod[key] = wod;
-            return st;
-          });
-
-          await rerender();
-          scrollToLine(root, lineId);
-          return;
-        }
-
-        case 'wod:next': {
-          await patchUiState((s) => {
-            const st = { ...s };
-            const key = workoutKeyFromAppState();
-            st.wod = st.wod || {};
-            const wod = st.wod[key] || { activeLineId: null, done: {} };
-            wod.done = wod.done || {};
-
-            const ids = getLineIdsFromDOM(root);
-            if (!ids.length) return st;
-
-            const current = wod.activeLineId;
-            if (current && ids.includes(current)) wod.done[current] = true;
-
-            const nextId = pickNextId(ids, wod.done, current);
-            wod.activeLineId = nextId;
-
-            st.wod[key] = wod;
-            return st;
-          });
-
-          await rerender();
-          const id = getActiveLineIdFromUi(getUiState(), workoutKeyFromAppState());
-          if (id) scrollToLine(root, id);
-          return;
-        }
-
-        case 'wod:prev': {
-          await patchUiState((s) => {
-            const st = { ...s };
-            const key = workoutKeyFromAppState();
-            st.wod = st.wod || {};
-            const wod = st.wod[key] || { activeLineId: null, done: {} };
-
-            const ids = getLineIdsFromDOM(root);
-            if (!ids.length) return st;
-
-            const current = wod.activeLineId;
-            const prevId = pickPrevId(ids, current);
-            wod.activeLineId = prevId;
-
-            st.wod[key] = wod;
-            return st;
-          });
-
-          await rerender();
-          const id = getActiveLineIdFromUi(getUiState(), workoutKeyFromAppState());
-          if (id) scrollToLine(root, id);
-          return;
-        }
-
-        // ----- PRs -----
-        case 'prs:add': {
-          const nameEl = root.querySelector('#ui-prsNewName');
-          const valueEl = root.querySelector('#ui-prsNewValue');
-
-          const rawName = (nameEl?.value || '').trim();
-          const value = Number(valueEl?.value);
-
-          if (!rawName) throw new Error('Informe o nome do exercício');
-          if (!Number.isFinite(value) || value <= 0) throw new Error('Informe um PR válido');
-
-          const exercise = rawName.toUpperCase();
-          const result = await window.__APP__.addPR(exercise, value);
-          if (!result?.success) throw new Error(result?.error || 'Falha ao adicionar PR');
-          await syncAthletePrIfAuthenticated(exercise, value);
-
-          if (nameEl) nameEl.value = '';
-          if (valueEl) valueEl.value = '';
-
-          toast('PR salvo');
-          await rerender();
-          return;
-        }
-
-        case 'prs:save': {
-          const ex = el.dataset.exercise;
-          if (!ex) return;
-
-          const input = root.querySelector(
-            `input[data-action="prs:editValue"][data-exercise="${cssEscape(ex)}"]`
-          );
-          const value = Number(input?.value);
-
-          if (!Number.isFinite(value) || value <= 0) throw new Error('PR inválido');
-
-          const result = await window.__APP__.addPR(ex, value);
-          if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PR');
-          await syncAthletePrIfAuthenticated(ex, value);
-
-          toast('PR atualizado');
-          await rerender();
-          return;
-        }
-
-        case 'prs:remove': {
-          const ex = el.dataset.exercise;
-          if (!ex) return;
-
-          const ok = confirm(`Remover PR de "${ex}"?`);
-          if (!ok) return;
-
-          const result = await window.__APP__.removePR(ex);
-          if (!result?.success) throw new Error(result?.error || 'Falha ao remover PR');
-          const currentPrs = window.__APP__?.getState?.()?.prs || {};
-          if (window.__APP__?.getProfile?.()?.data) {
-            await window.__APP__?.syncAthletePrSnapshot?.(currentPrs);
-            const athleteOverview = await loadAthleteOverview();
-            await patchUiState((s) => ({ ...s, athleteOverview }));
-          }
-
-          toast('PR removido');
-          await rerender();
-          return;
-        }
-
-        case 'prs:import-file': {
-          const input = document.createElement('input');
-          input.type = 'file';
-          input.accept = '.json,application/json';
-          input.style.display = 'none';
-
-          input.addEventListener('change', async (e2) => {
-            const file = e2.target.files?.[0];
-            if (!file) return;
-
-            try {
-              const text = await file.text();
-              const result = window.__APP__.importPRs(text);
-              if (!result?.success) throw new Error(result?.error || 'Falha ao importar');
-
-              toast(`${result.imported} PRs importados de ${file.name}`);
-              await rerender();
-            } catch (err) {
-              toast(err?.message || 'Erro ao ler arquivo');
-              console.error(err);
-            } finally {
-              document.body.removeChild(input);
-            }
-          }, { once: true });
-
-          document.body.appendChild(input);
-          input.click();
-          return;
-        }
-
-        case 'prs:export': {
-          const result = window.__APP__.exportPRs();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao exportar PRs');
-          toast('PRs exportados');
-          return;
-        }
-
-        case 'prs:import': {
-          const json = prompt('Cole aqui o JSON de PRs (ex: {"BACK SQUAT":120})');
-          if (!json) return;
-
-          const result = window.__APP__.importPRs(json);
-          if (!result?.success) throw new Error(result?.error || 'Falha ao importar PRs');
-
-          toast('PRs importados');
-          await rerender();
-          return;
-        }
-
-        case 'timer:start': {
-          const seconds = Number(el.dataset.seconds);
-          if (!seconds || seconds <= 0) return;
-          
-          startRestTimer(seconds, toast);
-          return;
-        }
-
         default:
           return;
       }
@@ -1036,24 +677,17 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   });
 
-  // Dia manual (select)
-  root.addEventListener('change', async (e) => {
-    const el = e.target.closest('[data-action="day:set"]');
-    if (!el) return;
+  setupWorkoutBindings({ root, toast, rerender });
+  setupPrsSettingsBindings({ root });
 
-    const dayName = el.value;
-    if (!dayName) return;
-
-    try {
-      const result = await window.__APP__.setDay(dayName);
-      if (!result?.success) throw new Error(result?.error || 'Falha ao definir dia');
-
-      toast(`Dia manual: ${result.day || dayName}`);
-      el.value = '';
-      await rerender();
-    } catch (err) {
-      toast(err?.message || 'Erro');
-      console.error(err);
+  root.addEventListener('input', (e) => {
+    const t = e.target;
+    if (!t || t.id !== 'benchmark-score-input') return;
+    const ui = getUiState?.() || {};
+    const scoreType = ui?.benchmarkBrowser?.selectedBenchmark?.score_type || '';
+    const nextValue = normalizeBenchmarkScoreInput(scoreType, t.value);
+    if (nextValue !== t.value) {
+      t.value = nextValue;
     }
   });
 

@@ -172,7 +172,25 @@ SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=nagcode.contact@gmail.com
+BACKEND_PUBLIC_URL=http://localhost:8787
+KIWIFY_WEBHOOK_TOKEN=
+KIWIFY_ACCOUNT_ID=
+KIWIFY_CLIENT_ID=
+KIWIFY_CLIENT_SECRET=
+KIWIFY_PRODUCT_ATHLETE_PLUS_ID=
+KIWIFY_PRODUCT_STARTER_ID=
+KIWIFY_PRODUCT_PRO_ID=
+KIWIFY_PRODUCT_PERFORMANCE_ID=
+```
+
+Frontend/Vercel:
+
+```env
+CROSSAPP_API_BASE_URL=http://localhost:8787
 CROSSAPP_BILLING_PROVIDER=kiwify_link
+CROSSAPP_BILLING_SUCCESS_URL=http://localhost:8000/coach/?billing=success
+CROSSAPP_BILLING_CANCEL_URL=http://localhost:8000/coach/?billing=cancel
+CROSSAPP_KIWIFY_CHECKOUT_ATHLETE_PLUS_URL=
 CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL=
 CROSSAPP_KIWIFY_CHECKOUT_PRO_URL=
 CROSSAPP_KIWIFY_CHECKOUT_COACH_URL=
@@ -181,7 +199,9 @@ CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL=
 
 ## Coach Portal
 
-Na UI da conta, o Coach Portal já expõe:
+O Coach Portal é um frontend separado em `/coach/`. O app do atleta continua livre; o módulo do coach cobre operação do box e assinatura.
+
+No portal do coach já existem:
 
 - status da assinatura
 - criação de gym

@@ -127,6 +127,123 @@
   justify-content: flex-start;
 }
 
+.page-stack-competitions .competition-eventList {
+  margin-top: 8px;
+}
+
+.competition-providerHero {
+  position: relative;
+  min-height: 144px;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.14), transparent 42%),
+    linear-gradient(135deg, rgba(16, 20, 26, 0.94), rgba(16, 20, 26, 0.78));
+  background-size: cover;
+  background-position: center;
+}
+
+.competition-providerHeroBackdrop {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(9, 11, 16, 0.1), rgba(9, 11, 16, 0.72));
+}
+
+.competition-providerHeroBody {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  align-items: end;
+}
+
+.competition-providerHeroMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(10, 12, 18, 0.56);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.competition-providerHeroCopy {
+  display: grid;
+  gap: 4px;
+}
+
+.competition-providerHeroEyebrow {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.competition-providerHeroCopy strong {
+  font-size: 1.1rem;
+  line-height: 1.15;
+}
+
+.competition-providerHeroCopy span:last-child {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.competition-providerHero.isCrossfitOpen {
+  background-color: #0e1726;
+}
+
+.competition-providerHero.isCompetitionCorner {
+  background-color: #0d161f;
+}
+
+.competition-providerHero.isOfficial {
+  background-color: #13181f;
+}
+
+.competition-providerHero.isManual {
+  background-color: #13181f;
+}
+
+.page-stack-competitions .leaderboard-item strong,
+.page-stack-competitions .coach-listItem strong {
+  line-height: 1.25;
+}
+
+.benchmark-historyDetail {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.benchmark-scoreHint {
+  margin-top: -2px;
+}
+
+.benchmark-leaderboard .leaderboard-item.isActive,
+.benchmark-historyDetail .leaderboard-item.isActive {
+  border-color: var(--line-strong);
+  background: var(--bg-surface-2);
+}
+
+.page-stack-competitions .coach-listItem.isActive {
+  border-color: var(--line-strong);
+  background: var(--bg-surface-2);
+}
+
 @media (max-width: 640px) {
   .account-hero {
     grid-template-columns: 1fr;
@@ -149,6 +266,23 @@
 
   .account-foldBody {
     padding: 0 14px 14px;
+  }
+
+  .competition-providerHero {
+    min-height: 124px;
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .competition-providerHeroBody {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .competition-providerHeroMark {
+    min-width: 56px;
+    min-height: 56px;
+    width: fit-content;
   }
 
   .account-name {

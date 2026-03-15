@@ -139,20 +139,20 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
     try {
       const mailInfo = await sendPasswordResetEmail({ to: email, code });
+      response.deliveryStatus = 'sent';
       if (isDeveloperEmail(email)) {
         response.delivery = {
           transport: mailInfo.transport,
           previewUrl: mailInfo.previewUrl,
         };
+        if (mailInfo.previewUrl) response.deliveryStatus = 'preview';
       }
     } catch (error) {
       console.error('[reset-email] failed', error);
-      if (isDeveloperEmail(email)) {
-        response.delivery = {
-          transport: 'failed',
-          previewUrl: null,
-        };
-      }
+      return res.status(503).json({
+        error: 'Não foi possível enviar o email de recuperação',
+        supportEmail: SUPPORT_EMAIL,
+      });
     }
 
     if (EXPOSE_RESET_CODE && isDeveloperEmail(email)) {

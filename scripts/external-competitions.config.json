@@ -1,0 +1,87 @@
+[
+  {
+    "sourceProvider": "crossfit_open",
+    "sourceType": "hybrid",
+    "externalRef": "crossfit-open-current",
+    "title": "CrossFit Open",
+    "description": "Temporada oficial do Open com inscrição, calendário e leaderboard oficial do CrossFit Games.",
+    "location": "Worldwide / Online",
+    "startsAt": "2026-02-26T12:00:00Z",
+    "endsAt": "2026-03-16T23:59:59Z",
+    "visibility": "public",
+    "status": "live",
+    "officialSiteUrl": "https://games.crossfit.com/open",
+    "registrationUrl": "https://games.crossfit.com/open",
+    "leaderboardUrl": "https://games.crossfit.com/leaderboard/open/2026",
+    "liveEmbedUrl": "",
+    "coverImageUrl": "https://images.ctfassets.net/9wveon4r0q9r/6FVhNQ1Q7m1wYk3u3dX5bW/8f9cf579ea69a2551e66caa2f8b7f433/open-hero.jpg",
+    "payload": {
+      "providerLabel": "CrossFit Games"
+    },
+    "events": [
+      {
+        "externalRef": "crossfit-open-current-week-1",
+        "title": "Open Week 1",
+        "eventDate": "2026-02-26T12:00:00Z",
+        "leaderboardUrl": "https://games.crossfit.com/leaderboard/open/2026",
+        "registrationUrl": "https://games.crossfit.com/open",
+        "status": "completed",
+        "notes": "Leaderboard oficial da semana 1 do Open.",
+        "payload": { "stage": "week-1" }
+      },
+      {
+        "externalRef": "crossfit-open-current-week-2",
+        "title": "Open Week 2",
+        "eventDate": "2026-03-05T12:00:00Z",
+        "leaderboardUrl": "https://games.crossfit.com/leaderboard/open/2026",
+        "registrationUrl": "https://games.crossfit.com/open",
+        "status": "completed",
+        "notes": "Leaderboard oficial da semana 2 do Open.",
+        "payload": { "stage": "week-2" }
+      },
+      {
+        "externalRef": "crossfit-open-current-week-3",
+        "title": "Open Week 3",
+        "eventDate": "2026-03-12T12:00:00Z",
+        "leaderboardUrl": "https://games.crossfit.com/leaderboard/open/2026",
+        "registrationUrl": "https://games.crossfit.com/open",
+        "status": "live",
+        "notes": "Leaderboard oficial da semana 3 do Open.",
+        "payload": { "stage": "week-3" }
+      }
+    ]
+  },
+  {
+    "sourceProvider": "competition_corner",
+    "sourceType": "hybrid",
+    "externalRef": "competition-corner-wodapalooza-online-qualifier",
+    "title": "TYR Wodapalooza Online Challenge & Qualifier",
+    "description": "Evento público hospedado na Competition Corner, com inscrição externa e leaderboard oficial.",
+    "location": "Online / Worldwide",
+    "startsAt": "2024-09-01T12:00:00Z",
+    "endsAt": "2025-01-31T23:59:59Z",
+    "visibility": "public",
+    "status": "completed",
+    "officialSiteUrl": "https://about.competitioncorner.net/",
+    "registrationUrl": "https://competitioncorner.net/events/14919",
+    "leaderboardUrl": "https://competitioncorner.net/events/14919",
+    "liveEmbedUrl": "",
+    "coverImageUrl": "https://competitioncorner.net/favicon.ico",
+    "payload": {
+      "providerLabel": "Competition Corner",
+      "eventId": 14919
+    },
+    "events": [
+      {
+        "externalRef": "competition-corner-wodapalooza-online-qualifier-main",
+        "title": "Qualifier Leaderboard",
+        "eventDate": "2024-10-01T12:00:00Z",
+        "leaderboardUrl": "https://competitioncorner.net/events/14919",
+        "registrationUrl": "https://competitioncorner.net/events/14919",
+        "status": "completed",
+        "notes": "Página oficial do evento e leaderboard na Competition Corner.",
+        "payload": { "providerEventId": 14919 }
+      }
+    ]
+  }
+]

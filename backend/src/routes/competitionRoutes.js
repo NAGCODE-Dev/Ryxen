@@ -4,12 +4,41 @@ import { pool } from '../db.js';
 import { authRequired } from '../auth.js';
 import { getMembershipForUser, getUserMemberships } from '../access.js';
 
+export function buildCompetitionCalendarScope(gymIds) {
+  const normalizedGymIds = Array.isArray(gymIds)
+    ? gymIds
+      .filter((value) => value !== null && value !== undefined && value !== '')
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value) && value > 0)
+    : [];
+
+  return {
+    includePublic: true,
+    gymIdsParam: normalizedGymIds.length ? normalizedGymIds : null,
+  };
+}
+
 export function createCompetitionRouter({ requireGymManager, ensureCompetitionAccess, getBenchmarkBySlug, resolveLeaderboardOrder, parseBenchmarkScore }) {
   const router = express.Router();
 
   function normalizeSportType(value) {
     const raw = String(value || 'cross').trim().toLowerCase();
     return ['cross', 'running', 'strength'].includes(raw) ? raw : 'cross';
+  }
+
+  function normalizeCompetitionSourceProvider(value) {
+    const raw = String(value || 'manual').trim().toLowerCase();
+    return ['manual', 'crossfit_open', 'competition_corner', 'official'].includes(raw) ? raw : 'manual';
+  }
+
+  function normalizeCompetitionSourceType(value) {
+    const raw = String(value || 'internal').trim().toLowerCase();
+    return ['internal', 'official_link', 'external_leaderboard', 'hybrid'].includes(raw) ? raw : 'internal';
+  }
+
+  function normalizeCompetitionStatus(value, fallback = 'scheduled') {
+    const raw = String(value || fallback).trim().toLowerCase();
+    return ['scheduled', 'live', 'completed', 'archived'].includes(raw) ? raw : fallback;
   }
 
   router.get('/competitions/calendar', authRequired, async (req, res) => {
@@ -19,10 +48,7 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
     const gymIds = gymId && Number.isFinite(gymId)
       ? [gymId]
       : memberships.map((membership) => membership.gym_id);
-
-    if (!gymIds.length) {
-      return res.json({ competitions: [] });
-    }
+    const scope = buildCompetitionCalendarScope(gymIds);
 
     const rows = await pool.query(
       `SELECT
@@ -37,7 +63,12 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
               'sportType', ce.sport_type,
               'benchmarkSlug', ce.benchmark_slug,
               'scoreType', ce.score_type,
-              'notes', ce.notes
+              'notes', ce.notes,
+              'externalRef', ce.external_ref,
+              'registrationUrl', ce.registration_url,
+              'leaderboardUrl', ce.leaderboard_url,
+              'status', ce.status,
+              'payload', ce.payload
             )
             ORDER BY ce.event_date ASC
           ) FILTER (WHERE ce.id IS NOT NULL),
@@ -46,11 +77,17 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
        FROM competitions c
        LEFT JOIN gyms g ON g.id = c.gym_id
        LEFT JOIN competition_events ce ON ce.competition_id = c.id
-       WHERE (c.gym_id = ANY($1::int[]) OR c.visibility = 'public')
+       WHERE (
+         c.visibility = 'public'
+         OR (
+           COALESCE(array_length($1::int[], 1), 0) > 0
+           AND c.gym_id = ANY($1::int[])
+         )
+       )
          AND c.sport_type = $2
        GROUP BY c.id, g.name
        ORDER BY c.starts_at ASC`,
-      [gymIds, sportType],
+      [scope.gymIdsParam, sportType],
     );
 
     return res.json({ competitions: rows.rows });
@@ -65,6 +102,16 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
     const startsAt = String(req.body?.startsAt || '').trim();
     const endsAt = String(req.body?.endsAt || '').trim();
     const visibility = String(req.body?.visibility || 'gym').trim().toLowerCase();
+    const sourceProvider = normalizeCompetitionSourceProvider(req.body?.sourceProvider);
+    const sourceType = normalizeCompetitionSourceType(req.body?.sourceType);
+    const externalRef = String(req.body?.externalRef || '').trim();
+    const officialSiteUrl = String(req.body?.officialSiteUrl || '').trim();
+    const registrationUrl = String(req.body?.registrationUrl || '').trim();
+    const leaderboardUrl = String(req.body?.leaderboardUrl || '').trim();
+    const liveEmbedUrl = String(req.body?.liveEmbedUrl || '').trim();
+    const coverImageUrl = String(req.body?.coverImageUrl || '').trim();
+    const status = normalizeCompetitionStatus(req.body?.status);
+    const payload = req.body?.payload && typeof req.body.payload === 'object' ? req.body.payload : {};
 
     if (!Number.isFinite(gymId) || !title || !startsAt) {
       return res.status(400).json({ error: 'gymId, title e startsAt são obrigatórios' });
@@ -84,10 +131,16 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
     }
 
     const inserted = await pool.query(
-      `INSERT INTO competitions (gym_id, created_by_user_id, title, description, location, starts_at, ends_at, visibility, sport_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      `INSERT INTO competitions (
+         gym_id, created_by_user_id, title, description, location, starts_at, ends_at, visibility, sport_type,
+         source_provider, source_type, external_ref, official_site_url, registration_url, leaderboard_url, live_embed_url, cover_image_url, status, payload
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
        RETURNING *`,
-      [gymId, req.user.userId, title, description || null, location || null, startsAt, endsAt || null, visibility, sportType],
+      [
+        gymId, req.user.userId, title, description || null, location || null, startsAt, endsAt || null, visibility, sportType,
+        sourceProvider, sourceType, externalRef || null, officialSiteUrl || null, registrationUrl || null, leaderboardUrl || null, liveEmbedUrl || null, coverImageUrl || null, status, payload,
+      ],
     );
 
     return res.json({ competition: inserted.rows[0] });
@@ -99,6 +152,11 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
     const benchmarkSlug = String(req.body?.benchmarkSlug || '').trim().toLowerCase();
     const eventDate = String(req.body?.eventDate || '').trim();
     const notes = String(req.body?.notes || '').trim();
+    const externalRef = String(req.body?.externalRef || '').trim();
+    const registrationUrl = String(req.body?.registrationUrl || '').trim();
+    const leaderboardUrl = String(req.body?.leaderboardUrl || '').trim();
+    const status = normalizeCompetitionStatus(req.body?.status);
+    const payload = req.body?.payload && typeof req.body.payload === 'object' ? req.body.payload : {};
 
     if (!Number.isFinite(competitionId) || !title || !eventDate) {
       return res.status(400).json({ error: 'competitionId, title e eventDate são obrigatórios' });
@@ -124,10 +182,16 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
     }
 
     const inserted = await pool.query(
-      `INSERT INTO competition_events (competition_id, benchmark_slug, title, event_date, score_type, notes, sport_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
+      `INSERT INTO competition_events (
+         competition_id, benchmark_slug, title, event_date, score_type, notes, sport_type,
+         external_ref, registration_url, leaderboard_url, status, payload
+       )
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING *`,
-      [competitionId, benchmark?.slug || null, title, eventDate, benchmark?.score_type || null, notes || null, competition.sport_type || 'cross'],
+      [
+        competitionId, benchmark?.slug || null, title, eventDate, benchmark?.score_type || null, notes || null, competition.sport_type || 'cross',
+        externalRef || null, registrationUrl || null, leaderboardUrl || null, status, payload,
+      ],
     );
 
     return res.json({ event: inserted.rows[0] });
@@ -187,28 +251,59 @@ export function createCompetitionRouter({ requireGymManager, ensureCompetitionAc
       where.push(`br.gym_id = $${params.length}`);
     }
 
-    params.push(limit);
     const orderBy = resolveLeaderboardOrder(benchmark.score_type);
-    const rows = await pool.query(
-      `SELECT
-        br.id,
-        br.score_display,
-        br.score_value,
-        br.tiebreak_seconds,
-        br.created_at,
-        br.gym_id,
-        br.sport_type,
-        u.name,
-        u.email
-       FROM benchmark_results br
-       JOIN users u ON u.id = br.user_id
-       WHERE ${where.join(' AND ')}
-       ORDER BY ${orderBy}
-       LIMIT $${params.length}`,
-      params,
+    const ranked = await pool.query(
+      `WITH ranked AS (
+         SELECT
+           br.id,
+           br.user_id,
+           br.score_display,
+           br.score_value,
+           br.tiebreak_seconds,
+           br.created_at,
+           br.gym_id,
+           br.sport_type,
+           u.name,
+           u.email,
+           ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS rank
+         FROM benchmark_results br
+         JOIN users u ON u.id = br.user_id
+         WHERE ${where.join(' AND ')}
+       )
+       SELECT *
+       FROM ranked
+       ORDER BY rank ASC
+       LIMIT $${params.length + 1}`,
+      [...params, limit],
     );
 
-    return res.json({ benchmark, results: rows.rows });
+    const currentUserResult = await pool.query(
+      `WITH ranked AS (
+         SELECT
+           br.id,
+           br.user_id,
+           br.score_display,
+           br.score_value,
+           br.tiebreak_seconds,
+           br.created_at,
+           br.gym_id,
+           br.sport_type,
+           u.name,
+           u.email,
+           ROW_NUMBER() OVER (ORDER BY ${orderBy}) AS rank
+         FROM benchmark_results br
+         JOIN users u ON u.id = br.user_id
+         WHERE ${where.join(' AND ')}
+       )
+       SELECT *
+       FROM ranked
+       WHERE user_id = $${params.length + 1}
+       ORDER BY rank ASC
+       LIMIT 1`,
+      [...params, req.user.userId],
+    );
+
+    return res.json({ benchmark, results: ranked.rows, currentUser: currentUserResult.rows[0] || null });
   });
 
   router.get('/leaderboards/events/:eventId', authRequired, async (req, res) => {

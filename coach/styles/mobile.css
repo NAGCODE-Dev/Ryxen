@@ -3,12 +3,25 @@
     grid-template-columns: 1fr;
   }
 
-  .stats-grid,
   .plan-grid,
   .dual-grid,
   .portal-grid,
   .selection-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .sidebar,
+  .portal-main {
+    padding: 16px;
+  }
+
+  .hero,
+  .billing-banner {
+    align-items: stretch;
   }
 }
 
@@ -56,6 +69,74 @@
   }
 
   .hero h2 {
-    font-size: 1.28rem;
+    font-size: 1.16rem;
+    line-height: 1.08;
+  }
+
+  .sidebar-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-title {
+    margin: 4px 0 0;
+    font-size: 1.32rem;
+    line-height: 1;
+  }
+
+  .sidebar-copy,
+  .profile-box,
+  .sidebar-plan {
+    display: none;
+  }
+
+  .sidebar-actions-compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portal-main {
+    display: grid;
+    gap: 14px;
+  }
+
+  .hero,
+  .card,
+  .billing-banner {
+    padding: 15px;
+  }
+
+  .hero {
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .hero-copy {
+    margin-top: 6px;
+    font-size: 0.94rem;
+  }
+
+  .hero-pills {
+    gap: 8px;
+  }
+
+  .portal-foldBody {
+    margin-top: 14px;
+    gap: 12px;
+  }
+
+  .benchmark-libraryList {
+    max-height: 240px;
+  }
+
+  .portal-feedList .list-item {
+    padding: 14px 16px;
+  }
+
+  .publish-stepActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .publish-stepActions .btn:only-child {
+    grid-column: 1 / -1;
   }
 }

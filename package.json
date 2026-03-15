@@ -8,6 +8,8 @@
     "build:prod": "node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs",
     "build:coach": "vite build --config coach-portal/vite.config.mjs",
     "test": "node --test __tests__/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "seed:coach-trial": "node scripts/seed-coach-trial.mjs",
     "smoke:coach-trial": "node scripts/smoke-coach-trial.mjs"
   },
@@ -18,6 +20,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "vite": "^5.4.14"
   }
 }

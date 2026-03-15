@@ -3,17 +3,22 @@ import express from 'express';
 import { pool } from '../db.js';
 import {
   DEFAULT_BILLING_SUCCESS_URL,
-  KIWIFY_PRODUCT_ATHLETE_PLUS_ID,
-  KIWIFY_PRODUCT_PERFORMANCE_ID,
-  KIWIFY_PRODUCT_PRO_ID,
-  KIWIFY_PRODUCT_STARTER_ID,
-  KIWIFY_WEBHOOK_TOKEN,
 } from '../config.js';
 import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
 import { getAccessContextForUser, getSubscriptionAccessState } from '../access.js';
 import { buildEntitlements } from '../accessPolicy.js';
 import { authRequired } from '../auth.js';
 import { getKiwifySaleById, isKiwifyNativeApiConfigured } from '../kiwifyApi.js';
+import {
+  extractKiwifyCustomerEmail as extractWebhookCustomerEmail,
+  extractKiwifyEventType as extractWebhookEventType,
+  extractKiwifyExternalRef as extractWebhookExternalRef,
+  extractKiwifySaleId as extractWebhookSaleId,
+  isApprovedKiwifyEvent as isApprovedWebhookEvent,
+  isValidKiwifyToken as isValidWebhookToken,
+  normalizeKiwifyPayload as normalizeWebhookPayload,
+  resolveKiwifyPlanId as resolveWebhookPlanId,
+} from '../kiwifyWebhook.js';
 import {
   grantSubscriptionToUser,
   normalizeSubscriptionPlanId,
@@ -65,22 +70,22 @@ export function createBillingRouter() {
   });
 
   router.post('/kiwify/webhook', async (req, res) => {
-    if (!isValidKiwifyToken(req)) {
+    if (!isValidWebhookToken(req)) {
       return res.status(401).json({ error: 'Token do webhook inválido' });
     }
 
-    const payload = normalizeKiwifyPayload(req.body);
-    const eventType = extractKiwifyEventType(payload);
+    const payload = normalizeWebhookPayload(req.body);
+    const eventType = extractWebhookEventType(payload);
     const verifiedSale = await tryVerifyKiwifySale(payload);
-    if (!isApprovedKiwifyEvent(eventType, payload, verifiedSale)) {
+    if (!isApprovedWebhookEvent(eventType, payload, verifiedSale)) {
       return res.json({ ok: true, ignored: true, reason: 'Evento não-aprovado' });
     }
 
     const sources = [payload, verifiedSale].filter(Boolean);
-    const email = extractKiwifyCustomerEmail(...sources);
-    const resolvedPlanId = resolveKiwifyPlanId(...sources);
+    const email = extractWebhookCustomerEmail(...sources);
+    const resolvedPlanId = resolveWebhookPlanId(...sources);
     const planId = resolvedPlanId || await resolveFallbackKiwifyPlanId({ email });
-    const externalRef = extractKiwifyExternalRef(eventType, ...sources);
+    const externalRef = extractWebhookExternalRef(eventType, ...sources);
 
     if (!email || !planId || !externalRef) {
       console.warn('[kiwify:webhook] payload incompleto', {
@@ -368,7 +373,7 @@ async function resolveFallbackKiwifyPlanId({ email }) {
 async function tryVerifyKiwifySale(payload) {
   if (!isKiwifyNativeApiConfigured()) return null;
 
-  const saleId = extractKiwifySaleId(payload);
+  const saleId = extractWebhookSaleId(payload);
   if (!saleId) return null;
 
   try {

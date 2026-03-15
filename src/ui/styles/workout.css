@@ -166,6 +166,28 @@
   margin-top: -2px;
 }
 
+.workout-contextNav {
+  position: sticky;
+  top: 74px;
+  z-index: 18;
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 4px 0 2px;
+}
+
+.workout-contextNav::-webkit-scrollbar {
+  display: none;
+}
+
+.workout-contextNavBtn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  background: rgba(17, 22, 28, 0.96);
+  backdrop-filter: blur(12px);
+}
+
 .athlete-accessBanner {
   padding: 14px 16px;
   border-radius: 18px;

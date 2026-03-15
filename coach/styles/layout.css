@@ -79,12 +79,134 @@
 .tabs,
 .toolbar,
 .stack,
+.sidebar-actions,
 .list-block,
 .plan-cardFeatures,
 .competition-events {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.portal-fold {
+  overflow: hidden;
+}
+
+.portal-foldSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.portal-foldSummary::-webkit-details-marker {
+  display: none;
+}
+
+.portal-foldSummaryText {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.portal-foldSummaryText strong {
+  font-size: 1rem;
+}
+
+.portal-foldChevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 180ms ease;
+}
+
+.portal-fold[open] .portal-foldChevron {
+  transform: rotate(180deg);
+}
+
+.portal-foldBody {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.portal-sectionSummary {
+  margin: 6px 0 0;
+}
+
+.portal-feedList .list-item {
+  padding: 16px 18px;
+}
+
+.benchmark-libraryCard .toolbar {
+  margin-bottom: 10px;
+}
+
+.benchmark-libraryList {
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.sidebar-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.sidebar-compactHeader {
+  display: grid;
+  gap: 10px;
+}
+
+.sidebar-compactTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sidebar-compactMeta {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.sidebar-actions-compact {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 2px;
+}
+
+.publish-flow {
+  gap: 12px;
+}
+
+.publish-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.publish-stepCopy {
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.publish-stepActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.publish-reviewCard .list-item {
+  padding: 12px 14px;
+}
+
+.sidebar-actions .btn,
+.sidebar-actions .btn-link {
+  width: 100%;
+  justify-content: center;
 }
 
 .grid {
@@ -137,6 +259,10 @@
   gap: 10px;
   align-items: center;
   justify-content: space-between;
+}
+
+.billing-bannerActions {
+  flex-wrap: wrap;
 }
 
 .list-item,
@@ -220,6 +346,20 @@
   display: grid;
   gap: 16px;
   align-self: center;
+}
+
+.portal-inlineLink {
+  justify-self: flex-start;
+  padding-inline: 0;
+}
+
+.auth-resetCard {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.auth-resetHint {
+  margin: 0;
 }
 
 .auth-card h1 {

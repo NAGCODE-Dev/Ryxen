@@ -17,9 +17,13 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   const token = readToken();
   const profile = initialProfile || readProfile();
   const availableSportOptions = getAvailableSportOptions(readRuntimeConfig());
+  const [compactPortal, setCompactPortal] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth <= 900 : false
+  );
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [publishStep, setPublishStep] = useState('basics');
   const [dashboard, setDashboard] = useState({
     subscription: null,
     entitlements: [],
@@ -95,6 +99,14 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       loadDashboard();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const syncViewport = () => setCompactPortal(window.innerWidth <= 900);
+    syncViewport();
+    window.addEventListener('resize', syncViewport);
+    return () => window.removeEventListener('resize', syncViewport);
+  }, []);
 
   async function loadDashboard(nextGymId = null, nextSportType = null) {
     setLoading(true);
@@ -179,6 +191,17 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   async function handleSelectSportType(sportType) {
     await loadDashboard(dashboard.selectedGymId, sportType);
+  }
+
+  async function handleRefreshDashboard() {
+    setMessage('');
+    setError('');
+    try {
+      await loadDashboard(dashboard.selectedGymId, dashboard.selectedSportType);
+      setMessage('Dados atualizados');
+    } catch (err) {
+      setError(err.message || 'Erro ao atualizar dados');
+    }
   }
 
   async function handleAddMember(event) {
@@ -622,6 +645,217 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   const showSkeleton = loading && !dashboard.gyms.length && !dashboard.feed.length && !dashboard.benchmarks.length;
   const isRunning = dashboard.selectedSportType === 'running';
   const isStrength = dashboard.selectedSportType === 'strength';
+  const publishSteps = [
+    ['basics', 'Base'],
+    ['content', 'Conteúdo'],
+    ['audience', 'Audiência'],
+    ['review', 'Revisão'],
+  ];
+
+  function goToPublishStep(step) {
+    setPublishStep(step);
+  }
+
+  function renderPublishWorkoutFlow() {
+    const canGoContent = !!forms.workoutTitle && !!forms.workoutDate;
+    const canGoAudience = canGoContent;
+    const canGoReview = canGoAudience;
+    const canSubmit = !loading && !!selectedGym && !!canCoachManage;
+
+    if (!compactPortal) {
+      return React.createElement('form', { className: 'stack', onSubmit: handlePublishWorkout },
+        React.createElement('input', {
+          className: 'field',
+          placeholder: 'Título do treino',
+          value: forms.workoutTitle,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutTitle: e.target.value })),
+        }),
+        React.createElement('input', {
+          className: 'field',
+          type: 'date',
+          value: forms.workoutDate,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutDate: e.target.value })),
+        }),
+        renderSportSpecificWorkoutFields(),
+        React.createElement('textarea', {
+          className: 'field textarea',
+          placeholder: isRunning
+            ? 'Uma linha por bloco/intervalo (ex: 6x400m @ 4:20/km / 1:30 trote)'
+            : isStrength
+              ? 'Uma linha por exercício (ex: Back Squat | 5x5 | 100kg)'
+              : 'Uma linha por exercício',
+          value: forms.workoutLines,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
+        }),
+        renderAudienceSection(),
+        React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: !canSubmit }, 'Publicar treino')
+      );
+    }
+
+    return React.createElement('form', { className: 'stack publish-flow', onSubmit: handlePublishWorkout },
+      React.createElement('div', { className: 'publish-steps' },
+        publishSteps.map(([value, label]) =>
+          React.createElement('button', {
+            key: value,
+            type: 'button',
+            className: `btn btn-chip ${publishStep === value ? 'is-active' : ''}`,
+            onClick: () => goToPublishStep(value),
+          }, label)
+        )
+      ),
+      React.createElement('div', { className: 'publish-stepCopy' },
+        publishStep === 'basics' ? 'Defina título e data antes de montar o treino.' : null,
+        publishStep === 'content' ? 'Monte o conteúdo e ajuste o template da modalidade ativa.' : null,
+        publishStep === 'audience' ? 'Escolha quem recebe: todos, atletas específicos ou grupos.' : null,
+        publishStep === 'review' ? 'Revise o payload antes de publicar.' : null,
+      ),
+      publishStep === 'basics' ? React.createElement(React.Fragment, null,
+        React.createElement('input', {
+          className: 'field',
+          placeholder: 'Título do treino',
+          value: forms.workoutTitle,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutTitle: e.target.value })),
+        }),
+        React.createElement('input', {
+          className: 'field',
+          type: 'date',
+          value: forms.workoutDate,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutDate: e.target.value })),
+        }),
+        React.createElement('div', { className: 'publish-stepActions' },
+          React.createElement('button', {
+            type: 'button',
+            className: 'btn btn-primary',
+            disabled: !canGoContent,
+            onClick: () => goToPublishStep('content'),
+          }, 'Continuar')
+        )
+      ) : null,
+      publishStep === 'content' ? React.createElement(React.Fragment, null,
+        renderSportSpecificWorkoutFields(),
+        React.createElement('textarea', {
+          className: 'field textarea',
+          placeholder: isRunning
+            ? 'Uma linha por bloco/intervalo (ex: 6x400m @ 4:20/km / 1:30 trote)'
+            : isStrength
+              ? 'Uma linha por exercício (ex: Back Squat | 5x5 | 100kg)'
+              : 'Uma linha por exercício',
+          value: forms.workoutLines,
+          onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
+        }),
+        React.createElement('div', { className: 'publish-stepActions' },
+          React.createElement('button', { type: 'button', className: 'btn btn-secondary', onClick: () => goToPublishStep('basics') }, 'Voltar'),
+          React.createElement('button', {
+            type: 'button',
+            className: 'btn btn-primary',
+            disabled: !canGoAudience,
+            onClick: () => goToPublishStep('audience'),
+          }, 'Continuar')
+        )
+      ) : null,
+      publishStep === 'audience' ? React.createElement(React.Fragment, null,
+        renderAudienceSection(),
+        React.createElement('div', { className: 'publish-stepActions' },
+          React.createElement('button', { type: 'button', className: 'btn btn-secondary', onClick: () => goToPublishStep('content') }, 'Voltar'),
+          React.createElement('button', {
+            type: 'button',
+            className: 'btn btn-primary',
+            disabled: !canGoReview,
+            onClick: () => goToPublishStep('review'),
+          }, 'Revisar')
+        )
+      ) : null,
+      publishStep === 'review' ? React.createElement(React.Fragment, null,
+        React.createElement('div', { className: 'stack nested-card publish-reviewCard' },
+          React.createElement('div', { className: 'eyebrow' }, 'Resumo'),
+          React.createElement('div', { className: 'list-item static' },
+            React.createElement('strong', null, forms.workoutTitle || 'Sem título'),
+            React.createElement('span', null, forms.workoutDate ? formatDateLabel(forms.workoutDate) : 'Sem data definida')
+          ),
+          React.createElement('div', { className: 'list-item static' },
+            React.createElement('strong', null, 'Conteúdo'),
+            React.createElement('span', null, forms.workoutLines ? `${String(forms.workoutLines).split('\n').filter(Boolean).length} linha(s)` : 'Sem linhas preenchidas')
+          ),
+          React.createElement('div', { className: 'list-item static' },
+            React.createElement('strong', null, 'Audiência'),
+            React.createElement('span', null,
+              forms.workoutAudienceMode === 'all'
+                ? 'Todos os atletas'
+                : forms.workoutAudienceMode === 'selected'
+                  ? `${forms.targetMembershipIds.length} atleta(s) selecionado(s)`
+                  : `${forms.targetGroupIds.length} grupo(s) selecionado(s)`
+            )
+          )
+        ),
+        React.createElement('div', { className: 'publish-stepActions' },
+          React.createElement('button', { type: 'button', className: 'btn btn-secondary', onClick: () => goToPublishStep('audience') }, 'Voltar'),
+          React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: !canSubmit }, 'Publicar treino')
+        )
+      ) : null,
+    );
+  }
+
+  function renderAudienceSection() {
+    return React.createElement('div', { className: 'stack nested-card audience-card' },
+      React.createElement('strong', null, 'Audiência'),
+      React.createElement('div', { className: 'tabs' },
+        [
+          ['all', 'Todos os atletas'],
+          ['selected', 'Atletas específicos'],
+          ['groups', 'Grupos'],
+        ].map(([value, label]) =>
+          React.createElement('button', {
+            key: value,
+            type: 'button',
+            className: `btn btn-chip ${forms.workoutAudienceMode === value ? 'is-active' : ''}`,
+            onClick: () => setForms((prev) => ({ ...prev, workoutAudienceMode: value })),
+          }, label)
+        )
+      ),
+      React.createElement('div', { className: 'selection-panels' },
+        React.createElement('div', { className: 'selection-panel' },
+          React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
+          React.createElement('div', { className: 'selection-grid' },
+            athleteMembers.length
+              ? athleteMembers.map((member) =>
+                  React.createElement('label', { key: member.id, className: 'check-row' },
+                    React.createElement('input', {
+                      type: 'checkbox',
+                      checked: forms.targetMembershipIds.includes(member.id),
+                      onChange: () => toggleSelection('targetMembershipIds', member.id),
+                    }),
+                    React.createElement('span', null,
+                      React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
+                      React.createElement('small', null, member.email || member.pending_email || '')
+                    )
+                  )
+                )
+              : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
+          )
+        ),
+        React.createElement('div', { className: 'selection-panel' },
+          React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
+          React.createElement('div', { className: 'selection-grid' },
+            dashboard.groups.length
+              ? dashboard.groups.map((group) =>
+                  React.createElement('label', { key: group.id, className: 'check-row' },
+                    React.createElement('input', {
+                      type: 'checkbox',
+                      checked: forms.targetGroupIds.includes(group.id),
+                      onChange: () => toggleSelection('targetGroupIds', group.id),
+                    }),
+                    React.createElement('span', null,
+                      React.createElement('strong', null, group.name),
+                      React.createElement('small', null, `${group.member_count || group.members?.length || 0} atleta(s)`)
+                    )
+                  )
+                )
+              : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
+          )
+        )
+      )
+    );
+  }
 
   function renderSportSpecificWorkoutFields() {
     if (isRunning) {
@@ -830,36 +1064,90 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     ];
   }
 
+  function renderPortalSection(title, children, options = {}) {
+    const {
+      openMobile = false,
+      wide = false,
+      className = '',
+      eyebrow = '',
+      summary = '',
+    } = options;
+    const cardClassName = ['card', wide ? 'wide' : '', className].filter(Boolean).join(' ');
+
+    if (!compactPortal) {
+      return React.createElement('div', { className: cardClassName },
+        eyebrow ? React.createElement('div', { className: 'eyebrow' }, eyebrow) : null,
+        React.createElement('h3', null, title),
+        summary ? React.createElement('p', { className: 'muted portal-sectionSummary' }, summary) : null,
+        children
+      );
+    }
+
+    return React.createElement('details', { className: `${cardClassName} portal-fold`, open: openMobile },
+      React.createElement('summary', { className: 'portal-foldSummary' },
+        React.createElement('div', { className: 'portal-foldSummaryText' },
+          eyebrow ? React.createElement('span', { className: 'eyebrow' }, eyebrow) : null,
+          React.createElement('strong', null, title),
+          summary ? React.createElement('span', { className: 'muted' }, summary) : null
+        ),
+        React.createElement('span', { className: 'portal-foldChevron', 'aria-hidden': 'true' }, '▾')
+      ),
+      React.createElement('div', { className: 'portal-foldBody' }, children)
+    );
+  }
+
   return React.createElement('div', { className: 'portal-shell' },
     React.createElement('aside', { className: 'sidebar' },
-      React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
-      React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
-      React.createElement('p', { className: 'sidebar-copy' }, 'Operação do box, assinatura, benchmarks e programação em um workspace único.'),
-      React.createElement('div', { className: 'profile-box' },
-        React.createElement('strong', null, profile?.name || profile?.email || 'Coach'),
-        React.createElement('span', null, profile?.email || '')
-      ),
-      React.createElement('div', { className: 'sidebar-plan' },
-        React.createElement('span', { className: 'stat-label' }, 'Plano atual'),
-        React.createElement('strong', { className: 'sidebar-planValue' }, planName),
-        React.createElement('span', { className: `pill ${billingTone}` },
-          renewAt
-            ? (daysRemaining !== null ? `${daysRemaining} dia(s) restantes` : formatDateLabel(renewAt))
-            : 'Sem renovação'
-        )
-      ),
-      React.createElement('div', { className: 'stack' },
-        React.createElement('button', { className: 'btn btn-secondary', onClick: () => loadDashboard(dashboard.selectedGymId, dashboard.selectedSportType) }, 'Atualizar dados'),
-        React.createElement('button', { className: 'btn btn-secondary', onClick: handleLogout }, 'Sair'),
-        React.createElement('a', { className: 'btn btn-link', href: '/' }, 'Voltar ao app do atleta')
-      )
+      compactPortal
+        ? React.createElement('div', { className: 'sidebar-compactHeader' },
+            React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
+            React.createElement('div', { className: 'sidebar-compactTop' },
+              React.createElement('div', null,
+                React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
+                React.createElement('div', { className: 'sidebar-compactMeta' }, `${profile?.name || profile?.email || 'Coach'} • ${planName}`)
+              ),
+              React.createElement('span', { className: `pill ${billingTone}` },
+                renewAt
+                  ? (daysRemaining !== null ? `${daysRemaining} dia(s)` : formatDateLabel(renewAt))
+                  : 'Sem renovação'
+              )
+            ),
+            React.createElement('div', { className: 'sidebar-actions sidebar-actions-compact' },
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleRefreshDashboard, disabled: loading }, loading ? 'Atualizando...' : 'Atualizar'),
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleLogout }, 'Sair'),
+              React.createElement('a', { className: 'btn btn-link', href: '/' }, 'App')
+            )
+          )
+        : React.createElement(React.Fragment, null,
+            React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
+            React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
+            React.createElement('p', { className: 'sidebar-copy' }, 'Portal separado para operação do box, publicação, benchmarks e assinatura.'),
+            React.createElement('div', { className: 'profile-box' },
+              React.createElement('strong', null, profile?.name || profile?.email || 'Coach'),
+              React.createElement('span', null, profile?.email || '')
+            ),
+            React.createElement('div', { className: 'sidebar-plan' },
+              React.createElement('span', { className: 'stat-label' }, 'Plano atual'),
+              React.createElement('strong', { className: 'sidebar-planValue' }, planName),
+              React.createElement('span', { className: `pill ${billingTone}` },
+                renewAt
+                  ? (daysRemaining !== null ? `${daysRemaining} dia(s) restantes` : formatDateLabel(renewAt))
+                  : 'Sem renovação'
+              )
+            ),
+            React.createElement('div', { className: 'sidebar-actions' },
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleRefreshDashboard, disabled: loading }, loading ? 'Atualizando...' : 'Atualizar dados'),
+              React.createElement('button', { className: 'btn btn-secondary', onClick: handleLogout }, 'Sair'),
+              React.createElement('a', { className: 'btn btn-link', href: '/' }, 'Voltar ao app do atleta')
+            )
+          )
     ),
     React.createElement('main', { className: 'portal-main' },
       React.createElement('section', { className: 'hero' },
         React.createElement('div', null,
           React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
           React.createElement('h2', null, 'Gyms, membros, benchmarks e billing em um portal pronto para escala'),
-          React.createElement('p', { className: 'hero-copy' }, 'Gerencie a programação, monitore o acesso dos atletas e mantenha a assinatura do box sob controle.')
+          React.createElement('p', { className: 'hero-copy' }, 'Gerencie publicação, atletas, grupos, benchmarks e assinatura do box sem contaminar o fluxo diário do app do atleta.')
         ),
         React.createElement('div', { className: 'hero-pills' },
           React.createElement('span', { className: `pill ${canCoachManage ? 'ok' : 'warn'}` }, canCoachManage ? 'Coach liberado' : 'Coach bloqueado'),
@@ -899,9 +1187,9 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
           )
         ),
         React.createElement('div', { className: 'billing-bannerActions' },
-        React.createElement('button', { className: 'btn btn-primary', onClick: () => handleCheckout('coach'), disabled: loading }, 'Assinar Coach'),
+          React.createElement('a', { className: 'btn btn-primary', href: '/pricing.html' }, 'Assinar Coach'),
           canUseDeveloperTools ? React.createElement('button', { className: 'btn btn-secondary', onClick: handleActivateLocalPlan, disabled: loading }, 'Ativar local') : null,
-          React.createElement('a', { className: 'btn btn-link', href: '/terms.html', target: '_blank', rel: 'noreferrer' }, 'Termos')
+          React.createElement('a', { className: 'btn btn-link', href: '/terms.html' }, 'Termos')
         )
       ),
       React.createElement('section', { className: 'grid stats-grid' },
@@ -917,38 +1205,27 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               statCard('Resultados', String(dashboard.insights?.stats?.results || 0)),
             ]
       ),
-      React.createElement('section', { className: 'plan-grid' },
-        planCard({
-          name: 'Coach Starter',
-          price: 'R$ 49,90/mês',
-          description: 'Para começar a organizar treino, atletas e rotina do box.',
-          features: ['Operação inicial', 'Treino e benchmarks', 'Atletas vinculados com mais recursos'],
-          featured: false,
-          action: () => handleCheckout('starter'),
-          loading,
-        }),
-        planCard({
-          name: 'Coach Pro',
-          price: 'R$ 119,90/mês',
-          description: 'Plano principal para publicar programação e ampliar a experiência dos atletas.',
-          features: ['Tudo do Starter', 'Gestão mais forte', 'Mais imports e histórico para atletas'],
-          featured: true,
-          action: () => handleCheckout('pro'),
-          loading,
-        }),
-        planCard({
-          name: 'Coach Performance',
-          price: 'R$ 199,90/mês',
-          description: 'Para operação premium com mais folga, escala e experiência completa.',
-          features: ['Tudo do Pro', 'Operação premium', 'Atletas com imports e histórico máximos'],
-          featured: false,
-          action: () => handleCheckout('performance'),
-          loading,
-        })
-      ),
       React.createElement('section', { className: 'grid portal-grid' },
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, 'Gyms'),
+        renderPortalSection(`Feed do app • ${sportLabel(dashboard.selectedSportType)}`,
+          React.createElement('div', { className: 'stack list-block portal-feedList' },
+            showSkeleton
+              ? portalSkeletonList(4)
+              : dashboard.feed.map((item) =>
+              React.createElement('div', { key: item.id, className: 'list-item static' },
+                React.createElement('strong', null, item.title),
+                React.createElement('span', null, `${item.gym_name || ''} • ${sportLabel(item.sport_type || dashboard.selectedSportType)}${item.benchmark?.name ? ` • ${item.benchmark.name}` : ''}`)
+              )
+              ),
+            dashboard.feed.length === 0 ? React.createElement('p', { className: 'muted' }, 'Sem treinos publicados ainda.') : null
+          ),
+          {
+            wide: true,
+            openMobile: true,
+            eyebrow: 'Feed',
+            summary: dashboard.feed.length ? `${dashboard.feed.length} treino(s) publicados` : 'Sem treinos publicados ainda.',
+          }
+        ),
+        renderPortalSection('Gyms',
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
               ? portalSkeletonList(3)
@@ -978,10 +1255,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               onChange: (e) => setForms((prev) => ({ ...prev, gymSlug: e.target.value })),
             }),
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading }, 'Criar gym')
-          )
+          ),
+          {
+            summary: dashboard.gyms.length ? `${dashboard.gyms.length} gym(s) no workspace` : 'Nenhum gym criado ainda.',
+          }
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, selectedGym ? `Membros de ${selectedGym.name}` : 'Membros'),
+        renderPortalSection(selectedGym ? `Membros de ${selectedGym.name}` : 'Membros',
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
               ? portalSkeletonList(3)
@@ -1010,10 +1289,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               React.createElement('option', { value: 'coach' }, 'coach')
             ),
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym }, 'Adicionar membro')
-          )
+          ),
+          {
+            summary: dashboard.members.length ? `${dashboard.members.length} membro(s) carregados` : 'Selecione um gym para carregar membros.',
+          }
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, selectedGym ? `Grupos de ${selectedGym.name}` : 'Grupos'),
+        renderPortalSection(selectedGym ? `Grupos de ${selectedGym.name}` : 'Grupos',
           React.createElement('p', { className: 'muted' }, `Mostrando grupos de ${sportLabel(dashboard.selectedSportType)}.`),
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
@@ -1057,10 +1338,14 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                 : React.createElement('p', { className: 'muted' }, 'Nenhum atleta ativo disponível.')
             ),
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym || !forms.groupName }, 'Criar grupo')
-          )
+          ),
+          {
+            summary: dashboard.groups.length
+              ? `${dashboard.groups.length} grupo(s) em ${sportLabel(dashboard.selectedSportType)}`
+              : 'Crie grupos para blocos especiais e planilhas separadas.',
+          }
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, selectedGym ? `Insights de ${selectedGym.name}` : 'Insights do gym'),
+        renderPortalSection(selectedGym ? `Insights de ${selectedGym.name}` : 'Insights do gym',
           React.createElement('p', { className: 'muted' }, `Métricas filtradas em ${sportLabel(dashboard.selectedSportType)}.`),
           showSkeleton
             ? React.createElement('div', { className: 'stack list-block' }, portalSkeletonList(4))
@@ -1083,98 +1368,22 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   React.createElement('span', null, (dashboard.insights.topBenchmarks || []).length ? dashboard.insights.topBenchmarks.map((item) => `${item.name} (${item.total})`).join(' • ') : 'Sem volume suficiente ainda')
                 )
               )
-            : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.')
+            : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.'),
+          {
+            summary: dashboard.insights
+              ? `${dashboard.insights.stats?.workouts || 0} treino(s) • ${dashboard.insights.stats?.results || 0} resultado(s)`
+              : 'Métricas operacionais do gym.',
+          }
         ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, `Publicar treino • ${sportLabel(dashboard.selectedSportType)}`),
-          React.createElement('form', { className: 'stack', onSubmit: handlePublishWorkout },
-            React.createElement('input', {
-              className: 'field',
-              placeholder: 'Título do treino',
-              value: forms.workoutTitle,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutTitle: e.target.value })),
-            }),
-            React.createElement('input', {
-              className: 'field',
-              type: 'date',
-              value: forms.workoutDate,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutDate: e.target.value })),
-            }),
-            renderSportSpecificWorkoutFields(),
-            React.createElement('textarea', {
-              className: 'field textarea',
-              placeholder: isRunning
-                ? 'Uma linha por bloco/intervalo (ex: 6x400m @ 4:20/km / 1:30 trote)'
-                : isStrength
-                  ? 'Uma linha por exercício (ex: Back Squat | 5x5 | 100kg)'
-                  : 'Uma linha por exercício',
-              value: forms.workoutLines,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
-            }),
-            React.createElement('div', { className: 'stack nested-card audience-card' },
-              React.createElement('strong', null, 'Audiência'),
-              React.createElement('div', { className: 'tabs' },
-                [
-                  ['all', 'Todos os atletas'],
-                  ['selected', 'Atletas específicos'],
-                  ['groups', 'Grupos'],
-                ].map(([value, label]) =>
-                  React.createElement('button', {
-                    key: value,
-                    type: 'button',
-                    className: `btn btn-chip ${forms.workoutAudienceMode === value ? 'is-active' : ''}`,
-                    onClick: () => setForms((prev) => ({ ...prev, workoutAudienceMode: value })),
-                  }, label)
-                )
-              ),
-              React.createElement('div', { className: 'selection-panels' },
-                React.createElement('div', { className: 'selection-panel' },
-                  React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
-                  React.createElement('div', { className: 'selection-grid' },
-                    athleteMembers.length
-                      ? athleteMembers.map((member) =>
-                          React.createElement('label', { key: member.id, className: 'check-row' },
-                            React.createElement('input', {
-                              type: 'checkbox',
-                              checked: forms.targetMembershipIds.includes(member.id),
-                              onChange: () => toggleSelection('targetMembershipIds', member.id),
-                            }),
-                            React.createElement('span', null,
-                              React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
-                              React.createElement('small', null, member.email || member.pending_email || '')
-                            )
-                          )
-                        )
-                      : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
-                  )
-                ),
-                React.createElement('div', { className: 'selection-panel' },
-                  React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
-                  React.createElement('div', { className: 'selection-grid' },
-                    dashboard.groups.length
-                      ? dashboard.groups.map((group) =>
-                          React.createElement('label', { key: group.id, className: 'check-row' },
-                            React.createElement('input', {
-                              type: 'checkbox',
-                              checked: forms.targetGroupIds.includes(group.id),
-                              onChange: () => toggleSelection('targetGroupIds', group.id),
-                            }),
-                            React.createElement('span', null,
-                              React.createElement('strong', null, group.name),
-                              React.createElement('small', null, `${group.member_count || group.members?.length || 0} atleta(s)`)
-                            )
-                          )
-                        )
-                      : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
-                  )
-                )
-              )
-            ),
-            React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !selectedGym || !canCoachManage }, 'Publicar treino')
-          )
+        renderPortalSection(`Publicar treino • ${sportLabel(dashboard.selectedSportType)}`,
+          renderPublishWorkoutFlow(),
+          {
+            wide: true,
+            openMobile: true,
+            summary: compactPortal ? `Etapa ${publishSteps.findIndex(([value]) => value === publishStep) + 1} de ${publishSteps.length}` : 'Publicação de treino e segmentação de audiência.',
+          }
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, 'Benchmark Library'),
+        renderPortalSection('Benchmark Library',
           React.createElement('div', { className: 'toolbar' },
             React.createElement('input', {
               className: 'field',
@@ -1218,7 +1427,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('span', { className: 'muted' }, `${dashboard.benchmarkPagination.total || 0} benchmarks`),
             React.createElement('span', { className: 'muted' }, `Página ${dashboard.benchmarkPagination.page || 1} de ${dashboard.benchmarkPagination.pages || 1}`)
           ),
-          React.createElement('div', { className: 'stack list-block' },
+          React.createElement('div', { className: 'stack list-block benchmark-libraryList' },
             showSkeleton
               ? portalSkeletonList(4)
               : dashboard.benchmarks.map((benchmark) =>
@@ -1241,24 +1450,13 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               disabled: loading || (dashboard.benchmarkPagination.page || 1) >= (dashboard.benchmarkPagination.pages || 1),
               onClick: () => handleSearchBenchmarks({ page: Math.min((dashboard.benchmarkPagination.pages || 1), (dashboard.benchmarkPagination.page || 1) + 1) }),
             }, 'Próxima')
-          )
+          ),
+          {
+            summary: `${dashboard.benchmarkPagination.total || 0} benchmark(s) indexados`,
+            className: 'benchmark-libraryCard',
+          }
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, `Feed do app • ${sportLabel(dashboard.selectedSportType)}`),
-          React.createElement('div', { className: 'stack list-block' },
-            showSkeleton
-              ? portalSkeletonList(4)
-              : dashboard.feed.map((item) =>
-              React.createElement('div', { key: item.id, className: 'list-item static' },
-                React.createElement('strong', null, item.title),
-                React.createElement('span', null, `${item.gym_name || ''} • ${sportLabel(item.sport_type || dashboard.selectedSportType)}${item.benchmark?.name ? ` • ${item.benchmark.name}` : ''}`)
-              )
-              ),
-            dashboard.feed.length === 0 ? React.createElement('p', { className: 'muted' }, 'Sem treinos publicados ainda.') : null
-          )
-        ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, 'Calendário de competições'),
+        renderPortalSection('Calendário de competições',
           React.createElement('div', { className: 'stack list-block competition-list' },
             dashboard.competitions.map((competition) =>
               React.createElement('div', { key: competition.id, className: 'list-item static competition-item' },
@@ -1339,10 +1537,13 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               }),
               React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !forms.eventCompetitionId }, 'Adicionar evento')
             )
-          )
+          ),
+          {
+            wide: true,
+            summary: dashboard.competitions.length ? `${dashboard.competitions.length} competição(ões) cadastradas` : 'Nenhuma competição cadastrada.',
+          }
         ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, 'Leaderboard e resultados'),
+        renderPortalSection('Leaderboard e resultados',
           React.createElement('div', { className: 'grid dual-grid' },
             React.createElement('div', { className: 'card nested-card stack' },
               React.createElement('h4', null, 'Leaderboard'),
@@ -1448,7 +1649,11 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   )
                 : React.createElement('p', { className: 'muted' }, 'Selecione um evento para ver o ranking.')
             )
-          )
+          ),
+          {
+            wide: true,
+            summary: 'Rankings de benchmark, competição e evento.',
+          }
         )
       )
     )
@@ -1475,23 +1680,6 @@ function portalSkeletonList(count = 3) {
       React.createElement('div', { className: 'skeleton skeleton-line skeleton-line-lg' }),
       React.createElement('div', { className: 'skeleton skeleton-line' })
     )
-  );
-}
-
-function planCard({ name, price, description, features = [], featured = false, action = null, loading = false }) {
-  return React.createElement('div', { className: `plan-card ${featured ? 'plan-card-featured' : ''}` },
-    React.createElement('span', { className: 'eyebrow' }, 'Plano'),
-    React.createElement('h3', { className: 'plan-cardTitle' }, name),
-    React.createElement('strong', { className: 'plan-cardPrice' }, price),
-    React.createElement('p', { className: 'muted' }, description),
-    React.createElement('div', { className: 'plan-cardFeatures' },
-      features.map((feature) =>
-        React.createElement('span', { key: feature, className: 'plan-feature' }, feature)
-      )
-    ),
-    action
-      ? React.createElement('button', { className: 'btn btn-primary', onClick: action, disabled: loading }, loading ? 'Abrindo...' : `Assinar ${name}`)
-      : React.createElement('span', { className: 'plan-cardGhost' }, 'Em breve')
   );
 }
 

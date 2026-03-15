@@ -3,140 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="description" content="Planos do CrossApp para coaches e boxes. Atletas usam o app livremente; o plano pago é para a operação do coach.">
-  <title>CrossApp | Planos do Coach</title>
+  <meta name="description" content="CrossApp Pricing: plataforma modular para treino, atletas, Coach Portal e competições. Atleta livre no app; coach paga pela operação do box.">
+  <meta name="keywords" content="crossapp planos, atleta plus, coach starter, coach pro, coach performance">
+  <meta property="og:title" content="CrossApp | Planos da plataforma modular">
+  <meta property="og:description" content="App do atleta livre, assinatura pessoal opcional e planos do coach para operar o box com mais estrutura.">
+  <meta name="twitter:title" content="CrossApp | Planos da plataforma modular">
+  <meta name="twitter:description" content="App do atleta livre, assinatura pessoal opcional e planos do coach para operar o box com mais estrutura.">
+  <title>CrossApp | Planos da plataforma modular</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/public/site-shell.css">
   <style>
-    :root {
-      --bg: #06090d;
-      --panel: rgba(18, 24, 31, 0.9);
-      --panel-soft: rgba(255,255,255,0.03);
-      --line: rgba(255,255,255,0.08);
-      --text: #f3f5f7;
-      --muted: rgba(243,245,247,0.7);
-      --accent: #edf1f5;
-      --accent-dark: #0d1218;
-      --shadow: 0 30px 80px rgba(0,0,0,0.35);
-      --radius: 24px;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: 'Space Grotesk', system-ui, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(255,255,255,0.04), transparent 24%),
-        linear-gradient(180deg, #06090d 0%, #0b1118 100%);
-    }
-    a { color: inherit; text-decoration: none; }
-    .page {
-      width: min(1180px, calc(100vw - 32px));
-      margin: 0 auto;
-      padding: 32px 0 64px;
-    }
-    .hero, .note-card, .plan-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--panel);
-      box-shadow: var(--shadow);
-    }
-    .hero {
-      padding: 32px;
-      display: grid;
-      gap: 18px;
-    }
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      min-height: 32px;
-      width: fit-content;
-      padding: 0 12px;
-      border-radius: 999px;
-      border: 1px solid var(--line);
-      background: var(--panel-soft);
-      color: var(--muted);
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(2rem, 5vw, 4.6rem);
-      line-height: 0.94;
-      letter-spacing: -0.05em;
-      max-width: 12ch;
-    }
-    .hero p {
-      margin: 0;
-      max-width: 70ch;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 1rem;
-    }
-    .hero-meta, .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .hero-meta span,
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 44px;
-      padding: 0 16px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-    }
-    .hero-meta span {
-      color: var(--muted);
-      background: var(--panel-soft);
-      font-size: 0.9rem;
-    }
-    .btn {
-      font-weight: 800;
-    }
-    .btn-primary {
-      background: var(--accent);
-      color: var(--accent-dark);
-      border-color: transparent;
-    }
-    .btn-secondary {
-      background: var(--panel-soft);
-      color: var(--text);
-    }
-    .section {
-      margin-top: 24px;
-    }
-    .section h2 {
-      margin: 0 0 8px;
-      font-size: 1.7rem;
-      letter-spacing: -0.04em;
-    }
-    .section p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-    .grid-3, .grid-2 {
-      display: grid;
-      gap: 18px;
-      margin-top: 18px;
-    }
-    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .plan-card {
-      padding: 22px;
-      display: grid;
-      gap: 14px;
-    }
-    .plan-card.featured {
-      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(18,24,31,0.94));
-      border-color: rgba(255,255,255,0.14);
-    }
     .plan-top {
       display: flex;
       align-items: center;
@@ -144,7 +22,7 @@
       gap: 12px;
     }
     .plan-kicker {
-      color: var(--muted);
+      color: var(--site-muted);
       font-size: 0.74rem;
       font-weight: 800;
       text-transform: uppercase;
@@ -155,181 +33,193 @@
       font-weight: 800;
       letter-spacing: -0.04em;
     }
-    .plan-card h3 {
-      margin: 0;
+    .public-planCard h3 {
       font-size: 1.4rem;
-      letter-spacing: -0.04em;
     }
-    .plan-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
+    .public-planCard.featured {
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(18,24,31,0.94));
+      border-color: var(--site-border-strong);
     }
-    .feature-list {
-      display: grid;
-      gap: 10px;
+    .public-note strong,
+    .public-moduleCard strong {
+      font-size: 1.08rem;
     }
-    .feature {
-      padding: 10px 12px;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: var(--panel-soft);
-      font-size: 0.92rem;
-      line-height: 1.5;
-    }
-    .plan-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 4px;
-    }
-    .note-card {
-      padding: 22px;
-      display: grid;
-      gap: 10px;
-    }
-    .note-card strong {
-      font-size: 1.02rem;
-    }
-    .note-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.65;
-    }
-    .subtle {
-      color: var(--muted);
-      font-size: 0.88rem;
-    }
-    @media (max-width: 980px) {
-      .grid-3, .grid-2 {
-        grid-template-columns: 1fr;
-      }
-      .page {
-        width: min(100vw - 24px, 100%);
-      }
-      .hero {
-        padding: 24px;
-      }
+    .public-pillRow {
+      margin-top: 6px;
     }
   </style>
 </head>
-<body>
+<body class="public-page" data-public-page="pricing">
+  <div id="public-shell-header"></div>
   <script src="./config.js"></script>
-  <main class="page">
-    <section class="hero">
-      <div class="eyebrow">CrossApp Pricing</div>
-      <h1>Planos do coach. Atleta livre no app.</h1>
-      <p>
-        No CrossApp, quem assina é o coach ou o box. Os atletas usam o app livremente, com imports e histórico completos.
-        O plano pago existe para liberar a operação do coach no portal separado: gestão, grupos, box e publicação de treinos.
+  <main class="public-main">
+    <section class="public-hero">
+      <div class="public-kicker">CrossApp Pricing</div>
+      <h1 class="public-title">Preço por módulo, com o núcleo do produto já entregue.</h1>
+      <p class="public-lead">
+        O CrossApp não cobra para existir no app do atleta. O preço entra onde a operação realmente cresce: assinatura pessoal opcional e portal do coach para estruturar o box.
       </p>
-      <div class="hero-meta">
-        <span>Atleta pode usar solo</span>
-        <span>Imports e histórico completos</span>
+      <div class="public-meta">
+        <span>App do atleta livre</span>
         <span>Coach paga pela operação</span>
-        <span>Competições liberadas em todos os níveis</span>
+        <span>Competições na base</span>
+        <span>Billing evolui por módulo</span>
       </div>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="/coach/">Abrir Coach Portal</a>
-        <a class="btn btn-secondary" href="/sports/cross/">Abrir app Cross</a>
+      <div class="public-actions">
+        <a class="public-btn public-btnPrimary" href="/sports/cross/">Abrir app Cross</a>
+        <a class="public-btn" href="/coach/">Abrir Coach Portal</a>
+      </div>
+      <div class="public-pillRow">
+        <span class="public-pill">CrossApp Train</span>
+        <span class="public-pill">CrossApp Coach</span>
+        <span class="public-pill">CrossApp Competitions</span>
+        <span class="public-pill">CrossApp Billing</span>
       </div>
     </section>
 
-    <section class="section">
-      <h2>Planos do coach</h2>
-      <p>Escolha o plano conforme a maturidade da operação. O atleta continua livre no app; o que muda aqui é a estrutura de gestão do coach.</p>
-      <div class="grid-3">
-        <article class="plan-card">
+    <section class="public-section">
+      <div class="public-sectionHead">
+        <h2>Arquitetura da plataforma</h2>
+        <p class="public-body">O atleta entra sem fricção, o coach sobe a operação e as competições conectam performance e comunidade. O preço segue essa lógica.</p>
+      </div>
+      <div class="public-grid public-grid4">
+        <article class="public-moduleCard">
+          <span class="public-kicker">Train</span>
+          <strong>Treino, histórico e benchmarks no fluxo diário.</strong>
+          <p class="public-body">Planilha enviada, treino do coach, PRs e biblioteca de benchmarks no app do atleta.</p>
+        </article>
+        <article class="public-moduleCard">
+          <span class="public-kicker">Coach</span>
+          <strong>Operação do box em portal separado.</strong>
+          <p class="public-body">Gyms, membros, grupos, publicação e rotina operacional para quem precisa gerenciar o box.</p>
+        </article>
+        <article class="public-moduleCard">
+          <span class="public-kicker">Competitions</span>
+          <strong>Eventos, inscrições e leaderboard.</strong>
+          <p class="public-body">CrossFit Open, Competition Corner e estrutura pronta para providers oficiais.</p>
+        </article>
+        <article class="public-moduleCard">
+          <span class="public-kicker">Billing</span>
+          <strong>Camada de expansão futura.</strong>
+          <p class="public-body">Checkout, planos e acesso já estão separados. A evolução financeira entra como módulo, não como promessa de ERP.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="public-section">
+      <div class="public-sectionHead">
+        <h2>Plano pessoal do atleta</h2>
+        <p class="public-body">O app já funciona livremente para o atleta. O Atleta Plus existe como assinatura pessoal opcional vinculada à conta.</p>
+      </div>
+      <div class="public-grid public-grid2">
+        <article class="public-planCard featured">
+          <div class="plan-top">
+            <div class="plan-kicker">Atleta Plus</div>
+            <span class="public-pill">Assinatura pessoal</span>
+          </div>
+          <strong class="plan-price">R$ 15/mês</strong>
+          <h3>Plus</h3>
+          <p class="public-body">Para quem quer manter um plano próprio no produto, apoiar o CrossApp e deixar essa assinatura pessoal vinculada à conta.</p>
+          <div class="public-featureList">
+            <div class="public-feature">Conta pessoal com assinatura própria</div>
+            <div class="public-feature">App do atleta continua livre, mesmo sem o plano</div>
+            <div class="public-feature">Pode coexistir com vínculo a coach ou uso solo</div>
+          </div>
+          <div class="public-actions">
+            <a class="public-btn public-btnPrimary" data-plan-link="athlete_plus" href="#">Assinar Atleta Plus</a>
+          </div>
+        </article>
+        <article class="public-note">
+          <strong>Importante</strong>
+          <p class="public-body">O Atleta Plus não existe para capar quem está no plano livre. Ele existe como plano pessoal opcional, separado do plano do coach.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="public-section">
+      <div class="public-sectionHead">
+        <h2>Planos do coach</h2>
+        <p class="public-body">Escolha o plano conforme a maturidade da operação. O atleta continua livre no app; o preço do coach existe para liberar a camada operacional do box.</p>
+      </div>
+      <div class="public-grid public-grid3">
+        <article class="public-planCard">
           <div class="plan-top">
             <div class="plan-kicker">Coach Starter</div>
-            <span class="subtle">Operação inicial</span>
+            <span class="public-pill">Operação inicial</span>
           </div>
           <strong class="plan-price">R$ 49,90/mês</strong>
           <h3>Starter</h3>
-          <p>Para coaches e boxes que querem sair do improviso e começar a centralizar treino, atletas e rotina.</p>
-          <div class="feature-list">
-            <div class="feature">Publicação de treinos e rotina básica do box</div>
-            <div class="feature">Gestão inicial de atletas e grupos</div>
-            <div class="feature">Estrutura inicial para publicar treinos e começar a operar com clareza</div>
+          <p class="public-body">Para coaches e boxes que querem sair do improviso e começar a centralizar treino, atletas e rotina.</p>
+          <div class="public-featureList">
+            <div class="public-feature">Publicação de treinos e rotina básica do box</div>
+            <div class="public-feature">Gestão inicial de atletas e grupos</div>
+            <div class="public-feature">Operação inicial sem contaminar o app do atleta</div>
           </div>
-          <div class="plan-actions">
-            <a class="btn btn-primary" data-plan-link="starter" href="#">Assinar Starter</a>
+          <div class="public-actions">
+            <a class="public-btn public-btnPrimary" data-plan-link="starter" href="#">Assinar Starter</a>
           </div>
         </article>
 
-        <article class="plan-card featured">
+        <article class="public-planCard featured">
           <div class="plan-top">
             <div class="plan-kicker">Coach Pro</div>
-            <span class="subtle">Plano principal</span>
+            <span class="public-pill">Plano principal</span>
           </div>
           <strong class="plan-price">R$ 119,90/mês</strong>
           <h3>Pro</h3>
-          <p>Para a operação principal do CrossApp: publicação consistente, gestão mais forte e mais valor percebido para os atletas.</p>
-          <div class="feature-list">
-            <div class="feature">Tudo do Starter</div>
-            <div class="feature">Mais controle operacional do coach e da rotina</div>
-            <div class="feature">Mais controle operacional do coach, grupos e rotina do box</div>
+          <p class="public-body">Plano principal para publicação consistente, gestão mais forte e mais valor percebido para a base do box.</p>
+          <div class="public-featureList">
+            <div class="public-feature">Tudo do Starter</div>
+            <div class="public-feature">Mais controle operacional do coach, grupos e rotina</div>
+            <div class="public-feature">Base comercial principal do Coach Portal</div>
           </div>
-          <div class="plan-actions">
-            <a class="btn btn-primary" data-plan-link="pro" href="#">Assinar Pro</a>
+          <div class="public-actions">
+            <a class="public-btn public-btnPrimary" data-plan-link="pro" href="#">Assinar Pro</a>
           </div>
         </article>
 
-        <article class="plan-card">
+        <article class="public-planCard">
           <div class="plan-top">
             <div class="plan-kicker">Coach Performance</div>
-            <span class="subtle">Operação premium</span>
+            <span class="public-pill">Operação premium</span>
           </div>
           <strong class="plan-price">R$ 199,90/mês</strong>
           <h3>Performance</h3>
-          <p>Para boxes e coaches que querem máxima folga operacional, escala e experiência premium para toda a base.</p>
-          <div class="feature-list">
-            <div class="feature">Tudo do Pro</div>
-            <div class="feature">Operação avançada com mais espaço de crescimento</div>
-            <div class="feature">Camada premium para escalar a operação do coach com mais folga</div>
+          <p class="public-body">Para boxes e coaches que querem máxima folga operacional, escala e experiência premium para toda a base.</p>
+          <div class="public-featureList">
+            <div class="public-feature">Tudo do Pro</div>
+            <div class="public-feature">Operação avançada com mais espaço de crescimento</div>
+            <div class="public-feature">Camada premium para escalar o portal do coach</div>
           </div>
-          <div class="plan-actions">
-            <a class="btn btn-primary" data-plan-link="performance" href="#">Assinar Performance</a>
+          <div class="public-actions">
+            <a class="public-btn public-btnPrimary" data-plan-link="performance" href="#">Assinar Performance</a>
           </div>
         </article>
       </div>
     </section>
 
-    <section class="section">
-      <h2>Como fica para o atleta</h2>
-      <p>O atleta não precisa comprar plano para usar o CrossApp. O app do atleta fica liberado por padrão, com uso solo, histórico completo, importações e competições sem bloqueio artificial.</p>
-      <div class="grid-2">
-        <article class="note-card">
-          <strong>Uso livre</strong>
-          <p>O atleta pode importar planilha, registrar treino, acompanhar histórico, PRs e competir sem depender de um plano pago próprio.</p>
+    <section class="public-section">
+      <div class="public-grid public-grid2">
+        <article class="public-note">
+          <strong>Uso livre do atleta</strong>
+          <p class="public-body">O atleta pode importar planilha, registrar treino, acompanhar histórico, PRs e competir sem depender de um plano pago próprio.</p>
         </article>
-        <article class="note-card">
-          <strong>Quando o coach entra</strong>
-          <p>O plano do coach não serve para capar o atleta. Ele serve para liberar o portal separado, organizar o box e operar treinos, grupos e atletas com mais estrutura.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <h2>Compra com conta ativa</h2>
-      <div class="grid-2">
-        <article class="note-card">
-          <strong>Auth antes do checkout</strong>
-          <p>Os preços continuam públicos, mas a compra só abre depois de login ou cadastro. Isso garante vínculo correto entre conta, pagamento e liberação do plano.</p>
-        </article>
-        <article class="note-card">
-          <strong>Kiwify + webhook</strong>
-          <p>O checkout continua simples por link da Kiwify, mas o backend pode validar venda por webhook e API oficial para aplicar o plano automaticamente.</p>
+        <article class="public-note">
+          <strong>Compra com conta ativa</strong>
+          <p class="public-body">O preço é público, mas o checkout só abre depois de login ou cadastro. Isso protege o vínculo da assinatura com a conta certa.</p>
         </article>
       </div>
     </section>
   </main>
+  <div id="public-shell-footer"></div>
+  <script type="module" src="/src/public/site-shell.js"></script>
   <script>
     (function attachPlanLinks() {
       const billing = (window.__CROSSAPP_CONFIG__ || {}).billing || {};
       const links = billing.links || {};
       const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
       const aliases = {
+        athlete_plus: ['athlete_plus'],
         pro: ['pro', 'coach'],
         coach: ['coach', 'pro'],
         starter: ['starter'],
@@ -340,8 +230,8 @@
         const url = (aliases[key] || [key]).map((candidate) => links[candidate]).find(Boolean) || '';
         if (url) {
           node.setAttribute('href', url);
-          node.setAttribute('target', '_blank');
-          node.setAttribute('rel', 'noopener noreferrer');
+          node.removeAttribute('target');
+          node.removeAttribute('rel');
           node.addEventListener('click', (event) => {
             const token = window.localStorage.getItem('crossapp-auth-token');
             if (token) {
@@ -366,7 +256,8 @@
           });
           return;
         }
-        node.classList.add('btn-secondary');
+        node.classList.remove('public-btnPrimary');
+        node.classList.add('public-btn');
         node.removeAttribute('href');
         node.addEventListener('click', (event) => {
           event.preventDefault();
