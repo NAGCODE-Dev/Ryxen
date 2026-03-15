@@ -78,7 +78,8 @@ export function createBillingRouter() {
 
     const sources = [payload, verifiedSale].filter(Boolean);
     const email = extractKiwifyCustomerEmail(...sources);
-    const planId = resolveKiwifyPlanId(...sources);
+    const resolvedPlanId = resolveKiwifyPlanId(...sources);
+    const planId = resolvedPlanId || await resolveFallbackKiwifyPlanId({ email });
     const externalRef = extractKiwifyExternalRef(eventType, ...sources);
 
     if (!email || !planId || !externalRef) {
@@ -333,6 +334,35 @@ function resolveKiwifyPlanId() {
   }
 
   return normalizeSubscriptionPlanId(productNames[0] || '');
+}
+
+async function resolveFallbackKiwifyPlanId({ email }) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return '';
+
+  const latestSubscriptionRes = await pool.query(
+    `SELECT s.plan_id
+     FROM subscriptions s
+     JOIN users u ON u.id = s.user_id
+     WHERE u.email = $1
+     ORDER BY COALESCE(s.renew_at, NOW()) DESC, s.updated_at DESC
+     LIMIT 1`,
+    [normalizedEmail],
+  );
+
+  const latestSubscriptionPlan = normalizeSubscriptionPlanId(latestSubscriptionRes.rows[0]?.plan_id || '');
+  if (latestSubscriptionPlan) return latestSubscriptionPlan;
+
+  const latestClaimRes = await pool.query(
+    `SELECT plan_id
+     FROM billing_claims
+     WHERE email = $1
+     ORDER BY updated_at DESC, created_at DESC
+     LIMIT 1`,
+    [normalizedEmail],
+  );
+
+  return normalizeSubscriptionPlanId(latestClaimRes.rows[0]?.plan_id || '');
 }
 
 async function tryVerifyKiwifySale(payload) {
