@@ -23,6 +23,7 @@ import { createAdminSyncRouter } from './routes/adminSyncRoutes.js';
 import { createCompetitionRouter } from './routes/competitionRoutes.js';
 import { requireGymManager, slugify } from './utils/gymUtils.js';
 import { runMigrations } from './migrations/index.js';
+import { startEmailWorker } from './mailer.js';
 
 const app = express();
 const AUTH_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'auth' });
@@ -56,6 +57,15 @@ app.use(createCompetitionRouter({
   parseBenchmarkScore,
 }));
 
+app.get('/', (_req, res) => {
+  res.json({
+    ok: true,
+    service: 'crossapp-backend',
+    status: 'online',
+    health: '/health',
+  });
+});
+
 app.get('/health', async (_req, res) => {
   await pool.query('SELECT 1');
   res.json({
@@ -74,6 +84,7 @@ app.use((err, _req, res, _next) => {
 
 runMigrations()
   .then(() => {
+    startEmailWorker();
     app.listen(PORT, () => {
       console.log(`[backend] running at http://localhost:${PORT}`);
     });

@@ -1,3 +1,10 @@
+import {
+  formatMeasurementValue,
+  getMeasurementTypeMeta,
+  listMeasurementTypes,
+  summarizeMeasurements,
+} from '../profileMeasurements.js';
+
 const EXERCISE_VIDEO_LIBRARY = [
   { label: 'Back Squat', query: 'back squat', aliases: ['back squat', 'backsquat', 'agachamento livre', 'agachamento costas'] },
   { label: 'Front Squat', query: 'front squat', aliases: ['front squat', 'agachamento frontal'] },
@@ -53,23 +60,31 @@ export function renderHistoryPage(state, helpers) {
   } = helpers;
 
   const athleteOverview = state?.__ui?.athleteOverview || {};
+  const athleteProfile = state?.__ui?.athleteProfile || {};
   const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
   const benchmarkBrowser = state?.__ui?.benchmarkBrowser || {};
   const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
   const prHistory = athleteOverview?.prHistory || [];
+  const upcomingCompetitions = athleteOverview?.upcomingCompetitions || [];
+  const recentResults = athleteOverview?.recentResults || [];
+  const runningHistory = athleteOverview?.runningHistory || [];
+  const strengthHistory = athleteOverview?.strengthHistory || [];
   const isBusy = !!state?.__ui?.isBusy;
   const isDetailLoading = isAuthenticated && athleteOverview?.detailLevel !== 'full';
   const benchmarkPoints = benchmarkHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
   const prPoints = prHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
+  const measurements = Array.isArray(athleteProfile?.measurements) ? athleteProfile.measurements : [];
+  const measurementSummary = summarizeMeasurements(measurements, 6);
 
   return `
     <div class="workout-container page-stack page-stack-history">
       ${renderPageHero({
-        eyebrow: 'Train • Progressão',
-        title: 'Evolução no módulo Train',
-        subtitle: 'Benchmarks, PRs e consistência em uma leitura direta da sua rotina e performance.',
+        eyebrow: 'Perfil do atleta',
+        title: 'Sua evolução em um só lugar',
+        subtitle: 'Veja seus registros, benchmarks e próximas competições sem espalhar desempenho pela conta.',
         actions: `
-          <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
+          <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar registros</button>
+          <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
           ${isAuthenticated
             ? '<button class="btn-secondary" data-action="page:set" data-page="account" type="button">Ver conta</button>'
             : '<button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>'
@@ -78,15 +93,81 @@ export function renderHistoryPage(state, helpers) {
       })}
 
       <div class="summary-strip summary-strip-3">
-        ${renderSummaryTile('Benchmarks', isBusy || isDetailLoading ? '...' : String(benchmarkHistory.length), 'modalidades com histórico')}
-        ${renderSummaryTile('PRs', isBusy || isDetailLoading ? '...' : String(prHistory.length), 'movimentos acompanhados')}
-        ${renderSummaryTile('Registros', isBusy || isDetailLoading ? '...' : String(benchmarkPoints + prPoints), 'entradas acumuladas')}
+        ${renderSummaryTile('Resumo', isBusy || isDetailLoading ? '...' : String(recentResults.length), 'resultados recentes')}
+        ${renderSummaryTile('Medidas', isBusy ? '...' : String(measurements.length), 'peso, cintura e mais')}
+        ${renderSummaryTile('Registros', isBusy || isDetailLoading ? '...' : String(prHistory.length), 'marcas e referências')}
       </div>
 
-      ${renderPageFold({
-        title: 'Evolução por benchmark',
-        subtitle: 'Progressão dos benchmarks mais registrados.',
-        content: `
+      <div class="profile-analyticsDesktop">
+        <div class="profile-analyticsMain">
+          ${renderPageFold({
+            title: 'Resumo',
+            subtitle: 'Leitura rápida da sua rotina recente.',
+            content: `
+        <div class="coach-list coach-listCompact">
+          ${(isBusy || isDetailLoading) ? renderTrendSkeletons(3) : `
+            <div class="coach-listItem static">
+              <strong>Resultados recentes</strong>
+              <span>${recentResults.length ? `${recentResults.length} registro(s) recente(s)` : 'Nenhum resultado recente ainda.'}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Próximas competições</strong>
+              <span>${upcomingCompetitions.length ? `${upcomingCompetitions.length} competição(ões) no radar` : 'Sem competição próxima no momento.'}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Total de registros</strong>
+              <span>${benchmarkPoints + prPoints} entrada(s) acumulada(s)</span>
+            </div>
+          `}
+        </div>
+        `,
+          })}
+
+          ${renderPageFold({
+            title: 'Registros',
+            subtitle: 'Cargas, reps, tempos e outras marcas de referência.',
+            content: `
+        <div class="page-actions">
+          <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar registros</button>
+        </div>
+        <div class="trend-grid">
+          ${isBusy || isDetailLoading ? renderTrendSkeletons(3) : prHistory.length ? prHistory.map((item) => `
+            <div class="trend-card">
+              <div class="trend-cardHead">
+                <strong>${escapeHtml(item.exercise)}</strong>
+                <span>${escapeHtml(String(item.latestValue ?? '—'))} ${escapeHtml(item.unit || 'kg')}</span>
+              </div>
+              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), false)}
+              <div class="trend-meta">
+                <span>${item.delta === null ? 'Sem histórico suficiente' : `${item.delta > 0 ? '+' : ''}${formatNumber(item.delta)} ${escapeHtml(item.unit || 'kg')}`}</span>
+                <span>${item.points.length} atualização(ões)</span>
+              </div>
+            </div>
+          `).join('') : '<p class="account-hint">Cadastre suas cargas de referência para o app calcular porcentagens e mostrar progresso real.</p>'}
+        </div>
+
+        <div class="coach-list coach-listCompact">
+          ${runningHistory.length ? runningHistory.slice(0, 3).map((item) => `
+            <div class="coach-listItem static">
+              <strong>${escapeHtml(item.title || item.session_type || 'Corrida')}</strong>
+              <span>${escapeHtml(describeRunningLog(item))}</span>
+            </div>
+          `).join('') : ''}
+          ${strengthHistory.length ? strengthHistory.slice(0, 3).map((item) => `
+            <div class="coach-listItem static">
+              <strong>${escapeHtml(item.exercise || 'Treino de força')}</strong>
+              <span>${escapeHtml(describeStrengthLog(item))}</span>
+            </div>
+          `).join('') : ''}
+          ${!runningHistory.length && !strengthHistory.length ? '<p class="account-hint">Outros registros como tempos, corrida e sessões de força também aparecem aqui quando forem salvos.</p>' : ''}
+        </div>
+        `,
+          })}
+
+          ${renderPageFold({
+            title: 'Benchmarks',
+            subtitle: 'Progressão dos benchmarks mais registrados.',
+            content: `
         <div class="trend-grid">
           ${isBusy || isDetailLoading ? renderTrendSkeletons(4) : benchmarkHistory.length ? benchmarkHistory.map((item) => `
             <div class="trend-card">
@@ -103,44 +184,95 @@ export function renderHistoryPage(state, helpers) {
           `).join('') : `<p class="account-hint">${isAuthenticated ? 'Finalize benchmarks para começar a curva de evolução.' : 'Finalize benchmarks ou entre na conta para começar a curva de evolução.'}</p>`}
         </div>
         `,
-      })}
+          })}
 
-      ${renderPageFold({
-        title: 'Evolução de PRs',
-        subtitle: 'Progressão das suas cargas de referência.',
-        content: `
-        <div class="page-actions">
-          <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
+          ${renderPageFold({
+            title: 'Biblioteca de benchmarks',
+            subtitle: 'Girls, hero, open e envio do seu próprio resultado.',
+            content: renderBenchmarkLibrarySection({
+              isAuthenticated,
+              isBusy,
+              benchmarkBrowser,
+              benchmarkHistory,
+              helpers,
+            }),
+          })}
         </div>
-        <div class="trend-grid">
-          ${isBusy || isDetailLoading ? renderTrendSkeletons(3) : prHistory.length ? prHistory.map((item) => `
-            <div class="trend-card">
+
+        <div class="profile-analyticsRail">
+          ${renderPageFold({
+            title: 'Medidas',
+            subtitle: 'Peso, cintura, braço e outras medidas reunidas no seu perfil.',
+            content: `
+        <div class="trend-grid measurement-grid">
+          ${measurementSummary.length ? measurementSummary.map((item) => `
+            <div class="trend-card measurement-card">
               <div class="trend-cardHead">
-                <strong>${escapeHtml(item.exercise)}</strong>
-                <span>${escapeHtml(String(item.latestValue ?? '—'))} ${escapeHtml(item.unit || 'kg')}</span>
+                <strong>${escapeHtml(item.label)}</strong>
+                <span>${escapeHtml(formatMeasurementValue(item))}</span>
               </div>
-              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), false)}
               <div class="trend-meta">
-                <span>${item.delta === null ? 'Sem histórico suficiente' : `${item.delta > 0 ? '+' : ''}${formatNumber(item.delta)} ${escapeHtml(item.unit || 'kg')}`}</span>
-                <span>${item.points.length} atualização(ões)</span>
+                <span>${escapeHtml(formatMeasurementDate(item.recordedAt))}</span>
+                <span>${escapeHtml(getMeasurementTypeMeta(item.type).label)}</span>
               </div>
             </div>
-          `).join('') : '<p class="account-hint">Cadastre seus PRs para o app calcular cargas e mostrar progresso real.</p>'}
+          `).join('') : `<p class="account-hint">Adicione medidas do seu corpo para acompanhar mudanças ao longo do tempo.</p>`}
+        </div>
+
+        <div class="measurement-form">
+          <div class="measurement-formGrid">
+            <select id="measurement-type" class="add-input">
+              ${listMeasurementTypes().map((type) => `
+                <option value="${escapeAttribute(type.value)}">${escapeHtml(type.label)}${type.unit ? ` (${escapeHtml(type.unit)})` : ''}</option>
+              `).join('')}
+            </select>
+            <input id="measurement-label" class="add-input" type="text" placeholder="Nome da medida (opcional)" />
+            <input id="measurement-value" class="add-input" type="number" step="0.1" min="0" placeholder="Valor" />
+            <input id="measurement-date" class="add-input" type="date" />
+          </div>
+          <textarea id="measurement-notes" class="add-input" rows="3" placeholder="Observações opcionais"></textarea>
+          <div class="page-actions">
+            <button class="btn-secondary" data-action="measurement:add" type="button">Salvar medida</button>
+          </div>
+        </div>
+
+        <div class="coach-list coach-listCompact">
+          ${measurements.length ? measurements.slice(0, 8).map((item) => `
+            <div class="coach-listItem static leaderboard-item">
+              <div class="measurement-listHead">
+                <strong>${escapeHtml(item.label)}</strong>
+                <span>${escapeHtml(formatMeasurementValue(item))}</span>
+              </div>
+              <div class="measurement-listMeta">
+                <span>${escapeHtml(formatMeasurementDate(item.recordedAt))}</span>
+                <button class="btn-secondary measurement-removeBtn" data-action="measurement:remove" data-measurement-id="${escapeAttribute(item.id)}" type="button">Remover</button>
+              </div>
+            </div>
+          `).join('') : ''}
         </div>
         `,
-      })}
+          })}
 
-      ${renderPageFold({
-        title: 'Biblioteca de benchmarks',
-        subtitle: 'Girls, hero, open e envio do seu próprio resultado.',
-        content: renderBenchmarkLibrarySection({
-          isAuthenticated,
-          isBusy,
-          benchmarkBrowser,
-          benchmarkHistory,
-          helpers,
-        }),
-      })}
+          ${renderPageFold({
+            title: 'Competições',
+            subtitle: 'Eventos ligados ao seu perfil e acesso rápido aos leaderboards.',
+            open: false,
+            content: `
+        <div class="coach-list coach-listCompact">
+          ${isBusy || isDetailLoading ? renderListSkeletons(3) : upcomingCompetitions.length ? upcomingCompetitions.slice(0, 4).map((item) => `
+            <div class="coach-listItem static">
+              <strong>${escapeHtml(item.title || 'Competição')}</strong>
+              <span>${escapeHtml(item.startDate || item.eventDate || 'Sem data definida')}</span>
+            </div>
+          `).join('') : '<p class="account-hint">Sem competição vinculada no momento.</p>'}
+        </div>
+        <div class="page-actions">
+          <button class="btn-secondary" data-action="page:set" data-page="competitions" type="button">Abrir competições</button>
+        </div>
+        `,
+          })}
+        </div>
+      </div>
     </div>
   `;
 }
@@ -286,6 +418,34 @@ function renderBenchmarkLibrarySection({ isAuthenticated, isBusy, benchmarkBrows
       </div>
     </div>
   `;
+}
+
+function formatMeasurementDate(value) {
+  if (!value) return 'Sem data';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+}
+
+function describeRunningLog(item = {}) {
+  const parts = [];
+  if (item.distance_km) parts.push(`${Number(item.distance_km).toLocaleString('pt-BR')} km`);
+  if (item.duration_min) parts.push(`${Number(item.duration_min).toLocaleString('pt-BR')} min`);
+  if (item.avg_pace) parts.push(`pace ${item.avg_pace}`);
+  return parts.join(' • ') || 'Registro de corrida';
+}
+
+function describeStrengthLog(item = {}) {
+  const parts = [];
+  if (item.sets_count) parts.push(`${item.sets_count} séries`);
+  if (item.reps_text) parts.push(item.reps_text);
+  if (item.load_text) parts.push(item.load_text);
+  else if (item.load_value) parts.push(`${Number(item.load_value).toLocaleString('pt-BR')} kg`);
+  return parts.join(' • ') || 'Registro de força';
 }
 
 export function formatBenchmarkScoreType(scoreType) {

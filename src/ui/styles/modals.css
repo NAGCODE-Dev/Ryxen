@@ -10,6 +10,11 @@
   z-index: 12000;
 }
 
+.modal-overlay-auth {
+  align-items: flex-start;
+  padding-top: max(18px, calc(var(--safe-top) + 12px));
+}
+
 .modal-overlay.isOpen {
   display: flex;
 }
@@ -25,7 +30,7 @@
 }
 
 .modal-container-auth {
-  width: min(100%, 980px);
+  width: min(100%, 720px);
 }
 
 .modal-header {
@@ -55,6 +60,12 @@
   padding: 18px 20px;
   overflow-y: auto;
   max-height: calc(88vh - 78px);
+}
+
+.modal-body-auth {
+  display: grid;
+  align-content: start;
+  gap: 14px;
 }
 
 .auth-switch .btn-secondary.isSelected,
@@ -135,11 +146,21 @@
   gap: 10px;
 }
 
+.auth-form {
+  display: grid;
+  gap: 10px;
+}
+
 .reset-previewLink {
   color: var(--text-primary);
 }
 
 @media (max-width: 640px) {
+  .modal-overlay-auth {
+    align-items: flex-start;
+    padding: calc(var(--safe-top) + 8px) 0 0;
+  }
+
   .modal-header {
     padding: 14px 16px;
   }
@@ -159,6 +180,7 @@
 
   .modal-body-auth {
     gap: 12px;
+    align-content: start;
   }
 
   .auth-switch {
@@ -181,6 +203,7 @@
   .modal-container,
   .modal-container-auth {
     border-radius: 22px 22px 0 0;
+    max-height: calc(100dvh - var(--safe-top) - 8px);
   }
 
   .modal-header {

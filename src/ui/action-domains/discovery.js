@@ -18,6 +18,12 @@ export async function handleDiscoveryAction(action, el, ctx) {
       const page = String(el.dataset.page || 'today');
       await patchUiState((s) => ({ ...s, currentPage: page }));
       await rerender();
+      try {
+        root.querySelector('#ui-main')?.scrollTo?.({ top: 0, behavior: 'instant' });
+      } catch {
+        root.querySelector('#ui-main')?.scrollTo?.(0, 0);
+      }
+      window.scrollTo?.({ top: 0, behavior: 'auto' });
       if (page === 'history') {
         hydrateAthleteOverviewFullInBackground();
         hydrateBenchmarkBrowserInBackground();

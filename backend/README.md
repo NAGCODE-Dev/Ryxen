@@ -60,11 +60,40 @@ __APP__.setRuntimeConfig({
 
 Se SMTP não estiver configurado, o backend usa Ethereal para preview de email. O preview/código só é exposto para a conta de desenvolvimento e apenas quando `EXPOSE_RESET_CODE=true`.
 
+SMTP com fallback e fila:
+
+```env
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+
+SMTP_FALLBACK_HOST=
+SMTP_FALLBACK_PORT=587
+SMTP_FALLBACK_SECURE=false
+SMTP_FALLBACK_USER=
+SMTP_FALLBACK_PASS=
+SMTP_FALLBACK_FROM=
+
+MAILER_VERIFY_TIMEOUT_MS=8000
+MAILER_SEND_TIMEOUT_MS=12000
+SMTP_CONNECTION_TIMEOUT_MS=8000
+SMTP_GREETING_TIMEOUT_MS=8000
+SMTP_SOCKET_TIMEOUT_MS=12000
+EMAIL_JOB_RETRY_DELAY_MS=15000
+EMAIL_JOB_SWEEP_INTERVAL_MS=30000
+```
+
 ## Admin
 
 - O primeiro usuário criado vira admin automaticamente.
 - Emails listados em `ADMIN_EMAILS` também viram admin.
 - Endpoint: `GET /admin/overview`
+- Health operacional: `GET /admin/ops/health`
+- Reprocessar claim de billing: `POST /admin/billing/claims/:claimId/reprocess`
+- Reenviar job de email: `POST /admin/email/jobs/:jobId/retry`
 
 ## Gyms / Coach / Athlete
 

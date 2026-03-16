@@ -23,7 +23,7 @@ export function renderModals(state, helpers) {
   return '';
 }
 
-function renderImportModal() {
+export function renderImportModal() {
   return `
     <div class="modal-overlay isOpen">
       <div class="modal-container">
@@ -34,20 +34,20 @@ function renderImportModal() {
         <div class="modal-body modal-body-auth">
           <div class="auth-intro">
             <div class="section-kicker">Importação</div>
-            <p class="account-hint">Escolha a melhor origem para o treino. O app prioriza o treino do coach, mas sua planilha pode conviver e ser alternada quando fizer sentido.</p>
+            <p class="account-hint">Envie sua planilha ou arquivo de treino. Se houver porcentagens e registros salvos, o app usa isso para sugerir as cargas.</p>
           </div>
           <div class="coach-grid">
             <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button">
               <span class="quick-actionIcon">PDF</span>
-              <span class="quick-actionLabel">Importar planilha em PDF</span>
+              <span class="quick-actionLabel">Planilha em PDF</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="media:pick" type="button">
-              <span class="quick-actionIcon">OCR</span>
-              <span class="quick-actionLabel">Foto, imagem ou vídeo</span>
+              <span class="quick-actionIcon">XLS</span>
+              <span class="quick-actionLabel">Excel, ODS, foto ou vídeo</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="workout:import" type="button">
               <span class="quick-actionIcon">JSON</span>
-              <span class="quick-actionLabel">Importar treino salvo</span>
+              <span class="quick-actionLabel">Treino salvo</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="workout:export" type="button">
               <span class="quick-actionIcon">EXP</span>
@@ -67,38 +67,42 @@ function renderPrsModal(prs = {}) {
     <div class="modal-overlay isOpen" id="ui-prsModalBackdrop">
       <div class="modal-container">
         <div class="modal-header">
-          <h2 class="modal-title">🎯 Personal Records</h2>
+          <h2 class="modal-title">Registros</h2>
           <button class="modal-close" data-action="modal:close" type="button">✕</button>
         </div>
 
         <div class="modal-body">
+          <div class="auth-intro">
+            <div class="section-kicker">Desempenho</div>
+            <p class="account-hint">Use este espaço para manter suas referências de carga. Outros tipos de marca continuam aparecendo no Perfil junto com benchmarks e histórico.</p>
+          </div>
           <div class="pr-search">
             <input
               type="text"
               class="search-input"
-              placeholder="Buscar exercício..."
+              placeholder="Buscar exercício"
               id="ui-prsSearch"
             />
           </div>
 
           <div class="pr-actions">
             <button class="btn-secondary" data-action="prs:export" type="button">
-              💾 Exportar
+              Exportar
             </button>
 
             <button class="btn-secondary" data-action="prs:import-file" type="button">
-              📁 Importar arquivo
+              Importar arquivo
             </button>
 
             <button class="btn-secondary" data-action="prs:import" type="button">
-              📋 Colar JSON
+              Colar JSON
             </button>
           </div>
 
           <div class="pr-list" id="ui-prsTable">
             ${entries.length === 0 ? `
               <div class="empty-state-small">
-                <p>Nenhum PR cadastrado</p>
+                <p>Nenhum registro de carga ainda</p>
               </div>
             ` : entries.map(([exercise, value]) => `
               <div class="pr-item" data-exercise="${escapeHtml(exercise)}">
@@ -147,13 +151,13 @@ function renderPrsModal(prs = {}) {
             <input
               type="number"
               class="add-input"
-              placeholder="PR (kg)"
+              placeholder="Carga de referência (kg)"
               id="ui-prsNewValue"
               step="0.5"
               min="0"
             />
             <button class="btn-primary" data-action="prs:add" type="button">
-              ➕ Adicionar
+              Adicionar
             </button>
           </div>
         </div>
@@ -220,9 +224,6 @@ function renderSettingsModal(settings = {}) {
             </button>
             <a class="btn-secondary" href="./privacy.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
               🔐 Privacidade
-            </a>
-            <a class="btn-secondary" href="./pricing.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              💳 Planos
             </a>
             <a class="btn-secondary" href="./terms.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
               📄 Termos

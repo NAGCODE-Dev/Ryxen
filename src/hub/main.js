@@ -56,41 +56,42 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
   return `
     <main class="public-main hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Platform</div>
-        <h1>Organize treino, atletas e operação do seu box em um só lugar.</h1>
+        <div class="hub-kicker">CrossApp</div>
+        <h1>Treinos, evolução e rotina do box em um só lugar.</h1>
         <p class="hub-lead">
-          O CrossApp reúne app do atleta, Coach Portal, benchmarks, histórico e competições em uma rotina mais clara para coaches, boxes e atletas. O núcleo já entregue está em treino e operação; a expansão futura entra por módulos, não por promessa vazia.
+          Acompanhe treinos, importe planilhas, registre resultados e veja sua evolução. Quando precisar, o Coach Portal cuida da parte de gestão do box em uma área separada.
         </p>
         <div class="hub-actions">
-          <a class="hub-primaryAction" href="/pricing.html">Ver plataforma</a>
-          <a class="hub-secondaryAction" href="${escapeHtml(lastSportUrl)}" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}">Abrir ${escapeHtml(labelForSport(selectedSport))}</a>
+          <a class="hub-primaryAction" href="${escapeHtml(lastSportUrl)}" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}">Abrir ${escapeHtml(labelForSport(selectedSport))}</a>
+          <a class="hub-secondaryAction" href="/pricing.html">Ver planos</a>
           <a class="hub-secondaryAction" href="/coach/">Abrir Coach Portal</a>
         </div>
         <div class="hub-meta">
-          <span>App do atleta livre</span>
-          <span>Coach Portal separado</span>
+          <span>Treino do dia</span>
+          <span>Importação de planilhas</span>
+          <span>Resultados e benchmarks</span>
           <span>Benchmarks e competições</span>
-          <span>${hasBeta ? 'Modalidades extras em beta' : 'Fluxo principal focado em Cross'}</span>
+          <span>${hasBeta ? 'Modalidades extras em beta' : 'Foco principal em Cross'}</span>
         </div>
       </section>
 
       <section class="hub-platformStrip">
-        ${renderBenefitPill('Treino e programação')}
+        ${renderBenefitPill('Treino do dia')}
         ${renderBenefitPill('App do atleta')}
         ${renderBenefitPill('Coach Portal')}
-        ${renderBenefitPill('Benchmarks e competições')}
-        ${renderBenefitPill('Base pronta para novos módulos')}
+        ${renderBenefitPill('Resultados e benchmarks')}
+        ${renderBenefitPill('Competições')}
       </section>
 
       <section class="hub-section">
         <div class="hub-sectionHead">
-          <div class="hub-kicker">Módulos</div>
-          <h2>Uma plataforma modular, com núcleo real já entregue.</h2>
-          <p>O produto não tenta vender tudo agora. Ele parte do que já está sólido e deixa a expansão preparada para billing, presença digital e novas modalidades.</p>
+          <div class="hub-kicker">O que você encontra</div>
+          <h2>O essencial para o atleta e o que o coach precisa para organizar o box.</h2>
+          <p>O app principal fica centrado no atleta. A gestão do coach entra em uma área separada, sem atrapalhar o uso diário.</p>
         </div>
         <div class="hub-grid hub-grid-modules">
           ${renderModuleCard({
-            kicker: 'CrossApp Train',
+            kicker: 'Treino',
             title: 'Treino, histórico e benchmarks no fluxo diário do atleta.',
             body: 'Planilha enviada, treino do coach, PRs, biblioteca de benchmarks, histórico específico e rotina diária em um app só.',
             tone: 'train',
@@ -99,7 +100,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             ctaLabel: 'Abrir app Cross',
           })}
           ${renderModuleCard({
-            kicker: 'CrossApp Coach',
+            kicker: 'Coach Portal',
             title: 'Operação do box em portal separado, sem contaminar o app do atleta.',
             body: 'Gyms, membros, grupos, publicação de treino, assinatura e rotina operacional em um workspace próprio para coach.',
             tone: 'coach',
@@ -108,23 +109,23 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             ctaLabel: 'Abrir Coach Portal',
           })}
           ${renderModuleCard({
-            kicker: 'CrossApp Competitions',
-            title: 'Eventos, inscrições e leaderboard em uma estrutura pronta para providers reais.',
-            body: 'Catálogo de eventos, links oficiais, resultados internos e base pronta para CrossFit Open e Competition Corner.',
+            kicker: 'Competições',
+            title: 'Eventos, inscrições e leaderboard ligados à sua evolução.',
+            body: 'Catálogo de eventos, links oficiais e resultados internos em uma área própria para performance e comunidade.',
             tone: 'comp',
-            features: ['Agenda de eventos', 'Leaderboard oficial', 'Estrutura por provider'],
+            features: ['Agenda de eventos', 'Leaderboard oficial', 'Resultados no app'],
             ctaHref: sports.cross || '/sports/cross/',
             ctaLabel: 'Ver competições',
           })}
           ${renderModuleCard({
-            kicker: 'CrossApp Billing',
-            title: 'Camada futura para cobrança e operação financeira, sem vender ficção hoje.',
-            body: 'A plataforma já separa planos, checkout e acesso. O próximo passo entra como módulo, não como promessa genérica de ERP.',
+            kicker: 'Planos',
+            title: 'Planos claros para atleta e coach, sem empurrar comercial cedo demais.',
+            body: 'O atleta usa o app livremente. O coach escolhe o plano ideal quando precisa estruturar melhor a operação do box.',
             tone: 'future',
-            features: ['Kiwify integrada', 'Webhook aplicado', 'Base pronta para evolução'],
+            features: ['Atleta livre', 'Coach Portal separado', 'Checkout autenticado'],
             ctaHref: '/pricing.html',
             ctaLabel: 'Ver planos',
-            isFuture: true,
+            isFuture: false,
           })}
         </div>
       </section>
@@ -132,7 +133,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
       <section class="hub-grid hub-grid-onboarding">
         ${renderGuideCard('1. Atleta entra sem fricção', 'Use o app sozinho para treino, histórico e benchmarks. O produto não trata o atleta solo como usuário de segunda classe.')}
         ${renderGuideCard('2. Coach sobe a operação', 'Quando existe plano de coach, o portal separado passa a cuidar de grupos, atletas, publicação e rotina do box.')}
-        ${renderGuideCard('3. Competições conectam performance', 'Eventos e leaderboards entram como camada de engajamento e performance, não como bloco jogado no meio do app.')}
+        ${renderGuideCard('3. Competições entram no momento certo', 'Eventos e leaderboards ficam em uma área própria, sem poluir a home do atleta.')}
       </section>
 
       <section class="hub-section">

@@ -66,7 +66,7 @@ textarea:focus-visible,
 
 .app-container {
   width: 100%;
-  max-width: 980px;
+  max-width: 1480px;
   min-height: 100%;
   margin: 0 auto;
   background: linear-gradient(180deg, rgba(13, 17, 22, 0.94), rgba(9, 12, 16, 0.98));
@@ -74,9 +74,9 @@ textarea:focus-visible,
   backdrop-filter: blur(18px);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1180px) {
   .app-container {
-    max-width: 760px;
+    max-width: 980px;
   }
 }
 

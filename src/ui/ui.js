@@ -1,6 +1,7 @@
 import { renderAppShell, renderAll } from './render.js';
 import { setupActions } from './actions.js';
 import { bindAppEvents } from './events.js';
+import { normalizeMeasurementEntries } from './profileMeasurements.js';
 
 export async function mountUI({ root }) {
   if (!root) throw new Error('mountUI: root é obrigatório');
@@ -65,6 +66,8 @@ export async function mountUI({ root }) {
     setHTML(refs.headerAccount, view.headerAccountHtml);
     setHTML(refs.main, view.mainHtml);
     setHTML(refs.bottomNav, view.bottomNavHtml);
+    setHTML(refs.sidebarNav, view.sidebarNavHtml);
+    setHTML(refs.sidebarMeta, view.sidebarMetaHtml);
     setHTML(refs.modals, view.modalsHtml);
 
     // Contador de PR (se existir no shell)
@@ -148,8 +151,12 @@ function normalizeUiState(s) {
   if (typeof next.settings.showEmojis !== 'boolean') next.settings.showEmojis = true;
   if (typeof next.settings.showObjectivesInWods !== 'boolean') next.settings.showObjectivesInWods = true;
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
+  if (typeof next.authSubmitting !== 'boolean') next.authSubmitting = false;
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
-  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
+  if (typeof next.passwordReset.open !== 'boolean') next.passwordReset.open = false;
+  if (typeof next.passwordReset.requesting !== 'boolean') next.passwordReset.requesting = false;
+  if (typeof next.passwordReset.confirming !== 'boolean') next.passwordReset.confirming = false;
+  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null, health: null, manualReset: null };
   next.benchmarkBrowser = next.benchmarkBrowser && typeof next.benchmarkBrowser === 'object'
     ? next.benchmarkBrowser
     : {
@@ -174,6 +181,11 @@ function normalizeUiState(s) {
         selectedEventId: null,
         competitionLeaderboard: null,
         eventLeaderboard: null,
+      };
+  next.athleteProfile = next.athleteProfile && typeof next.athleteProfile === 'object'
+    ? next.athleteProfile
+    : {
+        measurements: [],
       };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
@@ -215,6 +227,7 @@ function normalizeUiState(s) {
   if (typeof next.competitionBrowser.selectedEventId !== 'number') next.competitionBrowser.selectedEventId = next.competitionBrowser.selectedEventId || null;
   if (!next.competitionBrowser.competitionLeaderboard || typeof next.competitionBrowser.competitionLeaderboard !== 'object') next.competitionBrowser.competitionLeaderboard = null;
   if (!next.competitionBrowser.eventLeaderboard || typeof next.competitionBrowser.eventLeaderboard !== 'object') next.competitionBrowser.eventLeaderboard = null;
+  next.athleteProfile.measurements = normalizeMeasurementEntries(next.athleteProfile.measurements);
 
   return next;
 }
@@ -233,14 +246,17 @@ function buildUiForRender(state, uiState, uiBusy = false) {
     isBusy: uiBusy,
     settings: uiState.settings,
     authMode: uiState.authMode,
+    authSubmitting: uiState.authSubmitting,
     auth: {
       profile: safeGetProfile(),
+      submitting: !!uiState.authSubmitting,
     },
     passwordReset: uiState.passwordReset,
     admin: uiState.admin,
     benchmarkBrowser: uiState.benchmarkBrowser,
     competitionBrowser: uiState.competitionBrowser,
     athleteOverview: uiState.athleteOverview,
+    athleteProfile: uiState.athleteProfile,
     coachPortal: uiState.coachPortal,
 
     wodKey: key,
@@ -272,6 +288,8 @@ function getRefs(root) {
     headerAccount: q('#ui-headerAccount'),
     main: q('#ui-main'),
     bottomNav: q('#ui-bottomNav'),
+    sidebarNav: q('#ui-sidebarNav'),
+    sidebarMeta: q('#ui-sidebarMeta'),
     modals: q('#ui-modals'),
     prsCount: q('#ui-prsCount'),
   };

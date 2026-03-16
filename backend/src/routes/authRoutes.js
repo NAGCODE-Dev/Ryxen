@@ -6,6 +6,7 @@ import { ADMIN_EMAILS, EXPOSE_RESET_CODE, SUPPORT_EMAIL } from '../config.js';
 import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
 import { authRequired, signToken } from '../auth.js';
 import { sendPasswordResetEmail } from '../mailer.js';
+import { logOpsEvent } from '../opsEvents.js';
 import { generateResetCode, hashResetCode, isResetCodeExpired } from '../passwordReset.js';
 import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
@@ -118,6 +119,12 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     const found = await pool.query(`SELECT id, email FROM users WHERE email = $1`, [email]);
     const user = found.rows[0];
     if (!user) {
+      await logOpsEvent({
+        kind: 'password_reset_request',
+        status: 'ignored_no_user',
+        email,
+        payload: { reason: 'user_not_found' },
+      });
       return res.json({ success: true, message: 'Se o email existir, o código será gerado.' });
     }
 
@@ -131,10 +138,19 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       [user.id, codeHash, expiresAt],
     );
 
+    await logOpsEvent({
+      kind: 'password_reset_request',
+      status: 'created',
+      userId: user.id,
+      email,
+      payload: { expiresAt },
+    });
+
     const response = {
       success: true,
-      message: 'Código de recuperação gerado.',
+      message: 'Se o email estiver cadastrado, você receberá um código de recuperação.',
       supportEmail: SUPPORT_EMAIL,
+      cooldownSeconds: 30,
     };
 
     try {
@@ -147,11 +163,37 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         };
         if (mailInfo.previewUrl) response.deliveryStatus = 'preview';
       }
+
+      await logOpsEvent({
+        kind: 'password_reset_email',
+        status: response.deliveryStatus,
+        userId: user.id,
+        email,
+        payload: {
+          messageId: mailInfo.messageId,
+          transport: mailInfo.transport,
+          durationMs: mailInfo.durationMs || null,
+          previewUrl: isDeveloperEmail(email) ? (mailInfo.previewUrl || null) : null,
+        },
+      });
     } catch (error) {
       console.error('[reset-email] failed', error);
+      await logOpsEvent({
+        kind: 'password_reset_email',
+        status: 'failed',
+        userId: user.id,
+        email,
+        payload: {
+          error: error?.message || String(error),
+          errorCode: error?.code || null,
+        },
+      });
       return res.status(503).json({
-        error: 'Não foi possível enviar o email de recuperação',
+        error: error?.code === 'smtp_send_timeout'
+          ? 'O envio do email demorou mais do que o esperado. Tente novamente em instantes.'
+          : 'Não foi possível enviar o email de recuperação',
         supportEmail: SUPPORT_EMAIL,
+        retryAfterSeconds: 10,
       });
     }
 
@@ -178,6 +220,12 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     const foundUser = await pool.query(`SELECT id FROM users WHERE email = $1`, [email]);
     const user = foundUser.rows[0];
     if (!user) {
+      await logOpsEvent({
+        kind: 'password_reset_confirm',
+        status: 'failed_no_user',
+        email,
+        payload: {},
+      });
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
@@ -192,20 +240,48 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
     const tokenRow = foundToken.rows[0];
     if (!tokenRow) {
+      await logOpsEvent({
+        kind: 'password_reset_confirm',
+        status: 'failed_missing_code',
+        userId: user.id,
+        email,
+        payload: {},
+      });
       return res.status(400).json({ error: 'Nenhum código ativo encontrado' });
     }
 
     if (isResetCodeExpired(tokenRow.expires_at)) {
+      await logOpsEvent({
+        kind: 'password_reset_confirm',
+        status: 'failed_expired',
+        userId: user.id,
+        email,
+        payload: { expiresAt: tokenRow.expires_at },
+      });
       return res.status(400).json({ error: 'Código expirado' });
     }
 
     if (hashResetCode(code) !== tokenRow.code_hash) {
+      await logOpsEvent({
+        kind: 'password_reset_confirm',
+        status: 'failed_invalid_code',
+        userId: user.id,
+        email,
+        payload: {},
+      });
       return res.status(400).json({ error: 'Código inválido' });
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
     await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, user.id]);
     await pool.query(`UPDATE password_reset_tokens SET consumed_at = NOW() WHERE id = $1`, [tokenRow.id]);
+    await logOpsEvent({
+      kind: 'password_reset_confirm',
+      status: 'success',
+      userId: user.id,
+      email,
+      payload: {},
+    });
     return res.json({ success: true });
   });
 

@@ -100,6 +100,11 @@
     align-items: flex-end;
   }
 
+  .modal-overlay-auth {
+    align-items: flex-start;
+    padding-top: calc(var(--safe-top) + 8px);
+  }
+
   .modal-container,
   .modal-container-auth {
     width: 100%;
@@ -145,6 +150,10 @@
 
   .page-foldSummary {
     padding: 0;
+  }
+
+  .page-stack-account .summary-strip {
+    grid-template-columns: 1fr;
   }
 
   .account-actions,
