@@ -13,7 +13,7 @@
 // ========== IMPORTS ==========
 
 // State & Events
-import { getState, setState, subscribe, debugState } from './core/state/store.js';
+import { getState, setState, subscribe, debugState, resetState } from './core/state/store.js';
 import { on, emit } from './core/events/eventBus.js';
 
 // Use-cases
@@ -38,7 +38,7 @@ import {
 import {
   getWorkoutFromWeek,
 } from './adapters/pdf/customPdfParser.js';
-import { createStorage } from './adapters/storage/storageFactory.js';
+import { clearAllStorages, createStorage } from './adapters/storage/storageFactory.js';
 import { isPdfJsAvailable, extractTextFromPdfAnalysis } from './adapters/pdf/pdfReader.js';
 import { isImageFile, extractTextFromImageAnalysis } from './adapters/media/ocrReader.js';
 import { isVideoFile, extractTextFromVideoAnalysis } from './adapters/media/videoTextReader.js';
@@ -1745,6 +1745,7 @@ function exposeDebugAPIs() {
     previewImportFromFile: previewUniversalImport,
     applyImportDraft,
     clearAllPdfs,
+    resetLocalApp: resetLocalAppData,
     selectWeek: selectActiveWeek,
     getWeeks: () => getState().weeks,
     getActiveWeek: () => getState().activeWeekNumber,
@@ -1874,6 +1875,21 @@ async function clearAllPdfs() {
   } catch (error) {
     console.error(`❌ Erro ao limpar PDFs: ${error.message}`);
     return { success: false, error: error.message };
+  }
+}
+
+async function resetLocalAppData() {
+  try {
+    await remoteHandlers.handleSignOut();
+    await clearAllStorages();
+    resetState();
+    await updateCurrentDay();
+    await applyPreferredWorkout({ fallbackToWelcome: true });
+    emit('app:reset');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Erro ao resetar app local:', error);
+    return { success: false, error: error.message || 'Erro ao resetar app local' };
   }
 }
 

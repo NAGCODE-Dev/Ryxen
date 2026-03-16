@@ -65,7 +65,7 @@ export async function mountUI({ root }) {
 
     setHTML(refs.headerAccount, view.headerAccountHtml);
     setHTML(refs.main, view.mainHtml);
-    setHTML(refs.bottomNav, view.bottomNavHtml);
+    setHTML(refs.topNav, view.topNavHtml);
     setHTML(refs.sidebarNav, view.sidebarNavHtml);
     setHTML(refs.sidebarMeta, view.sidebarMetaHtml);
     setHTML(refs.modals, view.modalsHtml);
@@ -297,8 +297,8 @@ function getRefs(root) {
   const q = (sel) => root.querySelector(sel);
   return {
     headerAccount: q('#ui-headerAccount'),
+    topNav: q('#ui-topNav'),
     main: q('#ui-main'),
-    bottomNav: q('#ui-bottomNav'),
     sidebarNav: q('#ui-sidebarNav'),
     sidebarMeta: q('#ui-sidebarMeta'),
     modals: q('#ui-modals'),

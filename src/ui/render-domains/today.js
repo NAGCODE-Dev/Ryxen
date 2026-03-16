@@ -117,7 +117,6 @@ function renderImportReview(review, helpers) {
 function renderWorkoutContextNav(currentPage) {
   const items = [
     { page: 'today', label: 'Hoje' },
-    { modal: 'import', label: 'Importar' },
     { page: 'history', label: 'Perfil' },
     { page: 'account', label: 'Conta' },
   ];

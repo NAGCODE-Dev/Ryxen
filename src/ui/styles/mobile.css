@@ -5,7 +5,7 @@
   }
 
   .app-main {
-    padding: 14px 12px calc(var(--nav-height) + 18px + var(--safe-bottom));
+    padding: 14px 12px 18px;
   }
 
   .page-hero {
@@ -65,18 +65,8 @@
     flex-basis: 100%;
   }
 
-  .bottom-nav {
-    padding-inline: 12px;
-  }
-
-  .bottom-navItems {
-    gap: 6px;
-    padding: 6px;
-    border-radius: 18px;
-  }
-
   .nav-btn {
-    min-height: 48px;
+    min-height: 44px;
     border-radius: 14px;
   }
 
@@ -171,15 +161,11 @@
   }
 
   .app-main {
-    padding: 14px 12px calc(var(--nav-height) + 18px + var(--safe-bottom));
+    padding: 14px 12px 18px;
   }
 }
 
 @media (max-width: 420px) {
-  :root {
-    --nav-height: 68px;
-  }
-
   .app-header {
     padding-inline: 12px;
   }

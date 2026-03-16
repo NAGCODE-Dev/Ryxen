@@ -36,8 +36,8 @@ export function renderAccountPage(state, helpers) {
       <div class="workout-container page-stack page-stack-account">
         ${renderPageHero({
           eyebrow: 'Conta',
-          title: 'Entre para salvar seu progresso',
-          subtitle: 'Use o app no dia a dia, sincronize seus dados e acesse sua conta quando quiser.',
+          title: 'Conta vazia',
+          subtitle: 'Sem sessão ativa. Entre só quando precisar sincronizar ou salvar progresso.',
           actions: `
             <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
             <button class="btn-secondary" data-action="modal:open" data-modal="auth" data-auth-mode="signup" type="button">Criar conta</button>
@@ -45,28 +45,28 @@ export function renderAccountPage(state, helpers) {
         })}
 
         <div class="summary-strip summary-strip-3">
-          ${renderSummaryTile('Treinos', 'Uso livre', 'importe e acompanhe no seu ritmo')}
-          ${renderSummaryTile('Perfil', 'Evolução', 'benchmarks e registros pessoais')}
-          ${renderSummaryTile('Conta', 'Sync', 'nome, email e segurança')}
+          ${renderSummaryTile('Sessão', 'Offline', 'nenhum email ativo')}
+          ${renderSummaryTile('Treino', 'Livre', 'importe quando quiser')}
+          ${renderSummaryTile('Estado', 'Limpo', 'sem sync e sem coach')}
         </div>
 
         <div class="coach-grid">
           ${renderPageFold({
-            title: 'Por que entrar',
-            subtitle: 'O essencial para usar o app com segurança e continuidade.',
+            title: 'Modo atual',
+            subtitle: 'O app fica simples até você decidir conectar uma conta.',
             content: `
             <div class="coach-list coach-listCompact">
               <div class="coach-listItem static">
-                <strong>Sync entre dispositivos</strong>
-                <span>Seus dados não ficam presos em um aparelho.</span>
+                <strong>Sem conta conectada</strong>
+                <span>Nenhum email aparece enquanto você estiver fora da sessão.</span>
               </div>
               <div class="coach-listItem static">
-                <strong>Treinos do coach</strong>
-                <span>Se você treina com coach, recebe a programação sem sair do seu fluxo diário.</span>
+                <strong>Importação manual</strong>
+                <span>O treino continua entrando por botão, não por aba fixa.</span>
               </div>
               <div class="coach-listItem static">
-                <strong>Seu progresso salvo</strong>
-                <span>Registros, benchmarks e histórico ficam vinculados à sua conta.</span>
+                <strong>Base pronta</strong>
+                <span>Use esse estado cru para começar a mandar os treinos e dados do jeito certo.</span>
               </div>
             </div>
             `,
@@ -80,24 +80,24 @@ export function renderAccountPage(state, helpers) {
     <div class="workout-container page-stack page-stack-account">
       ${renderPageHero({
         eyebrow: 'Conta',
-        title: profile.name || 'Sua conta',
-        subtitle: 'Dados da conta, segurança e acesso ao Coach Portal sem misturar isso com o seu treino.',
+        title: 'Conta ativa',
+        subtitle: 'Só o essencial da sessão. O resto fica fora do caminho.',
         actions: `
-          <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
+          <button class="btn-secondary" data-action="app:reset-local" type="button">Limpar app</button>
         `,
       })}
 
       <div class="summary-strip summary-strip-3">
         ${renderSummaryTile('Conta', isBusy ? '...' : escapeHtml(profile.name || 'Sem nome'), isBusy ? '' : escapeHtml(profile.email || ''))}
         ${renderSummaryTile('Modo', isBusy ? '...' : escapeHtml(canCoachManage ? 'Com coach' : 'Solo'), isBusy ? '' : escapeHtml(athleteBenefitSource))}
-        ${renderSummaryTile('Imports no mês', isBusy ? '...' : escapeHtml(importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : escapeHtml(importUsage.unlimited ? 'sem limite' : `${importUsage.used} usado(s)`))}
+        ${renderSummaryTile('Imports', isBusy ? '...' : escapeHtml(importUsage.unlimited ? 'Livre' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : escapeHtml(importUsage.unlimited ? 'sem limite' : `${importUsage.used} usado(s)`))}
       </div>
 
       <div class="coach-grid">
         ${renderPageFold({
-          title: 'Dados da conta',
-          subtitle: 'Identidade e informações básicas da sua conta.',
+          title: 'Sessão',
+          subtitle: 'Identidade básica e saída rápida.',
           content: `
           ${isBusy ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
@@ -109,33 +109,37 @@ export function renderAccountPage(state, helpers) {
               <span>${escapeHtml(athleteBenefits.label)} • ${escapeHtml(athleteBenefitSource)}</span>
             </div>
             <div class="coach-listItem static">
-              <strong>Email</strong>
-              <span>${escapeHtml(profile.email || '')}</span>
-            </div>
-            <div class="coach-listItem static">
               <strong>Gyms vinculados</strong>
               <span>${Number(athleteStats?.activeGyms || gyms.length || 0)} gym(s) ativo(s)</span>
             </div>
+            <div class="coach-listItem static">
+              <strong>Plano</strong>
+              <span>${escapeHtml(hasAthletePlus ? 'Atleta Plus' : 'Uso livre')} • ${escapeHtml(planStatus)}</span>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar sessão</button>
+            <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
           </div>
           `,
         })}
 
         ${renderPageFold({
-          title: 'Segurança e sincronização',
-          subtitle: 'Ações essenciais da conta.',
+          title: 'Dados locais',
+          subtitle: 'Limpeza e sincronização sem poluir a tela.',
           content: `
           <div class="page-actions">
             <button class="btn-secondary" data-action="auth:sync-push" type="button">Enviar sync</button>
             <button class="btn-secondary" data-action="auth:sync-pull" type="button">Baixar sync</button>
-            <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
-            <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Resumo da conta</button>
+            <button class="btn-secondary" data-action="pdf:clear" type="button">Limpar treino</button>
+            <button class="btn-secondary" data-action="app:reset-local" type="button">Reset total</button>
           </div>
           `,
         })}
 
         ${renderPageFold({
-          title: 'Uso da conta',
-          subtitle: 'Seu modo atual e o que fica separado do treino.',
+          title: 'Resumo',
+          subtitle: 'Estado atual da conta sem detalhe desnecessário.',
           content: `
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
@@ -148,40 +152,15 @@ export function renderAccountPage(state, helpers) {
             </div>
             <div class="coach-listItem static">
               <strong>Coach Portal</strong>
-                <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'O Coach Portal continua separado e não interfere no uso diário do atleta.'}</span>
-              </div>
+              <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'O Coach Portal fica separado e não interfere no uso diário do atleta.'}</span>
             </div>
-          `,
-        })}
-
-        ${renderPageFold({
-          title: 'Plano do atleta',
-          subtitle: 'Opcional e separado do plano do coach.',
-          open: false,
-          content: `
-          <div class="coach-list coach-listCompact">
-            <div class="coach-listItem static">
-              <strong>Nível atual</strong>
-              <span>${escapeHtml(hasAthletePlus ? 'Atleta Plus' : 'Uso livre')} • ${escapeHtml(planStatus)}</span>
-            </div>
-            <div class="coach-listItem static">
-              <strong>Imports no plano atual</strong>
-              <span>${importUsage.unlimited ? 'Sem limite mensal' : `${importUsage.limit} importações por mês no uso livre`}</span>
-            </div>
-            <div class="coach-listItem static">
-              <strong>Assinatura pessoal</strong>
-              <span>${hasAthletePlus ? `Ativa${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}` : 'O Atleta Plus fica só na sua conta e não mexe no Coach Portal.'}</span>
-            </div>
-          </div>
-          <div class="page-actions">
-            ${hasAthletePlus ? '' : '<button class="btn-secondary" data-action="billing:checkout" data-plan="athlete_plus" type="button">Assinar Atleta Plus</button>'}
           </div>
           `,
         })}
 
-        ${renderPageFold({
+        ${(canCoachManage || hasAthletePlus) ? renderPageFold({
           title: 'Coach Portal',
-          subtitle: 'Acesso de gestão separado do app do atleta.',
+          subtitle: 'Atalho opcional e separado do treino.',
           open: false,
           content: `
           <div class="coach-list coach-listCompact">
@@ -189,12 +168,17 @@ export function renderAccountPage(state, helpers) {
               <strong>Portal separado</strong>
               <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'Abra o portal só quando precisar cuidar de box, membros e publicação.'}</span>
             </div>
+            <div class="coach-listItem static">
+              <strong>Assinatura</strong>
+              <span>${hasAthletePlus ? `Ativa${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}` : 'Sem assinatura pessoal ativa.'}</span>
+            </div>
           </div>
           <div class="page-actions account-portalAction">
             <a class="btn-secondary" href="/coach/">Coach Portal</a>
+            ${hasAthletePlus ? '' : '<button class="btn-secondary" data-action="billing:checkout" data-plan="athlete_plus" type="button">Assinar Atleta Plus</button>'}
           </div>
           `,
-        })}
+        }) : ''}
 
         ${isAdmin ? renderPageFold({
           title: 'Admin',

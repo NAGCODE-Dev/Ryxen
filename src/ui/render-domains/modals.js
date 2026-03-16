@@ -324,6 +324,9 @@ function renderSettingsModal(settings = {}) {
             <button class="btn-secondary" data-action="pdf:clear" type="button">
               🗑️ Limpar Tudo
             </button>
+            <button class="btn-secondary" data-action="app:reset-local" type="button">
+              Resetar app
+            </button>
             <a class="btn-secondary" href="./privacy.html" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
               🔐 Privacidade
             </a>

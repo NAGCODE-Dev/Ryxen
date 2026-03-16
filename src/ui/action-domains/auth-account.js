@@ -16,6 +16,8 @@ export async function handleAuthAccountAction(action, el, ctx) {
     queueCheckoutIntent,
     emptyCoachPortal,
     emptyAthleteOverview,
+    emptyAthleteProfile,
+    emptyBenchmarkBrowser,
     emptyCompetitionBrowser,
     loadAccountSnapshot,
     mergeAthleteOverviewSnapshot,
@@ -77,6 +79,7 @@ export async function handleAuthAccountAction(action, el, ctx) {
           : await window.__APP__.signIn({ email, password });
       } finally {
         await patchUiState((s) => ({ ...s, authSubmitting: false }));
+        await rerender();
       }
 
       if (!result?.token && !result?.user) {
@@ -287,6 +290,34 @@ export async function handleAuthAccountAction(action, el, ctx) {
         admin: { overview: null, health: null, manualReset: null, query: '' },
       });
       toast('Sessão encerrada');
+      await rerender();
+      return true;
+    }
+
+    case 'app:reset-local': {
+      const ok = confirm(
+        'Limpar sessão, treinos, registros e dados locais deste aparelho?\n\nIsso deixa o app praticamente do zero.',
+      );
+      if (!ok) return true;
+
+      const result = await window.__APP__.resetLocalApp();
+      if (!result?.success) throw new Error(result?.error || 'Falha ao resetar o app');
+
+      await setUiState({
+        modal: null,
+        currentPage: 'today',
+        authMode: 'signin',
+        authSubmitting: false,
+        passwordReset: {},
+        importFlow: {},
+        coachPortal: emptyCoachPortal(),
+        athleteOverview: emptyAthleteOverview(),
+        athleteProfile: emptyAthleteProfile(),
+        benchmarkBrowser: emptyBenchmarkBrowser(),
+        competitionBrowser: emptyCompetitionBrowser(),
+        admin: { overview: null, health: null, manualReset: null, query: '' },
+      });
+      toast('App limpo neste aparelho');
       await rerender();
       return true;
     }

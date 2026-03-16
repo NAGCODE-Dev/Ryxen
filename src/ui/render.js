@@ -47,6 +47,9 @@ export function renderAppShell() {
             <div class="header-badge">${escapeHtml(appLabel)}</div>
             <div class="header-account" id="ui-headerAccount"></div>
           </div>
+          <nav class="header-nav" aria-label="Seções do app">
+            <div class="header-navItems" id="ui-topNav"></div>
+          </nav>
         </div>
       </header>
 
@@ -57,11 +60,6 @@ export function renderAppShell() {
 
       <!-- MODALS -->
       <div id="ui-modals"></div>
-
-      <!-- BOTTOM NAV -->
-      <nav class="bottom-nav">
-        <div class="bottom-navItems" id="ui-bottomNav"></div>
-      </nav>
     </div>
   `;
 }
@@ -77,7 +75,7 @@ function getAppLabel() {
 export function renderAll(state = {}) {
   const headerAccountHtml = renderHeaderAccount(state);
   const mainHtml = renderMainContent(state);
-  const bottomNavHtml = renderBottomNav(state);
+  const topNavHtml = renderTopNav(state);
   const sidebarNavHtml = renderSidebarNav(state);
   const sidebarMetaHtml = renderSidebarMeta(state);
   const modalsHtml = renderModals(state);
@@ -85,7 +83,7 @@ export function renderAll(state = {}) {
   return {
     headerAccountHtml,
     mainHtml,
-    bottomNavHtml,
+    topNavHtml,
     sidebarNavHtml,
     sidebarMetaHtml,
     modalsHtml,
@@ -195,8 +193,8 @@ function renderMainContent(state) {
   });
 }
 
-function renderBottomNav(state) {
-  return renderPrimaryNav(state, { variant: 'bottom' });
+function renderTopNav(state) {
+  return renderPrimaryNav(state, { variant: 'top' });
 }
 
 function renderSidebarNav(state) {
@@ -216,9 +214,10 @@ function renderPrimaryNav(state, { variant = 'bottom' } = {}) {
     const buttonClass = variant === 'sidebar' ? 'sidebar-navBtn' : 'nav-btn';
     const iconClass = variant === 'sidebar' ? 'sidebar-navIcon' : 'nav-icon';
     const labelClass = variant === 'sidebar' ? 'sidebar-navLabel' : 'nav-label';
+    const topClass = variant === 'top' ? 'nav-btn-top' : '';
 
     return `
-      <button class="${buttonClass} ${isActive ? `${buttonClass}-active` : ''} ${item.page === 'today' && variant === 'bottom' ? 'nav-btn-primary' : ''}" ${dataAttrs} type="button">
+      <button class="${buttonClass} ${topClass} ${isActive ? `${buttonClass}-active` : ''}" ${dataAttrs} type="button">
         <span class="${iconClass}">${item.icon}</span>
         <span class="${labelClass}">${item.label}</span>
         ${variant === 'sidebar' ? `<span class="sidebar-navMeta">${escapeHtml(item.meta || '')}</span>` : ''}
@@ -230,7 +229,6 @@ function renderPrimaryNav(state, { variant = 'bottom' } = {}) {
 function getPrimaryNavItems() {
   return [
     { page: 'today', icon: '◉', label: 'Hoje', meta: 'treino do dia' },
-    { type: 'modal', modal: 'import', icon: '+', label: 'Importar', meta: 'planilha ou mídia' },
     { page: 'history', icon: '↗', label: 'Perfil', meta: 'registros e benchmarks' },
     { page: 'account', icon: 'ID', label: 'Conta', meta: 'segurança e coach' },
   ];
