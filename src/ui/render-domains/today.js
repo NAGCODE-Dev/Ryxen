@@ -12,7 +12,12 @@ export function renderTodayPage(state, helpers) {
   } = helpers;
 
   const workout = state?.workout ?? state?.workoutOfDay;
+  const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
+  const hasWeeks = (state?.weeks?.length ?? 0) > 0;
   const accessBanner = renderAthleteAccessBanner(state, { escapeHtml });
+  if (!isAuthenticated && !hasWeeks) {
+    return renderPublicTodayEntry(state, { renderPageHero, escapeHtml });
+  }
   if (!workout || !workout.blocks?.length) {
     return `
       <div class="workout-container">
@@ -92,8 +97,8 @@ export function renderTodayPage(state, helpers) {
 function renderWorkoutContextNav(currentPage) {
   const items = [
     { page: 'today', label: 'Hoje' },
-    { page: 'history', label: 'Histórico' },
-    { page: 'competitions', label: 'Competições' },
+    { modal: 'import', label: 'Importar' },
+    { page: 'history', label: 'Perfil' },
     { page: 'account', label: 'Conta' },
   ];
 
@@ -101,9 +106,9 @@ function renderWorkoutContextNav(currentPage) {
     <div class="workout-contextNav" aria-label="Troca rápida de seção">
       ${items.map((item) => `
         <button
-          class="coach-pill workout-contextNavBtn ${currentPage === item.page ? 'isActive' : ''}"
-          data-action="page:set"
-          data-page="${item.page}"
+          class="coach-pill workout-contextNavBtn ${item.page && currentPage === item.page ? 'isActive' : ''}"
+          data-action="${item.page ? 'page:set' : 'modal:open'}"
+          ${item.page ? `data-page="${item.page}"` : `data-modal="${item.modal}"`}
           type="button"
         >
           ${item.label}
@@ -209,6 +214,52 @@ function renderTodayPageIntro(state, helpers) {
   `;
 }
 
+function renderPublicTodayEntry(state, helpers) {
+  const { renderPageHero, escapeHtml } = helpers;
+
+  return `
+    <div class="workout-container workout-container-entry">
+      ${renderPageHero({
+        eyebrow: 'CrossApp',
+        title: 'Acompanhe seu treino sem complicar',
+        subtitle: 'Entre para receber treinos, importar planilhas, registrar resultados e ver sua evolução no dia a dia.',
+        actions: `
+          <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
+          <button class="btn-secondary" data-action="modal:open" data-modal="auth" data-auth-mode="signup" type="button">Criar conta</button>
+        `,
+        footer: `
+          <div class="entry-featureRow">
+            <div class="summary-tile summary-tileCompact">
+              <span class="summary-label">Treino do dia</span>
+              <strong class="summary-value">Hoje</strong>
+              <span class="summary-detail">veja o que fazer agora</span>
+            </div>
+            <div class="summary-tile summary-tileCompact">
+              <span class="summary-label">Importação</span>
+              <strong class="summary-value">Planilha</strong>
+              <span class="summary-detail">PDF, foto ou treino salvo</span>
+            </div>
+            <div class="summary-tile summary-tileCompact">
+              <span class="summary-label">Evolução</span>
+              <strong class="summary-value">Registros</strong>
+              <span class="summary-detail">benchmarks e marcas pessoais</span>
+            </div>
+          </div>
+        `,
+      })}
+
+      <div class="empty-state empty-state-entry">
+        <div class="empty-icon">📋</div>
+        <h2>Comece por aqui</h2>
+        <p>Se já tiver sua planilha, você pode importar agora. Se treina com coach, entre na sua conta para receber a programação.</p>
+        <div class="page-actions page-actions-inline">
+          <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 function renderAthleteBenefitsStrip(state, helpers) {
   const { renderSummaryTile } = helpers;
   const benefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
@@ -217,9 +268,9 @@ function renderAthleteBenefitsStrip(state, helpers) {
 
   return `
     <div class="summary-strip summary-strip-3">
-      ${renderSummaryTile('Train', benefits.label, describeAthleteBenefitSource(benefits))}
+      ${renderSummaryTile('Hoje', benefits.label, describeAthleteBenefitSource(benefits))}
       ${renderSummaryTile('Imports no mês', importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`, importUsage.unlimited ? 'PDF ou mídia sem limite' : `${importUsage.used} usado(s) entre PDF e mídia`)}
-      ${renderSummaryTile('Progressão', historyValue, 'competitions liberadas')}
+      ${renderSummaryTile('Perfil', historyValue, 'evolução e benchmarks')}
     </div>
   `;
 }

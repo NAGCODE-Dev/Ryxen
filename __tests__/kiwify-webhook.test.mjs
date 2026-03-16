@@ -5,6 +5,8 @@ process.env.KIWIFY_WEBHOOK_TOKEN = 'secret-header-token';
 
 const {
   extractKiwifyCustomerEmail,
+  getKiwifyBillingAction,
+  getKiwifyReversalStatus,
   extractKiwifyEventType,
   extractKiwifyExternalRef,
   isApprovedKiwifyEvent,
@@ -63,4 +65,41 @@ test('kiwify webhook contract resolves assinatura_renovada payload', () => {
   assert.equal(extractKiwifyCustomerEmail(payload), 'athlete@example.com');
   assert.equal(resolveKiwifyPlanId(payload), 'performance');
   assert.equal(extractKiwifyExternalRef('assinatura_renovada', payload), 'assinatura_renovada:renew-performance-001');
+});
+
+test('kiwify webhook contract resolves reembolso as reversal', () => {
+  const payload = normalizeKiwifyPayload({
+    event: 'reembolso',
+    sale_id: 'sale-pro-refund-001',
+    product_name: 'CrossApp — Coach Pro',
+    customer: { email: 'nagcode.contact@gmail.com' },
+    status: 'refunded',
+  });
+
+  assert.equal(getKiwifyReversalStatus('reembolso', payload), 'refunded');
+  assert.equal(getKiwifyBillingAction('reembolso', payload), 'reversal');
+  assert.equal(resolveKiwifyPlanId(payload), 'pro');
+});
+
+test('kiwify webhook contract resolves chargeback and late events as reversals', () => {
+  const chargebackPayload = normalizeKiwifyPayload({
+    event: 'chargeback',
+    subscription_id: 'chargeback-performance-001',
+    product: { name: 'CrossApp — Coach Performance' },
+    customer: { email: 'athlete@example.com' },
+    status: 'chargeback',
+  });
+
+  const latePayload = normalizeKiwifyPayload({
+    event: 'assinatura_atrasada',
+    subscription_id: 'late-starter-001',
+    product: { name: 'CrossApp — Coach Starter' },
+    customer: { email: 'athlete@example.com' },
+    status: 'past_due',
+  });
+
+  assert.equal(getKiwifyReversalStatus('chargeback', chargebackPayload), 'chargeback');
+  assert.equal(getKiwifyBillingAction('chargeback', chargebackPayload), 'reversal');
+  assert.equal(getKiwifyReversalStatus('assinatura_atrasada', latePayload), 'past_due');
+  assert.equal(getKiwifyBillingAction('assinatura_atrasada', latePayload), 'reversal');
 });

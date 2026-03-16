@@ -1,5 +1,7 @@
 import { isDeveloperEmail, isDeveloperProfile } from '../../core/utils/devAccess.js';
 
+let resetCountdownTimer = null;
+
 export async function handleAuthAccountAction(action, el, ctx) {
   const {
     root,
@@ -7,6 +9,7 @@ export async function handleAuthAccountAction(action, el, ctx) {
     setUiState,
     patchUiState,
     rerender,
+    resetOpenModalScroll,
     toast,
     normalizeCheckoutPlan,
     hasCheckoutAuth,
@@ -20,11 +23,35 @@ export async function handleAuthAccountAction(action, el, ctx) {
     validatePlanActivation,
   } = ctx;
 
+  function scheduleResetCountdown() {
+    clearTimeout(resetCountdownTimer);
+    const nextRequestAt = Number(getUiState?.()?.passwordReset?.nextRequestAt || 0);
+    if (!nextRequestAt || nextRequestAt <= Date.now()) return;
+
+    resetCountdownTimer = setTimeout(async () => {
+      await rerender();
+      scheduleResetCountdown();
+    }, 1000);
+  }
+
   switch (action) {
     case 'auth:switch': {
       const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
-      await setUiState({ authMode: mode });
+      await patchUiState((s) => ({
+        ...s,
+        authMode: mode,
+        authSubmitting: false,
+        passwordReset: {
+          ...(s.passwordReset || {}),
+          open: false,
+          requesting: false,
+          confirming: false,
+          statusMessage: '',
+          statusTone: '',
+        },
+      }));
       await rerender();
+      resetOpenModalScroll?.();
       root.querySelector('#auth-email')?.focus();
       return true;
     }
@@ -39,9 +66,18 @@ export async function handleAuthAccountAction(action, el, ctx) {
       if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
       if (mode === 'signup' && !name) throw new Error('Informe seu nome');
 
-      const result = mode === 'signup'
-        ? await window.__APP__.signUp({ name, email, password })
-        : await window.__APP__.signIn({ email, password });
+      await patchUiState((s) => ({ ...s, authSubmitting: true }));
+      await rerender();
+      resetOpenModalScroll?.();
+
+      let result;
+      try {
+        result = mode === 'signup'
+          ? await window.__APP__.signUp({ name, email, password })
+          : await window.__APP__.signIn({ email, password });
+      } finally {
+        await patchUiState((s) => ({ ...s, authSubmitting: false }));
+      }
 
       if (!result?.token && !result?.user) {
         throw new Error('Falha ao autenticar');
@@ -62,11 +98,14 @@ export async function handleAuthAccountAction(action, el, ctx) {
         passwordReset: {
           ...(s.passwordReset || {}),
           open: !(s.passwordReset?.open),
+          requesting: false,
+          confirming: false,
           statusMessage: '',
           statusTone: '',
         },
       }));
       await rerender();
+      resetOpenModalScroll?.();
       root.querySelector('#reset-email')?.focus();
       return true;
     }
@@ -74,26 +113,49 @@ export async function handleAuthAccountAction(action, el, ctx) {
     case 'auth:reset-request': {
       const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
       if (!email) throw new Error('Informe o email da conta');
+      const currentReset = getUiState?.()?.passwordReset || {};
+      const cooldownRemaining = Math.max(0, Math.ceil(((currentReset?.nextRequestAt || 0) - Date.now()) / 1000));
+      if (cooldownRemaining > 0) {
+        throw new Error(`Aguarde ${cooldownRemaining}s para pedir outro código`);
+      }
+
+      await patchUiState((s) => ({
+        ...s,
+        passwordReset: {
+          ...(s.passwordReset || {}),
+          open: true,
+          email,
+          requesting: true,
+          confirming: false,
+          statusMessage: '',
+          statusTone: '',
+        },
+      }));
+      await rerender();
+      resetOpenModalScroll?.();
 
       try {
-        const result = await window.__APP__.requestPasswordReset({ email });
+      const result = await window.__APP__.requestPasswordReset({ email });
         const showDeveloperPreview = isDeveloperEmail(email);
         const statusMessage = showDeveloperPreview && result?.previewCode
           ? 'Código gerado para a conta de desenvolvimento.'
-          : (result?.message || 'Código de recuperação enviado para o email.');
+          : 'Se o email estiver cadastrado, você receberá um código de recuperação.';
         await patchUiState((s) => ({
           ...s,
           passwordReset: {
             ...(s.passwordReset || {}),
             open: true,
             email,
+            requesting: false,
             previewCode: showDeveloperPreview ? (result?.previewCode || '') : '',
             previewUrl: showDeveloperPreview ? (result?.delivery?.previewUrl || '') : '',
             supportEmail: result?.supportEmail || '',
+            nextRequestAt: Date.now() + Number(result?.cooldownSeconds || 30) * 1000,
             statusMessage,
             statusTone: 'success',
           },
         }));
+        scheduleResetCountdown();
         toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Pedido de recuperação enviado');
       } catch (err) {
         await patchUiState((s) => ({
@@ -102,15 +164,20 @@ export async function handleAuthAccountAction(action, el, ctx) {
             ...(s.passwordReset || {}),
             open: true,
             email,
+            requesting: false,
             supportEmail: err?.supportEmail || s?.passwordReset?.supportEmail || '',
-            statusMessage: err?.message || 'Não foi possível enviar o email de recuperação',
+            nextRequestAt: Date.now() + Number(err?.retryAfterSeconds || 10) * 1000,
+            statusMessage: 'Não conseguimos enviar o código agora. Tente novamente em instantes.',
             statusTone: 'error',
           },
         }));
+        scheduleResetCountdown();
         await rerender();
+        resetOpenModalScroll?.();
         throw err;
       }
       await rerender();
+      resetOpenModalScroll?.();
       return true;
     }
 
@@ -120,15 +187,43 @@ export async function handleAuthAccountAction(action, el, ctx) {
       const newPassword = String(root.querySelector('#reset-newPassword')?.value || '');
       if (!email || !code || !newPassword) throw new Error('Preencha email, código e nova senha');
 
-      const result = await window.__APP__.confirmPasswordReset({ email, code, newPassword });
+      await patchUiState((s) => ({
+        ...s,
+        passwordReset: {
+          ...(s.passwordReset || {}),
+          open: true,
+          email,
+          code,
+          confirming: true,
+          statusMessage: '',
+          statusTone: '',
+        },
+      }));
+      await rerender();
+      resetOpenModalScroll?.();
+
+      let result;
+      try {
+        result = await window.__APP__.confirmPasswordReset({ email, code, newPassword });
+      } finally {
+        await patchUiState((s) => ({
+          ...s,
+          passwordReset: {
+            ...(s.passwordReset || {}),
+            confirming: false,
+          },
+        }));
+      }
       if (!result?.success) throw new Error(result?.error || 'Falha ao redefinir senha');
 
       await patchUiState((s) => ({
         ...s,
-        passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '', statusMessage: '', statusTone: '' },
+        passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '', statusMessage: '', statusTone: '', nextRequestAt: 0 },
       }));
+      clearTimeout(resetCountdownTimer);
       toast('Senha atualizada');
       await rerender();
+      resetOpenModalScroll?.();
       return true;
     }
 
@@ -189,7 +284,7 @@ export async function handleAuthAccountAction(action, el, ctx) {
         coachPortal: emptyCoachPortal(),
         athleteOverview: emptyAthleteOverview(),
         competitionBrowser: emptyCompetitionBrowser(),
-        admin: { overview: null, query: '' },
+        admin: { overview: null, health: null, manualReset: null, query: '' },
       });
       toast('Sessão encerrada');
       await rerender();
@@ -214,8 +309,18 @@ export async function handleAuthAccountAction(action, el, ctx) {
 
     case 'admin:refresh': {
       const query = String(root.querySelector('#admin-search')?.value || '').trim();
-      const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
-      await setUiState({ admin: { overview: result?.data || null, query } });
+      const [overviewResult, healthResult] = await Promise.all([
+        window.__APP__.getAdminOverview({ q: query, limit: 25, verify: true }),
+        window.__APP__.getAdminOpsHealth({ verify: true }),
+      ]);
+      await setUiState({
+        admin: {
+          overview: overviewResult?.data || null,
+          health: healthResult?.data || null,
+          manualReset: null,
+          query,
+        },
+      });
       toast('Painel admin atualizado');
       await rerender();
       return true;
@@ -231,9 +336,103 @@ export async function handleAuthAccountAction(action, el, ctx) {
 
       await window.__APP__.activateCoachSubscription(userId, planId, 30);
       const query = String(root.querySelector('#admin-search')?.value || '').trim();
-      const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
-      await setUiState({ admin: { overview: result?.data || null, query } });
+      const [overviewResult, healthResult] = await Promise.all([
+        window.__APP__.getAdminOverview({ q: query, limit: 25, verify: true }),
+        window.__APP__.getAdminOpsHealth({ verify: true }),
+      ]);
+      await setUiState({
+        admin: {
+          overview: overviewResult?.data || null,
+          health: healthResult?.data || null,
+          manualReset: null,
+          query,
+        },
+      });
       toast(`Plano ${planId} ativado`);
+      await rerender();
+      return true;
+    }
+
+    case 'admin:reprocess-claim': {
+      const claimId = Number(el.dataset.claimId);
+      if (!Number.isFinite(claimId) || claimId <= 0) {
+        throw new Error('Claim inválida');
+      }
+
+      const confirmed = confirm('Reprocessar esta claim de billing agora?');
+      if (!confirmed) return true;
+
+      await window.__APP__.reprocessBillingClaim(claimId);
+      const query = String(root.querySelector('#admin-search')?.value || '').trim();
+      const [overviewResult, healthResult] = await Promise.all([
+        window.__APP__.getAdminOverview({ q: query, limit: 25, verify: true }),
+        window.__APP__.getAdminOpsHealth({ verify: true }),
+      ]);
+      await setUiState({
+        admin: {
+          overview: overviewResult?.data || null,
+          health: healthResult?.data || null,
+          manualReset: null,
+          query,
+        },
+      });
+      toast('Claim reprocessada');
+      await rerender();
+      return true;
+    }
+
+    case 'admin:retry-email-job': {
+      const jobId = Number(el.dataset.jobId);
+      if (!Number.isFinite(jobId) || jobId <= 0) {
+        throw new Error('Job de email inválido');
+      }
+
+      const confirmed = confirm('Reenviar este email agora?');
+      if (!confirmed) return true;
+
+      await window.__APP__.retryEmailJob(jobId);
+      const query = String(root.querySelector('#admin-search')?.value || '').trim();
+      const [overviewResult, healthResult] = await Promise.all([
+        window.__APP__.getAdminOverview({ q: query, limit: 25, verify: true }),
+        window.__APP__.getAdminOpsHealth({ verify: true }),
+      ]);
+      await setUiState({
+        admin: {
+          overview: overviewResult?.data || null,
+          health: healthResult?.data || null,
+          manualReset: null,
+          query,
+        },
+      });
+      toast('Email reenviado');
+      await rerender();
+      return true;
+    }
+
+    case 'admin:create-manual-reset': {
+      const userId = Number(el.dataset.userId);
+      if (!Number.isFinite(userId) || userId <= 0) {
+        throw new Error('Usuário inválido');
+      }
+
+      const confirmed = confirm('Gerar um código manual de recuperação para este usuário?');
+      if (!confirmed) return true;
+
+      const resetResult = await window.__APP__.createManualPasswordReset(userId);
+      const query = String(root.querySelector('#admin-search')?.value || '').trim();
+      const [overviewResult, healthResult] = await Promise.all([
+        window.__APP__.getAdminOverview({ q: query, limit: 25, verify: true }),
+        window.__APP__.getAdminOpsHealth({ verify: true }),
+      ]);
+      await setUiState({
+        admin: {
+          overview: overviewResult?.data || null,
+          health: healthResult?.data || null,
+          manualReset: resetResult?.data || null,
+          query,
+        },
+      });
+      toast('Código manual gerado');
       await rerender();
       return true;
     }

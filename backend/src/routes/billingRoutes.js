@@ -11,6 +11,8 @@ import { authRequired } from '../auth.js';
 import { getKiwifySaleById, isKiwifyNativeApiConfigured } from '../kiwifyApi.js';
 import {
   extractKiwifyCustomerEmail as extractWebhookCustomerEmail,
+  getKiwifyBillingAction as getWebhookBillingAction,
+  getKiwifyReversalStatus as getWebhookReversalStatus,
   extractKiwifyEventType as extractWebhookEventType,
   extractKiwifyExternalRef as extractWebhookExternalRef,
   extractKiwifySaleId as extractWebhookSaleId,
@@ -23,7 +25,9 @@ import {
   grantSubscriptionToUser,
   normalizeSubscriptionPlanId,
   queueBillingClaim,
+  queueBillingReversalClaim,
 } from '../utils/subscriptionBilling.js';
+import { logOpsEvent } from '../opsEvents.js';
 
 export function createBillingRouter() {
   const router = express.Router();
@@ -71,13 +75,24 @@ export function createBillingRouter() {
 
   router.post('/kiwify/webhook', async (req, res) => {
     if (!isValidWebhookToken(req)) {
+      await logOpsEvent({
+        kind: 'billing_webhook',
+        status: 'invalid_token',
+        payload: { path: '/billing/kiwify/webhook' },
+      });
       return res.status(401).json({ error: 'Token do webhook inválido' });
     }
 
     const payload = normalizeWebhookPayload(req.body);
     const eventType = extractWebhookEventType(payload);
     const verifiedSale = await tryVerifyKiwifySale(payload);
-    if (!isApprovedWebhookEvent(eventType, payload, verifiedSale)) {
+    const billingAction = getWebhookBillingAction(eventType, payload, verifiedSale);
+    if (billingAction === 'ignore') {
+      await logOpsEvent({
+        kind: 'billing_webhook',
+        status: 'ignored_non_approved',
+        payload: { eventType },
+      });
       return res.json({ ok: true, ignored: true, reason: 'Evento não-aprovado' });
     }
 
@@ -94,25 +109,57 @@ export function createBillingRouter() {
         planId,
         externalRef,
       });
+      await logOpsEvent({
+        kind: 'billing_webhook',
+        status: 'failed_incomplete_payload',
+        email,
+        payload: { eventType, planId, externalRef },
+      });
       return res.status(422).json({
         error: 'Não foi possível identificar email, plano ou referência externa',
       });
     }
 
-    const result = await queueBillingClaim({
-      provider: 'kiwify',
-      externalRef,
+    const result = billingAction === 'reversal'
+      ? await queueBillingReversalClaim({
+        provider: 'kiwify',
+        externalRef,
+        email,
+        planId,
+        payload: {
+          ...payload,
+          verifiedSale,
+          eventType,
+        },
+        subscriptionStatus: getWebhookReversalStatus(eventType, payload, verifiedSale) || 'canceled',
+      })
+      : await queueBillingClaim({
+        provider: 'kiwify',
+        externalRef,
+        email,
+        planId,
+        renewDays: 30,
+        payload: {
+          ...payload,
+          verifiedSale,
+          eventType,
+        },
+      });
+
+    await logOpsEvent({
+      kind: 'billing_webhook',
+      status: billingAction === 'reversal'
+        ? (result.applied ? 'reversed' : 'queued_reversal')
+        : (result.applied ? 'applied' : 'queued'),
       email,
-      planId,
-      renewDays: 30,
-      payload,
-      verifiedSale,
+      payload: { eventType, planId, externalRef, billingAction },
     });
 
     return res.json({
       ok: true,
       applied: result.applied,
       planId,
+      billingAction,
       email: normalizeEmail(email),
       externalRef,
     });

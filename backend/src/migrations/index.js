@@ -7,6 +7,9 @@ import { migration as sportHistoryMigration } from './005_sport_history.js';
 import { migration as logCompletionStateMigration } from './006_log_completion_state.js';
 import { migration as billingClaimsMigration } from './007_billing_claims.js';
 import { migration as competitionSourcesMigration } from './008_competition_sources.js';
+import { migration as athleteMeasurementsMigration } from './009_athlete_measurements.js';
+import { migration as opsEventsMigration } from './010_ops_events.js';
+import { migration as emailJobsMigration } from './011_email_jobs.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -17,6 +20,9 @@ const MIGRATIONS = [
   logCompletionStateMigration,
   billingClaimsMigration,
   competitionSourcesMigration,
+  athleteMeasurementsMigration,
+  opsEventsMigration,
+  emailJobsMigration,
 ];
 
 export async function runMigrations() {

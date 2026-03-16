@@ -29,6 +29,6 @@ test('home, pricing e coach portal públicos carregam', async ({ page }) => {
 test('app do atleta abre modal de autenticação para usuário anônimo', async ({ page }) => {
   await page.goto('/sports/cross/');
   await page.locator('[data-action="modal:open"][data-modal="auth"]').first().click();
-  await expect(page.locator('.modal-title')).toContainText(/Entrar|Criar conta|Recuperar senha/i);
+  await expect(page.locator('.modal-title')).toContainText(/Entrar|Criar conta|Recuperar senha|Acessar sua conta/i);
   await expect(page.locator('#auth-email')).toBeVisible();
 });

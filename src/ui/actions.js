@@ -14,6 +14,7 @@ import { handleDiscoveryAction } from './action-domains/discovery.js';
 import { handleAuthAccountAction } from './action-domains/auth-account.js';
 import { handleWorkoutAction, setupWorkoutBindings } from './action-domains/workout.js';
 import { handlePrsSettingsAction, setupPrsSettingsBindings } from './action-domains/prs-settings.js';
+import { handleProfileAction } from './action-domains/profile.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
@@ -65,6 +66,16 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     competitionLeaderboard: null,
     eventLeaderboard: null,
   });
+
+  const emptyAthleteProfile = () => ({
+    measurements: [],
+  });
+
+  function buildAthleteProfileFromSnapshot(snapshot) {
+    return {
+      measurements: Array.isArray(snapshot?.measurements) ? snapshot.measurements : [],
+    };
+  }
 
   function resolveAthleteBenefits(uiState, accessContext = null) {
     const overviewBenefits = uiState?.athleteOverview?.athleteBenefits || null;
@@ -240,15 +251,22 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   async function loadAthleteOverview({ lite = false } = {}) {
     try {
       const result = await measureAsync('account.athlete-dashboard', () => window.__APP__?.getAthleteDashboard?.({ lite }));
+      const payload = result?.data || {};
       return {
+        overview: {
         ...emptyAthleteOverview(),
-        ...(result?.data || {}),
+        ...payload,
         detailLevel: lite ? 'lite' : 'full',
+        },
+        profile: buildAthleteProfileFromSnapshot(payload),
       };
     } catch {
       return {
-        ...emptyAthleteOverview(),
-        detailLevel: lite ? 'lite' : 'full',
+        overview: {
+          ...emptyAthleteOverview(),
+          detailLevel: lite ? 'lite' : 'full',
+        },
+        profile: emptyAthleteProfile(),
       };
     }
   }
@@ -257,7 +275,8 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const nextState = {
       coachPortal: emptyCoachPortal(),
       athleteOverview: emptyAthleteOverview(),
-      admin: { overview: null, query: '' },
+      athleteProfile: emptyAthleteProfile(),
+      admin: { overview: null, health: null, manualReset: null, query: '' },
     };
 
     if (!profile?.email) {
@@ -270,8 +289,9 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     ]);
 
     nextState.coachPortal = coachPortal;
-    nextState.athleteOverview = athleteOverview;
-    nextState.admin = { overview: null, query: '' };
+    nextState.athleteOverview = athleteOverview.overview;
+    nextState.athleteProfile = athleteOverview.profile;
+    nextState.admin = { overview: null, health: null, manualReset: null, query: '' };
 
     return nextState;
   }
@@ -293,6 +313,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         ...s,
         ...snapshot,
         athleteOverview: mergeAthleteOverviewSnapshot(snapshot?.athleteOverview, s?.athleteOverview),
+        athleteProfile: snapshot?.athleteProfile || s?.athleteProfile || emptyAthleteProfile(),
       }));
       await rerender();
       if ((getUiState?.()?.currentPage || 'today') === 'history') {
@@ -316,7 +337,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         athleteOverviewFullTask = measureAsync('athlete.dashboard.full', () => loadAthleteOverview({ lite: false }));
       }
       const athleteOverview = await athleteOverviewFullTask;
-      await patchUiState((s) => ({ ...s, athleteOverview: mergeAthleteOverviewSnapshot(athleteOverview, s?.athleteOverview) }));
+      await patchUiState((s) => ({
+        ...s,
+        athleteOverview: mergeAthleteOverviewSnapshot(athleteOverview?.overview, s?.athleteOverview),
+        athleteProfile: athleteOverview?.profile || s?.athleteProfile || emptyAthleteProfile(),
+      }));
       await rerender();
     } catch (error) {
       console.warn('Falha ao carregar histórico completo do atleta:', error?.message || error);
@@ -507,9 +532,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         unit: 'kg',
         source: 'app',
       });
-      const athleteOverview = await loadAthleteOverview();
-      await patchUiState((s) => ({ ...s, athleteOverview }));
-      return athleteOverview;
+      const athleteSnapshot = await loadAthleteOverview();
+      await patchUiState((s) => ({
+        ...s,
+        athleteOverview: mergeAthleteOverviewSnapshot(athleteSnapshot?.overview, s?.athleteOverview),
+        athleteProfile: athleteSnapshot?.profile || s?.athleteProfile || emptyAthleteProfile(),
+      }));
+      return athleteSnapshot?.overview || null;
     } catch {
       return null;
     }
@@ -618,18 +647,36 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       });
       if (prsSettingsHandled) return;
 
+      const profileHandled = await handleProfileAction(action, el, {
+        root,
+        patchUiState,
+        rerender,
+        toast,
+        syncAthleteMeasurementsIfAuthenticated: async () => {
+          const profile = window.__APP__?.getProfile?.()?.data || null;
+          if (!profile?.email) return null;
+          const ui = getUiState?.() || {};
+          const measurements = ui?.athleteProfile?.measurements || [];
+          await window.__APP__?.syncAthleteMeasurementsSnapshot?.(measurements);
+          return measurements;
+        },
+      });
+      if (profileHandled) return;
+
       const authHandled = await handleAuthAccountAction(action, el, {
         root,
         getUiState,
         setUiState,
         patchUiState,
         rerender,
+        resetOpenModalScroll,
         toast,
         normalizeCheckoutPlan,
         hasCheckoutAuth,
         queueCheckoutIntent,
         emptyCoachPortal,
         emptyAthleteOverview,
+        emptyAthleteProfile,
         emptyCompetitionBrowser,
         loadAccountSnapshot,
         mergeAthleteOverviewSnapshot,
@@ -645,7 +692,21 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const modal = el.dataset.modal || null;
           if (modal === 'auth') {
             const profile = window.__APP__?.getProfile?.()?.data || null;
-            await setUiState({ modal });
+            const authMode = el.dataset.authMode === 'signup' ? 'signup' : 'signin';
+            await patchUiState((s) => ({
+              ...s,
+              modal,
+              authMode,
+              authSubmitting: false,
+              passwordReset: {
+                ...(s.passwordReset || {}),
+                open: false,
+                requesting: false,
+                confirming: false,
+                statusMessage: '',
+                statusTone: '',
+              },
+            }));
             await rerender();
             resetOpenModalScroll();
             hydrateAccountSnapshotInBackground(profile);
@@ -828,11 +889,17 @@ function pickUniversalFile() {
     input.type = 'file';
     input.accept = [
       'application/pdf',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'application/vnd.oasis.opendocument.spreadsheet',
       'text/plain',
       'text/csv',
       'application/json',
       'image/*',
       'video/*',
+      '.xlsx',
+      '.xls',
+      '.ods',
       '.txt',
       '.md',
       '.csv',

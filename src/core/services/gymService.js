@@ -65,6 +65,17 @@ export async function syncAthletePrSnapshot(prs) {
   return apiRequest('/athletes/me/prs/snapshot', { method: 'POST', body: { prs } });
 }
 
+export async function getMeasurementHistory() {
+  return apiRequest('/athletes/me/measurements/history', { method: 'GET' });
+}
+
+export async function syncAthleteMeasurementsSnapshot(measurements) {
+  return apiRequest('/athletes/me/measurements/snapshot', {
+    method: 'POST',
+    body: { measurements },
+  });
+}
+
 export async function logRunningSession(payload) {
   return apiRequest('/athletes/me/running/logs', { method: 'POST', body: payload });
 }

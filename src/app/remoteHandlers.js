@@ -7,7 +7,7 @@ import {
   confirmPasswordReset,
   getStoredProfile,
 } from '../core/services/authService.js';
-import { activateCoachSubscription, getAdminOverview } from '../core/services/adminService.js';
+import { activateCoachSubscription, createManualPasswordReset, getAdminOpsHealth, getAdminOverview, reprocessBillingClaim, retryEmailJob } from '../core/services/adminService.js';
 import { openCheckout, getSubscriptionStatus, getEntitlements, activateMockSubscription } from '../core/services/subscriptionService.js';
 import { pullLatestBackupPayload, pushBackupPayload, listSyncSnapshots } from '../core/services/syncService.js';
 import {
@@ -17,12 +17,14 @@ import {
   getAccessContext,
   getAthleteDashboard,
   getGymInsights,
+  getMeasurementHistory,
   getMyGyms,
   getRunningHistory,
   getStrengthHistory,
   logAthletePr,
   logRunningSession,
   logStrengthSession,
+  syncAthleteMeasurementsSnapshot,
   syncAthletePrSnapshot,
   getWorkoutFeed,
   listGymGroups,
@@ -92,6 +94,26 @@ export function createRemoteHandlers({
 
     async handleActivateCoachSubscription(userId, planId, renewDays = 30) {
       const data = await activateCoachSubscription(userId, planId, renewDays);
+      return { success: true, data };
+    },
+
+    async handleGetAdminOpsHealth(params) {
+      const data = await getAdminOpsHealth(params);
+      return { success: true, data };
+    },
+
+    async handleReprocessBillingClaim(claimId) {
+      const data = await reprocessBillingClaim(claimId);
+      return { success: true, data };
+    },
+
+    async handleRetryEmailJob(jobId) {
+      const data = await retryEmailJob(jobId);
+      return { success: true, data };
+    },
+
+    async handleCreateManualPasswordReset(userId) {
+      const data = await createManualPasswordReset(userId);
       return { success: true, data };
     },
 
@@ -227,6 +249,16 @@ export function createRemoteHandlers({
 
     async handleSyncAthletePrSnapshot(prs) {
       const data = await syncAthletePrSnapshot(prs);
+      return { success: true, data };
+    },
+
+    async handleGetMeasurementHistory() {
+      const data = await getMeasurementHistory();
+      return { success: true, data };
+    },
+
+    async handleSyncAthleteMeasurementsSnapshot(measurements) {
+      const data = await syncAthleteMeasurementsSnapshot(measurements);
       return { success: true, data };
     },
 

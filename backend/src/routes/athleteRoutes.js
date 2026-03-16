@@ -88,6 +88,82 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
     return res.json({ inserted: insertedCount, total: entries.length });
   });
 
+  router.get('/athletes/me/measurements/history', authRequired, async (req, res) => {
+    const result = await pool.query(
+      `SELECT id, type, label, unit, value, notes, recorded_at, created_at
+       FROM athlete_measurements
+       WHERE user_id = $1
+       ORDER BY recorded_at DESC, created_at DESC
+       LIMIT 120`,
+      [req.user.userId],
+    );
+
+    return res.json({ measurements: result.rows });
+  });
+
+  router.post('/athletes/me/measurements/snapshot', authRequired, async (req, res) => {
+    const entries = Array.isArray(req.body?.measurements) ? req.body.measurements : null;
+    if (!entries) {
+      return res.status(400).json({ error: 'measurements deve ser um array' });
+    }
+
+    const normalized = [];
+    for (const entry of entries) {
+      const id = String(entry?.id || '').trim();
+      const type = String(entry?.type || 'custom').trim().toLowerCase();
+      const label = String(entry?.label || '').trim();
+      const unit = String(entry?.unit || '').trim();
+      const value = Number(entry?.value);
+      const notes = String(entry?.notes || '').trim();
+      const recordedAt = String(entry?.recordedAt || '').trim();
+
+      if (!id || !label || !Number.isFinite(value) || !recordedAt) {
+        return res.status(400).json({ error: 'Cada medida precisa de id, label, value e recordedAt válidos' });
+      }
+
+      normalized.push({
+        id,
+        type: type || 'custom',
+        label,
+        unit,
+        value,
+        notes: notes || null,
+        recordedAt,
+      });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`DELETE FROM athlete_measurements WHERE user_id = $1`, [req.user.userId]);
+
+      for (const entry of normalized) {
+        await client.query(
+          `INSERT INTO athlete_measurements (id, user_id, type, label, unit, value, notes, recorded_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+          [
+            entry.id,
+            req.user.userId,
+            entry.type,
+            entry.label,
+            entry.unit || '',
+            entry.value,
+            entry.notes,
+            entry.recordedAt,
+          ],
+        );
+      }
+
+      await client.query('COMMIT');
+      return res.json({ synced: normalized.length });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
+
   router.get('/athletes/me/dashboard', authRequired, async (req, res) => {
     const sportType = normalizeSportType(req.query?.sportType);
     const isLite = String(req.query?.lite || '').trim() === '1';
@@ -102,7 +178,7 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
       .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
       .map((ctx) => ctx.membership.gym_id);
 
-    const [resultsRes, competitionsRes, workoutsRes, benchmarkTrendRes, prTrendRes, resultCountRes, competitionCountRes, workoutCountRes, runningHistoryRes, strengthHistoryRes] = await Promise.all([
+    const [resultsRes, competitionsRes, workoutsRes, benchmarkTrendRes, prTrendRes, resultCountRes, competitionCountRes, workoutCountRes, runningHistoryRes, strengthHistoryRes, measurementRes] = await Promise.all([
       pool.query(
         `SELECT
           br.*,
@@ -208,6 +284,14 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
             [req.user.userId],
           )
         : Promise.resolve({ rows: [] }),
+      pool.query(
+        `SELECT id, type, label, unit, value, notes, recorded_at, created_at
+         FROM athlete_measurements
+         WHERE user_id = $1
+         ORDER BY recorded_at DESC, created_at DESC
+         LIMIT 120`,
+        [req.user.userId],
+      ),
     ]);
 
     const cutoffTime = athleteBenefits?.historyDays
@@ -265,6 +349,7 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
       benchmarkHistory,
       prHistory,
       prCurrent,
+      measurements: measurementRes.rows,
       runningHistory: isLite ? [] : runningHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
       strengthHistory: isLite ? [] : strengthHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
       gymAccess: contexts.map((ctx) => ({

@@ -82,9 +82,13 @@ export async function extractTextFromFile(file) {
     // PDFs do tipo "SEMANA 19  SEGUNDA  WOD" precisam virar linhas separadas
     trimmedText = trimmedText.replace(/\s{2,}/g, '\n');
     
-    // VALIDAÇÃO: texto não pode estar vazio
     if (!trimmedText || trimmedText.length < 10) {
-      throw new Error('PDF vazio ou texto não extraído');
+      const ocrText = await extractTextWithOcrFallback(pdf);
+      if (ocrText && ocrText.length >= 10) {
+        trimmedText = ocrText;
+      } else {
+        throw new Error('PDF vazio ou texto não extraído');
+      }
     }
     
     logDebug('✅ Texto extraído:', trimmedText.length, 'caracteres');
@@ -102,6 +106,48 @@ export async function extractTextFromFile(file) {
     
     throw new Error('Erro ao ler PDF: ' + error.message);
   }
+}
+
+async function extractTextWithOcrFallback(pdf) {
+  if (typeof window === 'undefined') return '';
+
+  try {
+    const { extractTextFromImageFile } = await import('../media/ocrReader.js');
+    const totalPages = Math.min(Number(pdf?.numPages || 0), 6);
+    const chunks = [];
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum += 1) {
+      const page = await pdf.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.8 });
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.floor(viewport.width));
+      canvas.height = Math.max(1, Math.floor(viewport.height));
+      const context = canvas.getContext('2d', { alpha: false });
+
+      await page.render({ canvasContext: context, viewport }).promise;
+      const blob = await canvasToBlob(canvas);
+      if (!blob) continue;
+
+      const imageFile = new File([blob], `pdf-page-${pageNum}.png`, { type: 'image/png' });
+      const text = await extractTextFromImageFile(imageFile);
+      if (text) chunks.push(text);
+    }
+
+    const combined = chunks.join('\n').trim();
+    if (combined) {
+      logDebug('🧠 OCR fallback aplicado ao PDF:', combined.length, 'caracteres');
+    }
+    return combined;
+  } catch (error) {
+    logDebug('⚠️ OCR fallback indisponível para PDF:', error?.message || error);
+    return '';
+  }
+}
+
+function canvasToBlob(canvas) {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), 'image/png');
+  });
 }
 /**
  * Lê arquivo como ArrayBuffer

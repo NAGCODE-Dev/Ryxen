@@ -42,6 +42,7 @@ import { createStorage } from './adapters/storage/storageFactory.js';
 import { isPdfJsAvailable } from './adapters/pdf/pdfReader.js';
 import { isImageFile, extractTextFromImageFile } from './adapters/media/ocrReader.js';
 import { isVideoFile, extractTextFromVideoFile } from './adapters/media/videoTextReader.js';
+import { isSpreadsheetFile, extractTextFromSpreadsheetFile } from './adapters/spreadsheet/spreadsheetReader.js';
 import {
   isCalculatedLine,
   normalizeWorkoutBlocks,
@@ -49,6 +50,7 @@ import {
   toWorkoutBlocks,
   toWorkoutSections,
 } from './app/workoutHelpers.js';
+import { classifyUniversalImportFile, isPdfImportFile, isTextLikeImportFile } from './app/importFileTypes.js';
 import { downloadFile } from './app/fileHelpers.js';
 import {
   normalizeCoachWorkoutFeed,
@@ -627,9 +629,10 @@ export async function handleUniversalImport(file) {
   }
 
   const type = file.type || '';
+  const fileInfo = classifyUniversalImportFile(file);
 
   // PDF continua no fluxo dedicado
-  if (type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+  if (isPdfImportFile(file)) {
     return handleMultiWeekPdfUpload(file);
   }
 
@@ -645,11 +648,14 @@ export async function handleUniversalImport(file) {
     } else if (isVideoFile(file)) {
       source = 'video';
       rawText = await extractTextFromVideoFile(file);
-    } else if (type.startsWith('text/') || file.name.match(/\.(txt|md|csv|json)$/i)) {
+    } else if (isSpreadsheetFile(file)) {
+      source = 'spreadsheet';
+      rawText = await extractTextFromSpreadsheetFile(file);
+    } else if (isTextLikeImportFile(file)) {
       source = 'text';
       rawText = await file.text();
     } else {
-      throw new Error(`Formato não suportado: ${type || file.name}`);
+      throw new Error(fileInfo.error || `Formato não suportado: ${type || file.name}`);
     }
 
     const parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
@@ -1180,7 +1186,11 @@ async function applyImportedBackupData(backup, options = {}) {
 export const {
   handleGetProfile,
   handleGetAdminOverview,
+  handleGetAdminOpsHealth,
   handleActivateCoachSubscription,
+  handleReprocessBillingClaim,
+  handleRetryEmailJob,
+  handleCreateManualPasswordReset,
   handleOpenCheckout,
   handleGetSubscriptionStatus,
   handleGetEntitlements,
@@ -1199,11 +1209,13 @@ export const {
   handleGetAccessContext,
   handleGetAthleteDashboard,
   handleGetGymInsights,
+  handleGetMeasurementHistory,
   handleLogAthletePr,
   handleLogRunningSession,
   handleGetRunningHistory,
   handleLogStrengthSession,
   handleGetStrengthHistory,
+  handleSyncAthleteMeasurementsSnapshot,
   handleSyncAthletePrSnapshot,
   handleGetBenchmarks,
   handleGetCompetitionCalendar,
@@ -1539,7 +1551,11 @@ function exposeDebugAPIs() {
     signOut: handleSignOut,
     getProfile: handleGetProfile,
     getAdminOverview: handleGetAdminOverview,
+    getAdminOpsHealth: handleGetAdminOpsHealth,
     activateCoachSubscription: handleActivateCoachSubscription,
+    reprocessBillingClaim: handleReprocessBillingClaim,
+    retryEmailJob: handleRetryEmailJob,
+    createManualPasswordReset: handleCreateManualPasswordReset,
     createGym: handleCreateGym,
     getMyGyms: handleGetMyGyms,
     addGymMember: handleAddGymMember,
@@ -1552,10 +1568,12 @@ function exposeDebugAPIs() {
     getAthleteDashboard: handleGetAthleteDashboard,
     getGymInsights: handleGetGymInsights,
     logAthletePr: handleLogAthletePr,
+    getMeasurementHistory: handleGetMeasurementHistory,
     logRunningSession: handleLogRunningSession,
     getRunningHistory: handleGetRunningHistory,
     logStrengthSession: handleLogStrengthSession,
     getStrengthHistory: handleGetStrengthHistory,
+    syncAthleteMeasurementsSnapshot: handleSyncAthleteMeasurementsSnapshot,
     syncAthletePrSnapshot: handleSyncAthletePrSnapshot,
     getBenchmarks: handleGetBenchmarks,
     getCompetitionCalendar: handleGetCompetitionCalendar,

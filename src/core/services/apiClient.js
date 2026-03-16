@@ -42,7 +42,12 @@ export async function apiRequest(path, options = {}) {
   const data = safeParse(text);
 
   if (!response.ok) {
-    throw new Error(data?.error || `Erro API (${response.status})`);
+    const error = new Error(data?.error || `Erro API (${response.status})`);
+    if (data && typeof data === 'object') {
+      Object.assign(error, data);
+    }
+    error.status = response.status;
+    throw error;
   }
 
   return data;

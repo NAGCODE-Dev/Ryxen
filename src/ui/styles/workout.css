@@ -3,6 +3,10 @@
   gap: 18px;
 }
 
+.workout-container-entry {
+  max-width: 860px;
+}
+
 .page-stack {
   display: grid;
   gap: 18px;
@@ -225,6 +229,10 @@
 .auth-intro,
 .reset-codePreview {
   padding: 16px;
+}
+
+.empty-state-entry {
+  max-width: 520px;
 }
 
 .workout-section-header,
@@ -525,6 +533,12 @@
   color: var(--text-secondary);
   font-size: 0.8rem;
   line-height: 1.45;
+}
+
+.entry-featureRow {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .account-summaryGrid,

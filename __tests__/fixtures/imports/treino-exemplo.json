@@ -1,0 +1,17 @@
+{
+  "weekNumber": 19,
+  "workouts": [
+    {
+      "day": "Segunda",
+      "blocks": [
+        {
+          "type": "DEFAULT",
+          "lines": [
+            "BACK SQUAT",
+            "5x5 @ 80%"
+          ]
+        }
+      ]
+    }
+  ]
+}

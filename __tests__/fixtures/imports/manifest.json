@@ -1,0 +1,114 @@
+[
+  {
+    "name": "treino-exemplo.txt",
+    "mime": "text/plain",
+    "quality": "clean",
+    "format": "txt",
+    "category": "text",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-exemplo.csv",
+    "mime": "text/csv",
+    "quality": "clean",
+    "format": "csv",
+    "category": "text",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-exemplo.json",
+    "mime": "application/json",
+    "quality": "structured",
+    "format": "json",
+    "category": "text",
+    "shouldParse": false
+  },
+  {
+    "name": "treino-exemplo.xlsx",
+    "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "quality": "clean",
+    "format": "xlsx",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-exemplo.xls",
+    "mime": "application/vnd.ms-excel",
+    "quality": "clean",
+    "format": "xls",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-exemplo.ods",
+    "mime": "application/vnd.oasis.opendocument.spreadsheet",
+    "quality": "clean",
+    "format": "ods",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-sujo-multiplas-abas.xlsx",
+    "mime": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "quality": "dirty",
+    "format": "xlsx",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-sujo-cabecalho-ruim.xls",
+    "mime": "application/vnd.ms-excel",
+    "quality": "dirty",
+    "format": "xls",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-sujo-colunas-soltas.ods",
+    "mime": "application/vnd.oasis.opendocument.spreadsheet",
+    "quality": "dirty",
+    "format": "ods",
+    "category": "spreadsheet",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-texto-limpo.pdf",
+    "mime": "application/pdf",
+    "quality": "clean",
+    "format": "pdf",
+    "category": "pdf",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-texto-sujo.pdf",
+    "mime": "application/pdf",
+    "quality": "dirty",
+    "format": "pdf",
+    "category": "pdf",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-escaneado.pdf",
+    "mime": "application/pdf",
+    "quality": "scanned",
+    "format": "pdf",
+    "category": "pdf",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-foto-limpa.png",
+    "mime": "image/png",
+    "quality": "clean",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-foto-ruidosa.png",
+    "mime": "image/png",
+    "quality": "dirty",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  }
+]

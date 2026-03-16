@@ -80,6 +80,58 @@ export function isApprovedKiwifyEvent(eventType) {
   return statusCandidates.some((value) => value.includes('aprov') || value === 'paid' || value === 'approved');
 }
 
+export function getKiwifyReversalStatus(eventType) {
+  const normalizedEvent = normalizeText(eventType);
+  if (normalizedEvent.includes('reembolso') || normalizedEvent.includes('refund')) {
+    return 'refunded';
+  }
+  if (normalizedEvent.includes('chargeback')) {
+    return 'chargeback';
+  }
+  if (normalizedEvent.includes('cancel')) {
+    return 'canceled';
+  }
+  if (normalizedEvent.includes('atras') || normalizedEvent.includes('late') || normalizedEvent.includes('overdue')) {
+    return 'past_due';
+  }
+
+  const statusCandidates = Array.from(arguments).slice(1).flatMap((source) => [
+    source?.status,
+    source?.order_status,
+    source?.payment_status,
+    source?.sale_status,
+    source?.data?.status,
+    source?.data?.order_status,
+    source?.data?.payment_status,
+    source?.sale?.status,
+    source?.sale?.order_status,
+    source?.sale?.payment_status,
+  ])
+    .map((value) => normalizeText(value))
+    .filter(Boolean);
+
+  if (statusCandidates.some((value) => value.includes('refund') || value.includes('reembolso'))) {
+    return 'refunded';
+  }
+  if (statusCandidates.some((value) => value.includes('chargeback'))) {
+    return 'chargeback';
+  }
+  if (statusCandidates.some((value) => value.includes('cancel'))) {
+    return 'canceled';
+  }
+  if (statusCandidates.some((value) => value.includes('atras') || value.includes('late') || value.includes('overdue') || value === 'past_due')) {
+    return 'past_due';
+  }
+
+  return '';
+}
+
+export function getKiwifyBillingAction(eventType) {
+  if (getKiwifyReversalStatus(...arguments)) return 'reversal';
+  if (isApprovedKiwifyEvent(...arguments)) return 'grant';
+  return 'ignore';
+}
+
 export function extractKiwifyCustomerEmail() {
   const candidates = Array.from(arguments).flatMap((source) => [
     source?.customer?.email,
