@@ -26,6 +26,15 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     if (container) container.scrollTop = 0;
   }
 
+  function scrollMainToTop() {
+    try {
+      root.querySelector('#ui-main')?.scrollTo?.({ top: 0, behavior: 'instant' });
+    } catch {
+      root.querySelector('#ui-main')?.scrollTo?.(0, 0);
+    }
+    window.scrollTo?.({ top: 0, behavior: 'auto' });
+  }
+
   const emptyCoachPortal = () => ({
     subscription: null,
     entitlements: [],
@@ -609,6 +618,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         hydrateCompetitionBrowserInBackground,
         validateBenchmarkScoreInput,
         toast,
+        scrollMainToTop,
       });
       if (discoveryHandled) return;
 
@@ -724,7 +734,20 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'modal:close': {
-          await setUiState({ modal: null });
+          await patchUiState((s) => ({
+            ...s,
+            modal: null,
+            importFlow: {
+              ...(s?.importFlow || {}),
+              isProcessing: false,
+              draft: null,
+              pendingKind: '',
+              pendingBenefits: null,
+              pendingFileName: '',
+              pendingFileSize: 0,
+              lastError: '',
+            },
+          }));
           await rerender();
           return;
         }
@@ -769,7 +792,20 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     if (!overlay) return;
 
     if (e.target === overlay) {
-      await setUiState({ modal: null });
+      await patchUiState((s) => ({
+        ...s,
+        modal: null,
+        importFlow: {
+          ...(s?.importFlow || {}),
+          isProcessing: false,
+          draft: null,
+          pendingKind: '',
+          pendingBenefits: null,
+          pendingFileName: '',
+          pendingFileSize: 0,
+          lastError: '',
+        },
+      }));
       await rerender();
     }
   });

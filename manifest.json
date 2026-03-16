@@ -1,14 +1,14 @@
 {
-  "id": "/CrossApp/",
-  "name": "CrossApp",
+  "id": "/sports/cross/",
+  "name": "CrossApp Train",
   "short_name": "CrossApp",
-  "description": "PWA para planejamento, cálculo de cargas e gestão de treinos de CrossFit.",
+  "description": "Acompanhe o treino do dia, importe planilhas e registre sua evolução no CrossApp.",
   "lang": "pt-BR",
-  "start_url": "./index.html",
-  "scope": "./",
+  "start_url": "/sports/cross/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#1a1a2e",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
   "orientation": "portrait-primary",
   "categories": ["sports", "health", "fitness", "productivity"],
   "prefer_related_applications": false,
@@ -16,12 +16,20 @@
     {
       "src": "icons/icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "icons/icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

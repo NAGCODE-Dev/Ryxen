@@ -6,10 +6,37 @@ import { renderImportModal } from '../src/ui/render-domains/modals.js';
 
 test('modal de importação expõe as opções realmente suportadas na apresentação', () => {
   const html = renderImportModal();
-  assert.match(html, /Planilha em PDF/i);
+  assert.match(html, /PDF do treino/i);
   assert.match(html, /Excel, ODS, foto ou vídeo/i);
   assert.match(html, /Treino salvo/i);
-  assert.match(html, /Se houver porcentagens e registros salvos, o app usa isso para sugerir as cargas/i);
+  assert.match(html, /usa seus registros salvos para sugerir cargas/i);
+});
+
+test('modal de importação mostra revisão editável antes de salvar', () => {
+  const html = renderImportModal({
+    lastReview: {
+      summary: '1 semana • confiança média',
+      sourceLabel: 'Vídeo',
+      confidenceLabel: 'média',
+      weekCount: 1,
+      warnings: ['Revise o conteúdo'],
+    },
+    draft: {
+      weeks: [
+        {
+          weekNumber: 19,
+          workouts: [
+            { day: 'Segunda', text: 'BACK SQUAT\n5x5 @ 80%', enabled: true },
+          ],
+        },
+      ],
+    },
+  });
+
+  assert.match(html, /Revisão antes de salvar/i);
+  assert.match(html, /Salvar treino/i);
+  assert.match(html, /Descartar revisão/i);
+  assert.match(html, /Revise o dia/i);
 });
 
 test('página Hoje apresenta treino importado de forma direta', () => {

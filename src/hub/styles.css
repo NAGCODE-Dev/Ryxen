@@ -35,7 +35,7 @@ textarea {
 .hub-shell {
   width: min(1120px, calc(100vw - 32px));
   margin: 0 auto;
-  padding: 48px 0 64px;
+  padding: 28px 0 56px;
 }
 
 .hub-hero {
@@ -68,7 +68,7 @@ textarea {
   font-size: clamp(2.2rem, 5vw, 4.5rem);
   line-height: 0.95;
   letter-spacing: -0.05em;
-  max-width: 11ch;
+  max-width: 10ch;
 }
 
 .hub-lead {
@@ -137,10 +137,6 @@ textarea {
   margin-top: 24px;
 }
 
-.hub-grid-onboarding {
-  margin-top: 18px;
-}
-
 .hub-section {
   margin-top: 28px;
 }
@@ -166,27 +162,12 @@ textarea {
   line-height: 1.65;
 }
 
-.hub-platformStrip {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.hub-benefitPill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--hub-border);
-  background: rgba(255,255,255,0.03);
-  color: var(--hub-text-soft);
-  font-size: 0.9rem;
-}
-
-.hub-grid-modules {
+.hub-grid-sports {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.hub-grid-simple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .stack {
@@ -224,65 +205,15 @@ textarea.field {
   box-shadow: var(--hub-shadow);
 }
 
-.hub-card-guide {
-  gap: 10px;
-  align-content: start;
-}
-
-.hub-card-guide h2 {
+.hub-card-simple h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
   letter-spacing: -0.03em;
 }
 
-.hub-moduleCard {
-  align-content: start;
-}
-
-.hub-moduleCard h2 {
-  max-width: 12ch;
-}
-
-.hub-moduleFeatures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 18px;
-}
-
-.hub-moduleFeatures span {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  padding: 0 12px;
-  border-radius: 999px;
-  border: 1px solid var(--hub-border);
-  background: rgba(255,255,255,0.03);
-  color: var(--hub-text-soft);
-  font-size: 0.86rem;
-}
-
-.hub-moduleCard-train {
+.hub-card-coachCta {
   background:
-    radial-gradient(circle at top right, rgba(108, 245, 173, 0.09), transparent 34%),
-    linear-gradient(180deg, rgba(17,22,29,0.92), rgba(11,15,21,0.98));
-}
-
-.hub-moduleCard-coach {
-  background:
-    radial-gradient(circle at top right, rgba(255, 219, 102, 0.09), transparent 34%),
-    linear-gradient(180deg, rgba(17,22,29,0.92), rgba(11,15,21,0.98));
-}
-
-.hub-moduleCard-comp {
-  background:
-    radial-gradient(circle at top right, rgba(95, 164, 255, 0.1), transparent 36%),
-    linear-gradient(180deg, rgba(17,22,29,0.92), rgba(11,15,21,0.98));
-}
-
-.hub-moduleCard-future {
-  background:
-    radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 34%),
+    radial-gradient(circle at top right, rgba(255, 219, 102, 0.07), transparent 34%),
     linear-gradient(180deg, rgba(17,22,29,0.92), rgba(11,15,21,0.98));
 }
 
@@ -403,7 +334,8 @@ textarea.field {
 
 @media (max-width: 960px) {
   .hub-grid,
-  .hub-grid-modules {
+  .hub-grid-sports,
+  .hub-grid-simple {
     grid-template-columns: 1fr;
   }
 
@@ -422,7 +354,22 @@ textarea.field {
     font-size: 2.4rem;
   }
 
+  .hub-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .hub-primaryAction,
+  .hub-secondaryAction,
+  .hub-cardLink {
+    width: 100%;
+  }
+
   .hub-sectionHead h2 {
     max-width: none;
+  }
+
+  .hub-cardChoice {
+    margin-bottom: 12px;
   }
 }

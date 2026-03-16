@@ -11,19 +11,29 @@ export async function handleDiscoveryAction(action, el, ctx) {
     hydrateCompetitionBrowserInBackground,
     validateBenchmarkScoreInput,
     toast,
+    scrollMainToTop,
   } = ctx;
 
   switch (action) {
     case 'page:set': {
       const page = String(el.dataset.page || 'today');
-      await patchUiState((s) => ({ ...s, currentPage: page }));
+      await patchUiState((s) => ({
+        ...s,
+        currentPage: page,
+        modal: null,
+        importFlow: {
+          ...(s?.importFlow || {}),
+          isProcessing: false,
+          draft: null,
+          pendingKind: '',
+          pendingBenefits: null,
+          pendingFileName: '',
+          pendingFileSize: 0,
+          lastError: '',
+        },
+      }));
       await rerender();
-      try {
-        root.querySelector('#ui-main')?.scrollTo?.({ top: 0, behavior: 'instant' });
-      } catch {
-        root.querySelector('#ui-main')?.scrollTo?.(0, 0);
-      }
-      window.scrollTo?.({ top: 0, behavior: 'auto' });
+      scrollMainToTop?.();
       if (page === 'history') {
         hydrateAthleteOverviewFullInBackground();
         hydrateBenchmarkBrowserInBackground();

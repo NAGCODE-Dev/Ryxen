@@ -4,9 +4,9 @@
  */
 
 import { calculatePercent, kgToLbs, roundToNearest, formatNumber } from '../utils/math.js';
-import { isValidPR, isValidPercent } from '../utils/validators.js';
+import { isValidPercent } from '../utils/validators.js';
 import { normalizeExerciseName, extractNumbers } from '../utils/text.js';
-import { getPR, hasPR } from './prsService.js';
+import { resolvePRMatch } from './prsService.js';
 
 /**
  * Calcula carga baseada em PR e percentual
@@ -32,10 +32,14 @@ export function calculateLoad(exerciseName, percent, prs, options = {}) {
       warning: true,
       message: 'Percentual inválido',
       load: null,
+      confidenceScore: 18,
+      confidenceLabel: 'baixa',
+      reviewNote: 'Percentual fora do padrão',
     };
   }
   
-  const pr = getPR(prs, exerciseName);
+  const match = resolvePRMatch(prs, exerciseName);
+  const pr = match?.pr ?? null;
   
   if (pr === null) {
     return {
@@ -44,6 +48,10 @@ export function calculateLoad(exerciseName, percent, prs, options = {}) {
       message: `PR não encontrado para ${exerciseName}`,
       load: null,
       missingPR: exerciseName,
+      confidenceScore: 28,
+      confidenceLabel: 'baixa',
+      reviewNote: 'Cadastre um registro para calcular a carga',
+      exerciseOptions: match?.candidates || [],
     };
   }
   
@@ -59,10 +67,16 @@ export function calculateLoad(exerciseName, percent, prs, options = {}) {
     success: true,
     warning: false,
     load: load,
+    suggestedLoad: load,
     loadFormatted: formatNumber(load, 1) + 'kg',
     percent: percent,
     pr: pr,
-    exercise: normalizeExerciseName(exerciseName),
+    exercise: match?.matchedName || normalizeExerciseName(exerciseName),
+    confidenceScore: match?.confidenceScore || 84,
+    confidenceLabel: match?.confidenceLabel || 'média',
+    reviewNote: buildReviewNote(match),
+    matchMethod: match?.method || 'none',
+    exerciseOptions: match?.candidates || [],
   };
   
   // Adiciona conversão para lbs se solicitado
@@ -103,16 +117,18 @@ export function extractExerciseName(line, prs) {
   
   if (!matches) return null;
   
-  // Retorna primeiro exercício que tem PR cadastrado
-  for (const match of matches) {
-    const normalized = normalizeExerciseName(match);
-    if (getPR(prs, normalized) !== null) {
-      return normalized;
-    }
+  const ranked = matches
+    .map((match) => ({
+      normalized: normalizeExerciseName(match),
+      resolved: resolvePRMatch(prs, match),
+    }))
+    .sort((a, b) => (b.resolved?.confidenceScore || 0) - (a.resolved?.confidenceScore || 0));
+
+  if (ranked[0]?.resolved?.found) {
+    return ranked[0].resolved.matchedName || ranked[0].normalized;
   }
-  
-  // Se nenhum tem PR, retorna o primeiro encontrado
-  return normalizeExerciseName(matches[0]);
+
+  return ranked[0]?.normalized || null;
 }
 
 /**
@@ -155,6 +171,10 @@ export function processExerciseLine(line, prs, preferences = {}, lastExercise = 
       warning: true,
       message: 'Exercício não identificado',
       originalLine: line,
+      confidenceScore: 24,
+      confidenceLabel: 'baixa',
+      reviewNote: 'Revise a linha antes de usar a carga',
+      exerciseOptions: [],
     };
   }
   
@@ -172,6 +192,10 @@ export function processExerciseLine(line, prs, preferences = {}, lastExercise = 
       ? formatLoadResult(calculation) 
       : null,
     isWarning: calculation.warning || false,
+    confidenceScore: calculation.confidenceScore || 0,
+    confidenceLabel: calculation.confidenceLabel || 'baixa',
+    reviewNote: calculation.reviewNote || '',
+    exerciseOptions: calculation.exerciseOptions || [],
     ...calculation,
   };
 }
@@ -215,12 +239,13 @@ export function calculateWorkoutLoads(workoutLines, prs, preferences = {}) {
     const exerciseMatch = lineStr.match(/^([A-Z][A-Z\s]+)$/);
     if (exerciseMatch) {
       const exerciseName = normalizeExerciseName(exerciseMatch[1].trim());
-      if (hasPR(prs, exerciseName)) {
-        lastExercise = exerciseName;
+      const resolved = resolvePRMatch(prs, exerciseName);
+      if (resolved?.found) {
+        lastExercise = resolved.matchedName || exerciseName;
         return {
           hasPercent: false,
           originalLine: lineStr,
-          exercise: exerciseName,
+          exercise: resolved.matchedName || exerciseName,
           isExerciseHeader: true // Flag para identificar cabeçalhos
         };
       }
@@ -262,6 +287,21 @@ export function hasWarnings(results) {
  * @param {Array} results - Resultados de calculateWorkoutLoads
  * @returns {string[]} Exercícios sem PR (únicos)
  */
+export function getLoadReviewSummary(results) {
+  const safeResults = Array.isArray(results) ? results : [];
+  const linesWithPercent = safeResults.filter((item) => item?.hasPercent).length;
+  const lowConfidence = safeResults.filter((item) => Number(item?.confidenceScore || 0) < 65).length;
+  const averageConfidence = safeResults.length
+    ? Math.round(safeResults.reduce((sum, item) => sum + Number(item?.confidenceScore || 0), 0) / safeResults.length)
+    : 0;
+  return {
+    averageConfidence,
+    lowConfidence,
+    linesWithPercent,
+    confidenceLabel: averageConfidence >= 85 ? 'alta' : averageConfidence >= 65 ? 'média' : 'baixa',
+  };
+}
+
 export function getMissingPRsFromResults(results) {
   const missing = new Set();
   
@@ -334,6 +374,17 @@ export function autoConvertLbsInLine(line) {
   }
   
   return line;
+}
+
+function buildReviewNote(match) {
+  if (!match?.found) return 'Cadastre um registro para calcular a carga';
+  if (match.method === 'exact') return 'Carga sugerida com base no seu registro salvo';
+  if (match.method === 'alias') return `Carga sugerida com base em ${match.matchedName}`;
+  if (match.method === 'similar-ambiguous') {
+    const options = [match.matchedName, ...(match.candidates || [])].filter(Boolean).slice(0, 3);
+    return `Exercício aproximado: revise entre ${options.join(', ')}`;
+  }
+  return `Carga sugerida com base em ${match.matchedName}`;
 }
 
 /**

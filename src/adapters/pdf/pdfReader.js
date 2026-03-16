@@ -38,6 +38,11 @@ export function isPdfJsAvailable() {
  * @returns {Promise<string>} Texto extraído
  */
 export async function extractTextFromFile(file) {
+  const analysis = await extractTextFromPdfAnalysis(file);
+  return analysis.text;
+}
+
+export async function extractTextFromPdfAnalysis(file) {
   if (!file) {
     throw new Error('Arquivo não fornecido');
   }
@@ -77,6 +82,7 @@ export async function extractTextFromFile(file) {
     }
     
     let trimmedText = fullText.trim();
+    let usedOcrFallback = false;
     
     // CORREÇÃO CRÍTICA: Substitui espaços duplos por quebras de linha
     // PDFs do tipo "SEMANA 19  SEGUNDA  WOD" precisam virar linhas separadas
@@ -86,14 +92,26 @@ export async function extractTextFromFile(file) {
       const ocrText = await extractTextWithOcrFallback(pdf);
       if (ocrText && ocrText.length >= 10) {
         trimmedText = ocrText;
+        usedOcrFallback = true;
       } else {
         throw new Error('PDF vazio ou texto não extraído');
       }
     }
     
     logDebug('✅ Texto extraído:', trimmedText.length, 'caracteres');
+    const confidenceScore = usedOcrFallback ? 72 : 90;
+    const warnings = [];
+    if (usedOcrFallback) warnings.push('PDF escaneado, revise o treino importado');
+    if (trimmedText.length < 80) warnings.push('Pouco texto útil extraído do PDF');
     
-    return trimmedText;
+    return {
+      text: trimmedText,
+      pageCount: totalPages,
+      usedOcrFallback,
+      confidenceScore,
+      confidenceLabel: confidenceScore >= 85 ? 'alta' : confidenceScore >= 65 ? 'média' : 'baixa',
+      warnings,
+    };
     
   } catch (error) {
     if (error.message.includes('Invalid PDF')) {

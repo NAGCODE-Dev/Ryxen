@@ -1,3 +1,5 @@
+import { summarizeDraft } from '../../app/importDraft.js';
+
 export function renderModals(state, helpers) {
   const { renderAuthModal } = helpers;
   const modal = state?.__ui?.modal || null;
@@ -7,7 +9,7 @@ export function renderModals(state, helpers) {
 
   if (modal === 'prs') return renderPrsModal(prs);
   if (modal === 'settings') return renderSettingsModal(settings);
-  if (modal === 'import') return renderImportModal();
+  if (modal === 'import') return renderImportModal(state?.__ui?.importFlow || {});
   if (modal === 'auth') return renderAuthModal({
     auth: {
       ...(state?.__ui?.auth || {}),
@@ -23,7 +25,11 @@ export function renderModals(state, helpers) {
   return '';
 }
 
-export function renderImportModal() {
+export function renderImportModal(importFlow = {}) {
+  const review = importFlow?.lastReview || null;
+  const hasReview = review && typeof review === 'object';
+  const draft = importFlow?.draft || null;
+  const hasDraft = draft && Array.isArray(draft?.weeks) && draft.weeks.length > 0;
   return `
     <div class="modal-overlay isOpen">
       <div class="modal-container">
@@ -34,12 +40,107 @@ export function renderImportModal() {
         <div class="modal-body modal-body-auth">
           <div class="auth-intro">
             <div class="section-kicker">Importação</div>
-            <p class="account-hint">Envie sua planilha ou arquivo de treino. Se houver porcentagens e registros salvos, o app usa isso para sugerir as cargas.</p>
+            <p class="account-hint">Envie PDF, planilha, imagem ou vídeo. O app lê o arquivo, organiza os blocos e usa seus registros salvos para sugerir cargas quando fizer sentido.</p>
           </div>
+          ${importFlow?.isProcessing ? `
+            <div class="reset-codePreview">
+              <strong>Processando arquivo...</strong>
+              <p class="account-hint">Estamos lendo o conteúdo e preparando uma revisão antes do treino aparecer.</p>
+            </div>
+          ` : ''}
+          ${importFlow?.lastError ? `
+            <div class="reset-codePreview">
+              <strong>Importação não concluída</strong>
+              <p class="account-hint">${escapeHtml(importFlow.lastError)}</p>
+            </div>
+          ` : ''}
+          ${hasReview ? `
+            <div class="reset-codePreview">
+              <strong>${hasDraft ? 'Revisão antes de salvar' : 'Última importação'}</strong>
+              <p class="account-hint">${escapeHtml(review.summary || '')}</p>
+              <div class="coach-pillRow">
+                <span class="coach-pill">Origem: ${escapeHtml(review.sourceLabel || review.source || 'arquivo')}</span>
+                <span class="coach-pill">Confiança: ${escapeHtml(review.confidenceLabel || 'média')}</span>
+                <span class="coach-pill">${escapeHtml(String(review.weekCount || 0))} semana(s)</span>
+              </div>
+              ${(review.warnings || []).length ? `<p class="account-hint">${escapeHtml(review.warnings.join(' • '))}</p>` : ''}
+            </div>
+          ` : ''}
+          ${hasDraft ? `
+            <div class="import-reviewEditor">
+              <p class="account-hint">Revise o dia, ajuste o texto e apague as linhas que não devem entrar antes de salvar.</p>
+              ${draft.weeks.map((week, weekIndex) => `
+                <section class="import-reviewWeek">
+                  <div class="import-reviewWeekHead">
+                    <strong>Semana ${Number(week.weekNumber || weekIndex + 1)}</strong>
+                    <span class="account-hint">${Array.isArray(week.workouts) ? week.workouts.length : 0} treino(s) detectado(s)</span>
+                  </div>
+                  <div class="import-reviewWorkoutList">
+                    ${(week.workouts || []).map((workout, workoutIndex) => `
+                      <article class="import-reviewWorkout">
+                        <label class="settings-label">
+                          <input
+                            type="checkbox"
+                            data-import-enabled="1"
+                            data-week-index="${weekIndex}"
+                            data-workout-index="${workoutIndex}"
+                            ${workout.enabled !== false ? 'checked' : ''}
+                          />
+                          <span>Usar este treino</span>
+                        </label>
+                        <input
+                          class="add-input"
+                          type="text"
+                          data-import-day="1"
+                          data-week-index="${weekIndex}"
+                          data-workout-index="${workoutIndex}"
+                          value="${escapeAttribute(workout.day || '')}"
+                          placeholder="Dia do treino"
+                        />
+                        <div class="account-hint">Linhas ativas: ${(() => {
+                          const summary = summarizeDraft(workout);
+                          return `${summary.enabled}/${summary.total}`;
+                        })()}</div>
+                        <div class="import-reviewLines">
+                          ${(Array.isArray(workout.lines) ? workout.lines : []).map((line, lineIndex) => `
+                            <label class="import-reviewLine ${line.kind === 'block' ? 'isBlock' : ''}">
+                              <input
+                                type="checkbox"
+                                data-import-line-enabled="1"
+                                data-week-index="${weekIndex}"
+                                data-workout-index="${workoutIndex}"
+                                data-line-index="${lineIndex}"
+                                ${line.enabled !== false ? 'checked' : ''}
+                              />
+                              <input
+                                class="add-input"
+                                type="text"
+                                data-import-line-text="1"
+                                data-week-index="${weekIndex}"
+                                data-workout-index="${workoutIndex}"
+                                data-line-index="${lineIndex}"
+                                value="${escapeAttribute(line.text || '')}"
+                                placeholder="${line.kind === 'block' ? 'Cabeçalho do bloco' : 'Linha do treino'}"
+                              />
+                            </label>
+                          `).join('')}
+                        </div>
+                      </article>
+                    `).join('')}
+                  </div>
+                </section>
+              `).join('')}
+              <div class="page-actions">
+                <button class="btn-primary" data-action="import:review-apply" type="button">Salvar treino</button>
+                <button class="btn-secondary" data-action="import:review-discard" type="button">Descartar revisão</button>
+              </div>
+            </div>
+          ` : ''}
+          ${!hasDraft ? `
           <div class="coach-grid">
             <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button">
               <span class="quick-actionIcon">PDF</span>
-              <span class="quick-actionLabel">Planilha em PDF</span>
+              <span class="quick-actionLabel">PDF do treino</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="media:pick" type="button">
               <span class="quick-actionIcon">XLS</span>
@@ -54,6 +155,7 @@ export function renderImportModal() {
               <span class="quick-actionLabel">Exportar treino atual</span>
             </button>
           </div>
+          ` : ''}
         </div>
       </div>
     </div>
@@ -236,7 +338,14 @@ function renderSettingsModal(settings = {}) {
 }
 
 function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = String(text ?? '');
-  return div.innerHTML;
+  return String(text ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function escapeAttribute(text) {
+  return escapeHtml(text).replace(/"/g, '&quot;');
 }

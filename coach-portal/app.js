@@ -158,7 +158,7 @@ export default function App() {
         React.createElement('section', { className: 'auth-card' },
           React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
           React.createElement('h1', null, 'Coach Portal'),
-          React.createElement('p', { className: 'muted' }, 'Entre no módulo operacional do CrossApp para publicar treinos, organizar atletas, grupos e assinatura do box sem misturar gestão com a rotina diária do app do atleta.'),
+          React.createElement('p', { className: 'muted' }, 'Entre para publicar treinos, organizar atletas e cuidar da rotina do box em uma área separada do app do atleta.'),
           error ? React.createElement('div', { className: 'notice error' }, error) : null,
           message ? React.createElement('div', { className: 'notice success' }, message) : null,
           React.createElement('form', { className: 'stack', onSubmit: handleLogin },
@@ -229,14 +229,14 @@ export default function App() {
           React.createElement('a', { className: 'portal-link', href: '/' }, 'Voltar para a plataforma')
         ),
         React.createElement('aside', { className: 'auth-panel' },
-          React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
-          React.createElement('h2', null, 'Use a mesma conta da plataforma, mas no módulo certo para operar o box.'),
-          React.createElement('p', { className: 'muted auth-panelCopy' }, 'O Coach Portal concentra publicação, grupos, atletas, benchmarks e assinatura em um workspace separado do app do atleta.'),
+          React.createElement('div', { className: 'eyebrow' }, 'Para quem organiza o box'),
+          React.createElement('h2', null, 'Use a mesma conta, mas no portal certo para gerir treino e atletas.'),
+          React.createElement('p', { className: 'muted auth-panelCopy' }, 'O Coach Portal reúne publicação, grupos, atletas, benchmarks e assinatura em uma área própria para gestão.'),
           React.createElement('div', { className: 'auth-panelGrid' },
-            authFeatureCard('Publique com contexto', 'Envie programação para todos, grupos ou atletas específicos sem sair do portal.'),
-            authFeatureCard('Organize a base', 'Centralize gyms, membros, grupos e segmentação operacional em um só fluxo.'),
-            authFeatureCard('Acompanhe acesso', 'Visualize assinatura, status do box e impacto no acesso operacional do coach.'),
-            authFeatureCard('Mesma conta, outro módulo', 'Coach e atleta compartilham identidade, mas cada experiência fica na superfície certa.')
+            authFeatureCard('Publique treinos', 'Envie programação para todos, grupos ou atletas específicos sem sair do portal.'),
+            authFeatureCard('Organize atletas', 'Centralize gyms, membros e grupos em um fluxo mais claro de gestão.'),
+            authFeatureCard('Acompanhe o acesso', 'Veja assinatura, status do box e impacto no acesso do coach.'),
+            authFeatureCard('Mesma conta, área separada', 'Coach e atleta usam a mesma conta, mas cada experiência fica no lugar certo.')
           )
         )
       )
@@ -251,7 +251,7 @@ export default function App() {
           React.createElement('div', { className: 'auth-card' },
             React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
             React.createElement('h1', null, 'Coach Portal'),
-            React.createElement('p', { className: 'muted' }, 'Carregando workspace...')
+            React.createElement('p', { className: 'muted' }, 'Carregando portal...')
           )
         )
       ),

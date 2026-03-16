@@ -153,9 +153,19 @@ function normalizeUiState(s) {
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
   if (typeof next.authSubmitting !== 'boolean') next.authSubmitting = false;
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
+  next.importFlow = next.importFlow && typeof next.importFlow === 'object' ? next.importFlow : {};
   if (typeof next.passwordReset.open !== 'boolean') next.passwordReset.open = false;
   if (typeof next.passwordReset.requesting !== 'boolean') next.passwordReset.requesting = false;
   if (typeof next.passwordReset.confirming !== 'boolean') next.passwordReset.confirming = false;
+  if (typeof next.importFlow.isProcessing !== 'boolean') next.importFlow.isProcessing = false;
+  if (typeof next.importFlow.returnPage !== 'string') next.importFlow.returnPage = 'today';
+  if (!next.importFlow.lastReview || typeof next.importFlow.lastReview !== 'object') next.importFlow.lastReview = null;
+  if (typeof next.importFlow.lastError !== 'string') next.importFlow.lastError = '';
+  if (!next.importFlow.draft || typeof next.importFlow.draft !== 'object') next.importFlow.draft = null;
+  if (typeof next.importFlow.pendingKind !== 'string') next.importFlow.pendingKind = '';
+  if (!next.importFlow.pendingBenefits || typeof next.importFlow.pendingBenefits !== 'object') next.importFlow.pendingBenefits = null;
+  if (typeof next.importFlow.pendingFileName !== 'string') next.importFlow.pendingFileName = '';
+  if (typeof next.importFlow.pendingFileSize !== 'number') next.importFlow.pendingFileSize = 0;
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null, health: null, manualReset: null };
   next.benchmarkBrowser = next.benchmarkBrowser && typeof next.benchmarkBrowser === 'object'
     ? next.benchmarkBrowser
@@ -252,6 +262,7 @@ function buildUiForRender(state, uiState, uiBusy = false) {
       submitting: !!uiState.authSubmitting,
     },
     passwordReset: uiState.passwordReset,
+    importFlow: uiState.importFlow,
     admin: uiState.admin,
     benchmarkBrowser: uiState.benchmarkBrowser,
     competitionBrowser: uiState.competitionBrowser,

@@ -24,7 +24,7 @@ export function bindAppEvents({ pushEventLine, rerender, toast, setBusy }) {
     ['pdf:uploaded', (data) => {
       busy(false);
       pushEventLine?.(`PDF carregado (${data?.weeksCount ?? '?'} semanas)`);
-      toast?.('PDF carregado');
+      toast?.(data?.review?.summary || 'PDF carregado');
       rerender?.();
     }],
 
@@ -43,7 +43,7 @@ export function bindAppEvents({ pushEventLine, rerender, toast, setBusy }) {
     ['media:uploaded', (data) => {
       busy(false);
       pushEventLine?.(`Importado (${data?.weeksCount ?? '?'} semanas)`);
-      toast?.(`Importado via ${data?.type || 'arquivo'}`);
+      toast?.(data?.review?.summary || `Importado via ${data?.type || 'arquivo'}`);
       rerender?.();
     }],
 

@@ -1,10 +1,6 @@
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', href: '/' },
-  { key: 'pricing', label: 'Planos', href: '/pricing.html' },
   { key: 'support', label: 'Suporte', href: '/support.html' },
-  { key: 'privacy', label: 'Privacidade', href: '/privacy.html' },
-  { key: 'terms', label: 'Termos', href: '/terms.html' },
-  { key: 'coach', label: 'Coach Portal', href: '/coach/' },
 ];
 
 mountPublicShell();
@@ -18,7 +14,7 @@ function mountPublicShell() {
     headerRoot.className = 'public-shellHeader';
     headerRoot.innerHTML = `
       <div class="public-topbar">
-        <a class="public-brand" href="/">CrossApp Platform</a>
+        <a class="public-brand" href="/">CrossApp</a>
         <nav class="public-nav" aria-label="Navegação pública">
           ${NAV_ITEMS.map((item) => `
             <a class="public-navLink ${page === item.key ? 'isActive' : ''}" href="${item.href}">
@@ -38,13 +34,15 @@ function mountPublicShell() {
           <strong>CrossApp</strong>
           <div class="public-footerLinks">
             <a href="/">Home</a>
-            <a href="/pricing.html">Planos</a>
             <a href="/support.html">Suporte</a>
             <a href="/privacy.html">Privacidade</a>
             <a href="/terms.html">Termos</a>
           </div>
         </div>
-        <p class="public-body">Plataforma modular para treino, atletas, Coach Portal e competições. O núcleo atual resolve operação e performance sem vender camada fictícia de ERP.</p>
+        <p class="public-body">CrossApp ajuda o atleta a acompanhar treinos, importar planilhas e ver a evolução. A gestão do box fica no Coach Portal.</p>
+        <div class="public-footerLinks">
+          <a href="/coach/">Coach Portal</a>
+        </div>
       </div>
     `;
   }
