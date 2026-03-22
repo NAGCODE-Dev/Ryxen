@@ -1,5 +1,6 @@
 import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from './apiClient.js';
 import { setErrorMonitorUser } from './errorMonitor.js';
+import { getRuntimeConfig } from '../../config/runtime.js';
 
 const PROFILE_KEY = 'crossapp-user-profile';
 
@@ -28,6 +29,19 @@ export async function signInWithGoogle(payload) {
   const res = await requestWithPathFallback(['/auth/google', '/api/auth/google'], { method: 'POST', body: payload });
   handleAuthResponse(res);
   return res;
+}
+
+export function startGoogleRedirect(payload = {}) {
+  const cfg = getRuntimeConfig();
+  if (!cfg.apiBaseUrl) {
+    throw new Error('API base URL não configurada');
+  }
+
+  const returnTo = String(payload.returnTo || `${window.location.pathname}${window.location.search}`).trim() || '/sports/cross/';
+  const baseUrl = String(cfg.apiBaseUrl).replace(/\/$/, '');
+  const target = new URL(`${baseUrl}/auth/google/start`);
+  target.searchParams.set('returnTo', returnTo);
+  window.location.assign(target.toString());
 }
 
 export async function refreshSession() {
@@ -69,6 +83,44 @@ export function hasStoredSession() {
   return !!getAuthToken();
 }
 
+export function applyAuthRedirectFromLocation() {
+  try {
+    const url = new URL(window.location.href);
+    const hashParams = new URLSearchParams((url.hash || '').replace(/^#/, ''));
+    const token = String(hashParams.get('authToken') || '').trim();
+    const encodedUser = String(hashParams.get('authUser') || '').trim();
+    const authError = String(hashParams.get('authError') || '').trim();
+
+    if (!token && !encodedUser && !authError) {
+      return { success: false, handled: false };
+    }
+
+    let user = null;
+    if (encodedUser) {
+      user = parseBase64UrlJson(encodedUser);
+    }
+
+    if (token) setAuthToken(token);
+    if (user) {
+      saveStoredProfile(user);
+      setErrorMonitorUser(user);
+    }
+
+    url.hash = '';
+    window.history.replaceState({}, '', url.toString());
+
+    return {
+      success: !authError,
+      handled: true,
+      token,
+      user,
+      error: authError || '',
+    };
+  } catch {
+    return { success: false, handled: false };
+  }
+}
+
 function handleAuthResponse(res) {
   if (res?.token) setAuthToken(res.token);
   if (res?.user) {
@@ -108,4 +160,14 @@ async function requestWithPathFallback(paths, options) {
   }
 
   throw lastError || new Error('Endpoint de autenticação indisponível');
+}
+
+function parseBase64UrlJson(value) {
+  try {
+    const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    return JSON.parse(window.atob(padded));
+  } catch {
+    return null;
+  }
 }

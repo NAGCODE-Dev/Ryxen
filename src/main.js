@@ -15,6 +15,7 @@ import { flushTelemetry, trackError, trackEvent } from './core/services/telemetr
 import { captureAppError, initErrorMonitoring, setErrorMonitorUser } from './core/services/errorMonitor.js';
 import { isDeveloperProfile } from './core/utils/devAccess.js';
 import { getRuntimeConfig } from './config/runtime.js';
+import { applyAuthRedirectFromLocation } from './core/services/authService.js';
 
 if (window.__TREINO_BOOTSTRAPPED__) {
   // Evita double-boot caso o script seja incluído duas vezes acidentalmente.
@@ -31,6 +32,7 @@ async function bootstrap() {
   setupGlobalTelemetryHandlers();
   registerServiceWorker();
   mountConsentBanner();
+  const authRedirect = applyAuthRedirectFromLocation();
 
   const result = await init();
   if (!result?.success) {
@@ -40,6 +42,14 @@ async function bootstrap() {
   }
 
   trackEvent('app_initialized', { success: true });
+  if (authRedirect?.handled) {
+    if (authRedirect.success) {
+      trackEvent('auth_redirect_applied', { provider: 'google' });
+    } else if (authRedirect.error) {
+      trackError(authRedirect.error, { stage: 'auth_redirect' });
+      console.warn('Falha no retorno do Google:', authRedirect.error);
+    }
+  }
   flushTelemetry().catch(() => {});
   setErrorMonitorUser(window.__APP__?.getProfile?.()?.data || null);
 

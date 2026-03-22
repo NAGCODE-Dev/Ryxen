@@ -1,9 +1,19 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import { createHmac, randomUUID } from 'node:crypto';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 import { pool } from '../db.js';
-import { ADMIN_EMAILS, EXPOSE_RESET_CODE, GOOGLE_CLIENT_ID, SUPPORT_EMAIL } from '../config.js';
+import {
+  ADMIN_EMAILS,
+  BACKEND_PUBLIC_URL,
+  EXPOSE_RESET_CODE,
+  FRONTEND_ORIGIN,
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  JWT_SECRET,
+  SUPPORT_EMAIL,
+} from '../config.js';
 import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
 import { authRequired, signToken } from '../auth.js';
 import { getAuthCodeDeliveryCapability, sendPasswordResetEmail, sendSignupVerificationEmail } from '../mailer.js';
@@ -186,44 +196,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     }
 
     try {
-      let user = await findUserByEmail(email);
-
-      if (!user) {
-        const fallbackPassword = await bcrypt.hash(`google-oauth:${payload.sub}:${Date.now()}`, 10);
-        const inserted = await withUserBootstrap(email, async (client, shouldBeAdmin) => {
-          return client.query(
-            `INSERT INTO users (email, password_hash, name, is_admin, email_verified, email_verified_at)
-             VALUES ($1,$2,$3,$4,TRUE,NOW())
-             RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
-            [email, fallbackPassword, name, shouldBeAdmin],
-          );
-        });
-        user = inserted.rows[0];
-      } else if (!user.name && name) {
-        const updated = await pool.query(
-          `UPDATE users
-           SET name = COALESCE(name, $2),
-               email_verified = TRUE,
-               email_verified_at = COALESCE(email_verified_at, NOW())
-           WHERE id = $1
-           RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
-          [user.id, name],
-        );
-        user = updated.rows[0] || user;
-      } else if (!user.email_verified) {
-        const updated = await pool.query(
-          `UPDATE users
-           SET email_verified = TRUE,
-               email_verified_at = COALESCE(email_verified_at, NOW())
-           WHERE id = $1
-           RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
-          [user.id],
-        );
-        user = updated.rows[0] || user;
-      }
-
-      await attachPendingMembershipsToUser(user.id, user.email);
-      await attachPendingBillingClaimsToUser(user.id, user.email);
+      const user = await upsertGoogleUser({ email, name, sub: payload.sub });
       const token = signToken(user);
       return res.json({ token, user });
     } catch (error) {
@@ -233,6 +206,86 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       });
       console.error('[auth/google] failed', error);
       return res.status(500).json({ error: 'Erro ao entrar com Google' });
+    }
+  });
+
+  router.get('/google/start', async (req, res) => {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.status(503).send('Google OAuth não configurado no servidor');
+    }
+
+    const returnTo = normalizeFrontendReturnTo(req.query?.returnTo);
+    const state = createGoogleOAuthState({
+      nonce: randomUUID(),
+      returnTo,
+      at: Date.now(),
+    });
+    const redirectUri = getGoogleRedirectUri(req);
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      prompt: 'select_account',
+      state,
+    });
+    return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+  });
+
+  router.get('/google/callback', async (req, res) => {
+    const statePayload = parseGoogleOAuthState(req.query?.state);
+    const returnTo = normalizeFrontendReturnTo(statePayload?.returnTo);
+
+    if (req.query?.error) {
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+        error: String(req.query.error_description || req.query.error || 'Falha ao entrar com Google'),
+      }));
+    }
+
+    if (!statePayload) {
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+        error: 'Sessão de login expirada. Tente novamente.',
+      }));
+    }
+
+    const code = String(req.query?.code || '').trim();
+    if (!code) {
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+        error: 'Código de autorização ausente',
+      }));
+    }
+
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+        error: 'Google OAuth não configurado no servidor',
+      }));
+    }
+
+    try {
+      const redirectUri = getGoogleRedirectUri(req);
+      const tokenPayload = await exchangeGoogleCodeForTokens({ code, redirectUri });
+      const payload = await verifyGoogleIdToken(tokenPayload.id_token);
+      const email = normalizeEmail(payload.email);
+      const name = String(payload.name || '').trim() || null;
+
+      if (!email || payload.email_verified !== true) {
+        return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+          error: 'Conta Google sem email verificado',
+        }));
+      }
+
+      const user = await upsertGoogleUser({ email, name, sub: payload.sub });
+      const token = signToken(user);
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, { token, user }));
+    } catch (error) {
+      captureBackendError(error, {
+        tags: { feature: 'auth', source: 'google_callback' },
+        code,
+      });
+      console.error('[auth/google/callback] failed', error);
+      return res.redirect(buildFrontendAuthRedirectUrl(returnTo, {
+        error: error?.message || 'Erro ao entrar com Google',
+      }));
     }
   });
 
@@ -461,6 +514,29 @@ async function verifyGoogleIdToken(idToken) {
   return payload;
 }
 
+async function exchangeGoogleCodeForTokens({ code, redirectUri }) {
+  const response = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      code,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: redirectUri,
+      grant_type: 'authorization_code',
+    }).toString(),
+  });
+
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data?.id_token) {
+    throw new Error(data?.error_description || data?.error || `Falha Google OAuth (${response.status})`);
+  }
+
+  return data;
+}
+
 async function findUserByEmail(email) {
   const found = await pool.query(
     `SELECT id, email, name, is_admin, email_verified, email_verified_at
@@ -470,6 +546,104 @@ async function findUserByEmail(email) {
     [email],
   );
   return found.rows[0] || null;
+}
+
+async function upsertGoogleUser({ email, name, sub }) {
+  let user = await findUserByEmail(email);
+
+  if (!user) {
+    const fallbackPassword = await bcrypt.hash(`google-oauth:${sub}:${Date.now()}`, 10);
+    const inserted = await withUserBootstrap(email, async (client, shouldBeAdmin) => {
+      return client.query(
+        `INSERT INTO users (email, password_hash, name, is_admin, email_verified, email_verified_at)
+         VALUES ($1,$2,$3,$4,TRUE,NOW())
+         RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+        [email, fallbackPassword, name, shouldBeAdmin],
+      );
+    });
+    user = inserted.rows[0];
+  } else if (!user.name && name) {
+    const updated = await pool.query(
+      `UPDATE users
+       SET name = COALESCE(name, $2),
+           email_verified = TRUE,
+           email_verified_at = COALESCE(email_verified_at, NOW())
+       WHERE id = $1
+       RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+      [user.id, name],
+    );
+    user = updated.rows[0] || user;
+  } else if (!user.email_verified) {
+    const updated = await pool.query(
+      `UPDATE users
+       SET email_verified = TRUE,
+           email_verified_at = COALESCE(email_verified_at, NOW())
+       WHERE id = $1
+       RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+      [user.id],
+    );
+    user = updated.rows[0] || user;
+  }
+
+  await attachPendingMembershipsToUser(user.id, user.email);
+  await attachPendingBillingClaimsToUser(user.id, user.email);
+  return user;
+}
+
+function getGoogleRedirectUri(req) {
+  const base = String(BACKEND_PUBLIC_URL || `${req.protocol}://${req.get('host')}`).replace(/\/$/, '');
+  return `${base}/auth/google/callback`;
+}
+
+function normalizeFrontendReturnTo(value) {
+  const raw = String(value || '').trim();
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
+    return '/sports/cross/';
+  }
+  return raw;
+}
+
+function getFrontendBaseUrl() {
+  if (FRONTEND_ORIGIN && FRONTEND_ORIGIN !== '*') {
+    return String(FRONTEND_ORIGIN).split(',').map((item) => item.trim()).filter(Boolean)[0];
+  }
+  return 'http://localhost:8000';
+}
+
+function buildFrontendAuthRedirectUrl(returnTo, { token = '', user = null, error = '' } = {}) {
+  const target = new URL(normalizeFrontendReturnTo(returnTo), getFrontendBaseUrl());
+  const hash = new URLSearchParams();
+  if (token) hash.set('authToken', token);
+  if (user) hash.set('authUser', encodeBase64Url(JSON.stringify(user)));
+  if (error) hash.set('authError', error);
+  target.hash = hash.toString();
+  return target.toString();
+}
+
+function createGoogleOAuthState(payload) {
+  const encoded = encodeBase64Url(JSON.stringify(payload || {}));
+  const signature = encodeBase64Url(createHmac('sha256', JWT_SECRET).update(encoded).digest());
+  return `${encoded}.${signature}`;
+}
+
+function parseGoogleOAuthState(value) {
+  const raw = String(value || '').trim();
+  const [encoded, signature] = raw.split('.');
+  if (!encoded || !signature) return null;
+  const expected = encodeBase64Url(createHmac('sha256', JWT_SECRET).update(encoded).digest());
+  if (expected !== signature) return null;
+
+  try {
+    const json = Buffer.from(encoded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
+function encodeBase64Url(value) {
+  const buffer = Buffer.isBuffer(value) ? value : Buffer.from(String(value), 'utf8');
+  return buffer.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
 async function requestSignupVerification(req, res) {

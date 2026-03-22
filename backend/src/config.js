@@ -43,6 +43,7 @@ export const DEFAULT_BILLING_CANCEL_URL = String(process.env.BILLING_CANCEL_URL 
 export const GOOGLE_CLIENT_ID = String(
   process.env.GOOGLE_CLIENT_ID || '581596457498-9vrde3rt79ikqqm751v8bfhngemm2k23.apps.googleusercontent.com',
 ).trim();
+export const GOOGLE_CLIENT_SECRET = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
 export const APP_ENV = String(process.env.APP_ENV || NODE_ENV || 'development').trim().toLowerCase();
 export const APP_RELEASE = String(process.env.APP_RELEASE || '').trim();
 export const SENTRY_DSN = String(process.env.SENTRY_DSN || '').trim();

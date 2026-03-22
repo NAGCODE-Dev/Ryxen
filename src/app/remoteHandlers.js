@@ -2,6 +2,7 @@ import {
   confirmSignUp,
   signIn,
   signInWithGoogle,
+  startGoogleRedirect,
   signOut,
   requestSignUpVerification,
   signUp,
@@ -78,6 +79,10 @@ export function createRemoteHandlers({
 
     async handleSignInWithGoogle(payload) {
       return signInWithGoogle(payload);
+    },
+
+    handleStartGoogleRedirect(payload) {
+      return startGoogleRedirect(payload);
     },
 
     async handleRefreshSession() {
