@@ -24,7 +24,9 @@ import { createCompetitionRouter } from './routes/competitionRoutes.js';
 import { requireGymManager, slugify } from './utils/gymUtils.js';
 import { runMigrations } from './migrations/index.js';
 import { startEmailWorker } from './mailer.js';
+import { captureBackendError, initBackendErrorMonitoring } from './sentry.js';
 
+initBackendErrorMonitoring();
 const app = express();
 const AUTH_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'auth' });
 const RESET_RATE_LIMIT = createRateLimiter({ windowMs: 15 * 60_000, maxRequests: 8, keyPrefix: 'reset' });
@@ -77,7 +79,16 @@ app.get('/health', async (_req, res) => {
 });
 
 
-app.use((err, _req, res, _next) => {
+app.use((err, req, res, _next) => {
+  captureBackendError(err, {
+    tags: { layer: 'backend', source: 'express' },
+    request: {
+      method: req?.method || null,
+      path: req?.originalUrl || req?.url || null,
+      ip: req?.ip || null,
+      userId: req?.user?.userId || null,
+    },
+  });
   console.error('[backend:error]', err);
   res.status(500).json({ error: 'Erro interno' });
 });
@@ -90,6 +101,9 @@ runMigrations()
     });
   })
   .catch((error) => {
+    captureBackendError(error, {
+      tags: { layer: 'backend', source: 'startup' },
+    });
     console.error('[backend] failed to start', error);
     process.exit(1);
   });

@@ -12,6 +12,7 @@ import { inject } from '@vercel/analytics';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { mountConsentBanner } from './ui/consent.js';
 import { flushTelemetry, trackError, trackEvent } from './core/services/telemetryService.js';
+import { captureAppError, initErrorMonitoring, setErrorMonitorUser } from './core/services/errorMonitor.js';
 import { isDeveloperProfile } from './core/utils/devAccess.js';
 import { getRuntimeConfig } from './config/runtime.js';
 
@@ -25,6 +26,7 @@ if (window.__TREINO_BOOTSTRAPPED__) {
 
 async function bootstrap() {
   applyAppContext();
+  setupErrorMonitoring();
   setupVercelObservability();
   setupGlobalTelemetryHandlers();
   registerServiceWorker();
@@ -39,6 +41,7 @@ async function bootstrap() {
 
   trackEvent('app_initialized', { success: true });
   flushTelemetry().catch(() => {});
+  setErrorMonitorUser(window.__APP__?.getProfile?.()?.data || null);
 
   // Debug opcional (não interfere no uso normal):
   // /?debug=1 mantém o painel antigo para inspeção rápida.
@@ -83,6 +86,12 @@ function applyAppContext() {
 
   document.title = appLabel;
   document.body.dataset.sport = sport;
+}
+
+function setupErrorMonitoring() {
+  const cfg = getRuntimeConfig();
+  const sentry = cfg?.observability?.sentry || {};
+  initErrorMonitoring(sentry);
 }
 
 async function mountUI() {
@@ -218,6 +227,12 @@ function wait(ms) {
 
 function setupGlobalTelemetryHandlers() {
   window.addEventListener('error', (event) => {
+    captureAppError(event?.error || event?.message || 'window_error', {
+      tags: { layer: 'frontend', source: 'window.error' },
+      source: event?.filename || null,
+      line: event?.lineno || null,
+      column: event?.colno || null,
+    });
     trackError(event?.error || event?.message || 'window_error', {
       source: event?.filename || null,
       line: event?.lineno || null,
@@ -226,6 +241,9 @@ function setupGlobalTelemetryHandlers() {
   });
 
   window.addEventListener('unhandledrejection', (event) => {
+    captureAppError(event?.reason || 'unhandled_rejection', {
+      tags: { layer: 'frontend', source: 'unhandledrejection' },
+    });
     trackError(event?.reason || 'unhandled_rejection', { source: 'promise' });
   });
 }

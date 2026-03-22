@@ -23,6 +23,16 @@ const dirsToCopy = [
 const runtimeConfig = {
   apiBaseUrl: process.env.CROSSAPP_API_BASE_URL || '/api',
   telemetryEnabled: process.env.CROSSAPP_TELEMETRY_ENABLED !== 'false',
+  auth: {
+    googleClientId: process.env.CROSSAPP_GOOGLE_CLIENT_ID || '',
+  },
+  observability: {
+    sentry: {
+      dsn: process.env.CROSSAPP_SENTRY_DSN || '',
+      environment: process.env.CROSSAPP_APP_ENV || process.env.VERCEL_ENV || 'production',
+      release: process.env.CROSSAPP_APP_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '',
+    },
+  },
   billing: {
     provider: process.env.CROSSAPP_BILLING_PROVIDER || 'kiwify_link',
     successUrl: process.env.CROSSAPP_BILLING_SUCCESS_URL || '',

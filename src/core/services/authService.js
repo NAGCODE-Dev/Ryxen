@@ -1,15 +1,31 @@
 import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from './apiClient.js';
+import { setErrorMonitorUser } from './errorMonitor.js';
 
 const PROFILE_KEY = 'crossapp-user-profile';
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
+  return res;
+}
+
+export async function requestSignUpVerification(payload) {
+  return apiRequest('/auth/signup/request-code', { method: 'POST', body: payload });
+}
+
+export async function confirmSignUp(payload) {
+  const res = await apiRequest('/auth/signup/confirm', { method: 'POST', body: payload });
   handleAuthResponse(res);
   return res;
 }
 
 export async function signIn(payload) {
   const res = await apiRequest('/auth/signin', { method: 'POST', body: payload });
+  handleAuthResponse(res);
+  return res;
+}
+
+export async function signInWithGoogle(payload) {
+  const res = await apiRequest('/auth/google', { method: 'POST', body: payload });
   handleAuthResponse(res);
   return res;
 }
@@ -36,6 +52,7 @@ export async function signOut() {
   } finally {
     clearAuthToken();
     clearStoredProfile();
+    setErrorMonitorUser(null);
   }
 }
 
@@ -54,7 +71,10 @@ export function hasStoredSession() {
 
 function handleAuthResponse(res) {
   if (res?.token) setAuthToken(res.token);
-  if (res?.user) saveStoredProfile(res.user);
+  if (res?.user) {
+    saveStoredProfile(res.user);
+    setErrorMonitorUser(res.user);
+  }
 }
 
 function saveStoredProfile(profile) {

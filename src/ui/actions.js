@@ -15,6 +15,8 @@ import {
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
 
+  let googleScriptPromise = null;
+
   const emptyCoachPortal = () => ({
     subscription: null,
     entitlements: [],
@@ -55,6 +57,98 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       runningHistory: Array.isArray(current?.runningHistory) ? current.runningHistory : [],
       strengthHistory: Array.isArray(current?.strengthHistory) ? current.strengthHistory : [],
     };
+  }
+
+  async function loadGoogleScript() {
+    if (window.google?.accounts?.id) return window.google;
+    if (googleScriptPromise) return googleScriptPromise;
+
+    googleScriptPromise = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-google-gsi="1"]');
+      if (existing) {
+        const checkReady = () => {
+          if (window.google?.accounts?.id) resolve(window.google);
+          else window.setTimeout(checkReady, 80);
+        };
+        checkReady();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      script.dataset.googleGsi = '1';
+      script.onload = () => resolve(window.google);
+      script.onerror = () => reject(new Error('Não foi possível carregar o Google Sign-In'));
+      document.head.appendChild(script);
+    });
+
+    return googleScriptPromise;
+  }
+
+  async function ensureGoogleSignInUi() {
+    const ui = getUiState?.() || {};
+    if (ui.modal !== 'auth') return;
+
+    const shell = root.querySelector('#google-signin-shell');
+    const buttonEl = root.querySelector('#google-signin-button');
+    if (!shell || !buttonEl) return;
+
+    const profile = window.__APP__?.getProfile?.()?.data || null;
+    if (profile?.email) {
+      shell.style.display = 'none';
+      return;
+    }
+
+    const runtime = window.__APP__?.getRuntimeConfig?.()?.data || {};
+    const clientId = String(runtime?.auth?.googleClientId || '').trim();
+    if (!clientId) {
+      shell.innerHTML = '<p class="account-hint auth-googleHint">Google Sign-In não configurado.</p>';
+      return;
+    }
+
+    const googleApi = await loadGoogleScript();
+    if (!googleApi?.accounts?.id) {
+      throw new Error('Google Sign-In indisponível');
+    }
+
+    shell.style.display = '';
+    buttonEl.innerHTML = '';
+    googleApi.accounts.id.initialize({
+      client_id: clientId,
+      callback: async (response) => {
+        try {
+          const result = await window.__APP__?.signInWithGoogle?.({ credential: response.credential });
+          if (!result?.token && !result?.user) {
+            throw new Error('Falha ao autenticar com Google');
+          }
+
+          const signedProfile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+          await setUiState({ modal: null, authMode: 'signin' });
+          toast('Login com Google efetuado');
+          await rerender();
+          hydrateAccountSnapshotInBackground(signedProfile);
+          if (await maybeResumePendingCheckout()) return;
+        } catch (error) {
+          toast(error?.message || 'Erro ao entrar com Google');
+          console.error(error);
+        }
+      },
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      use_fedcm_for_prompt: true,
+    });
+    googleApi.accounts.id.renderButton(buttonEl, {
+      theme: 'outline',
+      size: 'large',
+      type: 'standard',
+      shape: 'pill',
+      text: ui.authMode === 'signup' ? 'signup_with' : 'signin_with',
+      logo_alignment: 'left',
+      width: Math.max(220, Math.min(buttonEl.clientWidth || 320, 360)),
+      locale: 'pt-BR',
+    });
   }
 
   let accountSnapshotTask = null;
@@ -342,8 +436,12 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await setUiState({ modal: null });
           const file = await pickPdfFile();
           if (!file) return;
-          await window.__APP__.uploadMultiWeekPdf(file);
+          const result = await window.__APP__.uploadMultiWeekPdf(file);
+          if (!result?.success) {
+            throw new Error(result?.error || 'Falha ao importar PDF');
+          }
           consumeAthleteImport(importPolicy.benefits, 'pdf');
+          toast('PDF importado');
           await rerender();
           return;
         }
@@ -541,6 +639,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             const profile = window.__APP__?.getProfile?.()?.data || null;
             await setUiState({ modal });
             await rerender();
+            await ensureGoogleSignInUi();
             hydrateAccountSnapshotInBackground(profile);
             if (modal === 'auth') root.querySelector('#auth-email')?.focus();
             return;
@@ -630,32 +729,76 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
         case 'auth:switch': {
           const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
-          await setUiState({ authMode: mode });
+          await patchUiState((s) => ({
+            ...s,
+            authMode: mode,
+            signupVerification: mode === 'signup'
+              ? (s.signupVerification || {})
+              : {},
+          }));
           await rerender();
+          await ensureGoogleSignInUi();
           root.querySelector('#auth-email')?.focus();
+          return;
+        }
+
+        case 'auth:signup-request-code': {
+          const name = String(root.querySelector('#auth-name')?.value || '').trim();
+          const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();
+          const password = String(root.querySelector('#auth-password')?.value || '');
+
+          if (!name) throw new Error('Informe seu nome');
+          if (!email) throw new Error('Informe seu email');
+          if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
+
+          const result = await window.__APP__.requestSignUpVerification({ name, email, password });
+          await patchUiState((s) => ({
+            ...s,
+            signupVerification: {
+              ...(s.signupVerification || {}),
+              name,
+              email,
+              code: result?.previewCode || '',
+              previewCode: result?.previewCode || '',
+              previewUrl: result?.delivery?.previewUrl || '',
+              supportEmail: result?.supportEmail || '',
+              deliveryStatus: result?.deliveryStatus || '',
+              requestedAt: new Date().toISOString(),
+            },
+          }));
+          toast(result?.deliveryStatus === 'preview' ? 'Código gerado em preview' : 'Código enviado para seu email');
+          await rerender();
+          await ensureGoogleSignInUi();
+          root.querySelector('#auth-signup-code')?.focus();
           return;
         }
 
         case 'auth:submit': {
           const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
           const name = String(root.querySelector('#auth-name')?.value || '').trim();
-          const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();
+          const signupVerification = getUiState?.()?.signupVerification || {};
+          const email = String(root.querySelector('#auth-email')?.value || signupVerification.email || '').trim().toLowerCase();
           const password = String(root.querySelector('#auth-password')?.value || '');
 
-          if (!email) throw new Error('Informe seu email');
-          if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
-          if (mode === 'signup' && !name) throw new Error('Informe seu nome');
-
-          const result = mode === 'signup'
-            ? await window.__APP__.signUp({ name, email, password })
-            : await window.__APP__.signIn({ email, password });
+          let result;
+          if (mode === 'signup') {
+            const code = String(root.querySelector('#auth-signup-code')?.value || signupVerification.code || signupVerification.previewCode || '').trim();
+            if (!name && !signupVerification.name) throw new Error('Informe seu nome');
+            if (!email) throw new Error('Informe seu email');
+            if (!code) throw new Error('Informe o código enviado ao seu email');
+            result = await window.__APP__.confirmSignUp({ email, code });
+          } else {
+            if (!email) throw new Error('Informe seu email');
+            if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
+            result = await window.__APP__.signIn({ email, password });
+          }
 
           if (!result?.token && !result?.user) {
             throw new Error('Falha ao autenticar');
           }
 
           const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
-          await setUiState({ modal: null, authMode: 'signin' });
+          await setUiState({ modal: null, authMode: 'signin', signupVerification: {} });
           toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
           await rerender();
           hydrateAccountSnapshotInBackground(profile);
@@ -672,6 +815,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             },
           }));
           await rerender();
+          await ensureGoogleSignInUi();
           root.querySelector('#reset-email')?.focus();
           return;
         }
@@ -695,6 +839,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           }));
           toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Pedido de recuperação enviado');
           await rerender();
+          await ensureGoogleSignInUi();
           return;
         }
 
@@ -716,6 +861,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           }));
           toast('Senha atualizada');
           await rerender();
+          await ensureGoogleSignInUi();
           return;
         }
 
@@ -1060,6 +1206,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   queueMicrotask(async () => {
     try {
       await maybePrimeCheckoutIntentFromUrl();
+      await ensureGoogleSignInUi();
       if (peekCheckoutIntent() && hasCheckoutAuth() && window.__APP__?.getProfile?.()?.data?.email) {
         await maybeResumePendingCheckout();
       }
@@ -1197,12 +1344,16 @@ function pickUniversalFile() {
       'text/plain',
       'text/csv',
       'application/json',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'image/*',
       'video/*',
       '.txt',
       '.md',
       '.csv',
       '.json',
+      '.xls',
+      '.xlsx',
     ].join(',');
     input.style.display = 'none';
 

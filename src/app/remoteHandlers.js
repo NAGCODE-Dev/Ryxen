@@ -1,6 +1,9 @@
 import {
+  confirmSignUp,
   signIn,
+  signInWithGoogle,
   signOut,
+  requestSignUpVerification,
   signUp,
   refreshSession,
   requestPasswordReset,
@@ -61,8 +64,20 @@ export function createRemoteHandlers({
       return signUp(credentials);
     },
 
+    async handleRequestSignUpVerification(payload) {
+      return requestSignUpVerification(payload);
+    },
+
+    async handleConfirmSignUp(payload) {
+      return confirmSignUp(payload);
+    },
+
     async handleSignIn(credentials) {
       return signIn(credentials);
+    },
+
+    async handleSignInWithGoogle(payload) {
+      return signInWithGoogle(payload);
     },
 
     async handleRefreshSession() {

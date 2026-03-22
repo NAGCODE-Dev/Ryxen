@@ -149,6 +149,7 @@ function normalizeUiState(s) {
   if (typeof next.settings.showObjectivesInWods !== 'boolean') next.settings.showObjectivesInWods = true;
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
+  next.signupVerification = next.signupVerification && typeof next.signupVerification === 'object' ? next.signupVerification : {};
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
@@ -194,6 +195,7 @@ function buildUiForRender(state, uiState, uiBusy = false) {
       profile: safeGetProfile(),
     },
     passwordReset: uiState.passwordReset,
+    signupVerification: uiState.signupVerification,
     admin: uiState.admin,
     athleteOverview: uiState.athleteOverview,
     coachPortal: uiState.coachPortal,

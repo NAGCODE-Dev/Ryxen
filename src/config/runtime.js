@@ -8,6 +8,16 @@ const STORAGE_KEY = 'crossapp-runtime-config';
 const defaults = {
   apiBaseUrl: '/api',
   telemetryEnabled: true,
+  auth: {
+    googleClientId: '',
+  },
+  observability: {
+    sentry: {
+      dsn: '',
+      environment: 'development',
+      release: '',
+    },
+  },
   app: {
     sport: 'cross',
     appName: 'Cross',

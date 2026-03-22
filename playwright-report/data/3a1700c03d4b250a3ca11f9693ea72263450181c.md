@@ -1,0 +1,102 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - complementary "Navegação principal do atleta" [ref=e5]:
+        - generic [ref=e6]:
+          - generic [ref=e7]: CrossApp Train
+          - heading "Treine hoje. Veja sua evolução." [level=1] [ref=e8]
+          - paragraph [ref=e9]: Acompanhe o treino do dia, importe planilhas e mantenha seus registros no mesmo lugar.
+        - generic [ref=e10]:
+          - generic [ref=e11]:
+            - generic [ref=e12]: Agora
+            - strong [ref=e13]: Treino do dia
+            - generic [ref=e14]: Abra o treino de hoje ou importe uma planilha para começar.
+          - generic [ref=e15]:
+            - generic [ref=e16]: Conta
+            - strong [ref=e17]: Modo visitante
+            - generic [ref=e18]: Entre ou crie sua conta para salvar sua rotina e seus resultados.
+        - navigation [ref=e19]:
+          - generic [ref=e20]:
+            - button "◉ Hoje treino do dia" [ref=e21] [cursor=pointer]:
+              - generic [ref=e22]: ◉
+              - generic [ref=e23]: Hoje
+              - generic [ref=e24]: treino do dia
+            - button "+ Importar planilha ou mídia" [ref=e25] [cursor=pointer]:
+              - generic [ref=e26]: +
+              - generic [ref=e27]: Importar
+              - generic [ref=e28]: planilha ou mídia
+            - button "↗ Perfil registros e benchmarks" [ref=e29] [cursor=pointer]:
+              - generic [ref=e30]: ↗
+              - generic [ref=e31]: Perfil
+              - generic [ref=e32]: registros e benchmarks
+            - button "ID Conta segurança e coach" [ref=e33] [cursor=pointer]:
+              - generic [ref=e34]: ID
+              - generic [ref=e35]: Conta
+              - generic [ref=e36]: segurança e coach
+      - generic [ref=e37]:
+        - banner [ref=e38]:
+          - generic [ref=e40]:
+            - generic [ref=e41]: CrossApp Train
+            - button "Entrar" [ref=e43] [cursor=pointer]
+        - main [ref=e44]:
+          - generic [ref=e45]:
+            - generic [ref=e46]:
+              - generic [ref=e47]:
+                - generic [ref=e48]: CrossApp
+                - heading "Acompanhe seu treino sem complicar" [level=1] [ref=e49]
+                - paragraph [ref=e50]: Entre para acompanhar seus treinos, importar planilhas, registrar resultados e ver sua evolução no dia a dia.
+              - generic [ref=e51]:
+                - button "Entrar" [ref=e52] [cursor=pointer]
+                - button "Criar conta" [ref=e53] [cursor=pointer]
+              - generic [ref=e55]:
+                - generic [ref=e56]:
+                  - text: Treino do dia
+                  - strong [ref=e57]: Hoje
+                  - text: veja o que fazer agora
+                - generic [ref=e58]:
+                  - text: Importação
+                  - strong [ref=e59]: Planilha
+                  - text: PDF, foto ou treino salvo
+                - generic [ref=e60]:
+                  - text: Evolução
+                  - strong [ref=e61]: Registros
+                  - text: benchmarks e marcas pessoais
+            - generic [ref=e62]:
+              - generic [ref=e63]: 📋
+              - heading "Comece por aqui" [level=2] [ref=e64]
+              - paragraph [ref=e65]: Se já tiver sua planilha, importe agora. Se preferir, entre na sua conta e deixe tudo salvo no mesmo lugar.
+              - button "Importar treino" [ref=e67] [cursor=pointer]
+    - generic [ref=e69]:
+      - generic [ref=e70]:
+        - heading "Entrar" [level=2] [ref=e71]
+        - button "✕" [ref=e72] [cursor=pointer]
+      - generic [ref=e73]:
+        - generic [ref=e74]:
+          - generic [ref=e75]: CrossApp
+          - paragraph [ref=e76]: Entre para ver seu treino, resultados e evolução.
+        - generic [ref=e77]:
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - button "Entrar" [ref=e80] [cursor=pointer]
+              - button "Cadastrar" [ref=e81] [cursor=pointer]
+            - generic [ref=e82]:
+              - textbox "Seu email" [ref=e83]
+              - textbox "Sua senha" [ref=e84]
+              - button "Entrando..." [disabled] [ref=e85] [cursor=pointer]
+          - generic [ref=e86]:
+            - strong [ref=e87]: Esqueceu a senha?
+            - button "Recuperar senha" [ref=e88] [cursor=pointer]
+  - contentinfo [ref=e89]:
+    - link "Home" [ref=e90] [cursor=pointer]:
+      - /url: /
+    - link "Privacidade" [ref=e91] [cursor=pointer]:
+      - /url: /privacy.html
+    - link "Termos" [ref=e92] [cursor=pointer]:
+      - /url: /terms.html
+    - link "Suporte" [ref=e93] [cursor=pointer]:
+      - /url: /support.html
+  - status: Failed to fetch
+```

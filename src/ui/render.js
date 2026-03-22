@@ -64,8 +64,8 @@ function renderBottomTools(state) {
   return `
     <div class="bottom-tools">
       <button class="quick-action quick-action-primary quick-action-wide" data-action="modal:open" data-modal="import" type="button">
-        <span class="quick-actionIcon">IMPORTAR</span>
-        <span class="quick-actionLabel">Adicionar treino ou planilha</span>
+        <span class="quick-actionIcon">+</span>
+        <span class="quick-actionLabel">Importar treino</span>
       </button>
     </div>
   `;
@@ -85,6 +85,7 @@ function renderModals(state) {
       ...(state?.__ui?.auth || {}),
       isBusy: state?.__ui?.isBusy || false,
       passwordReset: state?.__ui?.passwordReset || {},
+      signupVerification: state?.__ui?.signupVerification || {},
       admin: state?.__ui?.admin || {},
       athleteOverview: state?.__ui?.athleteOverview || {},
       coachPortal: state?.__ui?.coachPortal || {},
@@ -169,12 +170,10 @@ function renderMainContent(state) {
   if (currentPage === 'account') return renderAccountPage(state);
 
   const workout = state?.workout ?? state?.workoutOfDay;
-  const accessBanner = renderAthleteAccessBanner(state);
   if (!workout || !workout.blocks?.length) {
     return `
       <div class="workout-container">
         ${renderTodayPageIntro(state)}
-        ${accessBanner}
         ${renderEmptyState(state)}
         ${renderBottomTools(state)}
       </div>
@@ -191,7 +190,6 @@ function renderMainContent(state) {
   return `
     <div class="workout-container">
       ${renderTodayPageIntro(state)}
-      ${accessBanner}
       <div class="workout-header">
         <h2 class="workout-title">Treino • ${escapeHtml(formatDay(state?.currentDay))}</h2>
         ${showSourceToggle ? `
@@ -297,11 +295,10 @@ function renderEmptyState(state) {
     return `
       <div class="empty-state">
         <div class="empty-icon">📋</div>
-        <h2>Comece no seu ritmo</h2>
-        <p>Use o app sozinho importando sua planilha ou entre na conta para receber o treino enviado pelo coach e liberar mais recursos.</p>
+        <h2>Nenhum treino carregado</h2>
+        <p>Abra a importação e envie um arquivo.</p>
         <div class="page-actions page-actions-inline">
-          <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Adicionar treino</button>
-          <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
+          <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
         </div>
       </div>
     `;
@@ -311,10 +308,10 @@ function renderEmptyState(state) {
     <div class="empty-state">
       <div class="empty-icon">😴</div>
       <h2>Sem treino para ${escapeHtml(day)}</h2>
-      <p>Troque o dia, aguarde a programação do coach ou importe uma planilha manual para continuar.</p>
+      <p>Troque o dia ou importe outro treino.</p>
       <div class="page-actions page-actions-inline">
         <button class="btn-secondary" data-action="day:auto" type="button">Voltar para auto</button>
-        <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Adicionar treino</button>
+        <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Importar</button>
       </div>
     </div>
   `;
@@ -651,10 +648,10 @@ function renderTodayPageIntro(state) {
   return `
     ${renderPageHero({
       eyebrow: 'Hoje',
-      title: hasWeeks ? 'Treino do dia' : 'Comece pelo treino certo',
+      title: hasWeeks ? 'Treino do dia' : 'Importe seu treino',
       subtitle: hasWeeks
         ? formatSubtitle(state)
-        : 'Importe uma planilha ou entre para receber a programação enviada pelo coach.',
+        : 'PDF, imagem, vídeo, planilha ou texto.',
       actions: `
         <button class="btn-secondary" data-action="day:auto" type="button">Auto</button>
         <select class="day-select" data-action="day:set">
@@ -670,21 +667,6 @@ function renderTodayPageIntro(state) {
       `,
       footer: hasWeeks ? `<div class="week-chips">${renderWeekChips(state)}</div>` : '',
     })}
-    ${renderAthleteBenefitsStrip(state)}
-  `;
-}
-
-function renderAthleteBenefitsStrip(state) {
-  const benefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
-  const importUsage = getAthleteImportUsage(benefits, 'pdf');
-  const historyValue = benefits.historyDays === null ? 'Completo' : `${benefits.historyDays} dias`;
-
-  return `
-    <div class="summary-strip summary-strip-3">
-      ${renderSummaryTile('Seu acesso', benefits.label, describeAthleteBenefitSource(benefits))}
-      ${renderSummaryTile('Imports no mês', importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`, importUsage.unlimited ? 'PDF ou mídia sem limite' : `${importUsage.used} usado(s) entre PDF e mídia`)}
-      ${renderSummaryTile('Histórico', historyValue, 'competições liberadas')}
-    </div>
   `;
 }
 
@@ -721,7 +703,7 @@ function renderPageFold({ title, subtitle = '', content = '', open = true }) {
   `;
 }
 
-function renderImportModal() {
+export function renderImportModal() {
   return `
     <div class="modal-overlay isOpen">
       <div class="modal-container">
@@ -732,16 +714,16 @@ function renderImportModal() {
         <div class="modal-body modal-body-auth">
           <div class="auth-intro">
             <div class="section-kicker">Importação</div>
-            <p class="account-hint">Escolha a melhor origem para o treino. O app prioriza o treino do coach, mas sua planilha pode conviver e ser alternada quando fizer sentido.</p>
+            <p class="account-hint">Escolha o tipo de arquivo.</p>
           </div>
           <div class="coach-grid">
             <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button">
               <span class="quick-actionIcon">PDF</span>
-              <span class="quick-actionLabel">Importar planilha em PDF</span>
+              <span class="quick-actionLabel">Planilha em PDF</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="media:pick" type="button">
-              <span class="quick-actionIcon">OCR</span>
-              <span class="quick-actionLabel">Foto, imagem ou vídeo</span>
+              <span class="quick-actionIcon">ARQ</span>
+              <span class="quick-actionLabel">Imagem, vídeo, texto ou planilha</span>
             </button>
             <button class="quick-action quick-action-modal" data-action="workout:import" type="button">
               <span class="quick-actionIcon">JSON</span>
@@ -1239,6 +1221,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
   const isBusy = !!auth?.isBusy;
   const isSignup = authMode === 'signup';
   const reset = auth?.passwordReset || auth?.reset || {};
+  const signupVerification = auth?.signupVerification || {};
   const admin = auth?.admin || {};
   const coachPortal = auth?.coachPortal || {};
   const athleteOverview = auth?.athleteOverview || {};
@@ -1469,12 +1452,36 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
             <button class="btn-secondary ${isSignup ? 'isSelected' : ''}" data-action="auth:switch" data-mode="signup" type="button">Cadastrar</button>
           </div>
 
+          <div class="auth-googleBlock" id="google-signin-shell">
+            <div id="google-signin-button"></div>
+            <p class="account-hint auth-googleHint">Use sua conta Google para entrar sem senha.</p>
+          </div>
+
+          <div class="auth-divider">ou continue com email</div>
+
           <form class="auth-form" id="ui-authForm">
-            <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" ${isSignup ? '' : 'style="display:none"'} />
-            <input class="add-input" id="auth-email" type="email" placeholder="Seu email" autocomplete="email" />
+            <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
+            <input class="add-input" id="auth-email" type="email" placeholder="Seu email" autocomplete="email" value="${escapeHtml(signupVerification.email || '')}" />
             <input class="add-input" id="auth-password" type="password" placeholder="Sua senha" autocomplete="${isSignup ? 'new-password' : 'current-password'}" />
+            ${isSignup ? `
+              <div class="auth-signupVerify">
+                <button class="btn-secondary" data-action="auth:signup-request-code" type="button">Enviar código</button>
+                <input class="add-input" id="auth-signup-code" type="text" placeholder="Código de verificação" value="${escapeHtml(signupVerification.code || signupVerification.previewCode || '')}" />
+                ${signupVerification?.previewCode ? `
+                  <div class="reset-codePreview">
+                    Código temporário: <strong>${escapeHtml(signupVerification.previewCode)}</strong>
+                  </div>
+                ` : ''}
+                ${signupVerification?.previewUrl ? `
+                  <a class="reset-previewLink" href="${escapeHtml(signupVerification.previewUrl)}" target="_blank" rel="noopener noreferrer">
+                    Abrir preview do email
+                  </a>
+                ` : ''}
+                <p class="account-hint">Cadastros novos só são liberados após validar o código enviado ao email.${signupVerification?.supportEmail ? ` Suporte: ${escapeHtml(signupVerification.supportEmail)}` : ''}</p>
+              </div>
+            ` : ''}
             <button class="btn-primary" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
-              ${isSignup ? 'Criar conta' : 'Entrar'}
+              ${isSignup ? 'Criar conta com código' : 'Entrar'}
             </button>
           </form>
 

@@ -1,6 +1,16 @@
 window.__CROSSAPP_CONFIG__ = {
   apiBaseUrl: 'https://your-backend.up.railway.app',
   telemetryEnabled: true,
+  auth: {
+    googleClientId: 'your-google-client-id.apps.googleusercontent.com',
+  },
+  observability: {
+    sentry: {
+      dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
+      environment: 'production',
+      release: 'crossapp@1.0.0',
+    },
+  },
   billing: {
     provider: 'kiwify_link',
     successUrl: 'https://your-frontend.vercel.app/coach/?billing=success',

@@ -10,6 +10,7 @@ import { migration as competitionSourcesMigration } from './008_competition_sour
 import { migration as athleteMeasurementsMigration } from './009_athlete_measurements.js';
 import { migration as opsEventsMigration } from './010_ops_events.js';
 import { migration as emailJobsMigration } from './011_email_jobs.js';
+import { migration as emailVerificationMigration } from './012_email_verification.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -23,6 +24,7 @@ const MIGRATIONS = [
   athleteMeasurementsMigration,
   opsEventsMigration,
   emailJobsMigration,
+  emailVerificationMigration,
 ];
 
 export async function runMigrations() {

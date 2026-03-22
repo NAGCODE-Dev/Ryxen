@@ -88,6 +88,28 @@
   background: var(--bg-soft);
 }
 
+.auth-googleBlock {
+  display: grid;
+  gap: 8px;
+}
+
+#google-signin-button {
+  min-height: 40px;
+}
+
+.auth-googleHint {
+  text-align: center;
+}
+
+.auth-signupVerify {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
 .reset-previewLink {
   color: var(--text-primary);
 }

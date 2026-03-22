@@ -40,6 +40,12 @@ export const EXPOSE_RESET_CODE = String(process.env.EXPOSE_RESET_CODE || 'false'
 export const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, IS_PRODUCTION);
 export const DEFAULT_BILLING_SUCCESS_URL = String(process.env.BILLING_SUCCESS_URL || FRONTEND_ORIGIN || 'http://localhost:8000').trim();
 export const DEFAULT_BILLING_CANCEL_URL = String(process.env.BILLING_CANCEL_URL || FRONTEND_ORIGIN || 'http://localhost:8000').trim();
+export const GOOGLE_CLIENT_ID = String(
+  process.env.GOOGLE_CLIENT_ID || '581596457498-9vrde3rt79ikqqm751v8bfhngemm2k23.apps.googleusercontent.com',
+).trim();
+export const APP_ENV = String(process.env.APP_ENV || NODE_ENV || 'development').trim().toLowerCase();
+export const APP_RELEASE = String(process.env.APP_RELEASE || '').trim();
+export const SENTRY_DSN = String(process.env.SENTRY_DSN || '').trim();
 export const BACKEND_PUBLIC_URL = String(process.env.BACKEND_PUBLIC_URL || '').trim();
 export const KIWIFY_WEBHOOK_TOKEN = String(process.env.KIWIFY_WEBHOOK_TOKEN || '').trim();
 export const KIWIFY_ACCOUNT_ID = String(process.env.KIWIFY_ACCOUNT_ID || '').trim();

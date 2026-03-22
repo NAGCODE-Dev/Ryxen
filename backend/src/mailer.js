@@ -2,8 +2,9 @@ import nodemailer from 'nodemailer';
 import 'dotenv/config';
 
 import { pool } from './db.js';
-import { normalizeEmail } from './devAccess.js';
+import { isDeveloperEmail, normalizeEmail } from './devAccess.js';
 import { logOpsEvent } from './opsEvents.js';
+import { EXPOSE_RESET_CODE } from './config.js';
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'nagcode.contact@gmail.com';
 const MAILER_VERIFY_TIMEOUT_MS = Math.max(Number(process.env.MAILER_VERIFY_TIMEOUT_MS || 8000), 1000);
@@ -23,7 +24,28 @@ export async function sendPasswordResetEmail({ to, code, userId = null }) {
   return enqueuePasswordResetEmail({ to, code, userId });
 }
 
+export async function sendSignupVerificationEmail({ to, code }) {
+  return enqueueCodeEmail({ kind: 'email_verification', to, code, userId: null });
+}
+
+export async function getAuthCodeDeliveryCapability(email = '') {
+  const providers = await getProviders();
+  const hasInboxDelivery = providers.some((provider) => provider.kind === 'smtp');
+  const developerPreview = !hasInboxDelivery && EXPOSE_RESET_CODE && isDeveloperEmail(email);
+
+  return {
+    mode: providers[0]?.kind || 'none',
+    hasInboxDelivery,
+    developerPreview,
+    canSendCode: hasInboxDelivery || developerPreview,
+  };
+}
+
 export async function enqueuePasswordResetEmail({ to, code, userId = null }) {
+  return enqueueCodeEmail({ kind: 'password_reset', to, code, userId });
+}
+
+async function enqueueCodeEmail({ kind, to, code, userId = null }) {
   const email = normalizeEmail(to);
   if (!email) {
     const error = new Error('email inválido');
@@ -33,10 +55,10 @@ export async function enqueuePasswordResetEmail({ to, code, userId = null }) {
 
   const inserted = await pool.query(
     `INSERT INTO email_jobs (user_id, kind, email, payload, status, next_attempt_at)
-     VALUES ($1, 'password_reset', $2, $3, 'pending', NOW())
+     VALUES ($1, $2, $3, $4, 'pending', NOW())
      RETURNING id, user_id, kind, email, payload, status, provider, retry_count, max_retries,
                message_id, preview_url, last_error, next_attempt_at, sent_at, created_at, updated_at`,
-    [userId || null, email, { code }],
+    [userId || null, kind, email, { code }],
   );
 
   return processEmailJob(inserted.rows[0].id, { immediate: true });
@@ -435,6 +457,22 @@ function buildEmailContent(job) {
         '',
         `Codigo: ${code}`,
         '',
+        'Esse codigo expira em 15 minutos.',
+        `Suporte: ${SUPPORT_EMAIL}`,
+      ].join('\n'),
+    };
+  }
+
+  if (job.kind === 'email_verification') {
+    const code = String(payload.code || '').trim();
+    return {
+      subject: 'CrossApp - verificacao de email',
+      text: [
+        'Seu codigo de verificacao do CrossApp:',
+        '',
+        `Codigo: ${code}`,
+        '',
+        'Use esse codigo para confirmar sua conta.',
         'Esse codigo expira em 15 minutos.',
         `Suporte: ${SUPPORT_EMAIL}`,
       ].join('\n'),

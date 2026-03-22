@@ -52,6 +52,7 @@ import {
 } from './app/workoutHelpers.js';
 import { classifyUniversalImportFile, isPdfImportFile, isTextLikeImportFile } from './app/importFileTypes.js';
 import { downloadFile } from './app/fileHelpers.js';
+import { captureAppError } from './core/services/errorMonitor.js';
 import {
   normalizeCoachWorkoutFeed,
   pruneCoachWorkoutFeed,
@@ -609,6 +610,12 @@ export async function handleMultiWeekPdfUpload(file) {
 
   } catch (error) {
     const errorMsg = error.message || 'Erro desconhecido';
+    captureAppError(error, {
+      tags: { feature: 'import', source: 'pdf_upload' },
+      fileName: file?.name || null,
+      fileType: file?.type || null,
+      fileSize: file?.size || null,
+    });
     emit('pdf:error', { error: errorMsg });
 
     return {
@@ -690,6 +697,13 @@ export async function handleUniversalImport(file) {
     };
   } catch (error) {
     const errorMsg = error.message || 'Erro ao importar mídia';
+    captureAppError(error, {
+      tags: { feature: 'import', source: 'universal_import' },
+      fileName: file?.name || null,
+      fileType: file?.type || null,
+      fileSize: file?.size || null,
+      detectedSource: fileInfo?.source || null,
+    });
     emit('media:error', { error: errorMsg, fileName: file.name });
     return { success: false, error: errorMsg };
   }
@@ -1229,12 +1243,27 @@ export const {
 
 export async function handleSignUp(credentials) {
   const result = await remoteHandlers.handleSignUp(credentials);
+  return result;
+}
+
+export async function handleRequestSignUpVerification(payload) {
+  return remoteHandlers.handleRequestSignUpVerification(payload);
+}
+
+export async function handleConfirmSignUp(payload) {
+  const result = await remoteHandlers.handleConfirmSignUp(payload);
   triggerPostAuthHydration();
   return result;
 }
 
 export async function handleSignIn(credentials) {
   const result = await remoteHandlers.handleSignIn(credentials);
+  triggerPostAuthHydration();
+  return result;
+}
+
+export async function handleSignInWithGoogle(payload) {
+  const result = await remoteHandlers.handleSignInWithGoogle(payload);
   triggerPostAuthHydration();
   return result;
 }
@@ -1544,7 +1573,10 @@ function exposeDebugAPIs() {
     exportBackup: handleExportBackup,
     importBackup: handleImportBackup,
     signUp: handleSignUp,
+    requestSignUpVerification: handleRequestSignUpVerification,
+    confirmSignUp: handleConfirmSignUp,
     signIn: handleSignIn,
+    signInWithGoogle: handleSignInWithGoogle,
     refreshSession: handleRefreshSession,
     requestPasswordReset: handleRequestPasswordReset,
     confirmPasswordReset: handleConfirmPasswordReset,
