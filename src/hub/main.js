@@ -134,7 +134,7 @@ function getAvailableSports(config) {
       value: 'cross',
       tier: 'core',
       title: 'Cross / Conditioning',
-      description: 'Treino do dia, planilhas, benchmarks, coach, competições e alternância entre planilha enviada e treino do coach.',
+      description: 'Treino do dia, planilhas, benchmarks, coach e alternância entre planilha enviada e treino do coach.',
       status: 'Ativo agora',
     },
     running: {

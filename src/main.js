@@ -4,10 +4,11 @@
  * - Inicializa app (app.js)
  * - Monta UI plugável (src/ui/ui.js)
  *
- * Obs: mantido compatível com window.__APP__ exposto pelo app.js. [file:8]
+ * Obs: a UI lê o bridge central; não há API global exposta no window.
  */
 
 import { init } from './app.js';
+import { getAppBridge } from './app/bridge.js';
 import { inject } from '@vercel/analytics';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { mountConsentBanner } from './ui/consent.js';
@@ -51,12 +52,12 @@ async function bootstrap() {
     }
   }
   flushTelemetry().catch(() => {});
-  setErrorMonitorUser(window.__APP__?.getProfile?.()?.data || null);
+  setErrorMonitorUser(getAppBridge()?.getProfile?.()?.data || null);
 
   // Debug opcional (não interfere no uso normal):
   // /?debug=1 mantém o painel antigo para inspeção rápida.
   const params = new URLSearchParams(window.location.search);
-  const profile = window.__APP__?.getProfile?.()?.data || null;
+  const profile = getAppBridge()?.getProfile?.()?.data || null;
   if (params.get('debug') === '1' && isDeveloperProfile(profile)) {
     renderDebugPlaceholder();
     return;
@@ -111,9 +112,9 @@ async function mountUI() {
     return;
   }
 
-  // Garantia: app.js expõe __APP__ durante init().
-  if (!window.__APP__?.getState) {
-    console.warn('⚠️ window.__APP__ ainda não está disponível. Tentando novamente...');
+  // Garantia: app.js registra o bridge durante init().
+  if (!getAppBridge()?.getState) {
+    console.warn('⚠️ getAppBridge() ainda não está disponível. Tentando novamente...');
     await wait(0);
   }
 
@@ -148,46 +149,18 @@ function renderDebugPlaceholder() {
       <div style="background:#e3f2fd; padding:1.25rem; border-radius:10px; margin:1rem 0;">
         <h2 style="margin:0 0 0.75rem 0;">🧪 Teste Multi-Semana no Console</h2>
         <pre style="background:#fff; padding:1rem; border-radius:8px; overflow:auto; font-size:0.9rem; line-height:1.4;">
-// 1. Ver estado completo
-__APP__.debugState()
+// 1. Abra a página sem ?debug=1 para usar a UI normal.
+// 2. O bridge interno não fica mais exposto no window.
+// 3. Para inspecionar o estado, use o painel visual acima.
 
-// 2. Upload PDF com múltiplas semanas
+// Exemplo de fluxo manual de teste:
 const input = document.createElement('input');
 input.type = 'file';
 input.accept = 'application/pdf';
-input.onchange = async (e) => {
-  const result = await __APP__.uploadMultiWeekPdf(e.target.files[0]);
-  console.log('Upload:', result);
-  console.log('Semanas:', __APP__.getWeeks());
-  console.log('Semana ativa:', __APP__.getActiveWeek());
+input.onchange = async () => {
+  console.log('Use a UI principal para importar o arquivo selecionado.');
 };
 input.click();
-
-// 3. Trocar semana (após upload)
-__APP__.selectWeek(19)
-__APP__.selectWeek(18)
-
-// 4. Adicionar PRs
-__APP__.addPR('BACK SQUAT', 100)
-__APP__.addPR('DEADLIFT', 150)
-__APP__.addPR('BENCH PRESS', 80)
-
-// 5. Listar PRs
-__APP__.listPRs()
-
-// 6. Copiar treino (após upload)
-await __APP__.copyWorkout()
-
-// 7. Exportar treino
-__APP__.exportWorkout()
-
-// 8. Exportar/Importar PRs
-__APP__.exportPRs()
-const prsJson = '{"BACK SQUAT": 120, "DEADLIFT": 160}';
-__APP__.importPRs(prsJson);
-
-// 9. Info do PDF
-__APP__.getPdfInfo().then(info => console.log('PDF info:', info));
         </pre>
         <p style="margin:0;color:#333;">
           Dica: remova <code>?debug=1</code> da URL para voltar para a UI.
@@ -219,7 +192,7 @@ function renderError(errorMsg) {
 
 function safeGetState() {
   try {
-    return window.__APP__?.getState ? window.__APP__.getState() : {};
+    return getAppBridge()?.getState ? getAppBridge().getState() : {};
   } catch {
     return {};
   }

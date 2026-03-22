@@ -3,7 +3,6 @@
 Backend Node + Postgres para:
 - autenticação
 - billing (Kiwify link no frontend + webhook/postback opcional + mock local de desenvolvimento)
-- sync entre dispositivos
 - telemetria
 - reset de senha por código
 - painel admin básico
@@ -36,16 +35,7 @@ npm run start
 
 Com Docker, nenhuma configuração manual é necessária. O frontend usa `/api` por padrão e o nginx faz proxy para o backend.
 
-Se você quiser apontar para outro backend, use no console do app:
-
-```js
-__APP__.setRuntimeConfig({
-  apiBaseUrl: 'https://sua-api.example.com',
-  billing: {
-    provider: 'kiwify_link'
-  }
-})
-```
+Se você quiser apontar para outro backend, ajuste o `config.js` ou as variáveis de build do frontend (`CROSSAPP_API_BASE_URL`).
 
 ## Teste rápido de assinatura (modo mock)
 
@@ -64,7 +54,7 @@ Resend + SMTP com fallback e fila:
 
 ```env
 RESEND_API_KEY=
-RESEND_FROM=CrossApp <nagcode.contact@gmail.com>
+RESEND_FROM=onboarding@resend.dev
 
 SMTP_HOST=
 SMTP_PORT=587
@@ -89,6 +79,11 @@ EMAIL_JOB_RETRY_DELAY_MS=15000
 EMAIL_JOB_SWEEP_INTERVAL_MS=30000
 ```
 
+Notas:
+
+- Em produção inicial, use `RESEND_FROM=onboarding@resend.dev` até validar domínio próprio no Resend.
+- `SENTRY_DSN` é opcional. Se não tiver um DSN real, deixe vazio; não use `...`.
+
 ## Admin
 
 - O primeiro usuário criado vira admin automaticamente.
@@ -110,13 +105,7 @@ Endpoints principais:
 - `GET /workouts/feed`
 - `GET /access/context`
 - `GET /benchmarks`
-- `GET /competitions/calendar`
-- `POST /gyms/:gymId/competitions`
-- `POST /competitions/:competitionId/events`
-- `POST /benchmarks/:slug/results`
 - `GET /leaderboards/benchmarks/:slug`
-- `GET /leaderboards/events/:eventId`
-- `GET /leaderboards/competitions/:competitionId`
 
 Parâmetros úteis em `GET /benchmarks`:
 

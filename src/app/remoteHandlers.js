@@ -13,13 +13,14 @@ import {
 } from '../core/services/authService.js';
 import { activateCoachSubscription, createManualPasswordReset, getAdminOpsHealth, getAdminOverview, reprocessBillingClaim, retryEmailJob } from '../core/services/adminService.js';
 import { openCheckout, getSubscriptionStatus, getEntitlements, activateMockSubscription } from '../core/services/subscriptionService.js';
-import { pullLatestBackupPayload, pushBackupPayload, listSyncSnapshots } from '../core/services/syncService.js';
 import {
   addGymMember,
   createGym,
   createGymGroup,
   getAccessContext,
-  getAthleteDashboard,
+  getAthleteResultsSummary,
+  getAthleteSummary,
+  getAthleteWorkoutsRecent,
   getGymInsights,
   getMeasurementHistory,
   getMyGyms,
@@ -36,25 +37,11 @@ import {
   publishGymWorkout,
 } from '../core/services/gymService.js';
 import { getBenchmarks } from '../core/services/benchmarkService.js';
-import {
-  addCompetitionEvent,
-  createCompetition,
-  getBenchmarkLeaderboard,
-  getCompetitionLeaderboard,
-  getCompetitionCalendar,
-  getEventLeaderboard,
-  submitBenchmarkResult,
-} from '../core/services/competitionService.js';
 import { getRuntimeConfig, setRuntimeConfig } from '../config/runtime.js';
-import { exportAppBackup, importAppBackup } from '../core/usecases/backupData.js';
 
 export function createRemoteHandlers({
-  getState,
-  setState,
-  selectActiveWeek,
   syncCoachWorkoutFeed,
   clearCoachWorkoutFeed,
-  applyImportedBackupData,
 }) {
   function getCurrentSportType() {
     return getRuntimeConfig()?.app?.sport || 'cross';
@@ -157,40 +144,6 @@ export function createRemoteHandlers({
       return { success: true, data };
     },
 
-    async handleSyncPush() {
-      const state = getState();
-      const backup = exportAppBackup(state, { mode: 'sync-push' });
-      if (!backup.success) return backup;
-      const data = await pushBackupPayload(backup.data);
-      return { success: true, data };
-    },
-
-    async handleSyncPull() {
-      const pulled = await pullLatestBackupPayload();
-      const payload = pulled?.payload || pulled?.data?.payload;
-      if (!payload) {
-        return { success: false, error: 'Nenhum snapshot remoto disponível' };
-      }
-
-      const parsed = importAppBackup(JSON.stringify(payload));
-      if (!parsed.success) {
-        return { success: false, error: parsed.error };
-      }
-
-      const backup = parsed.data;
-      await applyImportedBackupData?.(backup, {
-        fileName: 'remote-sync',
-        source: 'sync-pull',
-      });
-
-      return { success: true, data: backup };
-    },
-
-    async handleListSyncSnapshots() {
-      const data = await listSyncSnapshots();
-      return { success: true, data };
-    },
-
     handleGetRuntimeConfig() {
       return { success: true, data: getRuntimeConfig() };
     },
@@ -252,8 +205,18 @@ export function createRemoteHandlers({
       return { success: true, data };
     },
 
-    async handleGetAthleteDashboard(params = {}) {
-      const data = await getAthleteDashboard({ ...params, sportType: getCurrentSportType() });
+    async handleGetAthleteSummary(params = {}) {
+      const data = await getAthleteSummary({ ...params, sportType: getCurrentSportType() });
+      return { success: true, data };
+    },
+
+    async handleGetAthleteResultsSummary(params = {}) {
+      const data = await getAthleteResultsSummary({ ...params, sportType: getCurrentSportType() });
+      return { success: true, data };
+    },
+
+    async handleGetAthleteWorkoutsRecent(params = {}) {
+      const data = await getAthleteWorkoutsRecent({ ...params, sportType: getCurrentSportType() });
       return { success: true, data };
     },
 
@@ -304,53 +267,6 @@ export function createRemoteHandlers({
 
     async handleGetBenchmarks(params) {
       const data = await getBenchmarks(params);
-      return { success: true, data };
-    },
-
-    async handleGetCompetitionCalendar(params) {
-      const data = await getCompetitionCalendar({
-        ...(params || {}),
-        sportType: params?.sportType || getCurrentSportType(),
-      });
-      return { success: true, data };
-    },
-
-    async handleCreateCompetition(gymId, payload) {
-      const data = await createCompetition(gymId, {
-        ...(payload || {}),
-        sportType: payload?.sportType || getCurrentSportType(),
-      });
-      return { success: true, data };
-    },
-
-    async handleAddCompetitionEvent(competitionId, payload) {
-      const data = await addCompetitionEvent(competitionId, payload);
-      return { success: true, data };
-    },
-
-    async handleSubmitBenchmarkResult(slug, payload) {
-      const data = await submitBenchmarkResult(slug, {
-        ...(payload || {}),
-        sportType: payload?.sportType || getCurrentSportType(),
-      });
-      return { success: true, data };
-    },
-
-    async handleGetBenchmarkLeaderboard(slug, params) {
-      const data = await getBenchmarkLeaderboard(slug, {
-        ...(params || {}),
-        sportType: params?.sportType || getCurrentSportType(),
-      });
-      return { success: true, data };
-    },
-
-    async handleGetCompetitionLeaderboard(competitionId) {
-      const data = await getCompetitionLeaderboard(competitionId);
-      return { success: true, data };
-    },
-
-    async handleGetEventLeaderboard(eventId, params) {
-      const data = await getEventLeaderboard(eventId, params);
       return { success: true, data };
     },
   };

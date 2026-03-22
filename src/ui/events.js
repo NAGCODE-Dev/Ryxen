@@ -1,12 +1,14 @@
+import { getAppBridge } from '../app/bridge.js';
+
 export function bindAppEvents({ pushEventLine, rerender, toast, setBusy }) {
   const busy = typeof setBusy === 'function' ? setBusy : () => {};
 
-  if (!window.__APP__?.on) {
+  if (!getAppBridge()?.on) {
     pushEventLine?.('EventBus indisponível.');
     return () => {};
   }
 
-  const on = window.__APP__.on;
+  const on = getAppBridge().on;
 
   const handlers = [
     ['app:ready', () => {

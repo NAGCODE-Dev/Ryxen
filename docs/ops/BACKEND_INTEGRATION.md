@@ -20,15 +20,6 @@
 - `GET /billing/entitlements`
   - response: `{ entitlements: string[] }`
 
-## Sync
-- `POST /sync/push`
-  - body: `{ payload }`
-  - response: `{ snapshotId, savedAt }`
-- `GET /sync/pull`
-  - response: `{ payload, snapshotId, savedAt }`
-- `GET /sync/snapshots`
-  - response: `{ snapshots: [{ id, savedAt }] }`
-
 ## Telemetry
 - `POST /telemetry/ingest`
   - body: `{ items: [...] }`
@@ -37,4 +28,4 @@
 ## Security Notes
 - JWT com expiração curta + refresh token rotativo.
 - Billing externo via Kiwify link não depende de webhook no backend atual.
-- Idempotência nos endpoints de checkout e sync.
+- Idempotência nos endpoints de checkout.

@@ -33,6 +33,209 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
     return result.rows[0] || null;
   }
 
+  async function loadAthleteAccessSnapshot(userId, sportType) {
+    const memberships = await getUserMemberships(userId);
+    const gymIds = memberships.map((membership) => membership.gym_id);
+    const [contexts, personalSubscription] = await Promise.all([
+      getAccessContextForUser(userId),
+      getActiveSubscriptionForUser(userId),
+    ]);
+    const athleteBenefits = selectEffectiveAthleteBenefits({ gymContexts: contexts, personalSubscription });
+    const allowedGymIds = contexts
+      .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
+      .map((ctx) => ctx.membership.gym_id);
+
+    return {
+      memberships,
+      gymIds,
+      contexts,
+      personalSubscription,
+      athleteBenefits,
+      allowedGymIds,
+      sportType,
+    };
+  }
+
+  function buildHistoryWindowFilter(athleteBenefits) {
+    const cutoffTime = athleteBenefits?.historyDays
+      ? Date.now() - Number(athleteBenefits.historyDays) * 24 * 60 * 60 * 1000
+      : null;
+
+    return (value) => {
+      if (!cutoffTime) return true;
+      const timestamp = new Date(value || 0).getTime();
+      if (!Number.isFinite(timestamp)) return false;
+      return timestamp >= cutoffTime;
+    };
+  }
+
+  function buildGymAccessRows(contexts = []) {
+    return contexts.map((ctx) => ({
+      gymId: ctx.membership.gym_id,
+      gymName: ctx.membership.gym_name,
+      role: ctx.membership.role,
+      canAthletesUseApp: ctx?.access?.gymAccess?.canAthletesUseApp || false,
+      warning: ctx?.access?.gymAccess?.warning || null,
+      athleteBenefits: ctx?.access?.athleteBenefits || null,
+    }));
+  }
+
+  async function loadAthleteSummaryBlock(userId, access) {
+    const [resultCountRes, workoutCountRes] = await Promise.all([
+      pool.query(`SELECT COUNT(*)::int AS total FROM benchmark_results WHERE user_id = $1 AND sport_type = $2`, [userId, access.sportType]),
+      access.allowedGymIds.length
+        ? pool.query(`SELECT COUNT(*)::int AS total FROM workouts WHERE gym_id = ANY($1::int[]) AND sport_type = $2`, [access.allowedGymIds, access.sportType])
+        : Promise.resolve({ rows: [{ total: 0 }] }),
+    ]);
+
+    return {
+      stats: {
+        gyms: access.gymIds.length,
+        activeGyms: access.allowedGymIds.length,
+        resultsLogged: Number(resultCountRes.rows[0]?.total || 0),
+        assignedWorkouts: Number(workoutCountRes.rows[0]?.total || 0),
+        sportType: access.sportType,
+        athleteTier: access.athleteBenefits?.tier || 'base',
+      },
+      athleteBenefits: access.athleteBenefits,
+      personalSubscription: access.personalSubscription,
+      gymAccess: buildGymAccessRows(access.contexts),
+    };
+  }
+
+  async function loadAthleteResultsBlock(userId, access) {
+    const isWithinHistoryWindow = buildHistoryWindowFilter(access.athleteBenefits);
+    const [resultsRes, benchmarkTrendRes, prTrendRes, measurementRes, runningHistoryRes, strengthHistoryRes] = await Promise.all([
+      pool.query(
+        `SELECT
+          br.*,
+          b.name AS benchmark_name,
+          b.category AS benchmark_category,
+          g.name AS gym_name
+         FROM benchmark_results br
+         JOIN benchmark_library b ON b.slug = br.benchmark_slug
+         LEFT JOIN gyms g ON g.id = br.gym_id
+         WHERE br.user_id = $1
+           AND br.sport_type = $2
+         ORDER BY br.created_at DESC
+         LIMIT 8`,
+        [userId, access.sportType],
+      ),
+      pool.query(
+        `SELECT
+          br.benchmark_slug,
+          b.name AS benchmark_name,
+          b.score_type,
+          br.score_display,
+          br.score_value,
+          br.created_at
+         FROM benchmark_results br
+         JOIN benchmark_library b ON b.slug = br.benchmark_slug
+         WHERE br.user_id = $1
+           AND br.sport_type = $2
+         ORDER BY br.created_at DESC
+         LIMIT 60`,
+        [userId, access.sportType],
+      ),
+      access.sportType === 'cross'
+        ? pool.query(
+            `SELECT exercise, value, unit, source, created_at
+             FROM athlete_pr_records
+             WHERE user_id = $1
+             ORDER BY created_at DESC
+             LIMIT 80`,
+            [userId],
+          )
+        : Promise.resolve({ rows: [] }),
+      pool.query(
+        `SELECT id, type, label, unit, value, notes, recorded_at, created_at
+         FROM athlete_measurements
+         WHERE user_id = $1
+         ORDER BY recorded_at DESC, created_at DESC
+         LIMIT 120`,
+        [userId],
+      ),
+      access.sportType === 'running'
+        ? pool.query(
+            `SELECT id, workout_id, title, session_type, distance_km, duration_min, avg_pace, target_pace, zone, notes, logged_at
+             FROM running_session_logs
+             WHERE user_id = $1
+             ORDER BY logged_at DESC
+             LIMIT 20`,
+            [userId],
+          )
+        : Promise.resolve({ rows: [] }),
+      access.sportType === 'strength'
+        ? pool.query(
+            `SELECT id, workout_id, exercise, sets_count, reps_text, load_value, load_text, rir, notes, logged_at
+             FROM strength_session_logs
+             WHERE user_id = $1
+             ORDER BY logged_at DESC
+             LIMIT 24`,
+            [userId],
+          )
+        : Promise.resolve({ rows: [] }),
+    ]);
+
+    const benchmarkHistory = buildBenchmarkTrendSeries(benchmarkTrendRes.rows)
+      .map((item) => ({
+        ...item,
+        points: (item.points || []).filter((point) => isWithinHistoryWindow(point.createdAt || point.date)),
+      }))
+      .filter((item) => item.points.length);
+
+    const prHistory = access.sportType === 'cross'
+      ? buildPrTrendSeries(prTrendRes.rows)
+        .map((item) => ({
+          ...item,
+          points: (item.points || []).filter((point) => isWithinHistoryWindow(point.createdAt || point.date)),
+        }))
+        .filter((item) => item.points.length)
+      : [];
+
+    const prCurrent = prHistory.reduce((acc, item) => {
+      acc[item.exercise] = item.latestValue;
+      return acc;
+    }, {});
+
+    return {
+      recentResults: resultsRes.rows.filter((row) => isWithinHistoryWindow(row.created_at)),
+      benchmarkHistory,
+      prHistory,
+      prCurrent,
+      measurements: measurementRes.rows,
+      runningHistory: runningHistoryRes.rows.filter((row) => isWithinHistoryWindow(row.logged_at)),
+      strengthHistory: strengthHistoryRes.rows.filter((row) => isWithinHistoryWindow(row.logged_at)),
+    };
+  }
+
+  async function loadAthleteWorkoutsBlock(access) {
+    if (!access.allowedGymIds.length) {
+      return { recentWorkouts: [] };
+    }
+
+    const workoutsRes = await pool.query(
+      `SELECT
+        w.id,
+        w.title,
+        w.scheduled_date,
+        w.published_at,
+        g.name AS gym_name
+       FROM workouts w
+       JOIN gyms g ON g.id = w.gym_id
+       WHERE w.gym_id = ANY($1::int[])
+         AND w.sport_type = $2
+       ORDER BY w.scheduled_date DESC, w.created_at DESC
+       LIMIT 8`,
+      [access.allowedGymIds, access.sportType],
+    );
+
+    const isWithinHistoryWindow = buildHistoryWindowFilter(access.athleteBenefits);
+    return {
+      recentWorkouts: workoutsRes.rows.filter((row) => isWithinHistoryWindow(row.scheduled_date || row.published_at)),
+    };
+  }
+
   router.post('/athletes/me/prs', authRequired, async (req, res) => {
     const exercise = String(req.body?.exercise || '').trim().toUpperCase();
     const value = Number(req.body?.value);
@@ -164,203 +367,25 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
     }
   });
 
-  router.get('/athletes/me/dashboard', authRequired, async (req, res) => {
+  router.get('/athletes/me/summary', authRequired, async (req, res) => {
     const sportType = normalizeSportType(req.query?.sportType);
-    const isLite = String(req.query?.lite || '').trim() === '1';
-    const memberships = await getUserMemberships(req.user.userId);
-    const gymIds = memberships.map((membership) => membership.gym_id);
-    const [contexts, personalSubscription] = await Promise.all([
-      getAccessContextForUser(req.user.userId),
-      getActiveSubscriptionForUser(req.user.userId),
-    ]);
-    const athleteBenefits = selectEffectiveAthleteBenefits({ gymContexts: contexts, personalSubscription });
-    const allowedGymIds = contexts
-      .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
-      .map((ctx) => ctx.membership.gym_id);
+    const access = await loadAthleteAccessSnapshot(req.user.userId, sportType);
+    const summary = await loadAthleteSummaryBlock(req.user.userId, access);
+    return res.json(summary);
+  });
 
-    const [resultsRes, competitionsRes, workoutsRes, benchmarkTrendRes, prTrendRes, resultCountRes, competitionCountRes, workoutCountRes, runningHistoryRes, strengthHistoryRes, measurementRes] = await Promise.all([
-      pool.query(
-        `SELECT
-          br.*,
-          b.name AS benchmark_name,
-          b.category AS benchmark_category,
-          g.name AS gym_name
-         FROM benchmark_results br
-         JOIN benchmark_library b ON b.slug = br.benchmark_slug
-         LEFT JOIN gyms g ON g.id = br.gym_id
-         WHERE br.user_id = $1
-           AND br.sport_type = $2
-         ORDER BY br.created_at DESC
-         LIMIT 8`,
-        [req.user.userId, sportType],
-      ),
-      allowedGymIds.length
-        ? pool.query(
-            `SELECT
-              c.id,
-              c.title,
-              c.location,
-              c.starts_at,
-              c.visibility,
-              g.name AS gym_name,
-              COUNT(ce.id)::int AS event_count
-             FROM competitions c
-             LEFT JOIN competition_events ce ON ce.competition_id = c.id
-             LEFT JOIN gyms g ON g.id = c.gym_id
-             WHERE c.gym_id = ANY($1::int[])
-               AND c.sport_type = $2
-               AND c.starts_at >= NOW() - INTERVAL '1 day'
-             GROUP BY c.id, g.name
-             ORDER BY c.starts_at ASC
-             LIMIT 6`,
-            [allowedGymIds, sportType],
-          )
-        : Promise.resolve({ rows: [] }),
-      allowedGymIds.length
-        ? pool.query(
-            `SELECT
-              w.id,
-              w.title,
-              w.scheduled_date,
-              w.published_at,
-              g.name AS gym_name
-             FROM workouts w
-             JOIN gyms g ON g.id = w.gym_id
-             WHERE w.gym_id = ANY($1::int[])
-               AND w.sport_type = $2
-             ORDER BY w.scheduled_date DESC, w.created_at DESC
-             LIMIT 8`,
-            [allowedGymIds, sportType],
-          )
-        : Promise.resolve({ rows: [] }),
-      !isLite ? pool.query(
-        `SELECT
-          br.benchmark_slug,
-          b.name AS benchmark_name,
-          b.score_type,
-          br.score_display,
-          br.score_value,
-          br.created_at
-         FROM benchmark_results br
-         JOIN benchmark_library b ON b.slug = br.benchmark_slug
-         WHERE br.user_id = $1
-           AND br.sport_type = $2
-         ORDER BY br.created_at DESC
-         LIMIT 60`,
-        [req.user.userId, sportType],
-      ) : Promise.resolve({ rows: [] }),
-      !isLite ? pool.query(
-        `SELECT exercise, value, unit, source, created_at
-         FROM athlete_pr_records
-         WHERE user_id = $1
-         ORDER BY created_at DESC
-         LIMIT 80`,
-        [req.user.userId],
-      ) : Promise.resolve({ rows: [] }),
-      pool.query(`SELECT COUNT(*)::int AS total FROM benchmark_results WHERE user_id = $1 AND sport_type = $2`, [req.user.userId, sportType]),
-      allowedGymIds.length
-        ? pool.query(`SELECT COUNT(*)::int AS total FROM competitions WHERE gym_id = ANY($1::int[]) AND sport_type = $2 AND starts_at >= NOW() - INTERVAL '1 day'`, [allowedGymIds, sportType])
-        : Promise.resolve({ rows: [{ total: 0 }] }),
-      allowedGymIds.length
-        ? pool.query(`SELECT COUNT(*)::int AS total FROM workouts WHERE gym_id = ANY($1::int[]) AND sport_type = $2`, [allowedGymIds, sportType])
-        : Promise.resolve({ rows: [{ total: 0 }] }),
-      !isLite && sportType === 'running'
-        ? pool.query(
-            `SELECT id, workout_id, title, session_type, distance_km, duration_min, avg_pace, target_pace, zone, notes, logged_at
-             FROM running_session_logs
-             WHERE user_id = $1
-             ORDER BY logged_at DESC
-             LIMIT 20`,
-            [req.user.userId],
-          )
-        : Promise.resolve({ rows: [] }),
-      !isLite && sportType === 'strength'
-        ? pool.query(
-            `SELECT id, workout_id, exercise, sets_count, reps_text, load_value, load_text, rir, notes, logged_at
-             FROM strength_session_logs
-             WHERE user_id = $1
-             ORDER BY logged_at DESC
-             LIMIT 24`,
-            [req.user.userId],
-          )
-        : Promise.resolve({ rows: [] }),
-      pool.query(
-        `SELECT id, type, label, unit, value, notes, recorded_at, created_at
-         FROM athlete_measurements
-         WHERE user_id = $1
-         ORDER BY recorded_at DESC, created_at DESC
-         LIMIT 120`,
-        [req.user.userId],
-      ),
-    ]);
+  router.get('/athletes/me/results/summary', authRequired, async (req, res) => {
+    const sportType = normalizeSportType(req.query?.sportType);
+    const access = await loadAthleteAccessSnapshot(req.user.userId, sportType);
+    const results = await loadAthleteResultsBlock(req.user.userId, access);
+    return res.json(results);
+  });
 
-    const cutoffTime = athleteBenefits?.historyDays
-      ? Date.now() - Number(athleteBenefits.historyDays) * 24 * 60 * 60 * 1000
-      : null;
-
-    const withinHistoryWindow = (value) => {
-      if (!cutoffTime) return true;
-      const timestamp = new Date(value || 0).getTime();
-      if (!Number.isFinite(timestamp)) return false;
-      return timestamp >= cutoffTime;
-    };
-
-    const benchmarkHistory = isLite
-      ? []
-      : buildBenchmarkTrendSeries(benchmarkTrendRes.rows)
-        .map((item) => ({
-          ...item,
-          points: (item.points || []).filter((point) => withinHistoryWindow(point.createdAt || point.date)),
-        }))
-        .filter((item) => item.points.length);
-
-    const prHistory = isLite
-      ? []
-      : (sportType === 'cross'
-        ? buildPrTrendSeries(prTrendRes.rows)
-          .map((item) => ({
-            ...item,
-            points: (item.points || []).filter((point) => withinHistoryWindow(point.createdAt || point.date)),
-          }))
-          .filter((item) => item.points.length)
-        : []);
-    const prCurrent = prHistory.reduce((acc, item) => {
-      acc[item.exercise] = item.latestValue;
-      return acc;
-    }, {});
-
-    return res.json({
-      stats: {
-        gyms: gymIds.length,
-        activeGyms: allowedGymIds.length,
-        resultsLogged: Number(resultCountRes.rows[0]?.total || 0),
-        upcomingCompetitions: Number(competitionCountRes.rows[0]?.total || 0),
-        assignedWorkouts: Number(workoutCountRes.rows[0]?.total || 0),
-        trackedBenchmarks: benchmarkHistory.length,
-        trackedPrs: prHistory.length,
-        sportType,
-        athleteTier: athleteBenefits?.tier || 'base',
-      },
-      athleteBenefits,
-      personalSubscription,
-      recentResults: resultsRes.rows.filter((row) => withinHistoryWindow(row.created_at)),
-      upcomingCompetitions: competitionsRes.rows,
-      recentWorkouts: workoutsRes.rows.filter((row) => withinHistoryWindow(row.scheduled_date || row.published_at)),
-      benchmarkHistory,
-      prHistory,
-      prCurrent,
-      measurements: measurementRes.rows,
-      runningHistory: isLite ? [] : runningHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
-      strengthHistory: isLite ? [] : strengthHistoryRes.rows.filter((row) => withinHistoryWindow(row.logged_at)),
-      gymAccess: contexts.map((ctx) => ({
-        gymId: ctx.membership.gym_id,
-        gymName: ctx.membership.gym_name,
-        role: ctx.membership.role,
-        canAthletesUseApp: ctx?.access?.gymAccess?.canAthletesUseApp || false,
-        warning: ctx?.access?.gymAccess?.warning || null,
-        athleteBenefits: ctx?.access?.athleteBenefits || null,
-      })),
-    });
+  router.get('/athletes/me/workouts/recent', authRequired, async (req, res) => {
+    const sportType = normalizeSportType(req.query?.sportType);
+    const access = await loadAthleteAccessSnapshot(req.user.userId, sportType);
+    const workouts = await loadAthleteWorkoutsBlock(access);
+    return res.json(workouts);
   });
 
   router.post('/athletes/me/running/logs', authRequired, async (req, res) => {
