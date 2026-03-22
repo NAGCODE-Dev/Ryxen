@@ -1438,15 +1438,11 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     <div class="modal-overlay isOpen" id="ui-authModalBackdrop">
       <div class="modal-container modal-container-auth">
         <div class="modal-header">
-          <h2 class="modal-title">${isSignup ? '📝 Criar conta' : '🔐 Entrar'}</h2>
+          <h2 class="modal-title">${isSignup ? 'Criar conta' : 'Entrar'}</h2>
           <button class="modal-close" data-action="modal:close" type="button">✕</button>
         </div>
 
         <div class="modal-body modal-body-auth">
-          <div class="auth-intro">
-            <div class="section-kicker">Acesso seguro</div>
-            <p class="account-hint">Entre para sincronizar dados, liberar o Coach Portal e gerenciar sua assinatura.</p>
-          </div>
           <div class="auth-switch">
             <button class="btn-secondary ${!isSignup ? 'isSelected' : ''}" data-action="auth:switch" data-mode="signin" type="button">Entrar</button>
             <button class="btn-secondary ${isSignup ? 'isSelected' : ''}" data-action="auth:switch" data-mode="signup" type="button">Cadastrar</button>
@@ -1454,7 +1450,6 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
 
           <div class="auth-googleBlock" id="google-signin-shell">
             <div id="google-signin-button"></div>
-            <p class="account-hint auth-googleHint">Use sua conta Google para entrar sem senha.</p>
           </div>
 
           <div class="auth-divider">ou continue com email</div>
@@ -1477,7 +1472,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                     Abrir preview do email
                   </a>
                 ` : ''}
-                <p class="account-hint">Cadastros novos só são liberados após validar o código enviado ao email.${signupVerification?.supportEmail ? ` Suporte: ${escapeHtml(signupVerification.supportEmail)}` : ''}</p>
+                <p class="account-hint">Digite o código enviado ao seu email.</p>
               </div>
             ` : ''}
             <button class="btn-primary" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
@@ -1487,7 +1482,9 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
 
           ${!isSignup ? `
             <div class="auth-resetBox">
-              <button class="btn-secondary" data-action="auth:reset-toggle" type="button">Esqueci minha senha</button>
+              <button class="btn-secondary auth-resetToggle" data-action="auth:reset-toggle" type="button">
+                ${reset?.open ? 'Fechar recuperação' : 'Esqueci minha senha'}
+              </button>
 
               ${reset?.open ? `
                 <div class="auth-resetForm">
@@ -1506,7 +1503,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   <input class="add-input" id="reset-code" type="text" placeholder="Código de 6 dígitos" value="${escapeHtml(reset.code || '')}" />
                   <input class="add-input" id="reset-newPassword" type="password" placeholder="Nova senha" />
                   <button class="btn-primary" data-action="auth:reset-confirm" type="button">Trocar senha</button>
-                  <p class="account-hint">O código é enviado por email${reset?.supportEmail ? ` via ${escapeHtml(reset.supportEmail)}` : ''}. Pré-visualizações de desenvolvimento só aparecem para a conta administradora.</p>
+                  <p class="account-hint">Enviamos o código para seu email.</p>
                 </div>
               ` : ''}
             </div>

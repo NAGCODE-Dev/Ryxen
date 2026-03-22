@@ -25,7 +25,7 @@
 }
 
 .modal-container-auth {
-  width: min(100%, 980px);
+  width: min(100%, 720px);
 }
 
 .modal-header {
@@ -57,6 +57,22 @@
   max-height: calc(88vh - 78px);
 }
 
+.modal-body-auth {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form,
+.auth-resetForm {
+  display: grid;
+  gap: 12px;
+}
+
+.auth-switch {
+  display: flex;
+  gap: 10px;
+}
+
 .auth-switch .btn-secondary.isSelected,
 .btn-secondary.isSelected {
   background: var(--bg-surface-3);
@@ -82,6 +98,8 @@
 }
 
 .auth-resetBox {
+  display: grid;
+  gap: 12px;
   padding: 14px 16px;
   border-radius: 18px;
   border: 1px solid var(--line);
@@ -90,7 +108,7 @@
 
 .auth-googleBlock {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 #google-signin-button {
@@ -99,6 +117,10 @@
 
 .auth-googleHint {
   text-align: center;
+}
+
+.auth-resetToggle {
+  justify-self: start;
 }
 
 .auth-signupVerify {
@@ -137,7 +159,8 @@
   }
 
   .auth-switch {
-    grid-template-columns: 1fr;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 }
 
