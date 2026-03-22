@@ -89,12 +89,25 @@
     align-items: flex-end;
   }
 
+  .modal-overlay-auth {
+    padding: 14px;
+    align-items: center;
+    justify-content: center;
+  }
+
   .modal-container,
   .modal-container-auth {
     width: 100%;
     max-height: 92vh;
     border-radius: 26px 26px 0 0;
     border-bottom: 0;
+  }
+
+  .modal-overlay-auth .modal-container-auth {
+    width: min(100%, 460px);
+    max-height: min(88vh, 760px);
+    border-radius: 24px;
+    border-bottom: 1px solid var(--line);
   }
 
   body[data-page="account"] .app-main,

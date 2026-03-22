@@ -1246,7 +1246,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const canUseDeveloperTools = isDeveloperEmail(profile?.email);
     const renewAt = subscription?.renewAt || subscription?.renew_at || null;
     return `
-      <div class="modal-overlay isOpen" id="ui-authModalBackdrop">
+      <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
         <div class="modal-container modal-container-auth">
         <div class="modal-header">
           <h2 class="modal-title">👤 Sua conta</h2>
@@ -1435,7 +1435,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
   }
 
   return `
-    <div class="modal-overlay isOpen" id="ui-authModalBackdrop">
+    <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
       <div class="modal-container modal-container-auth">
         <div class="modal-header">
           <h2 class="modal-title">${isSignup ? 'Criar conta' : 'Entrar'}</h2>
