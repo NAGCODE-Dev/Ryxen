@@ -27,17 +27,11 @@ export function renderAppShell() {
           </nav>
         </aside>
 
-      <div class="app-stage">
+        <div class="app-stage">
       <!-- LOADING SCREEN -->
       <div class="loading-screen" id="loading-screen">
-        <div class="loading-screenBrand">
-          <div class="loading-screenMark">C</div>
-          <div class="loading-screenText">
-            <strong>CrossApp</strong>
-            <span>Carregando seu treino...</span>
-          </div>
-        </div>
         <div class="spinner"></div>
+        <p>Carregando...</p>
       </div>
 
       <!-- HEADER -->
@@ -287,7 +281,7 @@ function buildSidebarPageSummary(currentPage, state, context = {}) {
   if (currentPage === 'account') {
     return {
       title: 'Conta',
-      detail: 'Dados da conta, segurança e um acesso discreto ao Coach Portal no fim da página.',
+      detail: 'Dados da conta, segurança e acesso ao Coach Portal no fim da página.',
     };
   }
 
@@ -438,11 +432,6 @@ function renderWorkoutLine(line, lineId, ui) {
   const isWarning = !!(typeof line === 'object' && line.hasWarning);
   const isHeader = !!(typeof line === 'object' && line.isHeader);
   const isRest = !!(typeof line === 'object' && line.isRest);
-  const confidenceLabel = typeof line === 'object' ? String(line.confidenceLabel || '') : '';
-  const reviewNote = typeof line === 'object' ? String(line.reviewNote || '') : '';
-  const exerciseOptions = typeof line === 'object' && Array.isArray(line.exerciseOptions) ? line.exerciseOptions : [];
-  const confidenceScore = typeof line === 'object' ? Number(line.confidenceScore || 0) : 0;
-  const isLowConfidence = confidenceScore > 0 && confidenceScore < 65;
   
   const text = escapeHtml(rawText);
   const exerciseHelp = !hasLoad ? inferExerciseHelpDomain(rawText) : null;
@@ -505,7 +494,6 @@ function renderWorkoutLine(line, lineId, ui) {
   const loadHtml = hasLoad ? `
     <div class="load-calc ${isWarning ? 'load-warning' : ''}">
       ${escapeHtml(display)}
-      ${confidenceLabel ? `<span class="load-confidence ${isWarning ? 'isWarn' : ''}">confiança ${escapeHtml(confidenceLabel)}</span>` : ''}
     </div>
   ` : '';
   const helpActionHtml = exerciseHelp ? `
@@ -524,12 +512,10 @@ function renderWorkoutLine(line, lineId, ui) {
   
   if (!trainingMode) {
     return `
-      <div class="workout-line ${isLowConfidence ? 'is-lowConfidence' : ''}" data-line-id="${escapeHtml(lineId)}">
+      <div class="workout-line" data-line-id="${escapeHtml(lineId)}">
         <div class="exercise-main">
           <div class="exercise-text">${text}</div>
           ${loadHtml}
-          ${reviewNote && (isWarning || isLowConfidence) ? `<div class="line-reviewNote">${escapeHtml(reviewNote)}</div>` : ''}
-          ${exerciseOptions.length ? `<div class="line-reviewNote">Sugestões: ${escapeHtml(exerciseOptions.slice(0, 3).join(' • '))}</div>` : ''}
         </div>
         ${helpActionHtml}
       </div>
@@ -541,7 +527,7 @@ function renderWorkoutLine(line, lineId, ui) {
   const isActive = ui?.activeLineId === lineId;
   
   return `
-    <div class="workout-line ${done ? 'is-done' : ''} ${isActive ? 'is-active' : ''} ${isLowConfidence ? 'is-lowConfidence' : ''}" data-line-id="${escapeHtml(lineId)}">
+    <div class="workout-line ${done ? 'is-done' : ''} ${isActive ? 'is-active' : ''}" data-line-id="${escapeHtml(lineId)}">
       <button 
         class="line-check" 
         type="button" 

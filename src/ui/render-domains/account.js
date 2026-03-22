@@ -15,6 +15,7 @@ export function renderAccountPage(state, helpers) {
   const coachPortal = state?.__ui?.coachPortal || {};
   const subscription = coachPortal?.subscription || null;
   const planKey = subscription?.plan || subscription?.plan_id || 'free';
+  const planName = formatSubscriptionPlanName(planKey);
   const planStatus = subscription?.status || 'inactive';
   const renewAt = subscription?.renewAt || subscription?.renew_at || null;
   const isBusy = !!state?.__ui?.isBusy;
@@ -81,7 +82,7 @@ export function renderAccountPage(state, helpers) {
       ${renderPageHero({
         eyebrow: 'Conta',
         title: profile.name || 'Sua conta',
-        subtitle: 'Dados da conta, segurança e acesso ao Coach Portal sem misturar isso com o seu treino.',
+        subtitle: 'Dados da conta, segurança e vínculo com coach sem misturar sua evolução com gestão.',
         actions: `
           <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
@@ -91,7 +92,7 @@ export function renderAccountPage(state, helpers) {
       <div class="summary-strip summary-strip-3">
         ${renderSummaryTile('Conta', isBusy ? '...' : escapeHtml(profile.name || 'Sem nome'), isBusy ? '' : escapeHtml(profile.email || ''))}
         ${renderSummaryTile('Modo', isBusy ? '...' : escapeHtml(canCoachManage ? 'Com coach' : 'Solo'), isBusy ? '' : escapeHtml(athleteBenefitSource))}
-        ${renderSummaryTile('Imports no mês', isBusy ? '...' : escapeHtml(importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : escapeHtml(importUsage.unlimited ? 'sem limite' : `${importUsage.used} usado(s)`))}
+        ${renderSummaryTile('Plano', isBusy ? '...' : escapeHtml(hasAthletePlus ? 'Atleta Plus' : planName), isBusy ? '' : escapeHtml(planStatus))}
       </div>
 
       <div class="coach-grid">
@@ -134,8 +135,8 @@ export function renderAccountPage(state, helpers) {
         })}
 
         ${renderPageFold({
-          title: 'Uso da conta',
-          subtitle: 'Seu modo atual e o que fica separado do treino.',
+          title: 'Vínculo com coach',
+          subtitle: 'Seu modo atual de uso do app.',
           content: `
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
@@ -143,51 +144,12 @@ export function renderAccountPage(state, helpers) {
               <span>${canCoachManage ? 'Vinculado a coach com portal ativo' : 'Uso solo ou sem portal ativo'}</span>
             </div>
             <div class="coach-listItem static">
-              <strong>Imports do mês</strong>
-              <span>${importUsage.unlimited ? 'Sem limite mensal' : `${importUsage.used}/${importUsage.limit} usado(s) neste mês`}</span>
+              <strong>Plano atual</strong>
+              <span>${escapeHtml(hasAthletePlus ? 'Atleta Plus' : planName)} • ${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</span>
             </div>
             <div class="coach-listItem static">
               <strong>Coach Portal</strong>
-                <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'O Coach Portal continua separado e não interfere no uso diário do atleta.'}</span>
-              </div>
-            </div>
-          `,
-        })}
-
-        ${renderPageFold({
-          title: 'Plano do atleta',
-          subtitle: 'Opcional e separado do plano do coach.',
-          open: false,
-          content: `
-          <div class="coach-list coach-listCompact">
-            <div class="coach-listItem static">
-              <strong>Nível atual</strong>
-              <span>${escapeHtml(hasAthletePlus ? 'Atleta Plus' : 'Uso livre')} • ${escapeHtml(planStatus)}</span>
-            </div>
-            <div class="coach-listItem static">
-              <strong>Imports no plano atual</strong>
-              <span>${importUsage.unlimited ? 'Sem limite mensal' : `${importUsage.limit} importações por mês no uso livre`}</span>
-            </div>
-            <div class="coach-listItem static">
-              <strong>Assinatura pessoal</strong>
-              <span>${hasAthletePlus ? `Ativa${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}` : 'O Atleta Plus fica só na sua conta e não mexe no Coach Portal.'}</span>
-            </div>
-          </div>
-          <div class="page-actions">
-            ${hasAthletePlus ? '' : '<button class="btn-secondary" data-action="billing:checkout" data-plan="athlete_plus" type="button">Assinar Atleta Plus</button>'}
-          </div>
-          `,
-        })}
-
-        ${renderPageFold({
-          title: 'Coach Portal',
-          subtitle: 'Acesso de gestão separado do app do atleta.',
-          open: false,
-          content: `
-          <div class="coach-list coach-listCompact">
-            <div class="coach-listItem static">
-              <strong>Portal separado</strong>
-              <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'Abra o portal só quando precisar cuidar de box, membros e publicação.'}</span>
+              <span>${canCoachManage ? 'Seu acesso de coach está liberado nesta conta.' : 'O Coach Portal continua separado e não interfere no uso diário do atleta.'}</span>
             </div>
           </div>
           <div class="page-actions account-portalAction">
@@ -239,8 +201,8 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
     const gyms = coachPortal?.gyms || [];
     const athleteStats = athleteOverview?.stats || {};
     const athleteBenefits = normalizeAthleteBenefits(athleteOverview?.athleteBenefits || null);
-    const importUsage = getAthleteImportUsage(athleteBenefits, 'pdf');
     const planKey = subscription?.plan || subscription?.plan_id || 'free';
+    const planName = formatSubscriptionPlanName(planKey);
     const planStatus = subscription?.status || 'inactive';
     const hasAthletePlus = planKey === 'athlete_plus' && planStatus === 'active';
     const renewAt = subscription?.renewAt || subscription?.renew_at || null;
@@ -262,10 +224,10 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
                 `}
               </div>
               <div class="account-planCard">
-                <span class="account-planLabel">Uso do atleta</span>
+                <span class="account-planLabel">Plano da conta</span>
                 ${isBusy ? renderAccountSkeleton() : `
-                  <strong class="account-planValue">${escapeHtml(hasAthletePlus ? 'Atleta Plus' : 'Uso livre')}</strong>
-                  <span class="account-planMeta">${escapeHtml(hasAthletePlus ? `Imports ilimitados${renewAt ? ` • renova em ${formatDateShort(renewAt)}` : ''}` : 'Até 10 imports por mês no plano base')}</span>
+                  <strong class="account-planValue">${escapeHtml(planName)}</strong>
+                  <span class="account-planMeta">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</span>
                 `}
               </div>
             </div>
@@ -294,20 +256,20 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
                 <strong class="summary-value">${Number(athleteStats?.assignedWorkouts || 0)}</strong>
               </div>
               <div class="summary-tile">
-                <span class="summary-label">Imports</span>
-                <strong class="summary-value">${importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`}</strong>
+                <span class="summary-label">Plano pessoal</span>
+                <strong class="summary-value">${hasAthletePlus ? 'Atleta Plus' : 'Livre'}</strong>
               </div>
               `}
             </div>
 
             <div class="coach-list coach-listCompact">
               <div class="coach-listItem static">
-                <strong>Uso atual</strong>
-                <span>${hasAthletePlus ? 'Atleta Plus ativo' : 'App do atleta liberado com até 10 imports por mês'}</span>
+                <strong>Sua conta</strong>
+                <span>${hasAthletePlus ? 'Atleta Plus ativo' : 'App do atleta liberado para uso diário'}</span>
               </div>
               <div class="coach-listItem static">
-                <strong>Conta e segurança</strong>
-                <span>Abra a página Conta para ver sync, imports do mês e o Coach Portal só no fim da página.</span>
+                <strong>Próximo passo</strong>
+                <span>Abra a página Conta para ver segurança, sync e acesso ao Coach Portal sem misturar isso com o seu treino.</span>
               </div>
             </div>
 
@@ -421,7 +383,7 @@ function describeAthleteBenefitSource(benefits) {
   const normalized = normalizeAthleteBenefits(benefits);
   if (normalized.personal) return 'liberado na conta do atleta';
   if (normalized.inherited) return 'liberado também quando há coach vinculado';
-  return 'uso livre com até 10 imports por mês';
+  return 'sem bloqueios no app do atleta';
 }
 
 function formatSubscriptionPlanName(planId) {

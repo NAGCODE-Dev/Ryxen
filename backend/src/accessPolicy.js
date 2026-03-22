@@ -7,7 +7,7 @@ export const ATHLETE_BENEFIT_MATRIX = {
     source: 'base',
     label: 'Liberado',
     planLabel: 'Atleta liberado',
-    importsPerMonth: 10,
+    importsPerMonth: null,
     historyDays: null,
     competitionAccess: 'full',
     premiumFeatures: true,

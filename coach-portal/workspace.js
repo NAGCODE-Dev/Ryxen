@@ -1121,7 +1121,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
         : React.createElement(React.Fragment, null,
             React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
             React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
-            React.createElement('p', { className: 'sidebar-copy' }, 'Área separada para publicar treinos, organizar atletas e cuidar da rotina do box.'),
+            React.createElement('p', { className: 'sidebar-copy' }, 'Portal separado para operação do box, publicação, benchmarks e assinatura.'),
             React.createElement('div', { className: 'profile-box' },
               React.createElement('strong', null, profile?.name || profile?.email || 'Coach'),
               React.createElement('span', null, profile?.email || '')
@@ -1146,8 +1146,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       React.createElement('section', { className: 'hero' },
         React.createElement('div', null,
           React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
-          React.createElement('h2', null, 'Treinos, atletas e rotina do box em um portal separado'),
-          React.createElement('p', { className: 'hero-copy' }, 'Cuide da publicação, dos grupos, dos benchmarks e da assinatura do box sem atrapalhar o uso diário do atleta.')
+          React.createElement('h2', null, 'Gyms, membros, benchmarks e billing em um portal pronto para escala'),
+          React.createElement('p', { className: 'hero-copy' }, 'Gerencie publicação, atletas, grupos, benchmarks e assinatura do box sem contaminar o fluxo diário do app do atleta.')
         ),
         React.createElement('div', { className: 'hero-pills' },
           React.createElement('span', { className: `pill ${canCoachManage ? 'ok' : 'warn'}` }, canCoachManage ? 'Coach liberado' : 'Coach bloqueado'),
@@ -1257,7 +1257,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading }, 'Criar gym')
           ),
           {
-            summary: dashboard.gyms.length ? `${dashboard.gyms.length} gym(s) no portal` : 'Nenhum gym criado ainda.',
+            summary: dashboard.gyms.length ? `${dashboard.gyms.length} gym(s) no workspace` : 'Nenhum gym criado ainda.',
           }
         ),
         renderPortalSection(selectedGym ? `Membros de ${selectedGym.name}` : 'Membros',

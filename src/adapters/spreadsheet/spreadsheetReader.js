@@ -13,11 +13,6 @@ export function isSpreadsheetFile(file) {
 }
 
 export async function extractTextFromSpreadsheetFile(file) {
-  const analysis = await extractTextFromSpreadsheetAnalysis(file);
-  return analysis.text;
-}
-
-export async function extractTextFromSpreadsheetAnalysis(file) {
   if (!file) {
     throw new Error('Arquivo de planilha não fornecido');
   }
@@ -34,10 +29,6 @@ export async function extractTextFromSpreadsheetAnalysis(file) {
     dense: true,
   });
 
-  let rowCount = 0;
-  let nonEmptyRows = 0;
-  const warnings = [];
-
   const lines = workbook.SheetNames.flatMap((sheetName) => {
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) return [];
@@ -49,40 +40,12 @@ export async function extractTextFromSpreadsheetAnalysis(file) {
       blankrows: false,
     });
 
-    rowCount += rows.length;
-
     return rows
       .map((row) => normalizeSpreadsheetRow(row))
-      .filter((value) => {
-        if (!value) return false;
-        nonEmptyRows += 1;
-        return true;
-      });
+      .filter(Boolean);
   });
 
-  const text = lines.join('\n').trim();
-  let confidenceScore = 92;
-  if (workbook.SheetNames.length > 1) confidenceScore -= 4;
-  if (rowCount > 0 && nonEmptyRows / rowCount < 0.55) {
-    confidenceScore -= 12;
-    warnings.push('Planilha com muitas linhas vazias ou colunas soltas');
-  }
-  if (text.length < 60) {
-    confidenceScore -= 18;
-    warnings.push('Pouco conteúdo útil encontrado na planilha');
-  }
-
-  confidenceScore = Math.max(0, Math.min(100, Math.round(confidenceScore)));
-
-  return {
-    text,
-    sheetCount: workbook.SheetNames.length,
-    rowCount,
-    nonEmptyRows,
-    confidenceScore,
-    confidenceLabel: confidenceScore >= 85 ? 'alta' : confidenceScore >= 65 ? 'média' : 'baixa',
-    warnings,
-  };
+  return lines.join('\n').trim();
 }
 
 function normalizeSpreadsheetRow(row) {

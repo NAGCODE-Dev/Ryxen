@@ -3,7 +3,7 @@
  * Processa todas as linhas e calcula cargas baseadas em PRs
  */
 
-import { calculateWorkoutLoads, hasWarnings, getLoadReviewSummary, getMissingPRsFromResults, processExerciseLine } from '../services/loadCalculator.js';
+import { calculateWorkoutLoads, hasWarnings, getMissingPRsFromResults, processExerciseLine } from '../services/loadCalculator.js';
 import { isValidWorkout } from '../services/workoutService.js';
 
 /**
@@ -52,14 +52,12 @@ export function calculateLoads(workout, prs, preferences) {
     // Verifica avisos
     const warnings = hasWarnings(resultsWithContext);
     const missingPRs = getMissingPRsFromResults(resultsWithContext);
-    const review = getLoadReviewSummary(resultsWithContext);
     
     return {
       success: true,
       data: resultsWithContext,
       hasWarnings: warnings,
       missingPRs: missingPRs,
-      review,
       totalLines: resultsWithContext.length,
       linesWithPercent: resultsWithContext.filter(r => r.hasPercent).length
     };

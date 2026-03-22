@@ -3,18 +3,13 @@
  * Extrai texto de vídeos por OCR em frames amostrados.
  */
 
-import { extractTextFromImageAnalysis, extractTextFromImageFile } from './ocrReader.js';
+import { extractTextFromImageFile } from './ocrReader.js';
 
 export function isVideoFile(file) {
   return !!file?.type?.startsWith('video/');
 }
 
 export async function extractTextFromVideoFile(file, options = {}) {
-  const analysis = await extractTextFromVideoAnalysis(file, options);
-  return analysis.text;
-}
-
-export async function extractTextFromVideoAnalysis(file, options = {}) {
   if (!file) {
     throw new Error('Arquivo de vídeo não fornecido');
   }
@@ -32,49 +27,20 @@ export async function extractTextFromVideoAnalysis(file, options = {}) {
   }
 
   const chunks = [];
-  const frameAnalyses = [];
   for (let i = 0; i < frames.length; i += 1) {
-    const blob = frames[i].blob;
+    const blob = frames[i];
     const frameFile = new File([blob], `frame-${i}.png`, { type: 'image/png' });
-    const analysis = await extractTextFromImageAnalysis(frameFile, {
+    const text = await extractTextFromImageFile(frameFile, {
       lang: options.lang || 'por+eng',
       logger: options.logger,
     });
 
-    frameAnalyses.push({
-      index: i,
-      second: frames[i].second,
-      textLength: analysis.text.length,
-      confidenceScore: analysis.confidenceScore,
-      confidenceLabel: analysis.confidenceLabel,
-      warnings: analysis.warnings,
-    });
-
-    if (analysis.text) {
-      chunks.push(analysis.text);
+    if (text) {
+      chunks.push(text);
     }
   }
 
-  const usefulFrames = frameAnalyses.filter((frame) => frame.textLength >= 20);
-  const totalConfidence = usefulFrames.reduce((acc, frame) => acc + frame.confidenceScore, 0);
-  const confidenceScore = usefulFrames.length
-    ? Math.round(totalConfidence / usefulFrames.length)
-    : (chunks.join('\n').length > 80 ? 58 : 38);
-  const warnings = [];
-  if (!usefulFrames.length) warnings.push('Pouco texto legível nos frames amostrados');
-  if (usefulFrames.length < Math.max(2, Math.ceil(frameAnalyses.length / 3))) warnings.push('Poucos frames úteis foram encontrados');
-  if (confidenceScore < 65) warnings.push('OCR do vídeo com confiança baixa, revisão recomendada');
-
-  return {
-    text: chunks.join('\n'),
-    confidenceScore,
-    confidenceLabel: confidenceScore >= 85 ? 'alta' : confidenceScore >= 65 ? 'média' : 'baixa',
-    warnings,
-    frameCount: frameAnalyses.length,
-    usefulFrameCount: usefulFrames.length,
-    frames: frameAnalyses,
-    engine: 'tesseract-video',
-  };
+  return chunks.join('\n');
 }
 
 async function sampleVideoFrames(file, frameIntervalSec, maxFrames) {
@@ -109,16 +75,16 @@ async function sampleVideoFrames(file, frameIntervalSec, maxFrames) {
     frameTimes.push(Math.max(0, duration - 0.1));
   }
 
-  const frames = [];
+  const blobs = [];
   for (const t of frameTimes) {
     await seek(video, t);
     ctx.drawImage(video, 0, 0, width, height);
     const blob = await canvasToBlob(canvas);
-    if (blob) frames.push({ second: Math.round(t * 10) / 10, blob });
+    if (blob) blobs.push(blob);
   }
 
   URL.revokeObjectURL(url);
-  return frames;
+  return blobs;
 }
 
 function waitForMetadata(video) {

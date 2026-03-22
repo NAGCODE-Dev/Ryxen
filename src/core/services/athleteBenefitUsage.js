@@ -6,7 +6,7 @@ const DEFAULT_BENEFITS = {
   source: 'base',
   inherited: false,
   personal: false,
-  importsPerMonth: 10,
+  importsPerMonth: null,
   historyDays: null,
   competitionAccess: 'full',
   premiumFeatures: true,

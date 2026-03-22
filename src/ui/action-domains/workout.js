@@ -24,67 +24,11 @@ export async function handleWorkoutAction(action, el, ctx) {
     case 'pdf:pick': {
       const ui = getUiState?.() || {};
       const importPolicy = await guardAthleteImport('pdf', ui);
-      await patchUiState((s) => ({
-        ...s,
-        modal: null,
-        currentPage: 'today',
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          returnPage: s?.currentPage || 'today',
-          lastError: '',
-        },
-      }));
+      await setUiState({ modal: null });
       const file = await pickPdfFile();
       if (!file) return true;
-      await patchUiState((s) => ({
-        ...s,
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: true,
-          lastError: '',
-        },
-      }));
-      let result;
-      try {
-        result = await window.__APP__.previewMultiWeekPdfUpload(file);
-      } catch (error) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: error?.message || 'Falha ao importar PDF',
-          },
-        }));
-        throw error;
-      }
-      if (!result?.success) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: result?.error || 'Falha ao importar PDF',
-          },
-        }));
-        throw new Error(result?.error || 'Falha ao importar PDF');
-      }
-      await patchUiState((s) => ({
-        ...s,
-        modal: 'import',
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          draft: result?.draft || null,
-          pendingKind: 'pdf',
-          pendingBenefits: importPolicy.benefits,
-          pendingFileName: file.name || '',
-          pendingFileSize: Number(file.size || 0),
-          lastReview: result?.review || null,
-          lastError: '',
-        },
-      }));
+      await window.__APP__.uploadMultiWeekPdf(file);
+      consumeAthleteImport(importPolicy.benefits, 'pdf');
       await rerender();
       return true;
     }
@@ -92,17 +36,7 @@ export async function handleWorkoutAction(action, el, ctx) {
     case 'media:pick': {
       const ui = getUiState?.() || {};
       const importPolicy = await guardAthleteImport('media', ui);
-      await patchUiState((s) => ({
-        ...s,
-        modal: null,
-        currentPage: 'today',
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          returnPage: s?.currentPage || 'today',
-          lastError: '',
-        },
-      }));
+      await setUiState({ modal: null });
       const file = await pickUniversalFile();
       if (!file) return true;
 
@@ -110,175 +44,13 @@ export async function handleWorkoutAction(action, el, ctx) {
         throw new Error('Importação universal não disponível');
       }
 
-      await patchUiState((s) => ({
-        ...s,
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: true,
-          lastError: '',
-        },
-      }));
-      let result;
-      try {
-        result = await window.__APP__.previewImportFromFile(file);
-      } catch (error) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: error?.message || 'Falha ao importar arquivo',
-          },
-        }));
-        throw error;
-      }
+      const result = await window.__APP__.importFromFile(file);
       if (!result?.success) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: result?.error || 'Falha ao importar arquivo',
-          },
-        }));
         throw new Error(result?.error || 'Falha ao importar arquivo');
       }
 
-      await patchUiState((s) => ({
-        ...s,
-        modal: 'import',
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          draft: result?.draft || null,
-          pendingKind: 'media',
-          pendingBenefits: importPolicy.benefits,
-          pendingFileName: file.name || '',
-          pendingFileSize: Number(file.size || 0),
-          lastReview: result?.review || null,
-          lastError: '',
-        },
-      }));
-      toast(result?.review?.summary || 'Arquivo analisado');
-      await rerender();
-      return true;
-    }
-
-    case 'import:review-apply': {
-      const ui = getUiState?.() || {};
-      const currentDraft = ui?.importFlow?.draft;
-      if (!currentDraft?.weeks?.length) {
-        throw new Error('Nenhuma revisão disponível para salvar');
-      }
-
-      const editedDraft = {
-        weeks: (currentDraft.weeks || []).map((week, weekIndex) => ({
-          ...week,
-          workouts: (week.workouts || []).map((workout, workoutIndex) => {
-            const enabledEl = root.querySelector(`[data-import-enabled="1"][data-week-index="${weekIndex}"][data-workout-index="${workoutIndex}"]`);
-            const dayEl = root.querySelector(`[data-import-day="1"][data-week-index="${weekIndex}"][data-workout-index="${workoutIndex}"]`);
-            return {
-              ...workout,
-              enabled: !!enabledEl?.checked,
-              day: String(dayEl?.value || '').trim(),
-              lines: (workout.lines || []).map((line, lineIndex) => {
-                const lineEnabledEl = root.querySelector(`[data-import-line-enabled="1"][data-week-index="${weekIndex}"][data-workout-index="${workoutIndex}"][data-line-index="${lineIndex}"]`);
-                const lineTextEl = root.querySelector(`[data-import-line-text="1"][data-week-index="${weekIndex}"][data-workout-index="${workoutIndex}"][data-line-index="${lineIndex}"]`);
-                return {
-                  ...line,
-                  enabled: !!lineEnabledEl?.checked,
-                  text: String(lineTextEl?.value || '').trim(),
-                };
-              }),
-            };
-          }),
-        })),
-      };
-
-      await patchUiState((s) => ({
-        ...s,
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: true,
-          lastError: '',
-        },
-      }));
-      await rerender();
-
-      let result;
-      try {
-        result = await window.__APP__.applyImportDraft(editedDraft, {
-          file: ui?.importFlow?.pendingFileName ? {
-            name: ui.importFlow.pendingFileName,
-            size: Number(ui.importFlow.pendingFileSize || 0),
-          } : null,
-          source: ui?.importFlow?.lastReview?.source || 'text',
-          review: ui?.importFlow?.lastReview || null,
-        });
-      } catch (error) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: error?.message || 'Falha ao salvar treino revisado',
-          },
-        }));
-        throw error;
-      }
-
-      if (!result?.success) {
-        await patchUiState((s) => ({
-          ...s,
-          importFlow: {
-            ...(s?.importFlow || {}),
-            isProcessing: false,
-            lastError: result?.error || 'Falha ao salvar treino revisado',
-          },
-        }));
-        throw new Error(result?.error || 'Falha ao salvar treino revisado');
-      }
-
-      if (ui?.importFlow?.pendingBenefits && ui?.importFlow?.pendingKind) {
-        consumeAthleteImport(ui.importFlow.pendingBenefits, ui.importFlow.pendingKind);
-      }
-
-      await patchUiState((s) => ({
-        ...s,
-        modal: null,
-        currentPage: 'today',
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          draft: null,
-          pendingKind: '',
-          pendingBenefits: null,
-          pendingFileName: '',
-          pendingFileSize: 0,
-          lastReview: result?.review || s?.importFlow?.lastReview || null,
-          lastError: '',
-        },
-      }));
-      toast(result?.review?.summary || 'Treino salvo');
-      await rerender();
-      return true;
-    }
-
-    case 'import:review-discard': {
-      await patchUiState((s) => ({
-        ...s,
-        importFlow: {
-          ...(s?.importFlow || {}),
-          isProcessing: false,
-          draft: null,
-          pendingKind: '',
-          pendingBenefits: null,
-          pendingFileName: '',
-          pendingFileSize: 0,
-          lastError: '',
-        },
-      }));
-      toast('Revisão descartada');
+      consumeAthleteImport(importPolicy.benefits, 'media');
+      toast('Arquivo importado');
       await rerender();
       return true;
     }

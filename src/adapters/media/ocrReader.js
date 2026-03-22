@@ -11,11 +11,6 @@ export function isImageFile(file) {
 }
 
 export async function extractTextFromImageFile(file, options = {}) {
-  const analysis = await extractTextFromImageAnalysis(file, options);
-  return analysis.text;
-}
-
-export async function extractTextFromImageAnalysis(file, options = {}) {
   if (!file) {
     throw new Error('Arquivo de imagem não fornecido');
   }
@@ -31,19 +26,7 @@ export async function extractTextFromImageAnalysis(file, options = {}) {
     logger: options.logger || (() => {}),
   });
 
-  const text = result?.data?.text?.trim() || '';
-  const confidenceScore = Number.isFinite(result?.data?.confidence) ? Math.round(result.data.confidence) : (text ? 72 : 0);
-  const warnings = [];
-  if (confidenceScore < 65) warnings.push('OCR com baixa confiança');
-  if (text.length < 40) warnings.push('Pouco texto identificado na imagem');
-
-  return {
-    text,
-    confidenceScore,
-    confidenceLabel: confidenceScore >= 85 ? 'alta' : confidenceScore >= 65 ? 'média' : 'baixa',
-    warnings,
-    engine: 'tesseract',
-  };
+  return result?.data?.text?.trim() || '';
 }
 
 async function ensureTesseract() {

@@ -57,24 +57,3 @@ export function normalizeWorkoutBlocks(blocks = []) {
 export function isCalculatedLine(line) {
   return typeof line === 'object' && line !== null && !!line.calculated;
 }
-
-export function parseTextIntoWeeksWithReview(rawText, activeWeekNumber = null) {
-  const cleaned = cleanPdfText(String(rawText || ''));
-  const weeks = parseTextIntoWeeks(cleaned, activeWeekNumber);
-  const dayCount = weeks.reduce((acc, week) => acc + ((week?.workouts || []).length), 0);
-  const warnings = [];
-  if (!cleaned || cleaned.length < 20) warnings.push('Conteúdo muito curto');
-  if (!weeks.length) warnings.push('Nenhuma semana identificada');
-  if (weeks.length === 1 && dayCount <= 1) warnings.push('Revisar se o treino foi lido por completo');
-
-  return {
-    cleanedText: cleaned,
-    weeks,
-    warnings,
-    stats: {
-      textLength: cleaned.length,
-      weekCount: weeks.length,
-      dayCount,
-    },
-  };
-}

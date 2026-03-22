@@ -39,14 +39,14 @@ import {
   getWorkoutFromWeek,
 } from './adapters/pdf/customPdfParser.js';
 import { createStorage } from './adapters/storage/storageFactory.js';
-import { isPdfJsAvailable, extractTextFromPdfAnalysis } from './adapters/pdf/pdfReader.js';
-import { isImageFile, extractTextFromImageAnalysis } from './adapters/media/ocrReader.js';
-import { isVideoFile, extractTextFromVideoAnalysis } from './adapters/media/videoTextReader.js';
-import { isSpreadsheetFile, extractTextFromSpreadsheetAnalysis } from './adapters/spreadsheet/spreadsheetReader.js';
+import { isPdfJsAvailable } from './adapters/pdf/pdfReader.js';
+import { isImageFile, extractTextFromImageFile } from './adapters/media/ocrReader.js';
+import { isVideoFile, extractTextFromVideoFile } from './adapters/media/videoTextReader.js';
+import { isSpreadsheetFile, extractTextFromSpreadsheetFile } from './adapters/spreadsheet/spreadsheetReader.js';
 import {
   isCalculatedLine,
   normalizeWorkoutBlocks,
-  parseTextIntoWeeksWithReview,
+  parseTextIntoWeeks,
   toWorkoutBlocks,
   toWorkoutSections,
 } from './app/workoutHelpers.js';
@@ -59,9 +59,6 @@ import {
 } from './app/coachWorkoutCache.js';
 import { exposeAppApi } from './app/publicApi.js';
 import { createRemoteHandlers } from './app/remoteHandlers.js';
-import { buildImportReview } from './app/importReview.js';
-import { createImportDraft, buildWeeksFromImportDraft } from './app/importDraft.js';
-import { requestAiImportInterpretation, shouldTryAiInterpretationFallback } from './app/importInterpreterClient.js';
 
 // Utils
 import { getDayName } from './core/utils/date.js';
@@ -583,90 +580,32 @@ async function processWorkoutFromWeek(week) {
  * @returns {Promise<Object>}
  */
 export async function handleMultiWeekPdfUpload(file) {
-  const preview = await previewMultiWeekPdfUpload(file);
-  if (!preview?.success) return preview;
-  return applyImportDraft(preview.draft, {
-    file,
-    source: 'pdf',
-    review: preview.review,
-  });
-}
-
-export async function previewMultiWeekPdfUpload(file) {
   logDebug('📤 Uploading multi-week PDF:', file.name);
 
   emit('pdf:uploading', { fileName: file.name });
 
   try {
-    const pdfAnalysis = await extractTextFromPdfAnalysis(file);
-    const parsed = parseTextIntoWeeksWithReview(pdfAnalysis?.text || '', getState().activeWeekNumber);
-    const weeks = parsed.weeks;
-    let review = buildImportReview({
-      file,
-      source: 'pdf',
-      reader: 'pdf',
-      rawText: pdfAnalysis?.text || '',
-      weeks,
-      analysis: {
-        ...pdfAnalysis,
-        warnings: [...(pdfAnalysis?.warnings || []), ...(parsed?.warnings || [])],
-      },
-    });
+    const result = await saveMultiWeekPdf(file);
 
-    const interpreted = await tryAiInterpretationFallback({
-      file,
-      source: 'pdf',
-      rawText: pdfAnalysis?.text || '',
-      analysis: {
-        ...pdfAnalysis,
-        warnings: [...(pdfAnalysis?.warnings || []), ...(parsed?.warnings || [])],
-      },
-      parsed,
-      review,
-    });
+    if (!result.success) {
+      emit('pdf:error', { error: result.error });
+      return result;
+    }
 
-    const finalWeeks = interpreted?.weeks?.length ? interpreted.weeks : weeks;
-    if (!finalWeeks.length) {
-      emit('pdf:error', { error: 'Nenhuma semana detectada no PDF' });
-      return { success: false, error: 'Nenhuma semana detectada no PDF' };
-    }
-    if (interpreted?.weeks?.length) {
-      review = buildImportReview({
-        file,
-        source: 'pdf',
-        reader: 'ai-fallback',
-        rawText: pdfAnalysis?.text || '',
-        weeks: finalWeeks,
-        analysis: {
-          ...pdfAnalysis,
-          confidenceScore: interpreted.confidenceScore || pdfAnalysis?.confidenceScore,
-          warnings: [
-            'Interpretação assistida usada para organizar o treino',
-            ...(interpreted?.warnings || []),
-            ...(pdfAnalysis?.warnings || []),
-            ...(parsed?.warnings || []),
-          ],
-          usedOcrFallback: !!pdfAnalysis?.usedOcrFallback,
-          pageCount: pdfAnalysis?.pageCount,
-        },
-      });
-    }
+    const weeks = result.data.parsedWeeks;
+    setState({ weeks });
+
+    await selectActiveWeek(weeks[0].weekNumber);
 
     emit('pdf:uploaded', {
       fileName: file.name,
-      weeksCount: finalWeeks.length,
-      weekNumbers: finalWeeks.map(w => w.weekNumber),
-      review,
+      weeksCount: weeks.length,
+      weekNumbers: weeks.map(w => w.weekNumber),
     });
 
-    logDebug('✅ PDF multi-semana analisado:', finalWeeks.map(w => w.weekNumber));
+    logDebug('✅ PDF multi-semana carregado:', weeks.map(w => w.weekNumber));
 
-    return {
-      success: true,
-      weeks: finalWeeks,
-      draft: createImportDraft(finalWeeks),
-      review,
-    };
+    return { success: true, weeks };
 
   } catch (error) {
     const errorMsg = error.message || 'Erro desconhecido';
@@ -685,16 +624,6 @@ export async function previewMultiWeekPdfUpload(file) {
  * @returns {Promise<Object>}
  */
 export async function handleUniversalImport(file) {
-  const preview = await previewUniversalImport(file);
-  if (!preview?.success) return preview;
-  return applyImportDraft(preview.draft, {
-    file,
-    source: preview.source,
-    review: preview.review,
-  });
-}
-
-export async function previewUniversalImport(file) {
   if (!file) {
     return { success: false, error: 'Arquivo não fornecido' };
   }
@@ -704,7 +633,7 @@ export async function previewUniversalImport(file) {
 
   // PDF continua no fluxo dedicado
   if (isPdfImportFile(file)) {
-    return previewMultiWeekPdfUpload(file);
+    return handleMultiWeekPdfUpload(file);
   }
 
   emit('media:uploading', { fileName: file.name, type });
@@ -712,182 +641,58 @@ export async function previewUniversalImport(file) {
   try {
     let rawText = '';
     let source = 'text';
-    let analysis = { confidenceScore: 84, warnings: [] };
-    let reader = 'text';
 
     if (isImageFile(file)) {
       source = 'image';
-      reader = 'ocr-image';
-      analysis = await extractTextFromImageAnalysis(file);
-      rawText = analysis.text;
+      rawText = await extractTextFromImageFile(file);
     } else if (isVideoFile(file)) {
       source = 'video';
-      reader = 'ocr-video';
-      analysis = await extractTextFromVideoAnalysis(file);
-      rawText = analysis.text;
+      rawText = await extractTextFromVideoFile(file);
     } else if (isSpreadsheetFile(file)) {
       source = 'spreadsheet';
-      reader = 'spreadsheet';
-      analysis = await extractTextFromSpreadsheetAnalysis(file);
-      rawText = analysis.text;
+      rawText = await extractTextFromSpreadsheetFile(file);
     } else if (isTextLikeImportFile(file)) {
       source = 'text';
-      reader = 'text';
       rawText = await file.text();
-      analysis = {
-        text: rawText,
-        confidenceScore: rawText?.length > 120 ? 90 : 72,
-        warnings: rawText?.length > 40 ? [] : ['Pouco conteúdo encontrado no arquivo'],
-      };
     } else {
       throw new Error(fileInfo.error || `Formato não suportado: ${type || file.name}`);
     }
 
-    const parsed = parseTextIntoWeeksWithReview(rawText, getState().activeWeekNumber);
-    const parsedWeeks = parsed.weeks;
-    let review = buildImportReview({
-      file,
-      source,
-      reader,
-      rawText: parsed.cleanedText || rawText,
-      weeks: parsedWeeks,
-      analysis: {
-        ...analysis,
-        warnings: [...(analysis?.warnings || []), ...(parsed?.warnings || [])],
-      },
-    });
-
-    const interpreted = await tryAiInterpretationFallback({
-      file,
-      source,
-      rawText: parsed.cleanedText || rawText,
-      analysis: {
-        ...analysis,
-        warnings: [...(analysis?.warnings || []), ...(parsed?.warnings || [])],
-      },
-      parsed,
-      review,
-    });
-
-    const finalWeeks = interpreted?.weeks?.length ? interpreted.weeks : parsedWeeks;
-    if (!finalWeeks.length) {
+    const parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
+    if (!parsedWeeks.length) {
       throw new Error('Não foi possível identificar treinos no conteúdo importado');
     }
-    if (interpreted?.weeks?.length) {
-      review = buildImportReview({
-        file,
-        source,
-        reader: 'ai-fallback',
-        rawText: parsed.cleanedText || rawText,
-        weeks: finalWeeks,
-        analysis: {
-          ...analysis,
-          confidenceScore: interpreted.confidenceScore || analysis?.confidenceScore,
-          warnings: [
-            'Interpretação assistida usada para organizar o treino',
-            ...(interpreted?.warnings || []),
-            ...(analysis?.warnings || []),
-            ...(parsed?.warnings || []),
-          ],
-        },
-      });
-    }
+
+    const saveResult = await saveParsedWeeks(parsedWeeks, {
+      fileName: file.name,
+      fileSize: file.size,
+      source,
+    });
+
+    if (!saveResult.success) throw new Error(saveResult.error || 'Falha ao salvar treino importado');
+
+    const weeks = saveResult.data.parsedWeeks;
+    setState({ weeks });
+    const weekResult = await selectActiveWeek(weeks[0].weekNumber);
+    if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
 
     emit('media:uploaded', {
       fileName: file.name,
       type: source,
-      weeksCount: finalWeeks.length,
-      weekNumbers: finalWeeks.map((w) => w.weekNumber),
-      review,
+      weeksCount: weeks.length,
+      weekNumbers: weeks.map((w) => w.weekNumber),
     });
 
     return {
       success: true,
-      weeks: finalWeeks,
-      draft: createImportDraft(finalWeeks),
+      weeks,
       source,
-      review,
     };
   } catch (error) {
     const errorMsg = error.message || 'Erro ao importar mídia';
     emit('media:error', { error: errorMsg, fileName: file.name });
     return { success: false, error: errorMsg };
   }
-}
-
-async function tryAiInterpretationFallback({ file, source, rawText, analysis, parsed, review }) {
-  if (!shouldTryAiInterpretationFallback({ review, parsed })) {
-    return null;
-  }
-
-  try {
-    const result = await requestAiImportInterpretation({
-      rawText,
-      source,
-      fileName: file?.name || '',
-      activeWeekNumber: getState().activeWeekNumber,
-      analysis,
-      parserReview: review,
-    });
-    if (!result?.success || !Array.isArray(result?.weeks) || !result.weeks.length) {
-      return null;
-    }
-    return result;
-  } catch (error) {
-    logDebug('⚠️ Interpretação assistida indisponível:', error?.message || error);
-    return null;
-  }
-}
-
-export async function applyImportDraft(draft, options = {}) {
-  const parsedWeeks = buildWeeksFromImportDraft(draft);
-  if (!parsedWeeks.length) {
-    return { success: false, error: 'Nenhum treino válido ficou selecionado para salvar' };
-  }
-
-  const file = options?.file || null;
-  const source = options?.source || 'text';
-  const review = options?.review || null;
-  const saveResult = await saveParsedWeeks(parsedWeeks, {
-    fileName: file?.name || 'importado-manualmente',
-    fileSize: file?.size || 0,
-    source,
-  });
-
-  if (!saveResult.success) {
-    return { success: false, error: saveResult.error || 'Falha ao salvar treino importado' };
-  }
-
-  const weeks = saveResult.data.parsedWeeks;
-  setState({ weeks });
-  const weekResult = await selectActiveWeek(weeks[0].weekNumber);
-  if (!weekResult?.success) {
-    return { success: false, error: weekResult?.error || 'Falha ao selecionar semana' };
-  }
-
-  const finalReview = review
-    ? {
-        ...review,
-        weekCount: weeks.length,
-        weekNumbers: weeks.map((week) => week.weekNumber),
-        workoutCount: weeks.reduce((acc, week) => acc + ((week?.workouts || []).length), 0),
-        summary: `${weeks.length} semana(s) prontas para uso • confiança ${review.confidenceLabel || 'média'}`,
-      }
-    : null;
-
-  setState({
-    workoutMeta: {
-      ...(getState().workoutMeta || {}),
-      importReview: finalReview,
-      sourceLabel: source === 'spreadsheet' ? 'Planilha' : source === 'image' ? 'Imagem' : source === 'video' ? 'Vídeo' : source === 'pdf' ? 'PDF' : 'Texto',
-    },
-  });
-
-  return {
-    success: true,
-    weeks,
-    review: finalReview,
-  };
 }
 
 async function getCoachWorkoutCache() {
@@ -1008,8 +813,6 @@ async function applyWorkoutToState(workout, meta = {}) {
       ...workout,
       day: workout?.day || state.currentDay,
       blocks: blocks.blocksWithLoads,
-      warnings: blocks.loadWarnings,
-      loadReview: blocks.loadReview,
     },
     workoutMeta: {
       source: meta.source || 'local',
@@ -1021,8 +824,6 @@ async function applyWorkoutToState(workout, meta = {}) {
       scheduledDate: meta.scheduledDate || '',
       receivedAt: meta.receivedAt || '',
       expiresAt: meta.expiresAt || '',
-      importReview: meta.importReview || null,
-      sourceLabel: meta.sourceLabel || '',
     },
     workoutContext: meta.context || state.workoutContext,
     ui: {
@@ -1051,8 +852,6 @@ async function buildWorkoutBlocksWithLoads(workout, state = getState()) {
 
   let hasWarnings = false;
   let blocksWithLoads = blocks;
-  let loadReview = { averageConfidence: 0, lowConfidence: 0, linesWithPercent: 0, confidenceLabel: 'baixa' };
-  let missingPRs = [];
 
   try {
     const loadResult = calculateLoads({
@@ -1062,8 +861,6 @@ async function buildWorkoutBlocksWithLoads(workout, state = getState()) {
 
     if (loadResult.success && Array.isArray(loadResult.data) && loadResult.data.length) {
       hasWarnings = loadResult.hasWarnings || false;
-      loadReview = loadResult.review || loadReview;
-      missingPRs = Array.isArray(loadResult.missingPRs) ? loadResult.missingPRs : [];
       let globalIndex = 0;
 
       blocksWithLoads = blocks.map((block) => ({
@@ -1078,13 +875,6 @@ async function buildWorkoutBlocksWithLoads(workout, state = getState()) {
               calculated: result.calculatedText,
               hasWarning: result.isWarning || false,
               isMax: result.isMax || false,
-              confidenceScore: result.confidenceScore || 0,
-              confidenceLabel: result.confidenceLabel || 'baixa',
-              reviewNote: result.reviewNote || '',
-              exercise: result.exercise || '',
-              percent: result.percent ?? null,
-              exerciseOptions: result.exerciseOptions || [],
-              matchMethod: result.matchMethod || 'none',
             };
           }
           if (result?.isExerciseHeader) {
@@ -1108,12 +898,7 @@ async function buildWorkoutBlocksWithLoads(workout, state = getState()) {
     console.error('❌ Erro ao calcular cargas:', error);
   }
 
-  const loadWarnings = missingPRs.map((exercise) => `Sem registro salvo para ${exercise}`);
-  if (loadReview.lowConfidence > 0) {
-    loadWarnings.push(`${loadReview.lowConfidence} linha(s) pedem revisão manual`);
-  }
-
-  return { hasWarnings, blocksWithLoads, blocks, loadReview, loadWarnings };
+  return { hasWarnings, blocksWithLoads, blocks };
 }
 
 async function applyPreferredWorkout(options = {}) {
@@ -1740,10 +1525,7 @@ function exposeDebugAPIs() {
 
     // PDF Multi-week
     uploadMultiWeekPdf: handleMultiWeekPdfUpload,
-    previewMultiWeekPdfUpload,
     importFromFile: handleUniversalImport,
-    previewImportFromFile: previewUniversalImport,
-    applyImportDraft,
     clearAllPdfs,
     selectWeek: selectActiveWeek,
     getWeeks: () => getState().weeks,

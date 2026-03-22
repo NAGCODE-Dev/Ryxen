@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
-  <meta name="description" content="Planos do Coach Portal para organizar o box, publicar treinos e cuidar da operação sem poluir o app do atleta.">
-  <meta name="keywords" content="crossapp coach portal, coach starter, coach pro, coach performance">
-  <meta property="og:title" content="CrossApp | Planos do Coach Portal">
-  <meta property="og:description" content="Escolha o plano do Coach Portal para publicar treinos, gerenciar atletas e organizar a rotina do box.">
-  <meta name="twitter:title" content="CrossApp | Planos do Coach Portal">
-  <meta name="twitter:description" content="Escolha o plano do Coach Portal para publicar treinos, gerenciar atletas e organizar a rotina do box.">
-  <title>CrossApp | Planos do Coach Portal</title>
+  <meta name="description" content="Planos do CrossApp para atleta e coach. O atleta usa o app livremente e o coach escolhe o plano ideal para organizar o box.">
+  <meta name="keywords" content="crossapp planos, atleta plus, coach starter, coach pro, coach performance">
+  <meta property="og:title" content="CrossApp | Planos para atleta e coach">
+  <meta property="og:description" content="App do atleta livre, assinatura pessoal opcional e planos do coach para operar o box com mais estrutura.">
+  <meta name="twitter:title" content="CrossApp | Planos para atleta e coach">
+  <meta name="twitter:description" content="App do atleta livre, assinatura pessoal opcional e planos do coach para operar o box com mais estrutura.">
+  <title>CrossApp | Planos para atleta e coach</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -40,6 +40,13 @@
       background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(18,24,31,0.94));
       border-color: var(--site-border-strong);
     }
+    .public-note strong,
+    .public-moduleCard strong {
+      font-size: 1.08rem;
+    }
+    .public-pillRow {
+      margin-top: 6px;
+    }
   </style>
 </head>
 <body class="public-page" data-public-page="pricing">
@@ -47,26 +54,57 @@
   <script src="./config.js"></script>
   <main class="public-main">
     <section class="public-hero">
-      <div class="public-kicker">Coach Portal</div>
-      <h1 class="public-title">Planos do coach para organizar o box.</h1>
+      <div class="public-kicker">Planos CrossApp</div>
+      <h1 class="public-title">Planos claros para atleta e coach.</h1>
       <p class="public-lead">
-        O app do atleta segue simples. Os planos ficam aqui, no Coach Portal, para quem precisa publicar treinos, gerenciar atletas e cuidar da rotina do box.
+        O atleta usa o app para treinos, resultados e evolução. O coach escolhe um plano quando quiser organizar melhor o box, os atletas e a publicação de treinos.
       </p>
       <div class="public-meta">
-        <span>Portal separado do atleta</span>
-        <span>Planos só para coach</span>
+        <span>App do atleta livre</span>
+        <span>Coach paga pela operação</span>
+        <span>Competições na base</span>
         <span>Checkout com conta ativa</span>
       </div>
       <div class="public-actions">
-        <a class="public-btn public-btnPrimary" href="/coach/">Abrir Coach Portal</a>
-        <a class="public-btn" href="/sports/cross/">Abrir app Cross</a>
+        <a class="public-btn public-btnPrimary" href="/sports/cross/">Abrir app Cross</a>
+        <a class="public-btn" href="/coach/">Abrir Coach Portal</a>
+      </div>
+    </section>
+
+    <section class="public-section">
+      <div class="public-sectionHead">
+        <h2>Plano pessoal do atleta</h2>
+        <p class="public-body">O app já funciona livremente para o atleta. O Atleta Plus existe como assinatura pessoal opcional vinculada à conta.</p>
+      </div>
+      <div class="public-grid public-grid2">
+        <article class="public-planCard featured">
+          <div class="plan-top">
+            <div class="plan-kicker">Atleta Plus</div>
+            <span class="public-pill">Assinatura pessoal</span>
+          </div>
+          <strong class="plan-price">R$ 15/mês</strong>
+          <h3>Plus</h3>
+          <p class="public-body">Para quem quer manter um plano próprio no produto, apoiar o CrossApp e deixar essa assinatura pessoal vinculada à conta.</p>
+          <div class="public-featureList">
+            <div class="public-feature">Conta pessoal com assinatura própria</div>
+            <div class="public-feature">App do atleta continua livre, mesmo sem o plano</div>
+            <div class="public-feature">Pode coexistir com vínculo a coach ou uso solo</div>
+          </div>
+          <div class="public-actions">
+            <a class="public-btn public-btnPrimary" data-plan-link="athlete_plus" href="#">Assinar Atleta Plus</a>
+          </div>
+        </article>
+        <article class="public-note">
+          <strong>Importante</strong>
+          <p class="public-body">O Atleta Plus não existe para capar quem está no plano livre. Ele existe como plano pessoal opcional, separado do plano do coach.</p>
+        </article>
       </div>
     </section>
 
     <section class="public-section">
       <div class="public-sectionHead">
         <h2>Planos do coach</h2>
-        <p class="public-body">Escolha o plano conforme o momento do seu box. O app do atleta continua focado no treino; a parte comercial e operacional fica no portal do coach.</p>
+        <p class="public-body">Escolha o plano conforme o momento do seu box. O app do atleta continua livre; o plano do coach entra quando a operação pede mais organização.</p>
       </div>
       <div class="public-grid public-grid3">
         <article class="public-planCard">
@@ -80,7 +118,7 @@
           <div class="public-featureList">
             <div class="public-feature">Publicação de treinos e rotina básica do box</div>
             <div class="public-feature">Gestão inicial de atletas e grupos</div>
-            <div class="public-feature">Operação inicial sem atrapalhar o app do atleta</div>
+            <div class="public-feature">Operação inicial sem contaminar o app do atleta</div>
           </div>
           <div class="public-actions">
             <a class="public-btn public-btnPrimary" data-plan-link="starter" href="#">Assinar Starter</a>
@@ -94,11 +132,11 @@
           </div>
           <strong class="plan-price">R$ 119,90/mês</strong>
           <h3>Pro</h3>
-          <p class="public-body">Plano principal para publicação consistente, gestão mais forte e mais controle da rotina do box.</p>
+          <p class="public-body">Plano principal para publicação consistente, gestão mais forte e mais valor percebido para a base do box.</p>
           <div class="public-featureList">
             <div class="public-feature">Tudo do Starter</div>
-            <div class="public-feature">Mais controle operacional, grupos e rotina</div>
-            <div class="public-feature">Base principal do Coach Portal</div>
+            <div class="public-feature">Mais controle operacional do coach, grupos e rotina</div>
+            <div class="public-feature">Base comercial principal do Coach Portal</div>
           </div>
           <div class="public-actions">
             <a class="public-btn public-btnPrimary" data-plan-link="pro" href="#">Assinar Pro</a>
@@ -128,8 +166,8 @@
     <section class="public-section">
       <div class="public-grid public-grid2">
         <article class="public-note">
-          <strong>App do atleta separado</strong>
-          <p class="public-body">O atleta continua usando o app para treinos, resultados e evolução. O plano do coach não aparece no fluxo diário dele.</p>
+          <strong>Uso livre do atleta</strong>
+          <p class="public-body">O atleta pode importar planilha, registrar treino, acompanhar histórico, PRs e competir sem depender de um plano pago próprio.</p>
         </article>
         <article class="public-note">
           <strong>Compra com conta ativa</strong>
@@ -146,6 +184,7 @@
       const links = billing.links || {};
       const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
       const aliases = {
+        athlete_plus: ['athlete_plus'],
         pro: ['pro', 'coach'],
         coach: ['coach', 'pro'],
         starter: ['starter'],

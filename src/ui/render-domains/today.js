@@ -33,7 +33,6 @@ export function renderTodayPage(state, helpers) {
   const trainingMode = !!ui.trainingMode;
   const progress = ui.progress || { doneCount: 0, totalCount: 0 };
   const workoutContext = state?.workoutContext || {};
-  const importReview = state?.workoutMeta?.importReview || ui?.importFlow?.lastReview || null;
   const showSourceToggle = !!workoutContext.canToggle;
   const activeSource = workoutContext.activeSource || 'uploaded';
 
@@ -42,7 +41,6 @@ export function renderTodayPage(state, helpers) {
       ${renderTodayPageIntro(state, { renderPageHero, renderSummaryTile, formatSubtitle, escapeHtml })}
       ${accessBanner}
       ${renderWorkoutContextNav(state?.__ui?.currentPage || 'today')}
-      ${renderImportReview(importReview, { escapeHtml })}
       <div class="workout-header">
         <h2 class="workout-title">Train • ${escapeHtml(formatDay(state?.currentDay))}</h2>
         ${showSourceToggle ? `
@@ -92,24 +90,6 @@ export function renderTodayPage(state, helpers) {
 
       ${workout.blocks.map((block, b) => renderWorkoutBlock(block, b, ui)).join('')}
       ${renderBottomTools(state)}
-    </div>
-  `;
-}
-
-function renderImportReview(review, helpers) {
-  const { escapeHtml } = helpers;
-  if (!review || typeof review !== 'object') return '';
-
-  return `
-    <div class="auth-intro import-reviewCard">
-      <div class="section-kicker">Última importação</div>
-      <strong>${escapeHtml(review.summary || 'Arquivo importado')}</strong>
-      <div class="coach-pillRow">
-        <span class="coach-pill">Origem: ${escapeHtml(review.sourceLabel || review.source || 'arquivo')}</span>
-        <span class="coach-pill">Confiança: ${escapeHtml(review.confidenceLabel || 'média')}</span>
-        <span class="coach-pill">${escapeHtml(String(review.weekCount || 0))} semana(s)</span>
-      </div>
-      ${(review.warnings || []).length ? `<p class="account-hint">${escapeHtml(review.warnings.join(' • '))}</p>` : ''}
     </div>
   `;
 }
@@ -178,8 +158,8 @@ function renderEmptyState(state, helpers) {
         <div class="empty-icon">📋</div>
       <h2>Comece no módulo Train</h2>
       <p>${isAuthenticated
-          ? 'Importe sua planilha ou escolha outro dia para continuar.'
-          : 'Importe sua planilha ou entre na conta para salvar seus treinos e resultados.'
+          ? 'Importe sua planilha ou aguarde o treino enviado pelo coach para começar.'
+          : 'Use o módulo Train sozinho importando sua planilha ou entre na conta para receber o treino enviado pelo coach.'
         }</p>
         <div class="page-actions page-actions-inline">
           <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Adicionar treino</button>
@@ -196,7 +176,7 @@ function renderEmptyState(state, helpers) {
     <div class="empty-state">
       <div class="empty-icon">😴</div>
       <h2>Sem treino para ${escapeHtml(day)}</h2>
-      <p>Troque o dia ou importe uma planilha manual para continuar.</p>
+      <p>Troque o dia, aguarde a programação do coach ou importe uma planilha manual para continuar.</p>
       <div class="page-actions page-actions-inline">
         <button class="btn-secondary" data-action="day:auto" type="button">Voltar para auto</button>
         <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Adicionar treino</button>
@@ -214,7 +194,7 @@ function renderTodayPageIntro(state, helpers) {
       title: hasWeeks ? 'Treino do dia' : 'Comece pelo treino certo',
       subtitle: hasWeeks
         ? formatSubtitle(state)
-        : 'Importe uma planilha ou entre para salvar seus treinos e resultados dentro do CrossApp Train.',
+        : 'Importe uma planilha ou entre para receber a programação enviada pelo coach dentro do módulo Train.',
       actions: `
         <button class="btn-secondary" data-action="day:auto" type="button">Auto</button>
         <select class="day-select" data-action="day:set">
@@ -242,7 +222,7 @@ function renderPublicTodayEntry(state, helpers) {
       ${renderPageHero({
         eyebrow: 'CrossApp',
         title: 'Acompanhe seu treino sem complicar',
-        subtitle: 'Entre para acompanhar seus treinos, importar planilhas, registrar resultados e ver sua evolução no dia a dia.',
+        subtitle: 'Entre para receber treinos, importar planilhas, registrar resultados e ver sua evolução no dia a dia.',
         actions: `
           <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" data-auth-mode="signup" type="button">Criar conta</button>
@@ -271,7 +251,7 @@ function renderPublicTodayEntry(state, helpers) {
       <div class="empty-state empty-state-entry">
         <div class="empty-icon">📋</div>
         <h2>Comece por aqui</h2>
-        <p>Se já tiver sua planilha, importe agora. Se preferir, entre na sua conta e deixe tudo salvo no mesmo lugar.</p>
+        <p>Se já tiver sua planilha, você pode importar agora. Se treina com coach, entre na sua conta para receber a programação.</p>
         <div class="page-actions page-actions-inline">
           <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
         </div>
@@ -329,5 +309,5 @@ function describeAthleteBenefitSource(benefits) {
   if (normalized.effectiveTier === 'performance') return 'plano do coach (performance)';
   if (normalized.effectiveTier === 'pro') return 'plano do coach (pro)';
   if (normalized.effectiveTier === 'starter') return 'plano do coach (starter)';
-  return 'modo base do atleta • até 10 imports por mês';
+  return 'modo base do atleta';
 }

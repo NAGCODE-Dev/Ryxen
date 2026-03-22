@@ -49,8 +49,6 @@ export const KIWIFY_PRODUCT_STARTER_ID = String(process.env.KIWIFY_PRODUCT_START
 export const KIWIFY_PRODUCT_PRO_ID = String(process.env.KIWIFY_PRODUCT_PRO_ID || '').trim();
 export const KIWIFY_PRODUCT_PERFORMANCE_ID = String(process.env.KIWIFY_PRODUCT_PERFORMANCE_ID || '').trim();
 export const KIWIFY_PRODUCT_ATHLETE_PLUS_ID = String(process.env.KIWIFY_PRODUCT_ATHLETE_PLUS_ID || '').trim();
-export const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || '').trim();
-export const OPENAI_INTERPRETER_MODEL = String(process.env.OPENAI_INTERPRETER_MODEL || 'gpt-5.4').trim();
 
 export function validateConfig() {
   if (!DATABASE_URL) {
