@@ -1,6 +1,6 @@
 const NAV_ITEMS = [
   { key: 'home', label: 'Home', href: '/' },
-  { key: 'coach', label: 'Coach Portal', href: '/coach/' },
+  { key: 'support', label: 'Suporte', href: '/support.html' },
 ];
 
 mountPublicShell();
@@ -39,7 +39,7 @@ function mountPublicShell() {
             <a href="/terms.html">Termos</a>
           </div>
         </div>
-        <p class="public-body">Treino do dia, importação de planilhas e evolução do atleta em um app. A gestão do box fica no Coach Portal.</p>
+        <p class="public-body">CrossApp ajuda o atleta a acompanhar treinos, importar planilhas e ver a evolução. A gestão do box fica no Coach Portal.</p>
         <div class="public-footerLinks">
           <a href="/coach/">Coach Portal</a>
         </div>

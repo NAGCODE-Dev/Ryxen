@@ -342,7 +342,7 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
               <section class="auth-resetSheet">
                 <div class="auth-sheetHead">
                   <div class="section-kicker">Recuperar senha</div>
-                  <p class="account-hint">Receba um código por email e defina uma nova senha.</p>
+                  <p class="account-hint">Digite seu email, receba um código e crie uma nova senha sem sair desta tela.</p>
                 </div>
 
                 <div class="auth-resetForm">
@@ -373,6 +373,7 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
                     <input class="add-input" id="reset-newPassword" type="password" placeholder="Nova senha" />
                     <button class="btn-primary" data-action="auth:reset-confirm" type="button" ${reset?.confirming ? 'disabled' : ''}>${reset?.confirming ? 'Salvando...' : 'Trocar senha'}</button>
                   </div>
+                  <p class="account-hint">Se o email estiver cadastrado, você receberá um código de recuperação.</p>
                   <div class="auth-sheetActions">
                     <button class="btn-secondary" data-action="auth:reset-toggle" type="button">Voltar para entrar</button>
                   </div>
@@ -382,7 +383,7 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
           ` : `
             <div class="auth-intro">
               <div class="section-kicker">CrossApp</div>
-              <p class="account-hint">${isSignup ? 'Crie sua conta e comece a salvar treinos e resultados.' : 'Entre para ver seu treino, resultados e evolução.'}</p>
+              <p class="account-hint">${isSignup ? 'Crie sua conta para salvar treinos, resultados e evolução.' : 'Entre para acompanhar seus treinos, resultados e histórico.'}</p>
             </div>
             <div class="auth-panelStack">
               <section class="auth-formCard">
@@ -403,7 +404,8 @@ export function renderAuthModal({ auth = {}, authMode = 'signin' } = {}, helpers
 
               ${!isSignup ? `
                 <section class="auth-resetPrompt">
-                  <strong>Esqueceu a senha?</strong>
+                  <strong>Esqueceu sua senha?</strong>
+                  <p class="account-hint">Peça um código por email e volte ao app com uma nova senha.</p>
                   <button class="btn-secondary" data-action="auth:reset-toggle" type="button">Recuperar senha</button>
                 </section>
               ` : ''}

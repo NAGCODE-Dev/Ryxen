@@ -1,11 +1,5 @@
 import { test, expect } from '@playwright/test';
-import {
-  ensureAthleteSignedIn,
-  dismissConsentBanner,
-  hydrateAuthenticatedSession,
-  signInViaApi,
-  waitForAuthenticatedAthleteShell,
-} from './helpers/auth.js';
+import { hydrateAuthenticatedSession, signInViaApi } from './helpers/auth.js';
 
 const athleteEmail = process.env.E2E_ATHLETE_EMAIL || '';
 const athletePassword = process.env.E2E_ATHLETE_PASSWORD || '';
@@ -30,10 +24,8 @@ test.describe('athlete base import limit', () => {
     });
 
     await page.goto('/sports/cross/');
-    await dismissConsentBanner(page);
-    await ensureAthleteSignedIn(page, { email: athleteEmail, password: athletePassword });
     await page.locator('[data-action="page:set"][data-page="account"]').first().click();
-    await expect(page.locator('body')).toContainText(/10 importações por mês no uso livre|10\/10|0 usado\(s\)/i);
+    await expect(page.locator('body')).toContainText(/10 importações por mês no uso livre|10 imports por mês no plano base/i);
 
     await page.evaluate(() => {
       const now = new Date();
@@ -46,8 +38,6 @@ test.describe('athlete base import limit', () => {
     });
 
     await page.reload();
-    await dismissConsentBanner(page);
-    await ensureAthleteSignedIn(page, { email: athleteEmail, password: athletePassword });
     await page.locator('[data-action="page:set"][data-page="account"]').first().click();
     await expect(page.locator('body')).toContainText(/0\/10|10\/10 usado\(s\)|limite mensal/i);
 

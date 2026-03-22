@@ -55,32 +55,3 @@ export function buildE2ETestEmail(prefix = 'athlete') {
   const stamp = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   return `${prefix}.${stamp}@crossapp.local`;
 }
-
-export async function dismissConsentBanner(page) {
-  const consentAccept = page.locator('#consent-banner button').filter({ hasText: 'Aceitar' });
-  if (await consentAccept.count()) {
-    await consentAccept.first().click();
-  }
-}
-
-export async function waitForAuthenticatedAthleteShell(page, email) {
-  await expect(page.locator('body')).toContainText(new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'));
-}
-
-export async function ensureAthleteSignedIn(page, { email, password }) {
-  const body = page.locator('body');
-  const emailPattern = new RegExp(email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-  if (await body.textContent().then((text) => emailPattern.test(text || ''))) {
-    return;
-  }
-
-  const openAuth = page.locator('[data-action="modal:open"][data-modal="auth"]').first();
-  if (await openAuth.count()) {
-    await openAuth.click();
-  }
-
-  await page.locator('#auth-email').fill(email);
-  await page.locator('#auth-password').fill(password);
-  await page.locator('[data-action="auth:submit"]').click();
-  await waitForAuthenticatedAthleteShell(page, email);
-}

@@ -75,7 +75,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
         <div class="hub-sectionHead">
           <div class="hub-kicker">Comece por aqui</div>
           <h2>Escolha a modalidade.</h2>
-          <p>Cross já está pronto para treino, importação e evolução no dia a dia.</p>
+          <p>Cross já está pronto para uso diário. As outras entram quando fizer sentido.</p>
         </div>
         <div class="hub-grid hub-grid-sports">
         ${availableSports.map((sport) => renderSportCard({
@@ -91,12 +91,25 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
       </section>
 
       <section class="hub-section">
+        <div class="hub-sectionHead">
+          <div class="hub-kicker">No app do atleta</div>
+          <h2>O essencial para usar todo dia.</h2>
+        </div>
+        <div class="hub-meta hub-meta-flow">
+          <span>Ver treino de hoje</span>
+          <span>Importar treino</span>
+          <span>Registrar resultados</span>
+          <span>Ver evolução</span>
+        </div>
+      </section>
+
+      <section class="hub-section">
         <article class="hub-card hub-card-coachCta">
           <div class="hub-cardTop">
             <span class="sport-badge">Coach</span>
           </div>
           <h2>Coach Portal separado.</h2>
-          <p>Publicação de treinos, atletas e rotina do box ficam em uma área própria para quem administra.</p>
+          <p>Gestão do box, membros e publicação de treinos ficam em uma área própria para quem administra.</p>
           <div class="hub-cardActions">
             <a class="hub-cardLink" href="/coach/">Abrir Coach Portal</a>
           </div>
@@ -136,7 +149,7 @@ function getAvailableSports(config) {
       value: 'cross',
       tier: 'core',
       title: 'Cross / Conditioning',
-      description: 'Treino do dia, importação de planilhas e resultados no mesmo fluxo.',
+      description: 'Treino do dia, importação de planilhas, resultados e evolução em uma rotina simples.',
       status: 'Ativo agora',
     },
     running: {
