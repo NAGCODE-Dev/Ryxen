@@ -61,6 +61,9 @@ function renderBottomTools(state) {
   const currentPage = state?.__ui?.currentPage || 'today';
   if (currentPage !== 'today') return '';
   const hasWorkout = !!(state?.workout?.blocks?.length || state?.workoutOfDay?.blocks?.length);
+  const hasWeeks = (state?.weeks?.length ?? 0) > 0;
+
+  if (!hasWorkout && !hasWeeks) return '';
 
   return `
     <div class="bottom-tools">
@@ -542,6 +545,20 @@ function renderAccountPage(state) {
 function renderTodayPageIntro(state) {
   const hasWeeks = (state?.weeks?.length ?? 0) > 0;
   const hasWorkout = !!(state?.workout?.blocks?.length || state?.workoutOfDay?.blocks?.length);
+  const heroActions = hasWeeks ? `
+    <button class="btn-secondary" data-action="day:auto" type="button">Auto</button>
+    <select class="day-select" data-action="day:set">
+      <option value="">Dia (manual)…</option>
+      <option value="Segunda">Segunda</option>
+      <option value="Terça">Terça</option>
+      <option value="Quarta">Quarta</option>
+      <option value="Quinta">Quinta</option>
+      <option value="Sexta">Sexta</option>
+      <option value="Sábado">Sábado</option>
+      <option value="Domingo">Domingo</option>
+    </select>
+  ` : '';
+
   return `
     ${renderPageHero({
       eyebrow: 'Hoje',
@@ -549,19 +566,7 @@ function renderTodayPageIntro(state) {
       subtitle: hasWeeks
         ? `${formatSubtitle(state)}${hasWorkout ? '' : ' • sem sessão carregada'}`
         : 'PDF, imagem, vídeo, planilha ou texto.',
-      actions: `
-        <button class="btn-secondary" data-action="day:auto" type="button">Auto</button>
-        <select class="day-select" data-action="day:set">
-          <option value="">Dia (manual)…</option>
-          <option value="Segunda">Segunda</option>
-          <option value="Terça">Terça</option>
-          <option value="Quarta">Quarta</option>
-          <option value="Quinta">Quinta</option>
-          <option value="Sexta">Sexta</option>
-          <option value="Sábado">Sábado</option>
-          <option value="Domingo">Domingo</option>
-        </select>
-      `,
+      actions: heroActions,
       footer: hasWeeks ? `<div class="week-chips">${renderWeekChips(state)}</div>` : '',
     })}
   `;
