@@ -1313,6 +1313,9 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
 
           <div class="auth-googleBlock" id="google-signin-shell">
             <div id="google-signin-button"></div>
+            <button class="btn-secondary auth-googleFallback" id="google-signin-fallback" data-action="auth:google-fallback" type="button" hidden>
+              Entrar com Google
+            </button>
           </div>
 
           <div class="auth-divider">ou continue com email</div>

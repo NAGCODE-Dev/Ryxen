@@ -130,6 +130,11 @@
   text-align: center;
 }
 
+.auth-googleFallback {
+  width: 100%;
+  min-height: 40px;
+}
+
 .auth-resetToggle {
   justify-self: start;
 }
