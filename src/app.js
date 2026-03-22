@@ -1311,19 +1311,31 @@ export async function handleRequestSignUpVerification(payload) {
 }
 
 export async function handleConfirmSignUp(payload) {
+  const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleConfirmSignUp(payload);
+  if (didIdentityChange(previousProfile, result?.user)) {
+    await clearSessionScopedData();
+  }
   triggerPostAuthHydration();
   return result;
 }
 
 export async function handleSignIn(credentials) {
+  const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleSignIn(credentials);
+  if (didIdentityChange(previousProfile, result?.user)) {
+    await clearSessionScopedData();
+  }
   triggerPostAuthHydration();
   return result;
 }
 
 export async function handleSignInWithGoogle(payload) {
+  const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleSignInWithGoogle(payload);
+  if (didIdentityChange(previousProfile, result?.user)) {
+    await clearSessionScopedData();
+  }
   triggerPostAuthHydration();
   return result;
 }
@@ -1333,7 +1345,11 @@ export function handleStartGoogleRedirect(payload) {
 }
 
 export async function handleRefreshSession() {
+  const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleRefreshSession();
+  if (didIdentityChange(previousProfile, result?.user)) {
+    await clearSessionScopedData();
+  }
   triggerPostAuthHydration();
   return result;
 }
@@ -1341,8 +1357,13 @@ export async function handleRefreshSession() {
 export const {
   handleRequestPasswordReset,
   handleConfirmPasswordReset,
-  handleSignOut,
 } = remoteHandlers;
+
+export async function handleSignOut() {
+  await remoteHandlers.handleSignOut();
+  await clearSessionScopedData();
+  return { success: true };
+}
 
 export async function handleSyncPush() {
   return remoteHandlers.handleSyncPush();
@@ -1385,6 +1406,37 @@ function triggerPostAuthHydration() {
       authHydrationPromise = null;
     });
   return authHydrationPromise;
+}
+
+function didIdentityChange(previousProfile, nextProfile) {
+  const previousEmail = String(previousProfile?.email || '').trim().toLowerCase();
+  const nextEmail = String(nextProfile?.email || '').trim().toLowerCase();
+  return !!previousEmail && !!nextEmail && previousEmail !== nextEmail;
+}
+
+async function clearSessionScopedData() {
+  const currentState = getState();
+  await prsStorage.set('prs', {});
+  await pdfStorage.remove(PDF_KEY);
+  await pdfMetaStorage.remove(METADATA_KEY);
+  await activeWeekStorage.remove('active-week');
+  await dayOverrideStorage.remove('custom-day');
+  await clearCoachWorkoutFeed();
+
+  setState({
+    weeks: [],
+    prs: {},
+    activeWeekNumber: null,
+    workout: null,
+    workoutMeta: null,
+    ui: {
+      ...currentState.ui,
+      activeScreen: 'welcome',
+    },
+  });
+
+  await updateCurrentDay();
+  await applyPreferredWorkout({ fallbackToWelcome: true });
 }
 
 
