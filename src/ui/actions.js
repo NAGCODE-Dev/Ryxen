@@ -869,23 +869,38 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'auth:reset-request': {
+          const currentReset = getUiState?.()?.passwordReset || {};
+          const cooldownUntil = Number(currentReset?.cooldownUntil || 0);
+          const remainingMs = cooldownUntil - Date.now();
+          if (remainingMs > 0) {
+            throw new Error(`Aguarde ${Math.ceil(remainingMs / 1000)}s para gerar outro código`);
+          }
+
           const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
           if (!email) throw new Error('Informe o email da conta');
 
           const result = await window.__APP__.requestPasswordReset({ email });
           const showDeveloperPreview = isDeveloperEmail(email);
+          const requestedAt = Date.now();
           await patchUiState((s) => ({
             ...s,
             passwordReset: {
               ...(s.passwordReset || {}),
               open: true,
               email,
+              code: '',
+              requestedAt: new Date(requestedAt).toISOString(),
+              deliveryStatus: result?.deliveryStatus || 'sent',
+              message: showDeveloperPreview && result?.previewCode
+                ? 'Código gerado em preview.'
+                : 'Código enviado para seu email. Use o mais recente.',
+              cooldownUntil: requestedAt + 30_000,
               previewCode: showDeveloperPreview ? (result?.previewCode || '') : '',
               previewUrl: showDeveloperPreview ? (result?.delivery?.previewUrl || '') : '',
               supportEmail: result?.supportEmail || '',
             },
           }));
-          toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Pedido de recuperação enviado');
+          toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Código enviado para seu email');
           await rerender();
           await ensureGoogleSignInUi();
           return;
@@ -905,7 +920,18 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           await patchUiState((s) => ({
             ...s,
-            passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
+            passwordReset: {
+              open: false,
+              email: '',
+              code: '',
+              previewCode: '',
+              previewUrl: '',
+              supportEmail: '',
+              message: '',
+              requestedAt: '',
+              cooldownUntil: 0,
+              deliveryStatus: '',
+            },
           }));
           toast('Senha atualizada');
           await rerender();

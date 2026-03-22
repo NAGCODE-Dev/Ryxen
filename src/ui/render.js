@@ -111,6 +111,12 @@ function renderModals(state) {
   return '';
 }
 
+function formatCooldownLabel(cooldownUntil) {
+  const remainingMs = Number(cooldownUntil || 0) - Date.now();
+  if (remainingMs <= 0) return 'Gerar código';
+  return `Aguardar ${Math.ceil(remainingMs / 1000)}s`;
+}
+
 function formatDay(day) {
   const days = {
     'segunda': 'Segunda',
@@ -1360,7 +1366,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
               ${reset?.open ? `
                 <div class="auth-resetForm">
                   <input class="add-input" id="reset-email" type="email" placeholder="Email da conta" value="${escapeHtml(reset.email || '')}" />
-                  <button class="btn-secondary" data-action="auth:reset-request" type="button">Gerar código</button>
+                  <button class="btn-secondary" data-action="auth:reset-request" type="button" ${Number(reset?.cooldownUntil || 0) > Date.now() ? 'disabled' : ''}>${escapeHtml(formatCooldownLabel(reset?.cooldownUntil || 0))}</button>
                   ${reset?.previewCode ? `
                     <div class="reset-codePreview">
                       Código temporário: <strong>${escapeHtml(reset.previewCode)}</strong>
@@ -1374,7 +1380,11 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   <input class="add-input" id="reset-code" type="text" placeholder="Código de 6 dígitos" value="${escapeHtml(reset.code || '')}" />
                   <input class="add-input" id="reset-newPassword" type="password" placeholder="Nova senha" />
                   <button class="btn-primary" data-action="auth:reset-confirm" type="button">Trocar senha</button>
-                  <p class="account-hint">Enviamos o código para seu email.</p>
+                  ${reset?.message ? `
+                    <p class="account-hint auth-resetStatus">${escapeHtml(reset.message)}</p>
+                  ` : `
+                    <p class="account-hint auth-resetStatus">Vamos enviar um código de 6 dígitos para o email da conta.</p>
+                  `}
                 </div>
               ` : ''}
             </div>
