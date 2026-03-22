@@ -16,6 +16,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   if (!root) throw new Error('setupActions: root é obrigatório');
 
   let googleScriptPromise = null;
+  let googleInitializedClientId = '';
 
   const emptyCoachPortal = () => ({
     subscription: null,
@@ -115,30 +116,33 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
     shell.style.display = '';
     buttonEl.innerHTML = '';
-    googleApi.accounts.id.initialize({
-      client_id: clientId,
-      callback: async (response) => {
-        try {
-          const result = await window.__APP__?.signInWithGoogle?.({ credential: response.credential });
-          if (!result?.token && !result?.user) {
-            throw new Error('Falha ao autenticar com Google');
-          }
+    if (googleInitializedClientId !== clientId) {
+      googleApi.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          try {
+            const result = await window.__APP__?.signInWithGoogle?.({ credential: response.credential });
+            if (!result?.token && !result?.user) {
+              throw new Error('Falha ao autenticar com Google');
+            }
 
-          const signedProfile = result?.user || window.__APP__?.getProfile?.()?.data || null;
-          await setUiState({ modal: null, authMode: 'signin' });
-          toast('Login com Google efetuado');
-          await rerender();
-          hydrateAccountSnapshotInBackground(signedProfile);
-          if (await maybeResumePendingCheckout()) return;
-        } catch (error) {
-          toast(error?.message || 'Erro ao entrar com Google');
-          console.error(error);
-        }
-      },
-      auto_select: false,
-      cancel_on_tap_outside: true,
-      use_fedcm_for_prompt: true,
-    });
+            const signedProfile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+            await setUiState({ modal: null, authMode: 'signin' });
+            toast('Login com Google efetuado');
+            await rerender();
+            hydrateAccountSnapshotInBackground(signedProfile);
+            if (await maybeResumePendingCheckout()) return;
+          } catch (error) {
+            toast(error?.message || 'Erro ao entrar com Google');
+            console.error(error);
+          }
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true,
+      });
+      googleInitializedClientId = clientId;
+    }
     googleApi.accounts.id.renderButton(buttonEl, {
       theme: 'outline',
       size: 'large',
