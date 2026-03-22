@@ -56,8 +56,6 @@ export async function mountUI({ root }) {
     // Injeta estado de UI para o render (sem tocar no core)
     state.__ui = buildUiForRender(state, uiState, uiBusy);
 
-    // Training mode vira classe global (UX)
-    document.body.classList.toggle('ui-trainingMode', !!state.__ui.trainingMode);
     document.body.dataset.page = state.__ui.currentPage || 'today';
 
     const view = renderAll(state);
@@ -136,8 +134,7 @@ export async function mountUI({ root }) {
 function normalizeUiState(s) {
   const next = { ...(s || {}) };
 
-  if (typeof next.trainingMode !== 'boolean') next.trainingMode = false;
-  next.currentPage = ['today', 'history', 'competitions', 'account'].includes(next.currentPage) ? next.currentPage : 'today';
+  next.currentPage = ['today', 'history', 'account'].includes(next.currentPage) ? next.currentPage : 'today';
   next.modal = next.modal || null; // 'prs' | 'settings' | null
 
   next.wod = next.wod && typeof next.wod === 'object' ? next.wod : {};
@@ -187,7 +184,6 @@ function buildUiForRender(state, uiState, uiBusy = false) {
   return {
     modal: uiState.modal,
     currentPage: uiState.currentPage,
-    trainingMode: uiState.trainingMode,
     isBusy: uiBusy,
     settings: uiState.settings,
     authMode: uiState.authMode,

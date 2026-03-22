@@ -984,14 +984,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
-        // ----- Modo treino / checklist -----
-        case 'wod:mode': {
-          await patchUiState((s) => ({ ...s, trainingMode: !s.trainingMode }));
-          await rerender();
-          await ensureActiveLine(root, patchUiState);
-          return;
-        }
-
         case 'wod:toggle': {
           const lineId = el.dataset.lineId;
           if (!lineId) return;

@@ -1,11 +1,11 @@
 .workout-container {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .page-stack {
   display: grid;
-  gap: 18px;
+  gap: 14px;
 }
 
 .page-section {
@@ -14,12 +14,12 @@
 
 .workout-header {
   display: grid;
-  gap: 10px;
-  padding: 18px 20px;
+  gap: 8px;
+  padding: 14px 16px;
   background: var(--bg-surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .workout-title,
@@ -59,7 +59,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--bg-surface);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -85,7 +85,7 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
-  padding: 16px 18px;
+  padding: 14px 16px;
 }
 
 .page-foldHead {
@@ -120,9 +120,9 @@
 
 .page-foldBody {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   min-width: 0;
-  padding: 16px 18px 18px;
+  padding: 14px 16px 16px;
   border-top: 1px solid var(--line);
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   box-shadow: none;
@@ -167,8 +167,8 @@
 }
 
 .athlete-accessBanner {
-  padding: 14px 16px;
-  border-radius: 18px;
+  padding: 12px 14px;
+  border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--bg-soft);
 }
@@ -195,29 +195,29 @@
   background: var(--bg-surface);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .workout-block,
 .empty-state,
 .auth-intro,
 .reset-codePreview {
-  padding: 16px;
+  padding: 14px;
 }
 
 .workout-section-header,
 .workout-rest,
 .workout-note {
-  padding: 14px 16px;
+  padding: 12px 14px;
 }
 
 .workout-line {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 12px;
-  padding: 14px 16px;
-  margin-bottom: 10px;
-  border-radius: 18px;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--bg-surface-2);
 }
@@ -339,10 +339,10 @@
 
 .empty-state {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   justify-items: center;
   text-align: center;
-  min-height: 220px;
+  min-height: 200px;
   align-content: center;
 }
 
@@ -364,7 +364,7 @@
 .coach-grid,
 .admin-stats {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .coach-listCompact {
@@ -376,7 +376,7 @@
 .admin-userRow {
   display: grid;
   gap: 6px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--bg-surface-2);
@@ -386,8 +386,8 @@
 .coach-listCompact .coach-listItem {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.85fr);
   align-items: start;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 10px;
+  padding: 11px 13px;
 }
 
 .coach-listCompact .coach-listItem strong {
@@ -458,7 +458,7 @@
 .trend-card,
 .coach-audienceBlock,
 .coach-selectionPanel {
-  padding: 16px;
+  padding: 14px;
 }
 
 .summary-label,
@@ -486,7 +486,7 @@
 
 .summary-tileCompact {
   gap: 6px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   min-width: 0;
 }
 
@@ -501,8 +501,8 @@
 
 .summary-detail {
   color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.45;
+  font-size: 0.76rem;
+  line-height: 1.4;
 }
 
 .account-summaryGrid,
@@ -575,7 +575,6 @@
 }
 
 .page-stack-history .trend-card,
-.page-stack-competitions .summary-tile,
 .page-stack-account .summary-tile {
   box-shadow: none;
 }

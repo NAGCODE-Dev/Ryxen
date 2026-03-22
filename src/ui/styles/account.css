@@ -86,13 +86,11 @@
   min-height: 44px;
 }
 
-.page-stack-account .coach-grid,
-.page-stack-competitions .coach-grid {
+.page-stack-account .coach-grid {
   align-items: start;
 }
 
 .page-stack-account .coach-card,
-.page-stack-competitions .coach-card,
 .page-stack-history .coach-card {
   min-height: 100%;
 }
@@ -101,14 +99,12 @@
   .summary-strip,
   .summary-strip-4,
   .page-stack-account .coach-grid,
-  .page-stack-competitions .coach-grid,
   .page-stack-history .trend-grid,
   .page-stack-account .page-actions {
     grid-template-columns: 1fr;
   }
 
-  .page-stack-account .coach-grid,
-  .page-stack-competitions .coach-grid {
+  .page-stack-account .coach-grid {
     display: flex;
     flex-direction: column;
   }

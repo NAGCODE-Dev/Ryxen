@@ -37,7 +37,6 @@ test('página Hoje apresenta treino importado de forma direta', () => {
       __ui: {
         currentPage: 'today',
         progress: { doneCount: 0, totalCount: 2 },
-        trainingMode: false,
         auth: { profile: { email: 'athlete@test.local' } },
         coachPortal: { gymAccess: [] },
       },
@@ -45,10 +44,11 @@ test('página Hoje apresenta treino importado de forma direta', () => {
     const html = view.mainHtml;
 
     assert.match(html, /Treino do dia/i);
-    assert.match(html, /Treino • Segunda/i);
+    assert.match(html, /Semana .* Segunda/i);
     assert.match(html, /BACK SQUAT/i);
     assert.match(html, /5x5 @ 80%/i);
     assert.match(html, /Auto/i);
+    assert.match(html, /Copiar treino/i);
     assert.doesNotMatch(html, /Modo treino/i);
   } finally {
     globalThis.document = previousDocument;

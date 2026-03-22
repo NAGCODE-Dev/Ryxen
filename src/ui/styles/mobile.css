@@ -18,7 +18,6 @@
   }
 
   body[data-page="history"] .page-heroTitle,
-  body[data-page="competitions"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
     font-size: 1.04rem;
   }
@@ -56,19 +55,19 @@
   }
 
   .bottom-nav {
-    top: calc(var(--safe-top) + 54px);
-    padding-inline: 12px;
+    top: calc(var(--safe-top) + 50px);
+    padding: 4px 12px 6px;
   }
 
   .bottom-navItems {
-    gap: 6px;
-    padding: 6px;
-    border-radius: 18px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
   }
 
   .nav-btn {
-    min-height: 48px;
-    border-radius: 14px;
+    min-height: 38px;
+    border-radius: 10px;
   }
 
   .pr-item,
@@ -114,26 +113,21 @@
   }
 
   body[data-page="account"] .app-main,
-  body[data-page="history"] .app-main,
-  body[data-page="competitions"] .app-main {
+  body[data-page="history"] .app-main {
     padding-inline: 0;
   }
 
   body[data-page="account"] .page-hero,
-  body[data-page="history"] .page-hero,
-  body[data-page="competitions"] .page-hero {
+  body[data-page="history"] .page-hero {
     padding-inline: 16px;
   }
 
   body[data-page="account"] .page-section,
   body[data-page="history"] .page-section,
-  body[data-page="competitions"] .page-section,
   body[data-page="account"] .page-fold,
   body[data-page="history"] .page-fold,
-  body[data-page="competitions"] .page-fold,
   body[data-page="account"] .workout-header,
   body[data-page="history"] .workout-header,
-  body[data-page="competitions"] .workout-header,
   body[data-page="today"] .workout-header,
   body[data-page="today"] .empty-state,
   body[data-page="today"] .workout-block,
@@ -143,8 +137,7 @@
   }
 
   body[data-page="account"] .workout-container,
-  body[data-page="history"] .workout-container,
-  body[data-page="competitions"] .workout-container {
+  body[data-page="history"] .workout-container {
     gap: 12px;
   }
 
@@ -195,7 +188,6 @@
   }
 
   body[data-page="history"] .page-heroTitle,
-  body[data-page="competitions"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
     font-size: 0.98rem;
   }
