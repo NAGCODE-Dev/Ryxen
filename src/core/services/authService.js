@@ -25,7 +25,7 @@ export async function signIn(payload) {
 }
 
 export async function signInWithGoogle(payload) {
-  const res = await apiRequest('/auth/google', { method: 'POST', body: payload });
+  const res = await requestWithPathFallback(['/auth/google', '/api/auth/google'], { method: 'POST', body: payload });
   handleAuthResponse(res);
   return res;
 }
@@ -91,4 +91,21 @@ function clearStoredProfile() {
   } catch {
     // no-op
   }
+}
+
+async function requestWithPathFallback(paths, options) {
+  let lastError = null;
+
+  for (const path of paths) {
+    try {
+      return await apiRequest(path, options);
+    } catch (error) {
+      lastError = error;
+      if (Number(error?.status) !== 404) {
+        throw error;
+      }
+    }
+  }
+
+  throw lastError || new Error('Endpoint de autenticação indisponível');
 }
