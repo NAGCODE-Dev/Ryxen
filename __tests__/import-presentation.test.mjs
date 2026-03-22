@@ -48,7 +48,8 @@ test('página Hoje apresenta treino importado de forma direta', () => {
     assert.match(html, /Treino • Segunda/i);
     assert.match(html, /BACK SQUAT/i);
     assert.match(html, /5x5 @ 80%/i);
-    assert.match(html, /Modo treino/i);
+    assert.match(html, /Auto/i);
+    assert.doesNotMatch(html, /Modo treino/i);
   } finally {
     globalThis.document = previousDocument;
   }

@@ -50,9 +50,15 @@ import {
   toWorkoutBlocks,
   toWorkoutSections,
 } from './app/workoutHelpers.js';
+import {
+  createDefensiveWorkoutSnapshot,
+  prepareWorkoutEntity,
+  summarizeWorkoutIssues,
+} from './app/workoutTransforms.js';
 import { classifyUniversalImportFile, isPdfImportFile, isTextLikeImportFile } from './app/importFileTypes.js';
 import { downloadFile } from './app/fileHelpers.js';
 import { captureAppError } from './core/services/errorMonitor.js';
+import { trackError } from './core/services/telemetryService.js';
 import {
   normalizeCoachWorkoutFeed,
   pruneCoachWorkoutFeed,
@@ -820,12 +826,30 @@ async function processCoachWorkout(entry) {
 
 async function applyWorkoutToState(workout, meta = {}) {
   const state = getState();
-  const blocks = await buildWorkoutBlocksWithLoads(workout, state);
+  const prepared = prepareWorkoutEntity(workout, state, meta);
+
+  if (!prepared.isValid) {
+    const message = summarizeWorkoutIssues(prepared.issues) || 'Treino inválido';
+    const validationError = new Error(message);
+    const defensiveContext = {
+      tags: { feature: 'workout', source: meta.source || 'unknown', stage: 'prepare_entity' },
+      issues: prepared.issues,
+      snapshot: createDefensiveWorkoutSnapshot(state),
+      day: workout?.day || state.currentDay || null,
+      weekNumber: meta.weekNumber || state.activeWeekNumber || null,
+    };
+    captureAppError(validationError, defensiveContext);
+    trackError(validationError, defensiveContext);
+    throw validationError;
+  }
+
+  const entity = prepared.entity;
+  const blocks = await buildWorkoutBlocksWithLoads(entity, state);
 
   setState({
     workout: {
-      ...workout,
-      day: workout?.day || state.currentDay,
+      ...entity,
+      day: entity.day || state.currentDay,
       blocks: blocks.blocksWithLoads,
     },
     workoutMeta: {
@@ -838,6 +862,8 @@ async function applyWorkoutToState(workout, meta = {}) {
       scheduledDate: meta.scheduledDate || '',
       receivedAt: meta.receivedAt || '',
       expiresAt: meta.expiresAt || '',
+      transformTrace: entity.transformTrace,
+      validationIssues: prepared.issues,
     },
     workoutContext: meta.context || state.workoutContext,
     ui: {
@@ -921,31 +947,65 @@ async function applyPreferredWorkout(options = {}) {
   const context = buildWorkoutContext(state, coachWorkout);
 
   if (coachWorkout && (!context.uploadedPlanAvailable || context.preferredSource === 'coach')) {
-    await processCoachWorkout(coachWorkout);
-    return { success: true, source: 'coach' };
+    try {
+      await processCoachWorkout(coachWorkout);
+      return { success: true, source: 'coach' };
+    } catch (error) {
+      const defensiveContext = {
+        feature: 'workout',
+        source: 'coach',
+        stage: 'preferred_candidate',
+        snapshot: createDefensiveWorkoutSnapshot(state),
+      };
+      captureAppError(error, { tags: { feature: 'workout', source: 'coach', stage: 'preferred_candidate' }, snapshot: defensiveContext.snapshot });
+      trackError(error, defensiveContext);
+    }
   }
 
   const week = getActiveWeekFromState(state);
   if (week) {
-    const applied = await processWorkoutFromWeek(week);
-    setState({
-      workoutContext: {
-        ...context,
-        activeSource: 'uploaded',
-      },
-    });
-    return { success: true, source: 'local' };
+    try {
+      await processWorkoutFromWeek(week);
+      setState({
+        workoutContext: {
+          ...context,
+          activeSource: 'uploaded',
+        },
+      });
+      return { success: true, source: 'local' };
+    } catch (error) {
+      const defensiveContext = {
+        feature: 'workout',
+        source: 'uploaded',
+        stage: 'preferred_candidate',
+        snapshot: createDefensiveWorkoutSnapshot(state),
+        weekNumber: week.weekNumber || null,
+      };
+      captureAppError(error, { tags: { feature: 'workout', source: 'uploaded', stage: 'preferred_candidate' }, snapshot: defensiveContext.snapshot, weekNumber: defensiveContext.weekNumber });
+      trackError(error, defensiveContext);
+    }
   }
 
   if (state.workout && state.workoutMeta?.source === 'manual') {
-    await applyWorkoutToState(state.workout, {
-      ...(state.workoutMeta || { source: 'manual' }),
-      context: {
-        ...context,
-        activeSource: 'manual',
-      },
-    });
-    return { success: true, source: 'manual' };
+    try {
+      await applyWorkoutToState(state.workout, {
+        ...(state.workoutMeta || { source: 'manual' }),
+        context: {
+          ...context,
+          activeSource: 'manual',
+        },
+      });
+      return { success: true, source: 'manual' };
+    } catch (error) {
+      const defensiveContext = {
+        feature: 'workout',
+        source: 'manual',
+        stage: 'preferred_candidate',
+        snapshot: createDefensiveWorkoutSnapshot(state),
+      };
+      captureAppError(error, { tags: { feature: 'workout', source: 'manual', stage: 'preferred_candidate' }, snapshot: defensiveContext.snapshot });
+      trackError(error, defensiveContext);
+    }
   }
 
   if (state.currentDay === 'Domingo') {
