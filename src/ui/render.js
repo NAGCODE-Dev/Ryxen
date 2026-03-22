@@ -4,13 +4,13 @@ import { isDeveloperEmail } from '../core/utils/devAccess.js';
 export function renderAppShell() {
   const appLabel = getAppLabel();
   return `
-    <div class="app-container">
-      <!-- LOADING SCREEN -->
-      <div class="loading-screen" id="loading-screen">
-        <div class="spinner"></div>
-        <p>Carregando...</p>
-      </div>
+    <!-- LOADING SCREEN -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="spinner"></div>
+      <p>Carregando...</p>
+    </div>
 
+    <div class="app-container">
       <!-- HEADER -->
       <header class="app-header">
         <div class="header-content">
@@ -24,14 +24,14 @@ export function renderAppShell() {
       <!-- MAIN -->
       <main class="app-main" id="ui-main"></main>
 
-      <!-- MODALS -->
-      <div id="ui-modals"></div>
-
       <!-- BOTTOM NAV -->
       <nav class="bottom-nav">
         <div class="bottom-navItems" id="ui-bottomNav"></div>
       </nav>
     </div>
+
+    <!-- MODALS -->
+    <div id="ui-modals"></div>
   `;
 }
 
