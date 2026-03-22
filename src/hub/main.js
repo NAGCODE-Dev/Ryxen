@@ -21,6 +21,12 @@ function boot() {
   const selectedSport = availableSports.some((sport) => sport.value === lastSport) ? lastSport : fallbackSport;
   const lastSportUrl = sports[selectedSport] || sports.cross || '/sports/cross/index.html';
 
+  if (isNativePlatform()) {
+    setLastSport(selectedSport);
+    window.location.replace(lastSportUrl);
+    return;
+  }
+
   root.innerHTML = renderHub({ sports, availableSports, lastSport: selectedSport, lastSportUrl });
   bindEvents(root, sports);
 }
@@ -196,4 +202,14 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = String(text ?? '');
   return div.innerHTML;
+}
+
+function isNativePlatform() {
+  try {
+    if (window.Capacitor?.isNativePlatform?.()) return true;
+    const protocol = String(window.location?.protocol || '').toLowerCase();
+    return protocol === 'capacitor:' || protocol === 'file:';
+  } catch {
+    return false;
+  }
 }
