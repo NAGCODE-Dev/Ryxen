@@ -17,47 +17,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
   let googleScriptPromise = null;
   let googleInitializedClientId = '';
-  let googlePromptClientId = '';
-
-  function setGoogleFallbackVisible(visible) {
-    const fallbackBtn = root.querySelector('#google-signin-fallback');
-    if (fallbackBtn) {
-      fallbackBtn.hidden = !visible;
-    }
-  }
-
-  async function promptGoogleSignIn() {
-    const googleApi = window.google;
-    if (!googleApi?.accounts?.id) {
-      throw new Error('Google Sign-In indisponível');
-    }
-
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const timeout = window.setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        reject(new Error('Não foi possível abrir o seletor do Google. Desative o bloqueador deste site e tente novamente.'));
-      }, 4000);
-
-      googleApi.accounts.id.prompt((notification) => {
-        if (settled) return;
-        const skipped = notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.();
-        if (!skipped) return;
-
-        settled = true;
-        window.clearTimeout(timeout);
-        reject(new Error('O navegador bloqueou o login do Google. Libere cookies pop-ups/bloqueadores para este site e tente novamente.'));
-      });
-
-      window.setTimeout(() => {
-        if (settled) return;
-        settled = true;
-        window.clearTimeout(timeout);
-        resolve({ success: true });
-      }, 600);
-    });
-  }
 
   const emptyCoachPortal = () => ({
     subscription: null,
@@ -136,7 +95,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const shell = root.querySelector('#google-signin-shell');
     const buttonEl = root.querySelector('#google-signin-button');
     if (!shell || !buttonEl) return;
-    setGoogleFallbackVisible(false);
 
     const profile = window.__APP__?.getProfile?.()?.data || null;
     if (profile?.email) {
@@ -184,7 +142,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         itp_support: true,
       });
       googleInitializedClientId = clientId;
-      googlePromptClientId = clientId;
     }
     googleApi.accounts.id.renderButton(buttonEl, {
       theme: 'outline',
@@ -196,11 +153,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       width: Math.max(220, Math.min(buttonEl.clientWidth || 320, 360)),
       locale: 'pt-BR',
     });
-
-    window.setTimeout(() => {
-      const rendered = buttonEl.childElementCount > 0;
-      setGoogleFallbackVisible(!rendered);
-    }, 250);
   }
 
   let accountSnapshotTask = null;
@@ -742,14 +694,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           if (page === 'history') {
             hydrateAthleteOverviewFullInBackground();
           }
-          return;
-        }
-
-        case 'auth:google-fallback': {
-          if (!googlePromptClientId) {
-            await ensureGoogleSignInUi();
-          }
-          await promptGoogleSignIn();
           return;
         }
 
