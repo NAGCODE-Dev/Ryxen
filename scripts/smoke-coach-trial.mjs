@@ -14,11 +14,13 @@ async function main() {
     body: { email: ATHLETE_EMAIL, password: ATHLETE_PASSWORD },
   });
 
-  const [health, gyms, feed, athleteDashboard, access] = await Promise.all([
+  const [health, gyms, feed, athleteSummary, athleteResults, athleteWorkouts, access] = await Promise.all([
     rawJson('/health'),
     apiRequest('/gyms/me', { token: coach.token }),
     apiRequest('/workouts/feed', { token: athlete.token }),
-    apiRequest('/athletes/me/dashboard', { token: athlete.token }),
+    apiRequest('/athletes/me/summary?sportType=cross', { token: athlete.token }),
+    apiRequest('/athletes/me/results/summary?sportType=cross', { token: athlete.token }),
+    apiRequest('/athletes/me/workouts/recent?sportType=cross', { token: athlete.token }),
     apiRequest('/access/context', { token: athlete.token }),
   ]);
 
@@ -41,7 +43,9 @@ async function main() {
     ['insights loaded', typeof insights === 'object' && !!insights.stats],
     ['benchmarks loaded', Array.isArray(benchmarks.benchmarks)],
     ['feed loaded', Array.isArray(feed.workouts)],
-    ['athlete dashboard loaded', typeof athleteDashboard === 'object' && !!athleteDashboard.stats],
+    ['athlete summary loaded', typeof athleteSummary === 'object' && !!athleteSummary.stats],
+    ['athlete results loaded', typeof athleteResults === 'object' && Array.isArray(athleteResults.recentResults)],
+    ['athlete workouts loaded', typeof athleteWorkouts === 'object' && Array.isArray(athleteWorkouts.recentWorkouts)],
     ['access context loaded', Array.isArray(access.gyms)],
     ['billing entitlements loaded', Array.isArray(entitlements.entitlements)],
   ];
@@ -60,8 +64,10 @@ async function main() {
       memberCount: members.memberships.length,
       groupCount: groups.groups.length,
       feedCount: feed.workouts.length,
-      trackedBenchmarks: athleteDashboard.stats?.trackedBenchmarks || 0,
-      assignedWorkouts: athleteDashboard.stats?.assignedWorkouts || 0,
+      resultsLogged: athleteSummary.stats?.resultsLogged || 0,
+      assignedWorkouts: athleteSummary.stats?.assignedWorkouts || 0,
+      recentResults: athleteResults.recentResults?.length || 0,
+      recentWorkouts: athleteWorkouts.recentWorkouts?.length || 0,
     },
     checks: checks.map(([label]) => label),
   }, null, 2));

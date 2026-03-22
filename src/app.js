@@ -38,7 +38,7 @@ import {
 import {
   getWorkoutFromWeek,
 } from './adapters/pdf/customPdfParser.js';
-import { createStorage } from './adapters/storage/storageFactory.js';
+import { clearAllStorages, createStorage } from './adapters/storage/storageFactory.js';
 import { isPdfJsAvailable } from './adapters/pdf/pdfReader.js';
 import { isImageFile, extractTextFromImageFile } from './adapters/media/ocrReader.js';
 import { isVideoFile, extractTextFromVideoFile } from './adapters/media/videoTextReader.js';
@@ -90,6 +90,15 @@ const PDF_KEY = 'workout-pdf';
 const METADATA_KEY = 'workout-pdf-metadata';
 const COACH_FEED_KEY = 'feed';
 let authHydrationPromise = null;
+const RUNTIME_CONFIG_KEY = 'crossapp-runtime-config';
+const TELEMETRY_CONSENT_KEY = 'crossapp-consent';
+const AUTH_TOKEN_KEY = 'crossapp-auth-token';
+const PROFILE_KEY = 'crossapp-user-profile';
+const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
+const PR_HISTORY_KEY = 'pr_history';
+const ATHLETE_USAGE_KEY = 'crossapp-athlete-usage-v1';
+const TELEMETRY_QUEUE_KEY = 'crossapp-telemetry-queue';
+const PRESERVED_LOCAL_KEYS = [RUNTIME_CONFIG_KEY, TELEMETRY_CONSENT_KEY];
 
 const remoteHandlers = createRemoteHandlers({
   syncCoachWorkoutFeed,
@@ -561,6 +570,7 @@ export async function handleMultiWeekPdfUpload(file) {
     setState({ weeks });
 
     await selectActiveWeek(weeks[0].weekNumber);
+    await syncImportedPlanToAccount(weeks, result.data.metadata);
 
     emit('pdf:uploaded', {
       fileName: file.name,
@@ -646,6 +656,7 @@ export async function handleUniversalImport(file) {
     setState({ weeks });
     const weekResult = await selectActiveWeek(weeks[0].weekNumber);
     if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
+    await syncImportedPlanToAccount(weeks, saveResult.data.metadata);
 
     emit('media:uploaded', {
       fileName: file.name,
@@ -1199,6 +1210,14 @@ async function applyImportedBackupData(backup, options = {}) {
   if (weeks.length > 0) {
     const preferredWeek = backup?.activeWeekNumber || weeks[0].weekNumber;
     await selectActiveWeek(preferredWeek);
+    await syncImportedPlanToAccount(weeks, {
+      uploadedAt: new Date().toISOString(),
+      fileName: options.fileName || 'backup-importado',
+      fileSize: 0,
+      weeksCount: weeks.length,
+      weekNumbers: weeks.map((week) => week.weekNumber),
+      source: options.source || 'backup-import',
+    });
   } else {
     await applyPreferredWorkout({ fallbackToWelcome: true });
   }
@@ -1223,6 +1242,8 @@ export const {
   handleReprocessBillingClaim,
   handleRetryEmailJob,
   handleCreateManualPasswordReset,
+  handleRequestAccountDeletion,
+  handleDeleteAccountNow,
   handleOpenCheckout,
   handleGetSubscriptionStatus,
   handleGetEntitlements,
@@ -1241,6 +1262,9 @@ export const {
   handleGetAthleteSummary,
   handleGetAthleteResultsSummary,
   handleGetAthleteWorkoutsRecent,
+  handleGetImportedPlanSnapshot,
+  handleSaveImportedPlanSnapshot,
+  handleDeleteImportedPlanSnapshot,
   handleGetGymInsights,
   handleGetMeasurementHistory,
   handleLogAthletePr,
@@ -1265,9 +1289,11 @@ export async function handleRequestSignUpVerification(payload) {
 export async function handleConfirmSignUp(payload) {
   const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleConfirmSignUp(payload);
-  if (didIdentityChange(previousProfile, result?.user)) {
-    await clearSessionScopedData();
+  const shouldResetLocal = shouldResetLocalAfterAuth(previousProfile, result?.user);
+  if (shouldResetLocal) {
+    await clearSessionScopedData({ preserveAuth: true });
   }
+  await restoreImportedPlanFromAccount({ force: shouldResetLocal });
   triggerPostAuthHydration();
   return result;
 }
@@ -1275,9 +1301,11 @@ export async function handleConfirmSignUp(payload) {
 export async function handleSignIn(credentials) {
   const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleSignIn(credentials);
-  if (didIdentityChange(previousProfile, result?.user)) {
-    await clearSessionScopedData();
+  const shouldResetLocal = shouldResetLocalAfterAuth(previousProfile, result?.user);
+  if (shouldResetLocal) {
+    await clearSessionScopedData({ preserveAuth: true });
   }
+  await restoreImportedPlanFromAccount({ force: shouldResetLocal });
   triggerPostAuthHydration();
   return result;
 }
@@ -1285,9 +1313,11 @@ export async function handleSignIn(credentials) {
 export async function handleSignInWithGoogle(payload) {
   const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleSignInWithGoogle(payload);
-  if (didIdentityChange(previousProfile, result?.user)) {
-    await clearSessionScopedData();
+  const shouldResetLocal = shouldResetLocalAfterAuth(previousProfile, result?.user);
+  if (shouldResetLocal) {
+    await clearSessionScopedData({ preserveAuth: true });
   }
+  await restoreImportedPlanFromAccount({ force: shouldResetLocal });
   triggerPostAuthHydration();
   return result;
 }
@@ -1299,9 +1329,11 @@ export function handleStartGoogleRedirect(payload) {
 export async function handleRefreshSession() {
   const previousProfile = handleGetProfile()?.data || null;
   const result = await remoteHandlers.handleRefreshSession();
-  if (didIdentityChange(previousProfile, result?.user)) {
-    await clearSessionScopedData();
+  const shouldResetLocal = shouldResetLocalAfterAuth(previousProfile, result?.user);
+  if (shouldResetLocal) {
+    await clearSessionScopedData({ preserveAuth: true });
   }
+  await restoreImportedPlanFromAccount({ force: shouldResetLocal });
   triggerPostAuthHydration();
   return result;
 }
@@ -1313,7 +1345,7 @@ export const {
 
 export async function handleSignOut() {
   await remoteHandlers.handleSignOut();
-  await clearSessionScopedData();
+  await clearSessionScopedData({ preserveAuth: false });
   return { success: true };
 }
 
@@ -1338,35 +1370,173 @@ function triggerPostAuthHydration() {
   return authHydrationPromise;
 }
 
-function didIdentityChange(previousProfile, nextProfile) {
-  const previousEmail = String(previousProfile?.email || '').trim().toLowerCase();
+function shouldResetLocalAfterAuth(previousProfile, nextProfile) {
   const nextEmail = String(nextProfile?.email || '').trim().toLowerCase();
-  return !!previousEmail && !!nextEmail && previousEmail !== nextEmail;
+  if (!nextEmail) return false;
+  const previousEmail = String(previousProfile?.email || '').trim().toLowerCase();
+  return !previousEmail || previousEmail !== nextEmail;
 }
 
-async function clearSessionScopedData() {
-  const currentState = getState();
-  await prsStorage.set('prs', {});
-  await pdfStorage.remove(PDF_KEY);
-  await pdfMetaStorage.remove(METADATA_KEY);
-  await activeWeekStorage.remove('active-week');
-  await dayOverrideStorage.remove('custom-day');
+async function clearSessionScopedData(options = {}) {
+  await clearLocalUserData(options);
   await clearCoachWorkoutFeed();
-
   setState({
     weeks: [],
     prs: {},
     activeWeekNumber: null,
     workout: null,
     workoutMeta: null,
+    workoutContext: {
+      coachAvailable: false,
+      uploadedPlanAvailable: false,
+      canToggle: false,
+      preferredSource: 'uploaded',
+    },
+    preferences: {
+      showLbsConversion: true,
+      autoConvertLbs: true,
+      showEmojis: true,
+      showGoals: true,
+      workoutPriority: 'uploaded',
+      theme: 'dark',
+    },
     ui: {
-      ...currentState.ui,
+      ...getState().ui,
       activeScreen: 'welcome',
     },
   });
-
   await updateCurrentDay();
   await applyPreferredWorkout({ fallbackToWelcome: true });
+}
+
+async function syncImportedPlanToAccount(weeks, metadata = {}) {
+  const profile = handleGetProfile()?.data || null;
+  if (!profile?.id || !Array.isArray(weeks) || !weeks.length) {
+    return { success: false, skipped: true };
+  }
+
+  try {
+    const currentState = getState();
+    await handleSaveImportedPlanSnapshot({
+      weeks,
+      metadata,
+      activeWeekNumber: currentState.activeWeekNumber || weeks[0]?.weekNumber || null,
+    });
+    return { success: true };
+  } catch (error) {
+    console.warn('Falha ao sincronizar plano importado para a conta:', error?.message || error);
+    return { success: false, error };
+  }
+}
+
+async function restoreImportedPlanFromAccount(options = {}) {
+  const profile = handleGetProfile()?.data || null;
+  if (!profile?.id) {
+    return { success: false, skipped: true };
+  }
+
+  try {
+    const response = await handleGetImportedPlanSnapshot();
+    const importedPlan = response?.data?.importedPlan || null;
+    if (!importedPlan?.weeks?.length) {
+      return { success: true, restored: false };
+    }
+
+    const localResult = await loadParsedWeeks();
+    const localMetadata = localResult.success ? (localResult.data?.metadata || {}) : {};
+    const localUpdatedAt = Date.parse(localMetadata?.uploadedAt || 0);
+    const remoteUpdatedAt = Date.parse(importedPlan.updatedAt || importedPlan.metadata?.uploadedAt || 0);
+    const shouldRestore = options.force === true
+      || !localResult.success
+      || (Number.isFinite(remoteUpdatedAt) && remoteUpdatedAt > localUpdatedAt);
+
+    if (!shouldRestore) {
+      return { success: true, restored: false, skipped: true };
+    }
+
+    const metadata = {
+      ...(importedPlan.metadata || {}),
+      uploadedAt: importedPlan.updatedAt || importedPlan.metadata?.uploadedAt || new Date().toISOString(),
+      source: importedPlan.metadata?.source || 'account-sync',
+      remoteSynced: true,
+    };
+
+    await pdfStorage.set(PDF_KEY, importedPlan.weeks);
+    await pdfMetaStorage.set(METADATA_KEY, metadata);
+
+    const preferredWeek = importedPlan.activeWeekNumber || importedPlan.weeks[0]?.weekNumber || null;
+    if (preferredWeek) {
+      await activeWeekStorage.set('active-week', preferredWeek);
+    } else {
+      await activeWeekStorage.remove('active-week');
+    }
+
+    setState({
+      weeks: importedPlan.weeks,
+      activeWeekNumber: preferredWeek,
+    });
+
+    if (getState().currentDay) {
+      await selectActiveWeek(preferredWeek || importedPlan.weeks[0]?.weekNumber);
+    }
+
+    return { success: true, restored: true };
+  } catch (error) {
+    console.warn('Falha ao restaurar plano importado da conta:', error?.message || error);
+    return { success: false, error };
+  }
+}
+
+async function clearLocalUserData(options = {}) {
+  const preserveAuth = options?.preserveAuth === true;
+  const preserved = captureLocalValues([
+    ...PRESERVED_LOCAL_KEYS,
+    ...(preserveAuth ? [AUTH_TOKEN_KEY, PROFILE_KEY] : []),
+  ]);
+
+  await clearAllStorages();
+
+  const sessionKeys = [
+    CHECKOUT_INTENT_KEY,
+    PR_HISTORY_KEY,
+    ATHLETE_USAGE_KEY,
+    TELEMETRY_QUEUE_KEY,
+    ...(!preserveAuth ? [AUTH_TOKEN_KEY, PROFILE_KEY] : []),
+  ];
+
+  sessionKeys.forEach(removeLocalValue);
+  restoreLocalValues(preserved);
+}
+
+function captureLocalValues(keys = []) {
+  const snapshot = new Map();
+  keys.forEach((key) => {
+    try {
+      const value = window.localStorage.getItem(key);
+      if (value !== null) snapshot.set(key, value);
+    } catch {
+      // no-op
+    }
+  });
+  return snapshot;
+}
+
+function restoreLocalValues(values) {
+  values.forEach((value, key) => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // no-op
+    }
+  });
+}
+
+function removeLocalValue(key) {
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // no-op
+  }
 }
 
 
@@ -1635,6 +1805,8 @@ function exposeDebugAPIs() {
     reprocessBillingClaim: handleReprocessBillingClaim,
     retryEmailJob: handleRetryEmailJob,
     createManualPasswordReset: handleCreateManualPasswordReset,
+    requestAccountDeletion: handleRequestAccountDeletion,
+    deleteAccountNow: handleDeleteAccountNow,
     createGym: handleCreateGym,
     getMyGyms: handleGetMyGyms,
     addGymMember: handleAddGymMember,
@@ -1647,6 +1819,9 @@ function exposeDebugAPIs() {
     getAthleteSummary: handleGetAthleteSummary,
     getAthleteResultsSummary: handleGetAthleteResultsSummary,
     getAthleteWorkoutsRecent: handleGetAthleteWorkoutsRecent,
+    getImportedPlanSnapshot: handleGetImportedPlanSnapshot,
+    saveImportedPlanSnapshot: handleSaveImportedPlanSnapshot,
+    deleteImportedPlanSnapshot: handleDeleteImportedPlanSnapshot,
     getGymInsights: handleGetGymInsights,
     logAthletePr: handleLogAthletePr,
     getMeasurementHistory: handleGetMeasurementHistory,

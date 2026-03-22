@@ -17,6 +17,11 @@ import { getAppBridge } from '../app/bridge.js';
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
 
+  const IMPORT_HARD_MAX_BYTES = 50 * 1024 * 1024;
+  const IMAGE_COMPRESS_THRESHOLD_BYTES = 8 * 1024 * 1024;
+  const IMAGE_TARGET_MAX_BYTES = 4 * 1024 * 1024;
+  const IMAGE_MAX_DIMENSION = 2200;
+
   let googleScriptPromise = null;
   let googleInitializedClientId = '';
 
@@ -345,7 +350,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('pdf', ui);
           await setUiState({ modal: null });
-          const file = await pickPdfFile();
+          const selectedFile = await pickPdfFile();
+          const file = await prepareImportFileForClientUse(selectedFile, {
+            hardMaxBytes: IMPORT_HARD_MAX_BYTES,
+            imageCompressThresholdBytes: IMAGE_COMPRESS_THRESHOLD_BYTES,
+            imageTargetMaxBytes: IMAGE_TARGET_MAX_BYTES,
+            imageMaxDimension: IMAGE_MAX_DIMENSION,
+          });
           if (!file) return;
           const result = await getAppBridge().uploadMultiWeekPdf(file);
           if (!result?.success) {
@@ -361,7 +372,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('media', ui);
           await setUiState({ modal: null });
-          const file = await pickUniversalFile();
+          const selectedFile = await pickUniversalFile();
+          const file = await prepareImportFileForClientUse(selectedFile, {
+            hardMaxBytes: IMPORT_HARD_MAX_BYTES,
+            imageCompressThresholdBytes: IMAGE_COMPRESS_THRESHOLD_BYTES,
+            imageTargetMaxBytes: IMAGE_TARGET_MAX_BYTES,
+            imageMaxDimension: IMAGE_MAX_DIMENSION,
+          });
           if (!file) return;
 
           if (typeof getAppBridge()?.importFromFile !== 'function') {
@@ -371,6 +388,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const result = await getAppBridge().importFromFile(file);
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao importar arquivo');
+          }
+
+          if (selectedFile && file !== selectedFile) {
+            toast(`Imagem reduzida de ${formatBytes(selectedFile.size)} para ${formatBytes(file.size)}`);
           }
 
           consumeAthleteImport(importPolicy.benefits, 'media');
@@ -904,6 +925,44 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
+        case 'admin:request-delete': {
+          const userId = Number(el.dataset.userId);
+          const userEmail = String(el.dataset.userEmail || '').trim();
+          if (!Number.isFinite(userId) || userId <= 0) {
+            throw new Error('Usuário inválido');
+          }
+
+          const confirmed = confirm(`Solicitar exclusão da conta ${userEmail || `#${userId}`}?\n\nUm email será enviado. Se a pessoa não responder em até 15 dias, a conta e os dados serão excluídos automaticamente.`);
+          if (!confirmed) return;
+
+          const deletion = await getAppBridge().requestAccountDeletion(userId);
+          const query = String(root.querySelector('#admin-search')?.value || '').trim();
+          const result = await getAppBridge().getAdminOverview({ q: query, limit: 25 });
+          await setUiState({ admin: { overview: result?.data || null, query } });
+          toast(deletion?.data?.reused ? 'Exclusão já estava pendente' : 'Email de exclusão enviado');
+          await rerender();
+          return;
+        }
+
+        case 'admin:delete-now': {
+          const userId = Number(el.dataset.userId);
+          const userEmail = String(el.dataset.userEmail || '').trim();
+          if (!Number.isFinite(userId) || userId <= 0) {
+            throw new Error('Usuário inválido');
+          }
+
+          const confirmed = confirm(`Excluir agora a conta ${userEmail || `#${userId}`}?\n\nIsso remove a conta e os dados derivados permanentemente.`);
+          if (!confirmed) return;
+
+          await getAppBridge().deleteAccountNow(userId);
+          const query = String(root.querySelector('#admin-search')?.value || '').trim();
+          const result = await getAppBridge().getAdminOverview({ q: query, limit: 25 });
+          await setUiState({ admin: { overview: result?.data || null, query } });
+          toast('Conta excluída permanentemente');
+          await rerender();
+          return;
+        }
+
         case 'wod:toggle': {
           const lineId = el.dataset.lineId;
           if (!lineId) return;
@@ -1302,6 +1361,100 @@ function pickUniversalFile() {
 
     document.body.appendChild(input);
     input.click();
+  });
+}
+
+async function prepareImportFileForClientUse(file, {
+  hardMaxBytes,
+  imageCompressThresholdBytes,
+  imageTargetMaxBytes,
+  imageMaxDimension,
+}) {
+  if (!file) return null;
+
+  if (file.size <= hardMaxBytes && (!isImageFile(file) || file.size <= imageCompressThresholdBytes)) {
+    return file;
+  }
+
+  if (isImageFile(file)) {
+    const compressed = await compressImageFile(file, {
+      targetMaxBytes: Math.min(imageTargetMaxBytes, hardMaxBytes),
+      maxDimension: imageMaxDimension,
+    });
+    if (compressed.size <= hardMaxBytes) {
+      return compressed;
+    }
+  }
+
+  throw new Error(
+    `Arquivo acima do limite de ${formatBytes(hardMaxBytes)}. Reduza o arquivo antes de importar.`,
+  );
+}
+
+function isImageFile(file) {
+  return String(file?.type || '').toLowerCase().startsWith('image/');
+}
+
+function formatBytes(bytes) {
+  const value = Number(bytes || 0);
+  if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+  if (value >= 1024) return `${(value / 1024).toFixed(1)} KB`;
+  return `${value} B`;
+}
+
+async function compressImageFile(file, { targetMaxBytes, maxDimension }) {
+  const image = await loadImageFromFile(file);
+  const ratio = Math.min(1, maxDimension / Math.max(image.naturalWidth || image.width, image.naturalHeight || image.height));
+  const width = Math.max(1, Math.round((image.naturalWidth || image.width) * ratio));
+  const height = Math.max(1, Math.round((image.naturalHeight || image.height) * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { alpha: false });
+  if (!context) {
+    throw new Error('Não foi possível preparar a imagem para importação');
+  }
+  context.drawImage(image, 0, 0, width, height);
+
+  let quality = 0.86;
+  let blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+  while (blob.size > targetMaxBytes && quality > 0.45) {
+    quality -= 0.1;
+    blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+  }
+
+  const nextName = file.name.replace(/\.[a-z0-9]+$/i, '') + '.jpg';
+  return new File([blob], nextName, {
+    type: 'image/jpeg',
+    lastModified: Date.now(),
+  });
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Não foi possível ler a imagem selecionada'));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function canvasToBlob(canvas, type, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Não foi possível reduzir a imagem'));
+        return;
+      }
+      resolve(blob);
+    }, type, quality);
   });
 }
 

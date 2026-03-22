@@ -7,13 +7,22 @@
     "build": "node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs",
     "build:prod": "node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs",
     "build:coach": "vite build --config coach-portal/vite.config.mjs",
+    "build:android": "npm run build",
+    "android:sync": "npm run build:android && npx cap sync android",
+    "android:copy": "npm run build:android && npx cap copy android",
+    "android:open": "npx cap open android",
+    "android:run": "npm run build:android && npx cap run android",
     "generate:import-fixtures": "node scripts/generate-import-fixtures.mjs",
     "report:import-support": "node scripts/report-import-format-support.mjs",
     "test": "node --test __tests__/*.test.mjs",
     "seed:coach-trial": "node scripts/seed-coach-trial.mjs",
-    "smoke:coach-trial": "node scripts/smoke-coach-trial.mjs"
+    "smoke:coach-trial": "node scripts/smoke-coach-trial.mjs",
+    "seed:admin-playground": "node backend/scripts/seed-admin-playground.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
     "@sentry/browser": "^8.33.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",

@@ -10,6 +10,10 @@ import { migration as opsEventsMigration } from './010_ops_events.js';
 import { migration as emailJobsMigration } from './011_email_jobs.js';
 import { migration as emailVerificationMigration } from './012_email_verification.js';
 import { migration as removeCompetitionSchemaMigration } from './013_remove_competition_schema.js';
+import { migration as accountDeletionRequestsMigration } from './014_account_deletion_requests.js';
+import { migration as enablePublicRlsLockdownMigration } from './015_enable_public_rls_lockdown.js';
+import { migration as fkIndexesAndIndexCleanupMigration } from './016_fk_indexes_and_index_cleanup.js';
+import { migration as operationalRetentionIndexesMigration } from './017_operational_retention_indexes.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -23,6 +27,10 @@ const MIGRATIONS = [
   emailJobsMigration,
   emailVerificationMigration,
   removeCompetitionSchemaMigration,
+  accountDeletionRequestsMigration,
+  enablePublicRlsLockdownMigration,
+  fkIndexesAndIndexCleanupMigration,
+  operationalRetentionIndexesMigration,
 ];
 
 export async function runMigrations() {

@@ -77,12 +77,21 @@ SMTP_GREETING_TIMEOUT_MS=8000
 SMTP_SOCKET_TIMEOUT_MS=12000
 EMAIL_JOB_RETRY_DELAY_MS=15000
 EMAIL_JOB_SWEEP_INTERVAL_MS=30000
+RETENTION_SWEEP_INTERVAL_MS=21600000
+RETENTION_TELEMETRY_DAYS=30
+RETENTION_OPS_DAYS=90
+RETENTION_EMAIL_JOBS_DAYS=30
+RETENTION_PASSWORD_RESET_DAYS=2
+RETENTION_EMAIL_VERIFICATION_DAYS=2
+RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER=5
+RETENTION_ACCOUNT_DELETION_DAYS=90
 ```
 
 Notas:
 
 - Em produção inicial, use `RESEND_FROM=onboarding@resend.dev` até validar domínio próprio no Resend.
 - `SENTRY_DSN` é opcional. Se não tiver um DSN real, deixe vazio; não use `...`.
+- O worker de retenção remove dados operacionais antigos automaticamente e mantém apenas os snapshots mais recentes por usuário.
 
 ## Admin
 
