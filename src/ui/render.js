@@ -21,13 +21,13 @@ export function renderAppShell() {
         </div>
       </header>
 
-      <!-- MAIN -->
-      <main class="app-main" id="ui-main"></main>
-
-      <!-- BOTTOM NAV -->
+      <!-- NAV -->
       <nav class="bottom-nav">
         <div class="bottom-navItems" id="ui-bottomNav"></div>
       </nav>
+
+      <!-- MAIN -->
+      <main class="app-main" id="ui-main"></main>
     </div>
 
     <!-- MODALS -->
@@ -181,8 +181,6 @@ function renderMainContent(state) {
   }
 
   const ui = state?.__ui || {};
-  const trainingMode = !!ui.trainingMode;
-  const progress = ui.progress || { doneCount: 0, totalCount: 0 };
   const workoutContext = state?.workoutContext || {};
   const showSourceToggle = !!workoutContext.canToggle;
   const activeSource = workoutContext.activeSource || 'uploaded';
@@ -212,23 +210,6 @@ function renderMainContent(state) {
             </button>
           </div>
         ` : ''}
-
-        ${trainingMode ? `
-          <div class="wod-toolbar">
-            <button class="btn-secondary" data-action="wod:mode" type="button">Sair do modo treino</button>
-            <div class="wod-progress">${progress.doneCount}/${progress.totalCount}</div>
-            <button class="btn-secondary" data-action="wod:prev" type="button">◀</button>
-            <button class="btn-secondary" data-action="wod:next" type="button">▶</button>
-          </div>
-
-          <div class="wod-stickyNext">
-            <button class="btn-primary" data-action="wod:next" type="button">Próximo</button>
-          </div>
-        ` : `
-          <div class="wod-toolbar">
-            <button class="btn-secondary" data-action="wod:mode" type="button">Modo treino</button>
-          </div>
-        `}
 
         ${workout.warnings?.length ? `
           <div class="workout-warnings">
