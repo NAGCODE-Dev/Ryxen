@@ -173,6 +173,14 @@ export function createBillingRouter() {
     const sub = row.rows[0];
     const gymContexts = await getAccessContextForUser(req.user.userId);
     const entitlements = buildEntitlements({ subscription: sub, gymContexts });
+    if (
+      isDeveloperEmail(req.user.email)
+      && sub?.status === 'active'
+      && sub?.provider === 'mock'
+      && ['starter', 'pro', 'coach', 'performance'].includes(String(sub?.plan_id || '').trim().toLowerCase())
+    ) {
+      entitlements.push('coach_portal');
+    }
     const accessState = getSubscriptionAccessState(sub);
 
     return res.json({
