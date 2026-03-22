@@ -472,7 +472,7 @@ function renderAccountPage(state) {
       ${renderPageHero({
         eyebrow: 'Conta',
         title: profile.name || 'Sua conta',
-        subtitle: 'Sessão, sync, plano e portal do coach.',
+        subtitle: 'Sessão, plano e portal do coach.',
         actions: `
           <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
@@ -488,8 +488,8 @@ function renderAccountPage(state) {
 
       <div class="coach-grid">
         ${renderPageFold({
-          title: 'Sessão e sync',
-          subtitle: 'Conta ativa e dados sincronizados.',
+          title: 'Sessão',
+          subtitle: 'Conta ativa e sincronização automática.',
           content: `
           ${isBusy ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
@@ -506,8 +506,6 @@ function renderAccountPage(state) {
             </div>
           </div>
           <div class="page-actions">
-            <button class="btn-secondary" data-action="auth:sync-push" type="button">Enviar sync</button>
-            <button class="btn-secondary" data-action="auth:sync-pull" type="button">Baixar sync</button>
             <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
           </div>
           `,
@@ -1218,8 +1216,6 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
             </details>
 
             <div class="settings-actions account-actions">
-              <button class="btn-secondary" data-action="auth:sync-push" type="button">Enviar sync</button>
-              <button class="btn-secondary" data-action="auth:sync-pull" type="button">Baixar sync</button>
               <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
               <a class="btn-secondary" href="/sports/cross/#account" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">Ir para Conta</a>
             </div>
