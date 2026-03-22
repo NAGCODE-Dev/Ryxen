@@ -130,11 +130,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             await setUiState({ modal: null, authMode: 'signin' });
             toast('Login com Google efetuado');
             await rerender();
-            hydrateAccountSnapshotInBackground(signedProfile, null, {
-              includeCoach: false,
-              includeAthlete: true,
-              athleteLite: true,
-            });
+            const currentPage = getUiState?.()?.currentPage || 'today';
+            const hydrationOptions = resolveAuthHydrationOptions(currentPage);
+            if (hydrationOptions && shouldHydratePage(currentPage)) {
+              hydrateAccountSnapshotInBackground(signedProfile, null, hydrationOptions);
+            }
             if (await maybeResumePendingCheckout()) return;
           } catch (error) {
             toast(error?.message || 'Erro ao entrar com Google');
@@ -163,6 +163,8 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   let lastAccountSnapshotKey = '';
   let lastAccountSnapshotAt = 0;
   let athleteOverviewFullTask = null;
+  let coachPortalCache = { key: '', value: null, task: null, at: 0 };
+  let athleteOverviewCache = { key: '', value: null, task: null, at: 0 };
 
   function normalizeCheckoutPlan(planId) {
     const normalized = String(planId || '').trim().toLowerCase();
@@ -270,45 +272,112 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   }
 
-  async function loadCoachPortalSnapshot(selectedGymId) {
-    try {
-      const [subscriptionResult, entitlementsResult, gymsResult] = await Promise.all([
-        measureAsync('account.subscription', () => window.__APP__?.getSubscriptionStatus?.()),
-        measureAsync('account.entitlements', () => window.__APP__?.getEntitlements?.()),
-        measureAsync('account.gyms', () => window.__APP__?.getMyGyms?.()),
-      ]);
-
-      const gyms = gymsResult?.data?.gyms || [];
-      const resolvedGymId = selectedGymId || gyms[0]?.id || null;
-      const entitlements = entitlementsResult?.data?.entitlements || [];
-      const gymAccess = entitlementsResult?.data?.gymAccess || [];
-
-      return {
-        subscription: subscriptionResult?.data || null,
-        entitlements,
-        gymAccess,
-        gyms,
-        selectedGymId: resolvedGymId,
-      };
-    } catch {
-      return emptyCoachPortal();
-    }
+  function getProfileEmail(profile = null) {
+    return String(profile?.email || '').trim().toLowerCase();
   }
 
-  async function loadAthleteOverview({ lite = false } = {}) {
-    try {
-      const result = await measureAsync('account.athlete-dashboard', () => window.__APP__?.getAthleteDashboard?.({ lite }));
-      return {
-        ...emptyAthleteOverview(),
-        ...(result?.data || {}),
-        detailLevel: lite ? 'lite' : 'full',
-      };
-    } catch {
+  function shouldHydratePage(page) {
+    return page === 'account' || page === 'history';
+  }
+
+  function resolveAuthHydrationOptions(page) {
+    if (page === 'account') {
+      return { includeCoach: true, includeAthlete: true, athleteLite: true };
+    }
+    if (page === 'history') {
+      return { includeCoach: false, includeAthlete: true, athleteLite: false };
+    }
+    return null;
+  }
+
+  async function loadCoachPortalSnapshot(profile, selectedGymId, { force = false } = {}) {
+    const email = getProfileEmail(profile);
+    if (!email) return emptyCoachPortal();
+
+    const cacheKey = `${email}::${selectedGymId || 'default'}`;
+    const isFresh = !force
+      && coachPortalCache.key === cacheKey
+      && coachPortalCache.value
+      && (Date.now() - coachPortalCache.at) < 15000;
+    if (isFresh) return coachPortalCache.value;
+    if (!force && coachPortalCache.key === cacheKey && coachPortalCache.task) {
+      return coachPortalCache.task;
+    }
+
+    coachPortalCache.key = cacheKey;
+    coachPortalCache.task = (async () => {
+      try {
+        const [subscriptionResult, entitlementsResult, gymsResult] = await Promise.all([
+          measureAsync('account.subscription', () => window.__APP__?.getSubscriptionStatus?.()),
+          measureAsync('account.entitlements', () => window.__APP__?.getEntitlements?.()),
+          measureAsync('account.gyms', () => window.__APP__?.getMyGyms?.()),
+        ]);
+
+        const gyms = gymsResult?.data?.gyms || [];
+        const resolvedGymId = selectedGymId || gyms[0]?.id || null;
+        const entitlements = entitlementsResult?.data?.entitlements || [];
+        const gymAccess = entitlementsResult?.data?.gymAccess || [];
+
+        const value = {
+          subscription: subscriptionResult?.data || null,
+          entitlements,
+          gymAccess,
+          gyms,
+          selectedGymId: resolvedGymId,
+        };
+        coachPortalCache = { key: cacheKey, value, task: null, at: Date.now() };
+        return value;
+      } catch {
+        const value = emptyCoachPortal();
+        coachPortalCache = { key: cacheKey, value, task: null, at: Date.now() };
+        return value;
+      }
+    })();
+
+    return coachPortalCache.task;
+  }
+
+  async function loadAthleteOverview(profile, { lite = false, force = false } = {}) {
+    const email = getProfileEmail(profile);
+    if (!email) {
       return {
         ...emptyAthleteOverview(),
         detailLevel: lite ? 'lite' : 'full',
       };
     }
+
+    const cacheKey = `${email}::${lite ? 'lite' : 'full'}`;
+    const isFresh = !force
+      && athleteOverviewCache.key === cacheKey
+      && athleteOverviewCache.value
+      && (Date.now() - athleteOverviewCache.at) < 15000;
+    if (isFresh) return athleteOverviewCache.value;
+    if (!force && athleteOverviewCache.key === cacheKey && athleteOverviewCache.task) {
+      return athleteOverviewCache.task;
+    }
+
+    athleteOverviewCache.key = cacheKey;
+    athleteOverviewCache.task = (async () => {
+      try {
+        const result = await measureAsync('account.athlete-dashboard', () => window.__APP__?.getAthleteDashboard?.({ lite }));
+        const value = {
+          ...emptyAthleteOverview(),
+          ...(result?.data || {}),
+          detailLevel: lite ? 'lite' : 'full',
+        };
+        athleteOverviewCache = { key: cacheKey, value, task: null, at: Date.now() };
+        return value;
+      } catch {
+        const value = {
+          ...emptyAthleteOverview(),
+          detailLevel: lite ? 'lite' : 'full',
+        };
+        athleteOverviewCache = { key: cacheKey, value, task: null, at: Date.now() };
+        return value;
+      }
+    })();
+
+    return athleteOverviewCache.task;
   }
 
   async function loadAccountSnapshot(profile, selectedGymId, options = {}) {
@@ -329,7 +398,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
     if (includeCoach) {
       tasks.push(
-        measureAsync('account.snapshot.coach', () => loadCoachPortalSnapshot(selectedGymId))
+        measureAsync('account.snapshot.coach', () => loadCoachPortalSnapshot(profile, selectedGymId))
           .then((coachPortal) => {
             nextState.coachPortal = coachPortal;
           }),
@@ -338,7 +407,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
     if (includeAthlete) {
       tasks.push(
-        measureAsync('account.snapshot.athlete', () => loadAthleteOverview({ lite: athleteLite }))
+        measureAsync('account.snapshot.athlete', () => loadAthleteOverview(profile, { lite: athleteLite }))
           .then((athleteOverview) => {
             nextState.athleteOverview = athleteOverview;
           }),
@@ -391,7 +460,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       const ui = getUiState?.() || {};
       if (ui?.athleteOverview?.detailLevel === 'full') return;
       if (!athleteOverviewFullTask) {
-        athleteOverviewFullTask = measureAsync('athlete.dashboard.full', () => loadAthleteOverview({ lite: false }));
+        athleteOverviewFullTask = measureAsync('athlete.dashboard.full', () => loadAthleteOverview(profile, { lite: false }));
       }
       const athleteOverview = await athleteOverviewFullTask;
       await patchUiState((s) => ({ ...s, athleteOverview: mergeAthleteOverviewSnapshot(athleteOverview, s?.athleteOverview) }));
@@ -845,11 +914,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await setUiState({ modal: null, authMode: 'signin', signupVerification: {} });
           toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
           await rerender();
-          hydrateAccountSnapshotInBackground(profile, null, {
-            includeCoach: false,
-            includeAthlete: true,
-            athleteLite: true,
-          });
+          const currentPage = getUiState?.()?.currentPage || 'today';
+          const hydrationOptions = resolveAuthHydrationOptions(currentPage);
+          if (hydrationOptions && shouldHydratePage(currentPage)) {
+            hydrateAccountSnapshotInBackground(profile, null, hydrationOptions);
+          }
           if (await maybeResumePendingCheckout()) return;
           return;
         }
@@ -948,11 +1017,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const ui = getUiState?.() || {};
           toast('Sessão atualizada');
           await rerender();
-          hydrateAccountSnapshotInBackground(profile, ui?.coachPortal?.selectedGymId || null, {
-            includeCoach: ui?.currentPage === 'account',
-            includeAthlete: true,
-            athleteLite: ui?.currentPage !== 'history',
-          });
+          const hydrationOptions = resolveAuthHydrationOptions(ui?.currentPage || 'today');
+          if (hydrationOptions && shouldHydratePage(ui?.currentPage || 'today')) {
+            hydrateAccountSnapshotInBackground(profile, ui?.coachPortal?.selectedGymId || null, hydrationOptions);
+          }
           if (await maybeResumePendingCheckout()) return;
           return;
         }
