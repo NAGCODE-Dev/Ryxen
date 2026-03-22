@@ -755,13 +755,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
-        case 'auth:google-redirect': {
-          window.__APP__?.startGoogleSignInRedirect?.({
-            returnTo: `${window.location.pathname}${window.location.search}`,
-          });
-          return;
-        }
-
         case 'auth:signup-request-code': {
           const name = String(root.querySelector('#auth-name')?.value || '').trim();
           const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();

@@ -122,10 +122,6 @@
   gap: 6px;
 }
 
-.auth-googleRedirect {
-  width: 100%;
-}
-
 #google-signin-button {
   min-height: 40px;
 }
