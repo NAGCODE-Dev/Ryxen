@@ -1108,6 +1108,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const planStatus = subscription?.status || 'inactive';
     const canUseDeveloperTools = isDeveloperEmail(profile?.email);
     const renewAt = subscription?.renewAt || subscription?.renew_at || null;
+    const hasActiveCoachSubscription = planStatus === 'active' && (planKey === 'pro' || planKey === 'coach');
     return `
       <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
         <div class="modal-container modal-container-auth">
@@ -1216,10 +1217,12 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
               <div class="section-kicker">Coach</div>
               <p class="account-hint">${canCoachManage || canUseDeveloperTools
                 ? 'O portal do coach continua separado do app do atleta. Use sua mesma conta para abrir o workspace do box.'
-                : 'Seu acesso de coach está bloqueado. Ative um plano quando quiser operar box, atletas e grupos no portal separado. O app do atleta continua liberado.'}</p>
+                : hasActiveCoachSubscription
+                  ? 'Seu plano está ativo, mas o portal do coach só libera quando sua conta está vinculada a um gym com permissão de gestão.'
+                  : 'Seu acesso de coach está bloqueado. Ative um plano quando quiser operar box, atletas e grupos no portal separado. O app do atleta continua liberado.'}</p>
               <div class="coach-pillRow">
                 <span class="coach-pill ${canCoachManage ? 'isGood' : 'isWarn'}">${canCoachManage ? 'Coach liberado' : 'Coach bloqueado'}</span>
-                <span class="coach-pill isGood">${canAthleteUseApp ? 'Atleta liberado' : 'Atleta liberado'}</span>
+                <span class="coach-pill ${canAthleteUseApp ? 'isGood' : 'isWarn'}">${canAthleteUseApp ? 'Atleta liberado' : 'Atleta bloqueado'}</span>
                 <span class="coach-pill">${gyms.length} gym(s)</span>
               </div>
               <div class="settings-actions coach-billingActions">
