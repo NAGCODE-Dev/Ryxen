@@ -641,7 +641,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const modal = el.dataset.modal || null;
           if (modal === 'auth') {
             const profile = window.__APP__?.getProfile?.()?.data || null;
-            await setUiState({ modal });
+            await patchUiState((s) => ({
+              ...s,
+              modal,
+              passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
+            }));
             await rerender();
             await ensureGoogleSignInUi();
             hydrateAccountSnapshotInBackground(profile);
@@ -658,7 +662,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'modal:close': {
-          await setUiState({ modal: null });
+          await patchUiState((s) => ({
+            ...s,
+            modal: null,
+            passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
+          }));
           await rerender();
           return;
         }
@@ -736,6 +744,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await patchUiState((s) => ({
             ...s,
             authMode: mode,
+            passwordReset: { open: false, email: '', code: '', previewCode: '', previewUrl: '', supportEmail: '' },
             signupVerification: mode === 'signup'
               ? (s.signupVerification || {})
               : {},
@@ -1244,6 +1253,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     if (e.key !== 'Enter') return;
     const target = e.target;
     if (!target?.closest?.('#ui-authForm')) return;
+    if (target.tagName === 'BUTTON' || target.type === 'button') return;
     e.preventDefault();
 
     const ui = getUiState?.() || {};
