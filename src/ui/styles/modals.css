@@ -14,6 +14,11 @@
   display: flex;
 }
 
+.modal-overlay-auth {
+  align-items: center !important;
+  justify-content: center !important;
+}
+
 .modal-container {
   width: min(100%, 920px);
   max-height: min(88vh, 920px);
@@ -26,6 +31,7 @@
 
 .modal-container-auth {
   width: min(100%, 720px);
+  margin: auto;
 }
 
 .modal-header {
