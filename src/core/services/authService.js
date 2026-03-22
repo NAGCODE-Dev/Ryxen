@@ -32,14 +32,8 @@ export async function signInWithGoogle(payload) {
 }
 
 export function startGoogleRedirect(payload = {}) {
-  const cfg = getRuntimeConfig();
-  if (!cfg.apiBaseUrl) {
-    throw new Error('API base URL não configurada');
-  }
-
   const returnTo = String(payload.returnTo || `${window.location.pathname}${window.location.search}`).trim() || '/sports/cross/index.html';
-  const baseUrl = String(cfg.apiBaseUrl).replace(/\/$/, '');
-  const target = new URL(`${baseUrl}/auth/google/start`);
+  const target = buildGoogleRedirectUrl();
   target.searchParams.set('returnTo', returnTo);
   window.location.assign(target.toString());
 }
@@ -170,4 +164,20 @@ function parseBase64UrlJson(value) {
   } catch {
     return null;
   }
+}
+
+export function buildGoogleRedirectUrl() {
+  const cfg = getRuntimeConfig();
+  const apiBaseUrl = String(cfg.apiBaseUrl || '').trim();
+  if (!apiBaseUrl) {
+    throw new Error('API base URL não configurada');
+  }
+
+  const origin = String(window.location?.origin || '').trim();
+  const normalizedBase = apiBaseUrl.endsWith('/') ? apiBaseUrl : `${apiBaseUrl}/`;
+  const base = /^[a-z][a-z\d+\-.]*:/i.test(normalizedBase)
+    ? normalizedBase
+    : new URL(normalizedBase, origin || window.location.href).toString();
+
+  return new URL('auth/google/start', base);
 }

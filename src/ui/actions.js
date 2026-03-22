@@ -62,6 +62,16 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     return normalizeAthleteBenefits(overviewBenefits || accessBenefits || null);
   }
 
+  function isNativeAppRuntime() {
+    try {
+      if (window.Capacitor?.isNativePlatform?.()) return true;
+      const protocol = String(window.location?.protocol || '').toLowerCase();
+      return protocol === 'capacitor:' || protocol === 'file:';
+    } catch {
+      return false;
+    }
+  }
+
   async function loadGoogleScript() {
     if (!navigator.onLine) {
       throw new Error('Google Sign-In indisponível offline');
@@ -115,6 +125,15 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
     if (!navigator.onLine) {
       shell.innerHTML = '<p class="account-hint auth-googleHint">Google Sign-In disponível quando houver internet.</p>';
+      return;
+    }
+    if (isNativeAppRuntime()) {
+      shell.innerHTML = `
+        <button class="btn-secondary auth-googleNativeButton" data-action="auth:google-redirect" type="button">
+          Entrar com Google
+        </button>
+        <p class="account-hint auth-googleHint">No app Android, o login do Google abre no navegador para concluir com segurança.</p>
+      `;
       return;
     }
 
@@ -686,6 +705,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await rerender();
           await ensureGoogleSignInUi();
           root.querySelector('#auth-email')?.focus();
+          return;
+        }
+
+        case 'auth:google-redirect': {
+          await getAppBridge()?.startGoogleSignInRedirect?.({
+            returnTo: `${window.location.pathname}${window.location.search}`,
+          });
           return;
         }
 
