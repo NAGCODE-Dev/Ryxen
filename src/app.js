@@ -89,20 +89,11 @@ const coachWorkoutStorage = createStorage('coach-workout-cache', 300_000);
 const PDF_KEY = 'workout-pdf';
 const METADATA_KEY = 'workout-pdf-metadata';
 const COACH_FEED_KEY = 'feed';
-const AUTO_SYNC_DEBOUNCE_MS = 2500;
-const AUTO_SYNC_MUTE_AFTER_PULL_MS = 5000;
-
-let autoSyncTimeout = null;
-let autoSyncMutedUntil = 0;
 let authHydrationPromise = null;
 
 const remoteHandlers = createRemoteHandlers({
-  getState,
-  setState,
-  selectActiveWeek,
   syncCoachWorkoutFeed,
   clearCoachWorkoutFeed,
-  applyImportedBackupData,
 });
 
 // ========== INICIALIZAÇÃO ==========
@@ -278,40 +269,7 @@ function setupEventListeners() {
     }
   });
 
-  subscribe((newState, oldState) => {
-    if (isProcessing) return;
-    if (!hasStoredSession()) return;
-    if (Date.now() < autoSyncMutedUntil) return;
-
-    const syncRelevantChanged =
-      newState.prs !== oldState.prs ||
-      newState.preferences !== oldState.preferences ||
-      newState.weeks !== oldState.weeks ||
-      newState.activeWeekNumber !== oldState.activeWeekNumber ||
-      newState.currentDay !== oldState.currentDay;
-
-    if (!syncRelevantChanged) return;
-    scheduleAutoSyncPush();
-  });
-  
   logDebug('🎧 Event listeners configurados');
-}
-
-function scheduleAutoSyncPush() {
-  clearTimeout(autoSyncTimeout);
-  autoSyncTimeout = setTimeout(async () => {
-    if (!hasStoredSession()) return;
-    if (Date.now() < autoSyncMutedUntil) return;
-
-    try {
-      const result = await remoteHandlers.handleSyncPush();
-      if (result?.success) {
-        logDebug('☁️ Auto-sync enviado');
-      }
-    } catch (error) {
-      console.warn('Falha no auto-sync:', error?.message || error);
-    }
-  }, AUTO_SYNC_DEBOUNCE_MS);
 }
 
 /**
@@ -1207,10 +1165,10 @@ async function applyImportedBackupData(backup, options = {}) {
   await pdfStorage.set(PDF_KEY, weeks);
   await pdfMetaStorage.set(METADATA_KEY, {
     uploadedAt: new Date().toISOString(),
-    fileName: options.fileName || 'remote-sync',
+    fileName: options.fileName || 'backup-importado',
     weeksCount: weeks.length,
     weekNumbers: weeks.map((week) => week.weekNumber),
-    source: options.source || 'sync-import',
+    source: options.source || 'backup-import',
   });
 
   if (backup?.activeWeekNumber) {
@@ -1269,7 +1227,6 @@ export const {
   handleGetSubscriptionStatus,
   handleGetEntitlements,
   handleActivateMockSubscription,
-  handleListSyncSnapshots,
   handleGetRuntimeConfig,
   handleSetRuntimeConfig,
   handleCreateGym,
@@ -1281,7 +1238,9 @@ export const {
   handlePublishGymWorkout,
   handleGetWorkoutFeed,
   handleGetAccessContext,
-  handleGetAthleteDashboard,
+  handleGetAthleteSummary,
+  handleGetAthleteResultsSummary,
+  handleGetAthleteWorkoutsRecent,
   handleGetGymInsights,
   handleGetMeasurementHistory,
   handleLogAthletePr,
@@ -1292,13 +1251,6 @@ export const {
   handleSyncAthleteMeasurementsSnapshot,
   handleSyncAthletePrSnapshot,
   handleGetBenchmarks,
-  handleGetCompetitionCalendar,
-  handleCreateCompetition,
-  handleAddCompetitionEvent,
-  handleSubmitBenchmarkResult,
-  handleGetBenchmarkLeaderboard,
-  handleGetCompetitionLeaderboard,
-  handleGetEventLeaderboard,
 } = remoteHandlers;
 
 export async function handleSignUp(credentials) {
@@ -1365,29 +1317,7 @@ export async function handleSignOut() {
   return { success: true };
 }
 
-export async function handleSyncPush() {
-  return remoteHandlers.handleSyncPush();
-}
-
-export async function handleSyncPull() {
-  const result = await remoteHandlers.handleSyncPull();
-  if (result?.success) {
-    autoSyncMutedUntil = Date.now() + AUTO_SYNC_MUTE_AFTER_PULL_MS;
-  }
-  return result;
-}
-
 async function postAuthHydration() {
-  try {
-    const pullResult = await remoteHandlers.handleSyncPull();
-    if (pullResult?.success) {
-      autoSyncMutedUntil = Date.now() + AUTO_SYNC_MUTE_AFTER_PULL_MS;
-      logDebug('☁️ Snapshot remoto aplicado após autenticação');
-    }
-  } catch (error) {
-    console.warn('Falha ao baixar snapshot após autenticação:', error?.message || error);
-  }
-
   try {
     await remoteHandlers.handleGetWorkoutFeed();
   } catch (error) {
@@ -1714,7 +1644,9 @@ function exposeDebugAPIs() {
     publishGymWorkout: handlePublishGymWorkout,
     getWorkoutFeed: handleGetWorkoutFeed,
     getAccessContext: handleGetAccessContext,
-    getAthleteDashboard: handleGetAthleteDashboard,
+    getAthleteSummary: handleGetAthleteSummary,
+    getAthleteResultsSummary: handleGetAthleteResultsSummary,
+    getAthleteWorkoutsRecent: handleGetAthleteWorkoutsRecent,
     getGymInsights: handleGetGymInsights,
     logAthletePr: handleLogAthletePr,
     getMeasurementHistory: handleGetMeasurementHistory,
@@ -1725,20 +1657,10 @@ function exposeDebugAPIs() {
     syncAthleteMeasurementsSnapshot: handleSyncAthleteMeasurementsSnapshot,
     syncAthletePrSnapshot: handleSyncAthletePrSnapshot,
     getBenchmarks: handleGetBenchmarks,
-    getCompetitionCalendar: handleGetCompetitionCalendar,
-    createCompetition: handleCreateCompetition,
-    addCompetitionEvent: handleAddCompetitionEvent,
-    submitBenchmarkResult: handleSubmitBenchmarkResult,
-    getBenchmarkLeaderboard: handleGetBenchmarkLeaderboard,
-    getCompetitionLeaderboard: handleGetCompetitionLeaderboard,
-    getEventLeaderboard: handleGetEventLeaderboard,
     openCheckout: handleOpenCheckout,
     getSubscriptionStatus: handleGetSubscriptionStatus,
     getEntitlements: handleGetEntitlements,
     activateMockSubscription: handleActivateMockSubscription,
-    syncPush: handleSyncPush,
-    syncPull: handleSyncPull,
-    listSyncSnapshots: handleListSyncSnapshots,
     getRuntimeConfig: handleGetRuntimeConfig,
     setRuntimeConfig: handleSetRuntimeConfig,
     // PRs
@@ -1768,7 +1690,7 @@ function exposeDebugAPIs() {
 
   exposeAppApi(api);
 
-  logDebug('🐛 Debug APIs expostas: window.__APP__');
+  logDebug('🐛 Debug APIs expostas no bridge interno');
 }
 /**
  * Limpa todos os PDFs salvos

@@ -3,9 +3,6 @@ import cors from 'cors';
 import 'dotenv/config';
 
 import { pool } from './db.js';
-import {
-  getMembershipForUser,
-} from './access.js';
 import { applySecurityHeaders, attachRequestLogger, attachRequestMeta, createRateLimiter } from './middleware.js';
 import {
   PORT,
@@ -19,8 +16,7 @@ import { createTelemetryRouter } from './routes/telemetryRoutes.js';
 import { createBenchmarkRouter } from './routes/benchmarkRoutes.js';
 import { createGymRouter } from './routes/gymRoutes.js';
 import { createAthleteRouter } from './routes/athleteRoutes.js';
-import { createAdminSyncRouter } from './routes/adminSyncRoutes.js';
-import { createCompetitionRouter } from './routes/competitionRoutes.js';
+import { createAdminOpsRouter } from './routes/adminOpsRoutes.js';
 import { requireGymManager, slugify } from './utils/gymUtils.js';
 import { runMigrations } from './migrations/index.js';
 import { startEmailWorker } from './mailer.js';
@@ -50,14 +46,7 @@ app.use('/telemetry', createTelemetryRouter({ telemetryRateLimit: TELEMETRY_RATE
 app.use('/benchmarks', createBenchmarkRouter({ resolveBenchmarkOrder }));
 app.use(createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }));
 app.use(createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSeries }));
-app.use(createAdminSyncRouter());
-app.use(createCompetitionRouter({
-  requireGymManager,
-  ensureCompetitionAccess,
-  getBenchmarkBySlug,
-  resolveLeaderboardOrder,
-  parseBenchmarkScore,
-}));
+app.use(createAdminOpsRouter());
 
 app.get('/', (_req, res) => {
   res.json({
@@ -108,23 +97,6 @@ runMigrations()
     process.exit(1);
   });
 
-async function ensureCompetitionAccess(competition, userId) {
-  if (!competition) {
-    return { success: false, code: 404, error: 'Competição não encontrada' };
-  }
-
-  if (competition.visibility === 'public') {
-    return { success: true };
-  }
-
-  const membership = await getMembershipForUser(competition.gym_id, userId);
-  if (!membership) {
-    return { success: false, code: 403, error: 'Sem acesso a esta competição' };
-  }
-
-  return { success: true, membership };
-}
-
 function resolveBenchmarkOrder(sort) {
   switch (sort) {
     case 'name_asc':
@@ -139,53 +111,6 @@ function resolveBenchmarkOrder(sort) {
     default:
       return 'COALESCE(year, 0) DESC, name ASC';
   }
-}
-
-function resolveLeaderboardOrder(scoreType) {
-  switch (scoreType) {
-    case 'for_time':
-      return 'br.score_value ASC, COALESCE(br.tiebreak_seconds, 0) ASC, br.created_at ASC';
-    case 'rounds_reps':
-    case 'reps':
-    default:
-      return 'br.score_value DESC, COALESCE(br.tiebreak_seconds, 0) ASC, br.created_at ASC';
-  }
-}
-
-function parseBenchmarkScore(scoreDisplay, scoreType) {
-  const raw = String(scoreDisplay || '').trim();
-  const normalized = raw.replace(',', '.');
-
-  if (scoreType === 'for_time') {
-    const time = parseTimeToSeconds(normalized);
-    if (time !== null) return { scoreValue: time, tiebreakSeconds: null };
-  }
-
-  if (scoreType === 'rounds_reps') {
-    const roundsReps = normalized.match(/^(\d+)\s*\+\s*(\d+)$/);
-    if (roundsReps) {
-      return {
-        scoreValue: Number(roundsReps[1]) * 1000 + Number(roundsReps[2]),
-        tiebreakSeconds: null,
-      };
-    }
-  }
-
-  const numeric = Number(normalized.replace(/[^\d.-]/g, ''));
-  if (Number.isFinite(numeric)) {
-    return { scoreValue: numeric, tiebreakSeconds: null };
-  }
-
-  return { scoreValue: 0, tiebreakSeconds: null };
-}
-
-function parseTimeToSeconds(value) {
-  if (!value) return null;
-  const parts = String(value).split(':').map((part) => Number(part.trim()));
-  if (!parts.every(Number.isFinite)) return null;
-  if (parts.length === 2) return parts[0] * 60 + parts[1];
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  return null;
 }
 
 

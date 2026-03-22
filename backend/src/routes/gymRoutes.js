@@ -407,7 +407,7 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(manager.code).json({ error: manager.error });
     }
 
-    const [membersRes, workoutsRes, competitionsRes, resultsRes, topBenchmarksRes, groupsRes] = await Promise.all([
+    const [membersRes, workoutsRes, resultsRes, topBenchmarksRes, groupsRes] = await Promise.all([
       pool.query(
         `SELECT role, COUNT(*)::int AS total
          FROM gym_memberships
@@ -423,14 +423,6 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
          WHERE gym_id = $1
            AND sport_type = $2`,
         [gymId, sportType],
-      ),
-      pool.query(
-        `SELECT
-          COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE starts_at >= NOW())::int AS upcoming
-         FROM competitions
-         WHERE gym_id = $1`,
-        [gymId],
       ),
       pool.query(`SELECT COUNT(*)::int AS total FROM benchmark_results WHERE gym_id = $1`, [gymId]),
       pool.query(
@@ -473,23 +465,6 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       [gymId],
     );
 
-    const upcomingCompetitions = await pool.query(
-      `SELECT
-        c.id,
-        c.title,
-        c.location,
-        c.starts_at,
-        COUNT(ce.id)::int AS event_count
-       FROM competitions c
-       LEFT JOIN competition_events ce ON ce.competition_id = c.id
-       WHERE c.gym_id = $1
-         AND c.starts_at >= NOW() - INTERVAL '1 day'
-       GROUP BY c.id
-       ORDER BY c.starts_at ASC
-       LIMIT 6`,
-      [gymId],
-    );
-
     return res.json({
       gymId,
       access: manager.access?.gymAccess || null,
@@ -498,14 +473,11 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
         coaches: (roleTotals.owner || 0) + (roleTotals.coach || 0),
         workouts: Number(workoutsRes.rows[0]?.total || 0),
         workoutsNext7Days: Number(workoutsRes.rows[0]?.next_7_days || 0),
-        competitions: Number(competitionsRes.rows[0]?.total || 0),
-        upcomingCompetitions: Number(competitionsRes.rows[0]?.upcoming || 0),
         results: Number(resultsRes.rows[0]?.total || 0),
         groups: Number(groupsRes.rows[0]?.total || 0),
         sportType,
       },
       recentResults: recentResults.rows,
-      upcomingCompetitions: upcomingCompetitions.rows,
       topBenchmarks: topBenchmarksRes.rows,
     });
   });

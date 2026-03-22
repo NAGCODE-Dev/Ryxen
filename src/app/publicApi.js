@@ -1,5 +1,7 @@
+import { setAppBridge } from './bridge.js';
+
 export function exposeAppApi(api) {
-  window.__APP__ = {
+  return setAppBridge({
     ...api,
-  };
+  });
 }

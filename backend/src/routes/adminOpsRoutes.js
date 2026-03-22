@@ -1,49 +1,14 @@
 import express from 'express';
 
-import { pool } from '../db.js';
-import { adminRequired, authRequired } from '../auth.js';
+import { adminRequired } from '../auth.js';
 import { grantSubscriptionToUser, normalizeSubscriptionPlanId, reprocessBillingClaim } from '../utils/subscriptionBilling.js';
 import { getMailerHealth, getRecentEmailJobs, retryEmailJob } from '../mailer.js';
 import { getRecentOpsEvents, logOpsEvent } from '../opsEvents.js';
 import { KIWIFY_WEBHOOK_TOKEN, KIWIFY_CLIENT_ID, KIWIFY_CLIENT_SECRET } from '../config.js';
 import { generateResetCode, hashResetCode } from '../passwordReset.js';
 
-export function createAdminSyncRouter() {
+export function createAdminOpsRouter() {
   const router = express.Router();
-
-  router.post('/sync/push', authRequired, async (req, res) => {
-    const { payload } = req.body || {};
-    if (!payload || typeof payload !== 'object') {
-      return res.status(400).json({ error: 'payload inválido' });
-    }
-
-    const inserted = await pool.query(
-      `INSERT INTO sync_snapshots (user_id, payload) VALUES ($1,$2) RETURNING id, created_at`,
-      [req.user.userId, payload],
-    );
-
-    return res.json({ snapshotId: inserted.rows[0].id, savedAt: inserted.rows[0].created_at });
-  });
-
-  router.get('/sync/pull', authRequired, async (req, res) => {
-    const found = await pool.query(
-      `SELECT id, payload, created_at FROM sync_snapshots WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1`,
-      [req.user.userId],
-    );
-
-    const row = found.rows[0];
-    if (!row) return res.json({ payload: null, snapshotId: null, savedAt: null });
-    return res.json({ payload: row.payload, snapshotId: row.id, savedAt: row.created_at });
-  });
-
-  router.get('/sync/snapshots', authRequired, async (req, res) => {
-    const rows = await pool.query(
-      `SELECT id, created_at FROM sync_snapshots WHERE user_id=$1 ORDER BY created_at DESC LIMIT 50`,
-      [req.user.userId],
-    );
-
-    return res.json({ snapshots: rows.rows.map((r) => ({ id: r.id, savedAt: r.created_at })) });
-  });
 
   router.get('/admin/overview', adminRequired, async (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 25, 1), 100);

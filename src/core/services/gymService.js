@@ -42,12 +42,25 @@ export async function getAccessContext() {
   return apiRequest('/access/context', { method: 'GET' });
 }
 
-export async function getAthleteDashboard(params = {}) {
+export async function getAthleteSummary(params = {}) {
   const search = new URLSearchParams();
   if (params?.sportType) search.set('sportType', params.sportType);
-  if (params?.lite) search.set('lite', '1');
   const suffix = search.toString() ? `?${search.toString()}` : '';
-  return apiRequest(`/athletes/me/dashboard${suffix}`, { method: 'GET' });
+  return apiRequest(`/athletes/me/summary${suffix}`, { method: 'GET' });
+}
+
+export async function getAthleteResultsSummary(params = {}) {
+  const search = new URLSearchParams();
+  if (params?.sportType) search.set('sportType', params.sportType);
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return apiRequest(`/athletes/me/results/summary${suffix}`, { method: 'GET' });
+}
+
+export async function getAthleteWorkoutsRecent(params = {}) {
+  const search = new URLSearchParams();
+  if (params?.sportType) search.set('sportType', params.sportType);
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return apiRequest(`/athletes/me/workouts/recent${suffix}`, { method: 'GET' });
 }
 
 export async function getGymInsights(gymId, params = {}) {

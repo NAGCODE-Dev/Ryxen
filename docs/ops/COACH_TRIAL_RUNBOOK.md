@@ -50,7 +50,7 @@ O atleta deve conseguir:
 
 1. Entrar no app.
 2. Ver treino do dia.
-3. Ver histórico e competições.
+3. Ver histórico e conta do atleta.
 4. Abrir conta.
 5. Testar sync e backup.
 

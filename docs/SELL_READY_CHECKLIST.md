@@ -35,7 +35,7 @@
 - Trabalhar SEO básico e página de vendas.
 
 ## 7. Próximas entregas técnicas sugeridas
-- Backend opcional para sync entre dispositivos.
+- Backend opcional para autenticação, email e portal do coach.
 - Conta de usuário e recuperação de dados.
 - Relatórios de evolução (gráficos semanais/mensais).
 - Compartilhamento de treino com coach/box.

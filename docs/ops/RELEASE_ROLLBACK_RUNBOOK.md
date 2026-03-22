@@ -10,7 +10,7 @@
 4. Monitorar:
    - taxa de erro JS
    - falhas de checkout
-   - tempo de resposta API auth/sync
+   - tempo de resposta API auth/email
 
 ## Rollback
 1. Definir critério de rollback:

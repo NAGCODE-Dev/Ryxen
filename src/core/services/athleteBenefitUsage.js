@@ -8,7 +8,6 @@ const DEFAULT_BENEFITS = {
   personal: false,
   importsPerMonth: null,
   historyDays: null,
-  competitionAccess: 'full',
   premiumFeatures: true,
 };
 

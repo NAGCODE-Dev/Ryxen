@@ -1,6 +1,7 @@
 import { renderAppShell, renderAll } from './render.js';
 import { setupActions } from './actions.js';
 import { bindAppEvents } from './events.js';
+import { getAppBridge } from '../app/bridge.js';
 
 export async function mountUI({ root }) {
   if (!root) throw new Error('mountUI: root é obrigatório');
@@ -150,7 +151,26 @@ function normalizeUiState(s) {
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
-    : { detailLevel: 'none', stats: null, recentResults: [], upcomingCompetitions: [], recentWorkouts: [], gymAccess: [], athleteBenefits: null };
+    : {
+        detailLevel: 'none',
+        stats: null,
+        recentResults: [],
+        recentWorkouts: [],
+        benchmarkHistory: [],
+        prHistory: [],
+        prCurrent: {},
+        measurements: [],
+        runningHistory: [],
+        strengthHistory: [],
+        gymAccess: [],
+        personalSubscription: null,
+        athleteBenefits: null,
+        blocks: {
+          summary: { status: 'idle', error: '' },
+          results: { status: 'idle', error: '' },
+          workouts: { status: 'idle', error: '' },
+        },
+      };
   next.coachPortal = next.coachPortal && typeof next.coachPortal === 'object'
     ? next.coachPortal
     : {
@@ -159,17 +179,36 @@ function normalizeUiState(s) {
         gymAccess: [],
         gyms: [],
         selectedGymId: null,
+        status: 'idle',
+        error: '',
       };
   if (typeof next.athleteOverview.detailLevel !== 'string') next.athleteOverview.detailLevel = 'none';
   if (!Array.isArray(next.athleteOverview.recentResults)) next.athleteOverview.recentResults = [];
-  if (!Array.isArray(next.athleteOverview.upcomingCompetitions)) next.athleteOverview.upcomingCompetitions = [];
   if (!Array.isArray(next.athleteOverview.recentWorkouts)) next.athleteOverview.recentWorkouts = [];
+  if (!Array.isArray(next.athleteOverview.benchmarkHistory)) next.athleteOverview.benchmarkHistory = [];
+  if (!Array.isArray(next.athleteOverview.prHistory)) next.athleteOverview.prHistory = [];
+  if (!next.athleteOverview.prCurrent || typeof next.athleteOverview.prCurrent !== 'object') next.athleteOverview.prCurrent = {};
+  if (!Array.isArray(next.athleteOverview.measurements)) next.athleteOverview.measurements = [];
+  if (!Array.isArray(next.athleteOverview.runningHistory)) next.athleteOverview.runningHistory = [];
+  if (!Array.isArray(next.athleteOverview.strengthHistory)) next.athleteOverview.strengthHistory = [];
   if (!Array.isArray(next.athleteOverview.gymAccess)) next.athleteOverview.gymAccess = [];
+  if (!next.athleteOverview.personalSubscription || typeof next.athleteOverview.personalSubscription !== 'object') next.athleteOverview.personalSubscription = null;
   if (!next.athleteOverview.athleteBenefits || typeof next.athleteOverview.athleteBenefits !== 'object') next.athleteOverview.athleteBenefits = null;
+  next.athleteOverview.blocks = next.athleteOverview.blocks && typeof next.athleteOverview.blocks === 'object'
+    ? next.athleteOverview.blocks
+    : {};
+  for (const key of ['summary', 'results', 'workouts']) {
+    const current = next.athleteOverview.blocks[key];
+    next.athleteOverview.blocks[key] = current && typeof current === 'object'
+      ? { status: typeof current.status === 'string' ? current.status : 'idle', error: String(current.error || '') }
+      : { status: 'idle', error: '' };
+  }
   if (!Array.isArray(next.coachPortal.gyms)) next.coachPortal.gyms = [];
   if (!Array.isArray(next.coachPortal.gymAccess)) next.coachPortal.gymAccess = [];
   if (!Array.isArray(next.coachPortal.entitlements)) next.coachPortal.entitlements = [];
   if (typeof next.coachPortal.selectedGymId !== 'number') next.coachPortal.selectedGymId = next.coachPortal.selectedGymId || null;
+  if (typeof next.coachPortal.status !== 'string') next.coachPortal.status = 'idle';
+  if (typeof next.coachPortal.error !== 'string') next.coachPortal.error = '';
 
   return next;
 }
@@ -246,7 +285,7 @@ function setHTML(el, html) {
 
 function safeGetState() {
   try {
-    return window.__APP__?.getState ? window.__APP__.getState() : {};
+    return getAppBridge()?.getState ? getAppBridge().getState() : {};
   } catch {
     return {};
   }
@@ -254,7 +293,7 @@ function safeGetState() {
 
 function safeGetProfile() {
   try {
-    const result = window.__APP__?.getProfile?.();
+    const result = getAppBridge()?.getProfile?.();
     return result?.data || null;
   } catch {
     return null;

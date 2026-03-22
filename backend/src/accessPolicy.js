@@ -9,7 +9,6 @@ export const ATHLETE_BENEFIT_MATRIX = {
     planLabel: 'Atleta liberado',
     importsPerMonth: null,
     historyDays: null,
-    competitionAccess: 'full',
     premiumFeatures: true,
   },
   athlete_plus: {
@@ -20,7 +19,6 @@ export const ATHLETE_BENEFIT_MATRIX = {
     planLabel: 'Atleta liberado',
     importsPerMonth: null,
     historyDays: null,
-    competitionAccess: 'full',
     premiumFeatures: true,
   },
   starter: {
@@ -31,7 +29,6 @@ export const ATHLETE_BENEFIT_MATRIX = {
     planLabel: 'Atleta liberado',
     importsPerMonth: null,
     historyDays: null,
-    competitionAccess: 'full',
     premiumFeatures: true,
   },
   pro: {
@@ -42,7 +39,6 @@ export const ATHLETE_BENEFIT_MATRIX = {
     planLabel: 'Atleta liberado',
     importsPerMonth: null,
     historyDays: null,
-    competitionAccess: 'full',
     premiumFeatures: true,
   },
   performance: {
@@ -53,7 +49,6 @@ export const ATHLETE_BENEFIT_MATRIX = {
     planLabel: 'Atleta liberado',
     importsPerMonth: null,
     historyDays: null,
-    competitionAccess: 'full',
     premiumFeatures: true,
   },
 };

@@ -2,7 +2,6 @@ import { pool } from '../db.js';
 import { migration as baseSchemaMigration } from './001_baseSchema.js';
 import { migration as seedBenchmarksMigration } from './002_seedBenchmarks.js';
 import { migration as sportTypesMigration } from './003_sport_types.js';
-import { migration as competitionSportTypesMigration } from './004_competition_sport_types.js';
 import { migration as sportHistoryMigration } from './005_sport_history.js';
 import { migration as logCompletionStateMigration } from './006_log_completion_state.js';
 import { migration as billingClaimsMigration } from './007_billing_claims.js';
@@ -10,12 +9,12 @@ import { migration as athleteMeasurementsMigration } from './009_athlete_measure
 import { migration as opsEventsMigration } from './010_ops_events.js';
 import { migration as emailJobsMigration } from './011_email_jobs.js';
 import { migration as emailVerificationMigration } from './012_email_verification.js';
+import { migration as removeCompetitionSchemaMigration } from './013_remove_competition_schema.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
   seedBenchmarksMigration,
   sportTypesMigration,
-  competitionSportTypesMigration,
   sportHistoryMigration,
   logCompletionStateMigration,
   billingClaimsMigration,
@@ -23,6 +22,7 @@ const MIGRATIONS = [
   opsEventsMigration,
   emailJobsMigration,
   emailVerificationMigration,
+  removeCompetitionSchemaMigration,
 ];
 
 export async function runMigrations() {

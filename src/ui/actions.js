@@ -11,6 +11,8 @@ import {
   peekCheckoutIntent,
   queueCheckoutIntent,
 } from '../core/services/subscriptionService.js';
+import { createHydrationController } from '../app/hydration.js';
+import { getAppBridge } from '../app/bridge.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
@@ -24,40 +26,35 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     gymAccess: [],
     gyms: [],
     selectedGymId: null,
+    status: 'idle',
+    error: '',
   });
 
   const emptyAthleteOverview = () => ({
     detailLevel: 'none',
     stats: null,
     recentResults: [],
-    upcomingCompetitions: [],
     recentWorkouts: [],
+    benchmarkHistory: [],
+    prHistory: [],
+    prCurrent: {},
+    measurements: [],
+    runningHistory: [],
+    strengthHistory: [],
     gymAccess: [],
+    personalSubscription: null,
     athleteBenefits: null,
+    blocks: {
+      summary: { status: 'idle', error: '' },
+      results: { status: 'idle', error: '' },
+      workouts: { status: 'idle', error: '' },
+    },
   });
 
   function resolveAthleteBenefits(uiState, accessContext = null) {
     const overviewBenefits = uiState?.athleteOverview?.athleteBenefits || null;
     const accessBenefits = accessContext?.data?.athleteBenefits || accessContext?.athleteBenefits || null;
     return normalizeAthleteBenefits(overviewBenefits || accessBenefits || null);
-  }
-
-  function mergeAthleteOverviewSnapshot(nextOverview, currentOverview) {
-    const next = nextOverview && typeof nextOverview === 'object' ? nextOverview : emptyAthleteOverview();
-    const current = currentOverview && typeof currentOverview === 'object' ? currentOverview : emptyAthleteOverview();
-    if (current?.detailLevel !== 'full' || next?.detailLevel === 'full') {
-      return next;
-    }
-
-    return {
-      ...next,
-      detailLevel: 'full',
-      benchmarkHistory: Array.isArray(current?.benchmarkHistory) ? current.benchmarkHistory : [],
-      prHistory: Array.isArray(current?.prHistory) ? current.prHistory : [],
-      prCurrent: current?.prCurrent && typeof current.prCurrent === 'object' ? current.prCurrent : {},
-      runningHistory: Array.isArray(current?.runningHistory) ? current.runningHistory : [],
-      strengthHistory: Array.isArray(current?.strengthHistory) ? current.strengthHistory : [],
-    };
   }
 
   async function loadGoogleScript() {
@@ -96,13 +93,13 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const buttonEl = root.querySelector('#google-signin-button');
     if (!shell || !buttonEl) return;
 
-    const profile = window.__APP__?.getProfile?.()?.data || null;
+    const profile = getAppBridge()?.getProfile?.()?.data || null;
     if (profile?.email) {
       shell.style.display = 'none';
       return;
     }
 
-    const runtime = window.__APP__?.getRuntimeConfig?.()?.data || {};
+    const runtime = getAppBridge()?.getRuntimeConfig?.()?.data || {};
     const clientId = String(runtime?.auth?.googleClientId || '').trim();
     if (!clientId) {
       shell.innerHTML = '<p class="account-hint auth-googleHint">Google Sign-In não configurado.</p>';
@@ -121,19 +118,19 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         client_id: clientId,
         callback: async (response) => {
           try {
-            const result = await window.__APP__?.signInWithGoogle?.({ credential: response.credential });
+            const result = await getAppBridge()?.signInWithGoogle?.({ credential: response.credential });
             if (!result?.token && !result?.user) {
               throw new Error('Falha ao autenticar com Google');
             }
 
-            const signedProfile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+            const signedProfile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
+            invalidateHydrationCache();
             await setUiState({ modal: null, authMode: 'signin' });
             toast('Login com Google efetuado');
             await rerender();
             const currentPage = getUiState?.()?.currentPage || 'today';
-            const hydrationOptions = resolveAuthHydrationOptions(currentPage);
-            if (hydrationOptions && shouldHydratePage(currentPage)) {
-              hydrateAccountSnapshotInBackground(signedProfile, null, hydrationOptions);
+            if (shouldHydratePage(currentPage)) {
+              hydratePage(signedProfile, currentPage, null);
             }
             if (await maybeResumePendingCheckout()) return;
           } catch (error) {
@@ -159,13 +156,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     });
   }
 
-  let accountSnapshotTask = null;
-  let lastAccountSnapshotKey = '';
-  let lastAccountSnapshotAt = 0;
-  let athleteOverviewFullTask = null;
-  let coachPortalCache = { key: '', value: null, task: null, at: 0 };
-  let athleteOverviewCache = { key: '', value: null, task: null, at: 0 };
-
   function normalizeCheckoutPlan(planId) {
     const normalized = String(planId || '').trim().toLowerCase();
     return ['athlete_plus', 'starter', 'pro', 'coach', 'performance'].includes(normalized)
@@ -190,7 +180,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     if (!pending?.planId || !hasCheckoutAuth()) return false;
     try {
       toast('Continuando para o checkout...');
-      await window.__APP__?.openCheckout?.(pending.planId);
+      await getAppBridge()?.openCheckout?.(pending.planId);
       return true;
     } catch (error) {
       queueCheckoutIntent(pending.planId, pending);
@@ -208,7 +198,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       queueCheckoutIntent(planId, { source: 'pricing', returnTo });
       stripCheckoutParamsFromUrl();
 
-      if (hasCheckoutAuth() && window.__APP__?.getProfile?.()?.data?.email) {
+      if (hasCheckoutAuth() && getAppBridge()?.getProfile?.()?.data?.email) {
         await maybeResumePendingCheckout();
         return;
       }
@@ -222,8 +212,8 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   }
 
   async function guardAthleteImport(kind, uiState) {
-    const profile = window.__APP__?.getProfile?.()?.data || null;
-    const accessContext = profile?.email ? await window.__APP__?.getAccessContext?.() : null;
+    const profile = getAppBridge()?.getProfile?.()?.data || null;
+    const accessContext = profile?.email ? await getAppBridge()?.getAccessContext?.() : null;
     const benefits = resolveAthleteBenefits(uiState, accessContext);
     const usage = getAthleteImportUsage(benefits, kind);
 
@@ -255,7 +245,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         },
       };
       window.__CROSSAPP_UI_METRICS__ = { recent, summary };
-      if (durationMs >= 800) {
+      if (durationMs >= 1500) {
         console.warn('[ui:slow]', name, `${durationMs}ms`, meta);
       }
     } catch {
@@ -272,220 +262,44 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   }
 
-  function getProfileEmail(profile = null) {
-    return String(profile?.email || '').trim().toLowerCase();
-  }
-
-  function shouldHydratePage(page) {
-    return page === 'account' || page === 'history';
-  }
-
-  function resolveAuthHydrationOptions(page) {
-    if (page === 'account') {
-      return { includeCoach: true, includeAthlete: true, athleteLite: true };
-    }
-    if (page === 'history') {
-      return { includeCoach: false, includeAthlete: true, athleteLite: false };
-    }
-    return null;
-  }
-
-  async function loadCoachPortalSnapshot(profile, selectedGymId, { force = false } = {}) {
-    const email = getProfileEmail(profile);
-    if (!email) return emptyCoachPortal();
-
-    const cacheKey = `${email}::${selectedGymId || 'default'}`;
-    const isFresh = !force
-      && coachPortalCache.key === cacheKey
-      && coachPortalCache.value
-      && (Date.now() - coachPortalCache.at) < 15000;
-    if (isFresh) return coachPortalCache.value;
-    if (!force && coachPortalCache.key === cacheKey && coachPortalCache.task) {
-      return coachPortalCache.task;
-    }
-
-    coachPortalCache.key = cacheKey;
-    coachPortalCache.task = (async () => {
-      try {
-        const [subscriptionResult, entitlementsResult, gymsResult] = await Promise.all([
-          measureAsync('account.subscription', () => window.__APP__?.getSubscriptionStatus?.()),
-          measureAsync('account.entitlements', () => window.__APP__?.getEntitlements?.()),
-          measureAsync('account.gyms', () => window.__APP__?.getMyGyms?.()),
-        ]);
-
-        const gyms = gymsResult?.data?.gyms || [];
-        const resolvedGymId = selectedGymId || gyms[0]?.id || null;
-        const entitlements = entitlementsResult?.data?.entitlements || [];
-        const gymAccess = entitlementsResult?.data?.gymAccess || [];
-
-        const value = {
-          subscription: subscriptionResult?.data || null,
-          entitlements,
-          gymAccess,
-          gyms,
-          selectedGymId: resolvedGymId,
-        };
-        coachPortalCache = { key: cacheKey, value, task: null, at: Date.now() };
-        return value;
-      } catch {
-        const value = emptyCoachPortal();
-        coachPortalCache = { key: cacheKey, value, task: null, at: Date.now() };
-        return value;
-      }
-    })();
-
-    return coachPortalCache.task;
-  }
-
-  async function loadAthleteOverview(profile, { lite = false, force = false } = {}) {
-    const email = getProfileEmail(profile);
-    if (!email) {
-      return {
-        ...emptyAthleteOverview(),
-        detailLevel: lite ? 'lite' : 'full',
-      };
-    }
-
-    const cacheKey = `${email}::${lite ? 'lite' : 'full'}`;
-    const isFresh = !force
-      && athleteOverviewCache.key === cacheKey
-      && athleteOverviewCache.value
-      && (Date.now() - athleteOverviewCache.at) < 15000;
-    if (isFresh) return athleteOverviewCache.value;
-    if (!force && athleteOverviewCache.key === cacheKey && athleteOverviewCache.task) {
-      return athleteOverviewCache.task;
-    }
-
-    athleteOverviewCache.key = cacheKey;
-    athleteOverviewCache.task = (async () => {
-      try {
-        const result = await measureAsync('account.athlete-dashboard', () => window.__APP__?.getAthleteDashboard?.({ lite }));
-        const value = {
-          ...emptyAthleteOverview(),
-          ...(result?.data || {}),
-          detailLevel: lite ? 'lite' : 'full',
-        };
-        athleteOverviewCache = { key: cacheKey, value, task: null, at: Date.now() };
-        return value;
-      } catch {
-        const value = {
-          ...emptyAthleteOverview(),
-          detailLevel: lite ? 'lite' : 'full',
-        };
-        athleteOverviewCache = { key: cacheKey, value, task: null, at: Date.now() };
-        return value;
-      }
-    })();
-
-    return athleteOverviewCache.task;
-  }
-
-  async function loadAccountSnapshot(profile, selectedGymId, options = {}) {
-    const includeCoach = options.includeCoach !== false;
-    const includeAthlete = options.includeAthlete !== false;
-    const athleteLite = options.athleteLite !== false;
-    const nextState = {
-      coachPortal: emptyCoachPortal(),
-      athleteOverview: emptyAthleteOverview(),
-      admin: { overview: null, query: '' },
-    };
-
-    if (!profile?.email) {
-      return nextState;
-    }
-
-    const tasks = [];
-
-    if (includeCoach) {
-      tasks.push(
-        measureAsync('account.snapshot.coach', () => loadCoachPortalSnapshot(profile, selectedGymId))
-          .then((coachPortal) => {
-            nextState.coachPortal = coachPortal;
-          }),
-      );
-    }
-
-    if (includeAthlete) {
-      tasks.push(
-        measureAsync('account.snapshot.athlete', () => loadAthleteOverview(profile, { lite: athleteLite }))
-          .then((athleteOverview) => {
-            nextState.athleteOverview = athleteOverview;
-          }),
-      );
-    }
-
-    await Promise.all(tasks);
-    nextState.admin = { overview: null, query: '' };
-
-    return nextState;
-  }
-
-  async function hydrateAccountSnapshotInBackground(profile, selectedGymId = null, options = {}) {
-    try {
-      if (!profile?.email) return;
-
-      const includeCoach = options.includeCoach !== false;
-      const includeAthlete = options.includeAthlete !== false;
-      const athleteLite = options.athleteLite !== false;
-      const snapshotKey = `${String(profile.email || '').toLowerCase()}::${selectedGymId || 'default'}::${includeCoach ? 'coach' : 'nocoach'}::${includeAthlete ? (athleteLite ? 'ath-lite' : 'ath-full') : 'noath'}`;
-      const isFresh = accountSnapshotTask && lastAccountSnapshotKey === snapshotKey && (Date.now() - lastAccountSnapshotAt) < 15000;
-      if (!isFresh) {
-        lastAccountSnapshotKey = snapshotKey;
-        lastAccountSnapshotAt = Date.now();
-        accountSnapshotTask = measureAsync('account.snapshot.total', () => loadAccountSnapshot(profile, selectedGymId, options));
-      }
-
-      const snapshot = await accountSnapshotTask;
-      await patchUiState((s) => ({
-        ...s,
-        ...snapshot,
-        athleteOverview: mergeAthleteOverviewSnapshot(snapshot?.athleteOverview, s?.athleteOverview),
-      }));
-      await rerender();
-      if ((getUiState?.()?.currentPage || 'today') === 'history') {
-        hydrateAthleteOverviewFullInBackground();
-      }
-    } catch (error) {
-      console.warn('Falha ao carregar snapshot da conta:', error?.message || error);
-    } finally {
-      accountSnapshotTask = null;
-    }
-  }
-
-  async function hydrateAthleteOverviewFullInBackground() {
-    try {
-      const profile = window.__APP__?.getProfile?.()?.data || null;
-      if (!profile?.email) return;
-
-      const ui = getUiState?.() || {};
-      if (ui?.athleteOverview?.detailLevel === 'full') return;
-      if (!athleteOverviewFullTask) {
-        athleteOverviewFullTask = measureAsync('athlete.dashboard.full', () => loadAthleteOverview(profile, { lite: false }));
-      }
-      const athleteOverview = await athleteOverviewFullTask;
-      await patchUiState((s) => ({ ...s, athleteOverview: mergeAthleteOverviewSnapshot(athleteOverview, s?.athleteOverview) }));
-      await rerender();
-    } catch (error) {
-      console.warn('Falha ao carregar histórico completo do atleta:', error?.message || error);
-    } finally {
-      athleteOverviewFullTask = null;
-    }
-  }
+  const hydration = createHydrationController({
+    getUiState,
+    patchUiState,
+    rerender,
+    measureAsync,
+    emptyCoachPortal,
+    emptyAthleteOverview,
+    getProfile: () => getAppBridge()?.getProfile?.()?.data || null,
+    getSubscriptionStatus: () => getAppBridge()?.getSubscriptionStatus?.(),
+    getEntitlements: () => getAppBridge()?.getEntitlements?.(),
+    getMyGyms: () => getAppBridge()?.getMyGyms?.(),
+    getAthleteSummary: () => getAppBridge()?.getAthleteSummary?.(),
+    getAthleteResultsSummary: () => getAppBridge()?.getAthleteResultsSummary?.(),
+    getAthleteWorkoutsRecent: () => getAppBridge()?.getAthleteWorkoutsRecent?.(),
+  });
+  const {
+    shouldHydratePage,
+    invalidateHydrationCache,
+    hydratePage,
+    hydrateAthleteSummary,
+    hydrateAthleteResultsBlock,
+  } = hydration;
 
   async function syncAthletePrIfAuthenticated(exercise, value) {
-    const profile = window.__APP__?.getProfile?.()?.data || null;
+    const profile = getAppBridge()?.getProfile?.()?.data || null;
     if (!profile?.email) return null;
 
     try {
-      await window.__APP__?.logAthletePr?.({
+      await getAppBridge()?.logAthletePr?.({
         exercise,
         value,
         unit: 'kg',
         source: 'app',
       });
-      const athleteOverview = await loadAthleteOverview();
-      await patchUiState((s) => ({ ...s, athleteOverview }));
-      return athleteOverview;
+      invalidateHydrationCache({ coach: false, athlete: true, account: true });
+      await hydrateAthleteSummary(profile, { force: true });
+      await hydrateAthleteResultsBlock(profile, { force: true });
+      return getUiState?.()?.athleteOverview || null;
     } catch {
       return null;
     }
@@ -533,7 +347,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await setUiState({ modal: null });
           const file = await pickPdfFile();
           if (!file) return;
-          const result = await window.__APP__.uploadMultiWeekPdf(file);
+          const result = await getAppBridge().uploadMultiWeekPdf(file);
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao importar PDF');
           }
@@ -550,11 +364,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const file = await pickUniversalFile();
           if (!file) return;
 
-          if (typeof window.__APP__?.importFromFile !== 'function') {
+          if (typeof getAppBridge()?.importFromFile !== 'function') {
             throw new Error('Importação universal não disponível');
           }
 
-          const result = await window.__APP__.importFromFile(file);
+          const result = await getAppBridge().importFromFile(file);
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao importar arquivo');
           }
@@ -572,7 +386,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           );
           if (!ok) return;
 
-          const result = await window.__APP__.clearAllPdfs();
+          const result = await getAppBridge().clearAllPdfs();
           if (!result?.success) throw new Error(result?.error || 'Falha ao limpar PDFs');
 
           toast('Todos os PDFs removidos');
@@ -584,17 +398,17 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const week = Number(el.dataset.week);
           if (!Number.isFinite(week)) return;
 
-          await window.__APP__.selectWeek(week);
+          await getAppBridge().selectWeek(week);
           await rerender();
           return;
         }
 
         case 'day:auto': {
-          if (typeof window.__APP__?.resetDay === 'function') {
-            const result = await window.__APP__.resetDay();
+          if (typeof getAppBridge()?.resetDay === 'function') {
+            const result = await getAppBridge().resetDay();
             if (result?.success === false) throw new Error(result?.error || 'Falha ao voltar para automático');
-          } else if (typeof window.__APP__?.setDay === 'function') {
-            const result = await window.__APP__.setDay('');
+          } else if (typeof getAppBridge()?.setDay === 'function') {
+            const result = await getAppBridge().setDay('');
             if (result?.success === false) throw new Error(result?.error || 'Falha ao voltar para automático');
           }
           toast('Dia automático');
@@ -606,11 +420,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const source = String(el.dataset.source || 'uploaded').trim().toLowerCase();
           const nextPriority = source === 'coach' ? 'coach' : 'uploaded';
 
-          if (typeof window.__APP__?.setPreferences !== 'function') {
+          if (typeof getAppBridge()?.setPreferences !== 'function') {
             throw new Error('Alternância de treino indisponível');
           }
 
-          const result = await window.__APP__.setPreferences({ workoutPriority: nextPriority });
+          const result = await getAppBridge().setPreferences({ workoutPriority: nextPriority });
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao alternar fonte do treino');
           }
@@ -621,14 +435,14 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'workout:copy': {
-          const st = window.__APP__?.getState?.() || {};
+          const st = getAppBridge()?.getState?.() || {};
           const blocks = st?.workoutOfDay?.blocks || st?.workout?.blocks || [];
           if (!blocks.length) {
             toast('Nenhum treino carregado');
             return;
           }
 
-          const result = await window.__APP__.copyWorkout();
+          const result = await getAppBridge().copyWorkout();
           if (!result?.success) throw new Error(result?.error || 'Falha ao copiar');
 
           toast('Treino copiado');
@@ -637,14 +451,14 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
         case 'workout:export': {
           await setUiState({ modal: null });
-          const st = window.__APP__?.getState?.() || {};
+          const st = getAppBridge()?.getState?.() || {};
           const blocks = st?.workoutOfDay?.blocks || st?.workout?.blocks || [];
           if (!blocks.length) {
             toast('Nenhum treino carregado');
             return;
           }
 
-          const result = window.__APP__.exportWorkout();
+          const result = getAppBridge().exportWorkout();
           if (!result?.success) throw new Error(result?.error || 'Falha ao exportar');
 
           toast('Exportado');
@@ -663,7 +477,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             if (!file) return;
             
             try {
-              const result = await window.__APP__.importWorkout(file);
+              const result = await getAppBridge().importWorkout(file);
               if (result?.success) {
                 toast('✅ Treino importado!'); // 🔥 ADICIONA TOAST
                 await rerender();
@@ -684,11 +498,11 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'backup:export': {
-          if (typeof window.__APP__?.exportBackup !== 'function') {
+          if (typeof getAppBridge()?.exportBackup !== 'function') {
             throw new Error('Backup não disponível nesta versão');
           }
 
-          const result = await window.__APP__.exportBackup();
+          const result = await getAppBridge().exportBackup();
           if (!result?.success) throw new Error(result?.error || 'Falha ao exportar backup');
 
           toast('Backup exportado');
@@ -696,7 +510,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'backup:import': {
-          if (typeof window.__APP__?.importBackup !== 'function') {
+          if (typeof getAppBridge()?.importBackup !== 'function') {
             throw new Error('Restauração não disponível nesta versão');
           }
 
@@ -710,7 +524,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             if (!file) return;
 
             try {
-              const result = await window.__APP__.importBackup(file);
+              const result = await getAppBridge().importBackup(file);
               if (!result?.success) {
                 throw new Error(result?.error || 'Falha ao restaurar backup');
               }
@@ -782,17 +596,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const page = String(el.dataset.page || 'today');
           await patchUiState((s) => ({ ...s, currentPage: page }));
           await rerender();
-          if (page === 'account') {
-            const profile = window.__APP__?.getProfile?.()?.data || null;
+          if (page === 'account' || page === 'history') {
+            const profile = getAppBridge()?.getProfile?.()?.data || null;
             const ui = getUiState?.() || {};
-            hydrateAccountSnapshotInBackground(profile, ui?.coachPortal?.selectedGymId || null, {
-              includeCoach: true,
-              includeAthlete: true,
-              athleteLite: true,
-            });
-          }
-          if (page === 'history') {
-            hydrateAthleteOverviewFullInBackground();
+            hydratePage(profile, page, ui?.coachPortal?.selectedGymId || null);
           }
           return;
         }
@@ -816,8 +623,8 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const showEmojis = !!root.querySelector('#setting-showEmojis')?.checked;
           const showObjectivesInWods = !!root.querySelector('#setting-showObjectives')?.checked;
 
-          if (typeof window.__APP__?.setPreferences === 'function') {
-            const corePrefsResult = await window.__APP__.setPreferences({
+          if (typeof getAppBridge()?.setPreferences === 'function') {
+            const corePrefsResult = await getAppBridge().setPreferences({
               showLbsConversion,
               showEmojis,
               showGoals: showObjectivesInWods,
@@ -864,7 +671,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           if (!email) throw new Error('Informe seu email');
           if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
 
-          const result = await window.__APP__.requestSignUpVerification({ name, email, password });
+          const result = await getAppBridge().requestSignUpVerification({ name, email, password });
           await patchUiState((s) => ({
             ...s,
             signupVerification: {
@@ -899,25 +706,25 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             if (!name && !signupVerification.name) throw new Error('Informe seu nome');
             if (!email) throw new Error('Informe seu email');
             if (!code) throw new Error('Informe o código enviado ao seu email');
-            result = await window.__APP__.confirmSignUp({ email, code });
+            result = await getAppBridge().confirmSignUp({ email, code });
           } else {
             if (!email) throw new Error('Informe seu email');
             if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
-            result = await window.__APP__.signIn({ email, password });
+            result = await getAppBridge().signIn({ email, password });
           }
 
           if (!result?.token && !result?.user) {
             throw new Error('Falha ao autenticar');
           }
 
-          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+          const profile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
+          invalidateHydrationCache();
           await setUiState({ modal: null, authMode: 'signin', signupVerification: {} });
           toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
           await rerender();
           const currentPage = getUiState?.()?.currentPage || 'today';
-          const hydrationOptions = resolveAuthHydrationOptions(currentPage);
-          if (hydrationOptions && shouldHydratePage(currentPage)) {
-            hydrateAccountSnapshotInBackground(profile, null, hydrationOptions);
+          if (shouldHydratePage(currentPage)) {
+            hydratePage(profile, currentPage, null);
           }
           if (await maybeResumePendingCheckout()) return;
           return;
@@ -948,7 +755,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
           if (!email) throw new Error('Informe o email da conta');
 
-          const result = await window.__APP__.requestPasswordReset({ email });
+          const result = await getAppBridge().requestPasswordReset({ email });
           const showDeveloperPreview = isDeveloperEmail(email);
           const requestedAt = Date.now();
           await patchUiState((s) => ({
@@ -984,7 +791,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             throw new Error('Preencha email, código e nova senha');
           }
 
-          const result = await window.__APP__.confirmPasswordReset({ email, code, newPassword });
+          const result = await getAppBridge().confirmPasswordReset({ email, code, newPassword });
           if (!result?.success) throw new Error(result?.error || 'Falha ao redefinir senha');
 
           await patchUiState((s) => ({
@@ -1009,17 +816,17 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'auth:refresh': {
-          const result = await window.__APP__.refreshSession();
+          const result = await getAppBridge().refreshSession();
           if (!result?.token && !result?.user) {
             throw new Error('Falha ao atualizar sessão');
           }
-          const profile = result?.user || window.__APP__?.getProfile?.()?.data || null;
+          const profile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
           const ui = getUiState?.() || {};
+          invalidateHydrationCache();
           toast('Sessão atualizada');
           await rerender();
-          const hydrationOptions = resolveAuthHydrationOptions(ui?.currentPage || 'today');
-          if (hydrationOptions && shouldHydratePage(ui?.currentPage || 'today')) {
-            hydrateAccountSnapshotInBackground(profile, ui?.coachPortal?.selectedGymId || null, hydrationOptions);
+          if (shouldHydratePage(ui?.currentPage || 'today')) {
+            hydratePage(profile, ui?.currentPage || 'today', ui?.coachPortal?.selectedGymId || null);
           }
           if (await maybeResumePendingCheckout()) return;
           return;
@@ -1027,7 +834,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
         case 'billing:checkout': {
           const plan = normalizeCheckoutPlan(el.dataset.plan || 'coach') || 'coach';
-          const profile = window.__APP__?.getProfile?.()?.data || null;
+          const profile = getAppBridge()?.getProfile?.()?.data || null;
           if (!profile?.email || !hasCheckoutAuth()) {
             queueCheckoutIntent(plan, {
               source: 'app',
@@ -1038,57 +845,37 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             await rerender();
             return;
           }
-          await window.__APP__.openCheckout(plan);
+          await getAppBridge().openCheckout(plan);
           return;
         }
 
         case 'billing:activate-local': {
-          const profile = window.__APP__?.getProfile?.()?.data || null;
+          const profile = getAppBridge()?.getProfile?.()?.data || null;
           if (!isDeveloperProfile(profile)) {
             throw new Error('Recurso restrito ao ambiente de desenvolvimento');
           }
 
           const plan = el.dataset.plan || 'coach';
-          await window.__APP__.activateMockSubscription(plan);
+          await getAppBridge().activateMockSubscription(plan);
+          invalidateHydrationCache({ coach: true, athlete: false, account: true });
           const ui = getUiState?.() || {};
-          const snapshot = await loadAccountSnapshot(profile, ui?.coachPortal?.selectedGymId || null);
-          await patchUiState((s) => ({
-            ...s,
-            ...snapshot,
-            athleteOverview: mergeAthleteOverviewSnapshot(snapshot?.athleteOverview, s?.athleteOverview),
-          }));
+          await hydratePage(profile, 'account', ui?.coachPortal?.selectedGymId || null, { force: true });
           toast('Plano Coach local ativado');
-          await rerender();
           return;
         }
 
         case 'auth:signout': {
-          await window.__APP__.signOut();
+          await getAppBridge().signOut();
+          invalidateHydrationCache();
           await setUiState({ modal: null, authMode: 'signin', coachPortal: emptyCoachPortal(), athleteOverview: emptyAthleteOverview(), admin: { overview: null, query: '' } });
           toast('Sessão encerrada');
           await rerender();
           return;
         }
 
-        case 'auth:sync-push': {
-          const result = await window.__APP__.syncPush();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao enviar sync');
-          toast('Sync enviado');
-          await rerender();
-          return;
-        }
-
-        case 'auth:sync-pull': {
-          const result = await window.__APP__.syncPull();
-          if (!result?.success) throw new Error(result?.error || 'Falha ao baixar sync');
-          toast('Sync atualizado');
-          await rerender();
-          return;
-        }
-
         case 'admin:refresh': {
           const query = String(root.querySelector('#admin-search')?.value || '').trim();
-          const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
+          const result = await getAppBridge().getAdminOverview({ q: query, limit: 25 });
           await setUiState({ admin: { overview: result?.data || null, query } });
           toast('Painel admin atualizado');
           await rerender();
@@ -1108,9 +895,9 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const confirmed = confirm(`Ativar plano ${planId} para este usuário por 30 dias?`);
           if (!confirmed) return;
 
-          await window.__APP__.activateCoachSubscription(userId, planId, 30);
+          await getAppBridge().activateCoachSubscription(userId, planId, 30);
           const query = String(root.querySelector('#admin-search')?.value || '').trim();
-          const result = await window.__APP__.getAdminOverview({ q: query, limit: 25 });
+          const result = await getAppBridge().getAdminOverview({ q: query, limit: 25 });
           await setUiState({ admin: { overview: result?.data || null, query } });
           toast(`Plano ${planId} ativado`);
           await rerender();
@@ -1201,7 +988,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           if (!Number.isFinite(value) || value <= 0) throw new Error('Informe um PR válido');
 
           const exercise = rawName.toUpperCase();
-          const result = await window.__APP__.addPR(exercise, value);
+          const result = await getAppBridge().addPR(exercise, value);
           if (!result?.success) throw new Error(result?.error || 'Falha ao adicionar PR');
           await syncAthletePrIfAuthenticated(exercise, value);
 
@@ -1224,7 +1011,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           if (!Number.isFinite(value) || value <= 0) throw new Error('PR inválido');
 
-          const result = await window.__APP__.addPR(ex, value);
+          const result = await getAppBridge().addPR(ex, value);
           if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PR');
           await syncAthletePrIfAuthenticated(ex, value);
 
@@ -1240,13 +1027,15 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const ok = confirm(`Remover PR de "${ex}"?`);
           if (!ok) return;
 
-          const result = await window.__APP__.removePR(ex);
+          const result = await getAppBridge().removePR(ex);
           if (!result?.success) throw new Error(result?.error || 'Falha ao remover PR');
-          const currentPrs = window.__APP__?.getState?.()?.prs || {};
-          if (window.__APP__?.getProfile?.()?.data) {
-            await window.__APP__?.syncAthletePrSnapshot?.(currentPrs);
-            const athleteOverview = await loadAthleteOverview();
-            await patchUiState((s) => ({ ...s, athleteOverview }));
+          const currentPrs = getAppBridge()?.getState?.()?.prs || {};
+          if (getAppBridge()?.getProfile?.()?.data) {
+            await getAppBridge()?.syncAthletePrSnapshot?.(currentPrs);
+            const profile = getAppBridge()?.getProfile?.()?.data || null;
+            invalidateHydrationCache({ coach: false, athlete: true, account: true });
+            await hydrateAthleteSummary(profile, { force: true });
+            await hydrateAthleteResultsBlock(profile, { force: true });
           }
 
           toast('PR removido');
@@ -1266,7 +1055,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
             try {
               const text = await file.text();
-              const result = window.__APP__.importPRs(text);
+              const result = getAppBridge().importPRs(text);
               if (!result?.success) throw new Error(result?.error || 'Falha ao importar');
 
               toast(`${result.imported} PRs importados de ${file.name}`);
@@ -1285,7 +1074,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'prs:export': {
-          const result = window.__APP__.exportPRs();
+          const result = getAppBridge().exportPRs();
           if (!result?.success) throw new Error(result?.error || 'Falha ao exportar PRs');
           toast('PRs exportados');
           return;
@@ -1295,7 +1084,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           const json = prompt('Cole aqui o JSON de PRs (ex: {"BACK SQUAT":120})');
           if (!json) return;
 
-          const result = window.__APP__.importPRs(json);
+          const result = getAppBridge().importPRs(json);
           if (!result?.success) throw new Error(result?.error || 'Falha ao importar PRs');
 
           toast('PRs importados');
@@ -1329,7 +1118,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     if (!dayName) return;
 
     try {
-      const result = await window.__APP__.setDay(dayName);
+      const result = await getAppBridge().setDay(dayName);
       if (!result?.success) throw new Error(result?.error || 'Falha ao definir dia');
 
       toast(`Dia manual: ${result.day || dayName}`);
@@ -1345,7 +1134,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     try {
       await maybePrimeCheckoutIntentFromUrl();
       await ensureGoogleSignInUi();
-      if (peekCheckoutIntent() && hasCheckoutAuth() && window.__APP__?.getProfile?.()?.data?.email) {
+      if (peekCheckoutIntent() && hasCheckoutAuth() && getAppBridge()?.getProfile?.()?.data?.email) {
         await maybeResumePendingCheckout();
       }
     } catch (error) {
@@ -1389,7 +1178,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 }
 
 function workoutKeyFromAppState() {
-  const s = window.__APP__?.getState?.() || {};
+  const s = getAppBridge()?.getState?.() || {};
   const week = s?.activeWeekNumber ?? '0';
   const day = s?.currentDay ?? 'Hoje';
   return `${week}:${String(day).toLowerCase()}`;

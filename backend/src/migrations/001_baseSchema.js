@@ -121,36 +121,12 @@ export const migration = {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
 
-      CREATE TABLE IF NOT EXISTS competitions (
-        id SERIAL PRIMARY KEY,
-        gym_id INTEGER REFERENCES gyms(id) ON DELETE CASCADE,
-        created_by_user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        description TEXT,
-        location TEXT,
-        starts_at TIMESTAMPTZ NOT NULL,
-        ends_at TIMESTAMPTZ,
-        visibility TEXT NOT NULL DEFAULT 'gym' CHECK (visibility IN ('gym', 'public')),
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
-      CREATE TABLE IF NOT EXISTS competition_events (
-        id SERIAL PRIMARY KEY,
-        competition_id INTEGER NOT NULL REFERENCES competitions(id) ON DELETE CASCADE,
-        benchmark_slug TEXT REFERENCES benchmark_library(slug) ON DELETE SET NULL,
-        title TEXT NOT NULL,
-        event_date TIMESTAMPTZ NOT NULL,
-        score_type TEXT,
-        notes TEXT,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-      );
-
       CREATE TABLE IF NOT EXISTS benchmark_results (
         id SERIAL PRIMARY KEY,
         benchmark_slug TEXT NOT NULL REFERENCES benchmark_library(slug) ON DELETE CASCADE,
         user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         gym_id INTEGER REFERENCES gyms(id) ON DELETE SET NULL,
-        competition_event_id INTEGER REFERENCES competition_events(id) ON DELETE SET NULL,
+        sport_type TEXT NOT NULL DEFAULT 'cross',
         score_display TEXT NOT NULL,
         score_value NUMERIC NOT NULL DEFAULT 0,
         tiebreak_seconds INTEGER,
@@ -168,8 +144,7 @@ export const migration = {
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
 
-      CREATE INDEX IF NOT EXISTS idx_competitions_starts_at ON competitions(starts_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_competition_events_date ON competition_events(event_date DESC);
+      CREATE INDEX IF NOT EXISTS idx_benchmark_results_sport_slug ON benchmark_results(sport_type, benchmark_slug, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_benchmark_results_slug ON benchmark_results(benchmark_slug, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_athlete_pr_records_user_exercise ON athlete_pr_records(user_id, exercise, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_athlete_groups_gym ON athlete_groups(gym_id, created_at DESC);

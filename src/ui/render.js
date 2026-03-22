@@ -323,10 +323,16 @@ function renderEmptyState(state) {
 function renderHistoryPage(state) {
   const athleteOverview = state?.__ui?.athleteOverview || {};
   const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
+  const blocks = athleteOverview?.blocks || {};
+  const summaryState = blocks?.summary?.status || 'idle';
+  const resultsState = blocks?.results?.status || 'idle';
   const benchmarkHistory = athleteOverview?.benchmarkHistory || [];
   const prHistory = athleteOverview?.prHistory || [];
+  const athleteStats = athleteOverview?.stats || {};
   const isBusy = !!state?.__ui?.isBusy;
-  const isDetailLoading = isAuthenticated && athleteOverview?.detailLevel !== 'full';
+  const isSummaryLoading = isAuthenticated && summaryState === 'loading' && !athleteOverview?.stats;
+  const isDetailLoading = isAuthenticated && (resultsState === 'loading' || (resultsState === 'idle' && athleteOverview?.detailLevel !== 'full'));
+  const isDetailError = resultsState === 'error';
   const benchmarkPoints = benchmarkHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
   const prPoints = prHistory.reduce((sum, item) => sum + Number(item?.points?.length || 0), 0);
 
@@ -338,14 +344,14 @@ function renderHistoryPage(state) {
         subtitle: 'Benchmarks, PRs e registros em leitura direta.',
         actions: `
           <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">Gerenciar PRs</button>
-          <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">Sincronizar</button>
+          <button class="btn-secondary" data-action="page:set" data-page="account" type="button">Conta</button>
         `,
       })}
 
       <div class="summary-strip summary-strip-3">
-        ${renderSummaryTile('Benchmarks', isBusy || isDetailLoading ? '...' : String(benchmarkHistory.length), 'com histórico')}
-        ${renderSummaryTile('PRs', isBusy || isDetailLoading ? '...' : String(prHistory.length), 'acompanhados')}
-        ${renderSummaryTile('Registros', isBusy || isDetailLoading ? '...' : String(benchmarkPoints + prPoints), 'acumulados')}
+        ${renderSummaryTile('Benchmarks', isBusy || isDetailLoading ? '...' : String(benchmarkHistory.length), isSummaryLoading ? 'carregando resumo' : 'com histórico')}
+        ${renderSummaryTile('PRs', isBusy || isDetailLoading ? '...' : String(prHistory.length), isSummaryLoading ? 'carregando resumo' : 'acompanhados')}
+        ${renderSummaryTile('Resultados', isBusy || isSummaryLoading ? '...' : String(Number(athleteStats?.resultsLogged || 0)), 'registrados')}
       </div>
 
       ${renderPageFold({
@@ -353,7 +359,7 @@ function renderHistoryPage(state) {
         subtitle: 'Progressão das marcas registradas.',
         content: `
         <div class="trend-grid">
-          ${isBusy || isDetailLoading ? renderTrendSkeletons(4) : benchmarkHistory.length ? benchmarkHistory.map((item) => `
+          ${isBusy || isDetailLoading ? renderTrendSkeletons(4) : isDetailError ? '<p class="account-hint">Não foi possível carregar benchmarks agora.</p>' : benchmarkHistory.length ? benchmarkHistory.map((item) => `
             <div class="trend-card">
               <div class="trend-cardHead">
                 <strong>${escapeHtml(item.name || item.slug || 'Benchmark')}</strong>
@@ -365,7 +371,7 @@ function renderHistoryPage(state) {
                 <span>${item.points.length} registro(s)</span>
               </div>
             </div>
-          `).join('') : '<p class="account-hint">Finalize benchmarks ou sincronize a conta para começar o histórico.</p>'}
+          `).join('') : '<p class="account-hint">Finalize benchmarks ou registre seus resultados para começar o histórico.</p>'}
         </div>
         `,
       })}
@@ -375,7 +381,7 @@ function renderHistoryPage(state) {
         subtitle: 'Progressão das suas cargas de referência.',
         content: `
         <div class="trend-grid">
-          ${isBusy || isDetailLoading ? renderTrendSkeletons(3) : prHistory.length ? prHistory.map((item) => `
+          ${isBusy || isDetailLoading ? renderTrendSkeletons(3) : isDetailError ? '<p class="account-hint">Não foi possível carregar PRs agora.</p>' : prHistory.length ? prHistory.map((item) => `
             <div class="trend-card">
               <div class="trend-cardHead">
                 <strong>${escapeHtml(item.exercise)}</strong>
@@ -406,12 +412,18 @@ function renderAccountPage(state) {
   const canUseDeveloperTools = isDeveloperEmail(profile?.email);
   const isBusy = !!state?.__ui?.isBusy;
   const athleteBenefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
+  const athleteBlocks = state?.__ui?.athleteOverview?.blocks || {};
   const importUsage = getAthleteImportUsage(athleteBenefits, 'pdf');
   const accessEntitlements = coachPortal?.entitlements || [];
   const canCoachManage = accessEntitlements.includes('coach_portal');
   const gyms = coachPortal?.gyms || [];
   const athleteStats = state?.__ui?.athleteOverview?.stats || {};
   const athleteBenefitSource = describeAthleteBenefitSource(athleteBenefits);
+  const athleteResults = state?.__ui?.athleteOverview?.recentResults || [];
+  const athleteWorkouts = state?.__ui?.athleteOverview?.recentWorkouts || [];
+  const isSummaryLoading = coachPortal?.status === 'loading' || athleteBlocks?.summary?.status === 'loading';
+  const isWorkoutsLoading = athleteBlocks?.workouts?.status === 'loading';
+  const isResultsLoading = athleteBlocks?.results?.status === 'loading';
 
   if (!profile?.email) {
     return `
@@ -419,7 +431,7 @@ function renderAccountPage(state) {
         ${renderPageHero({
           eyebrow: 'Conta',
           title: 'Entre na sua conta',
-          subtitle: 'Sync, histórico completo e acesso ao portal do coach.',
+          subtitle: 'Histórico completo, recuperação por email e acesso ao portal do coach.',
           actions: `
             <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
           `,
@@ -427,7 +439,7 @@ function renderAccountPage(state) {
 
         <div class="summary-strip summary-strip-3">
           ${renderSummaryTile('Solo', 'Uso livre', 'treino e histórico')}
-          ${renderSummaryTile('Sync', 'Conta única', 'entre dispositivos')}
+          ${renderSummaryTile('Conta', 'Acesso salvo', 'email e sessão')}
           ${renderSummaryTile('Coach', 'Portal separado', 'gestão do box')}
         </div>
 
@@ -438,8 +450,8 @@ function renderAccountPage(state) {
             content: `
             <div class="coach-list coach-listCompact">
               <div class="coach-listItem static">
-                <strong>Sync entre dispositivos</strong>
-                <span>Seus dados não ficam presos em um aparelho.</span>
+                <strong>Conta salva</strong>
+                <span>Entre com a mesma conta quando precisar retomar seu uso.</span>
               </div>
               <div class="coach-listItem static">
                 <strong>Treinos do coach</strong>
@@ -481,28 +493,28 @@ function renderAccountPage(state) {
 
       <div class="summary-strip summary-strip-4">
         ${renderSummaryTile('Conta', isBusy ? '...' : escapeHtml(profile.name || 'Sem nome'), isBusy ? '' : escapeHtml(profile.email || ''))}
-        ${renderSummaryTile('Plano', isBusy ? '...' : escapeHtml(planName), isBusy ? '' : escapeHtml(planStatus))}
-        ${renderSummaryTile('Atleta', isBusy ? '...' : athleteBenefits.label, isBusy ? '' : athleteBenefitSource)}
-        ${renderSummaryTile('Imports', isBusy ? '...' : (importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : (importUsage.unlimited ? 'PDF e mídia sem limite' : `${importUsage.used} uso(s) neste mês`))}
+        ${renderSummaryTile('Plano', isBusy || coachPortal?.status === 'loading' ? '...' : escapeHtml(planName), isBusy ? '' : escapeHtml(planStatus))}
+        ${renderSummaryTile('Atleta', isBusy || isSummaryLoading ? '...' : athleteBenefits.label, isBusy ? '' : athleteBenefitSource)}
+        ${renderSummaryTile('Imports', isBusy || isSummaryLoading ? '...' : (importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : (importUsage.unlimited ? 'PDF e mídia sem limite' : `${importUsage.used} uso(s) neste mês`))}
       </div>
 
       <div class="coach-grid">
         ${renderPageFold({
           title: 'Sessão',
-          subtitle: 'Conta ativa e sincronização automática.',
+          subtitle: 'Conta ativa e acesso salvo.',
           content: `
-          ${isBusy ? renderAccountSkeleton() : `
+          ${isBusy || isSummaryLoading ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
             <div class="account-email">${escapeHtml(profile.email || '')}</div>
           `}
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
               <strong>Acesso do atleta</strong>
-              <span>${escapeHtml(athleteBenefits.label)} • ${escapeHtml(athleteBenefitSource)}</span>
+              <span>${isSummaryLoading ? 'Carregando resumo da conta...' : `${escapeHtml(athleteBenefits.label)} • ${escapeHtml(athleteBenefitSource)}`}</span>
             </div>
             <div class="coach-listItem static">
               <strong>Resumo</strong>
-              <span>${Number(athleteStats?.resultsLogged || 0)} resultado(s) • ${Number(athleteStats?.assignedWorkouts || 0)} treino(s)</span>
+              <span>${isSummaryLoading ? 'Buscando indicadores básicos...' : `${Number(athleteStats?.resultsLogged || 0)} resultado(s) • ${Number(athleteStats?.assignedWorkouts || 0)} treino(s)`}</span>
             </div>
           </div>
           <div class="page-actions">
@@ -515,7 +527,7 @@ function renderAccountPage(state) {
           title: 'Plano e portal',
           subtitle: 'Plano atual e operação do coach.',
           content: `
-          ${isBusy ? renderAccountSkeleton() : `
+          ${isBusy || coachPortal?.status === 'loading' ? renderAccountSkeleton() : `
             <div class="account-name">${escapeHtml(planName)}</div>
             <div class="account-email">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</div>
           `}
@@ -538,6 +550,23 @@ function renderAccountPage(state) {
             ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
             <a class="btn-secondary" href="/coach/" target="_blank" rel="noopener noreferrer">Abrir portal</a>
             <a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer">Ver planos</a>
+          </div>
+          `,
+        })}
+
+        ${renderPageFold({
+          title: 'Atividade da conta',
+          subtitle: 'Blocos do atleta carregam em segundo plano.',
+          content: `
+          <div class="coach-list coach-listCompact">
+            <div class="coach-listItem static">
+              <strong>Resultados recentes</strong>
+              <span>${isResultsLoading ? 'Carregando resultados...' : athleteResults.length ? `${athleteResults.length} registro(s) recente(s)` : 'Nenhum resultado registrado ainda.'}</span>
+            </div>
+            <div class="coach-listItem static">
+              <strong>Treinos do box</strong>
+              <span>${isWorkoutsLoading ? 'Carregando treinos...' : athleteWorkouts.length ? `${athleteWorkouts.length} treino(s) recente(s) liberado(s)` : 'Nenhum treino recente liberado para sua conta.'}</span>
+            </div>
           </div>
           `,
         })}
@@ -1109,7 +1138,6 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
     const gymAccess = coachPortal?.gymAccess || [];
     const athleteStats = athleteOverview?.stats || {};
     const athleteResults = athleteOverview?.recentResults || [];
-    const athleteCompetitions = athleteOverview?.upcomingCompetitions || [];
     const athleteWorkouts = athleteOverview?.recentWorkouts || [];
     const athleteBenefits = normalizeAthleteBenefits(athleteOverview?.athleteBenefits || null);
     const planKey = subscription?.plan || subscription?.plan_id || 'free';
@@ -1176,17 +1204,13 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   <span class="section-kicker">Atleta</span>
                   <strong>Resumo rápido da conta</strong>
                 </span>
-                <span class="account-foldMeta">${Number(athleteStats?.resultsLogged || 0)} resultados • ${Number(athleteStats?.upcomingCompetitions || 0)} competições • ${Number(athleteStats?.assignedWorkouts || 0)} treinos</span>
+                <span class="account-foldMeta">${Number(athleteStats?.resultsLogged || 0)} resultados • ${Number(athleteStats?.assignedWorkouts || 0)} treinos</span>
               </summary>
               <div class="account-foldBody">
                 <div class="account-summaryGrid account-summaryGrid-compact">
                   <div class="summary-tile">
                     <span class="summary-label">Resultados</span>
                     <strong class="summary-value">${Number(athleteStats?.resultsLogged || 0)}</strong>
-                  </div>
-                  <div class="summary-tile">
-                    <span class="summary-label">Competições</span>
-                    <strong class="summary-value">${Number(athleteStats?.upcomingCompetitions || 0)}</strong>
                   </div>
                   <div class="summary-tile">
                     <span class="summary-label">Treinos</span>
@@ -1202,10 +1226,6 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                   <div class="coach-listItem static">
                     <strong>Resultados recentes</strong>
                     <span>${athleteResults.length ? `${athleteResults.length} registro(s) recente(s)` : 'Nenhum resultado registrado ainda.'}</span>
-                  </div>
-                  <div class="coach-listItem static">
-                    <strong>Próximas competições</strong>
-                    <span>${athleteCompetitions.length ? `${athleteCompetitions.length} competição(ões) no radar` : 'Nenhuma competição próxima para seus gyms.'}</span>
                   </div>
                   <div class="coach-listItem static">
                     <strong>Treinos do box</strong>

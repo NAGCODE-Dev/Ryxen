@@ -33,7 +33,6 @@ Checklist objetivo para liberar o app para 1 semana de teste com coach real.
 - [ ] Existem ao menos 3 atletas no gym
 - [ ] Existe ao menos 1 grupo
 - [ ] Existem treinos publicados
-- [ ] Existe ao menos 1 competição
 
 ## 5. Smoke técnico
 
@@ -56,10 +55,9 @@ Checklist objetivo para liberar o app para 1 semana de teste com coach real.
 - [ ] Login ok
 - [ ] Feed ok
 - [ ] Histórico ok
-- [ ] Competições ok
 - [ ] Conta ok
 - [ ] Backup/export ok
-- [ ] Sync push/pull ok
+- [ ] Sync automático ok
 
 ## 8. Prioridade do treino
 
@@ -74,7 +72,6 @@ Checklist objetivo para liberar o app para 1 semana de teste com coach real.
 - [ ] Testado em 1 Android maior
 - [ ] Página `Hoje` ok
 - [ ] Página `Histórico` ok
-- [ ] Página `Competições` ok
 - [ ] Página `Conta` ok
 - [ ] Coach Portal legível no celular
 

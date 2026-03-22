@@ -1,6 +1,6 @@
 # CrossApp
 
-PWA para importar programação de treino, calcular cargas, manter PRs, operar offline e sincronizar conta entre dispositivos.
+PWA para importar programação de treino, calcular cargas, manter PRs e operar offline com conta autenticada.
 
 ## Stack
 
@@ -15,7 +15,7 @@ PWA para importar programação de treino, calcular cargas, manter PRs, operar o
 - Importação de `PDF`, `txt`, `csv`, `json`, imagem e vídeo
 - Cálculo automático de cargas a partir de PRs
 - Backup e restauração completos
-- Login, cadastro e sync remoto
+- Login, cadastro e recuperação por email
 - Estrutura multi-tenant para `gym / coach / athlete`
 - Publicação de treinos do coach para atletas do gym
 - Reset de senha com código temporário
@@ -24,8 +24,6 @@ PWA para importar programação de treino, calcular cargas, manter PRs, operar o
 - Grace period de assinatura com estados de acesso para coach/atleta
 - Biblioteca de benchmarks com seed expandido, filtros e feed enriquecido
 - Resultados de benchmark com leaderboard por slug/gym
-- Calendário de competições com eventos vinculados a benchmark
-- Ranking por evento e ranking agregado por competição
 - Telemetria com consentimento
 - Base pronta para billing via Kiwify link
 - Página pública de planos em `pricing.html`
@@ -167,7 +165,7 @@ SUPPORT_EMAIL=nagcode.contact@gmail.com
 ADMIN_EMAILS=nagcode.contact@gmail.com
 EXPOSE_RESET_CODE=false
 RESEND_API_KEY=
-RESEND_FROM=CrossApp <nagcode.contact@gmail.com>
+RESEND_FROM=onboarding@resend.dev
 SMTP_HOST=
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -180,6 +178,11 @@ CROSSAPP_KIWIFY_CHECKOUT_PRO_URL=
 CROSSAPP_KIWIFY_CHECKOUT_COACH_URL=
 CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL=
 ```
+
+Notas rápidas:
+
+- Para produção inicial com Resend, use `RESEND_FROM=onboarding@resend.dev` até verificar seu domínio.
+- `SENTRY_DSN` deve ficar vazio se você ainda não tiver um DSN real.
 
 ## Coach Portal
 
@@ -197,8 +200,6 @@ Tudo via `window.__APP__` e APIs do backend.
 Rankings disponíveis:
 
 - `GET /leaderboards/benchmarks/:slug`
-- `GET /leaderboards/events/:eventId`
-- `GET /leaderboards/competitions/:competitionId`
 
 Portal separado em framework:
 
