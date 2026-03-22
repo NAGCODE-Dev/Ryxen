@@ -307,7 +307,7 @@ body[data-page="account"] .page-heroActions {
 .bottom-nav {
   position: sticky;
   top: calc(var(--safe-top) + 52px);
-  z-index: 55;
+  z-index: 35;
   padding: 4px 16px 6px;
   background: linear-gradient(180deg, rgba(13, 17, 22, 0.98), rgba(13, 17, 22, 0.9));
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
