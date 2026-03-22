@@ -56,6 +56,14 @@ export const KIWIFY_PRODUCT_STARTER_ID = String(process.env.KIWIFY_PRODUCT_START
 export const KIWIFY_PRODUCT_PRO_ID = String(process.env.KIWIFY_PRODUCT_PRO_ID || '').trim();
 export const KIWIFY_PRODUCT_PERFORMANCE_ID = String(process.env.KIWIFY_PRODUCT_PERFORMANCE_ID || '').trim();
 export const KIWIFY_PRODUCT_ATHLETE_PLUS_ID = String(process.env.KIWIFY_PRODUCT_ATHLETE_PLUS_ID || '').trim();
+export const RETENTION_SWEEP_INTERVAL_MS = Math.max(Number(process.env.RETENTION_SWEEP_INTERVAL_MS || 6 * 60 * 60 * 1000), 60_000);
+export const RETENTION_TELEMETRY_DAYS = Math.max(Number(process.env.RETENTION_TELEMETRY_DAYS || 30), 1);
+export const RETENTION_OPS_DAYS = Math.max(Number(process.env.RETENTION_OPS_DAYS || 90), 1);
+export const RETENTION_EMAIL_JOBS_DAYS = Math.max(Number(process.env.RETENTION_EMAIL_JOBS_DAYS || 30), 1);
+export const RETENTION_PASSWORD_RESET_DAYS = Math.max(Number(process.env.RETENTION_PASSWORD_RESET_DAYS || 2), 1);
+export const RETENTION_EMAIL_VERIFICATION_DAYS = Math.max(Number(process.env.RETENTION_EMAIL_VERIFICATION_DAYS || 2), 1);
+export const RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER = Math.max(Number(process.env.RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER || 5), 1);
+export const RETENTION_ACCOUNT_DELETION_DAYS = Math.max(Number(process.env.RETENTION_ACCOUNT_DELETION_DAYS || 90), 1);
 
 export function validateConfig() {
   if (!DATABASE_URL) {

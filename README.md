@@ -13,6 +13,7 @@ PWA para importar programação de treino, calcular cargas, manter PRs e operar 
 ## Funcionalidades
 
 - Importação de `PDF`, `txt`, `csv`, `json`, imagem e vídeo
+- Imagens grandes são reduzidas no navegador antes da importação; arquivos acima de `50 MB` são bloqueados
 - Cálculo automático de cargas a partir de PRs
 - Backup e restauração completos
 - Login, cadastro e recuperação por email
@@ -172,6 +173,14 @@ SMTP_SECURE=false
 SMTP_USER=
 SMTP_PASS=
 SMTP_FROM=nagcode.contact@gmail.com
+RETENTION_SWEEP_INTERVAL_MS=21600000
+RETENTION_TELEMETRY_DAYS=30
+RETENTION_OPS_DAYS=90
+RETENTION_EMAIL_JOBS_DAYS=30
+RETENTION_PASSWORD_RESET_DAYS=2
+RETENTION_EMAIL_VERIFICATION_DAYS=2
+RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER=5
+RETENTION_ACCOUNT_DELETION_DAYS=90
 CROSSAPP_BILLING_PROVIDER=kiwify_link
 CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL=
 CROSSAPP_KIWIFY_CHECKOUT_PRO_URL=
@@ -183,6 +192,7 @@ Notas rápidas:
 
 - Para produção inicial com Resend, use `RESEND_FROM=onboarding@resend.dev` até verificar seu domínio.
 - `SENTRY_DSN` deve ficar vazio se você ainda não tiver um DSN real.
+- O backend agora poda automaticamente tabelas operacionais (`telemetry_events`, `ops_events`, `email_jobs`, tokens e `sync_snapshots`).
 
 ## Coach Portal
 

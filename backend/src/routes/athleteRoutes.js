@@ -388,6 +388,95 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
     return res.json(workouts);
   });
 
+  router.get('/athletes/me/imported-plan', authRequired, async (req, res) => {
+    const snapshotRes = await pool.query(
+      `SELECT id, payload, created_at
+       FROM sync_snapshots
+       WHERE user_id = $1
+         AND COALESCE(payload->>'kind', '') = 'imported_plan'
+       ORDER BY created_at DESC, id DESC
+       LIMIT 1`,
+      [req.user.userId],
+    );
+
+    const row = snapshotRes.rows[0];
+    if (!row) {
+      return res.json({ importedPlan: null });
+    }
+
+    const payload = row.payload && typeof row.payload === 'object' ? row.payload : {};
+    return res.json({
+      importedPlan: {
+        weeks: Array.isArray(payload.weeks) ? payload.weeks : [],
+        metadata: payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {},
+        activeWeekNumber: Number(payload.activeWeekNumber) || null,
+        updatedAt: payload.updatedAt || row.created_at,
+      },
+    });
+  });
+
+  router.put('/athletes/me/imported-plan', authRequired, async (req, res) => {
+    const weeks = Array.isArray(req.body?.weeks) ? req.body.weeks : null;
+    const metadata = req.body?.metadata && typeof req.body.metadata === 'object' ? req.body.metadata : {};
+    const activeWeekNumber = Number(req.body?.activeWeekNumber) || null;
+
+    if (!weeks?.length) {
+      return res.status(400).json({ error: 'weeks deve ser um array não vazio' });
+    }
+
+    const payload = {
+      kind: 'imported_plan',
+      weeks,
+      metadata,
+      activeWeekNumber,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `DELETE FROM sync_snapshots
+         WHERE user_id = $1
+           AND COALESCE(payload->>'kind', '') = 'imported_plan'`,
+        [req.user.userId],
+      );
+      const inserted = await client.query(
+        `INSERT INTO sync_snapshots (user_id, payload)
+         VALUES ($1, $2::jsonb)
+         RETURNING id, payload, created_at`,
+        [req.user.userId, JSON.stringify(payload)],
+      );
+      await client.query('COMMIT');
+
+      const row = inserted.rows[0];
+      return res.json({
+        importedPlan: {
+          weeks: Array.isArray(row.payload?.weeks) ? row.payload.weeks : [],
+          metadata: row.payload?.metadata && typeof row.payload.metadata === 'object' ? row.payload.metadata : {},
+          activeWeekNumber: Number(row.payload?.activeWeekNumber) || null,
+          updatedAt: row.payload?.updatedAt || row.created_at,
+        },
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
+
+  router.delete('/athletes/me/imported-plan', authRequired, async (req, res) => {
+    const deleted = await pool.query(
+      `DELETE FROM sync_snapshots
+       WHERE user_id = $1
+         AND COALESCE(payload->>'kind', '') = 'imported_plan'`,
+      [req.user.userId],
+    );
+
+    return res.json({ deleted: deleted.rowCount || 0 });
+  });
+
   router.post('/athletes/me/running/logs', authRequired, async (req, res) => {
     const workoutId = req.body?.workoutId !== undefined && req.body?.workoutId !== '' ? Number(req.body.workoutId) : null;
     const completionState = String(req.body?.completionState || '').trim().toLowerCase();

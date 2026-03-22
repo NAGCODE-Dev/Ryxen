@@ -63,6 +63,18 @@ export async function getAthleteWorkoutsRecent(params = {}) {
   return apiRequest(`/athletes/me/workouts/recent${suffix}`, { method: 'GET' });
 }
 
+export async function getImportedPlanSnapshot() {
+  return apiRequest('/athletes/me/imported-plan', { method: 'GET' });
+}
+
+export async function saveImportedPlanSnapshot(payload) {
+  return apiRequest('/athletes/me/imported-plan', { method: 'PUT', body: payload });
+}
+
+export async function deleteImportedPlanSnapshot() {
+  return apiRequest('/athletes/me/imported-plan', { method: 'DELETE' });
+}
+
 export async function getGymInsights(gymId, params = {}) {
   const search = new URLSearchParams();
   if (params?.sportType) search.set('sportType', params.sportType);

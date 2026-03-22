@@ -11,7 +11,7 @@ import {
   confirmPasswordReset,
   getStoredProfile,
 } from '../core/services/authService.js';
-import { activateCoachSubscription, createManualPasswordReset, getAdminOpsHealth, getAdminOverview, reprocessBillingClaim, retryEmailJob } from '../core/services/adminService.js';
+import { activateCoachSubscription, createManualPasswordReset, deleteAccountNow, getAdminOpsHealth, getAdminOverview, reprocessBillingClaim, requestAccountDeletion, retryEmailJob } from '../core/services/adminService.js';
 import { openCheckout, getSubscriptionStatus, getEntitlements, activateMockSubscription } from '../core/services/subscriptionService.js';
 import {
   addGymMember,
@@ -21,6 +21,7 @@ import {
   getAthleteResultsSummary,
   getAthleteSummary,
   getAthleteWorkoutsRecent,
+  getImportedPlanSnapshot,
   getGymInsights,
   getMeasurementHistory,
   getMyGyms,
@@ -35,6 +36,8 @@ import {
   listGymGroups,
   listGymMembers,
   publishGymWorkout,
+  saveImportedPlanSnapshot,
+  deleteImportedPlanSnapshot,
 } from '../core/services/gymService.js';
 import { getBenchmarks } from '../core/services/benchmarkService.js';
 import { getRuntimeConfig, setRuntimeConfig } from '../config/runtime.js';
@@ -121,6 +124,16 @@ export function createRemoteHandlers({
 
     async handleCreateManualPasswordReset(userId) {
       const data = await createManualPasswordReset(userId);
+      return { success: true, data };
+    },
+
+    async handleRequestAccountDeletion(userId) {
+      const data = await requestAccountDeletion(userId);
+      return { success: true, data };
+    },
+
+    async handleDeleteAccountNow(userId) {
+      const data = await deleteAccountNow(userId);
       return { success: true, data };
     },
 
@@ -217,6 +230,21 @@ export function createRemoteHandlers({
 
     async handleGetAthleteWorkoutsRecent(params = {}) {
       const data = await getAthleteWorkoutsRecent({ ...params, sportType: getCurrentSportType() });
+      return { success: true, data };
+    },
+
+    async handleGetImportedPlanSnapshot() {
+      const data = await getImportedPlanSnapshot();
+      return { success: true, data };
+    },
+
+    async handleSaveImportedPlanSnapshot(payload) {
+      const data = await saveImportedPlanSnapshot(payload);
+      return { success: true, data };
+    },
+
+    async handleDeleteImportedPlanSnapshot() {
+      const data = await deleteImportedPlanSnapshot();
       return { success: true, data };
     },
 

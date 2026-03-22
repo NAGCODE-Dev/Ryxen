@@ -21,6 +21,8 @@ import { requireGymManager, slugify } from './utils/gymUtils.js';
 import { runMigrations } from './migrations/index.js';
 import { startEmailWorker } from './mailer.js';
 import { captureBackendError, initBackendErrorMonitoring } from './sentry.js';
+import { startAccountDeletionWorker } from './accountDeletion.js';
+import { startOperationalRetentionWorker } from './retention.js';
 
 initBackendErrorMonitoring();
 const app = express();
@@ -85,6 +87,8 @@ app.use((err, req, res, _next) => {
 runMigrations()
   .then(() => {
     startEmailWorker();
+    startAccountDeletionWorker();
+    startOperationalRetentionWorker();
     app.listen(PORT, () => {
       console.log(`[backend] running at http://localhost:${PORT}`);
     });

@@ -31,6 +31,24 @@ export async function sendSignupVerificationEmail({ to, code }) {
   return enqueueCodeEmail({ kind: 'email_verification', to, code, userId: null });
 }
 
+export async function sendAccountDeletionReviewEmail({ to, userName = '', confirmUrl, cancelUrl, deleteAfter, supportEmail = SUPPORT_EMAIL }) {
+  const email = normalizeEmail(to);
+  if (!email) {
+    const error = new Error('email inválido');
+    error.code = 'invalid_email';
+    throw error;
+  }
+
+  const inserted = await pool.query(
+    `INSERT INTO email_jobs (user_id, kind, email, payload, status, next_attempt_at)
+     VALUES (NULL, 'account_deletion_review', $1, $2, 'pending', NOW())
+     RETURNING id`,
+    [email, { userName, confirmUrl, cancelUrl, deleteAfter, supportEmail }],
+  );
+
+  return processEmailJob(inserted.rows[0].id, { immediate: true });
+}
+
 export async function getAuthCodeDeliveryCapability(email = '') {
   const providers = await getProviders();
   const hasInboxDelivery = providers.some((provider) => provider.kind === 'smtp' || provider.kind === 'resend');
@@ -550,6 +568,30 @@ function buildEmailContent(job) {
     };
   }
 
+  if (job.kind === 'account_deletion_review') {
+    const userName = String(payload.userName || '').trim();
+    const confirmUrl = String(payload.confirmUrl || '').trim();
+    const cancelUrl = String(payload.cancelUrl || '').trim();
+    const deleteAfter = formatEmailDate(payload.deleteAfter);
+    const supportEmail = String(payload.supportEmail || SUPPORT_EMAIL).trim();
+    return {
+      subject: 'CrossApp - solicitacao de exclusao de conta',
+      text: [
+        userName ? `Olá, ${userName}.` : 'Olá.',
+        '',
+        'Uma solicitação administrativa de exclusão da sua conta foi registrada no CrossApp.',
+        'Se você quiser prosseguir com a exclusão imediatamente, use o link abaixo:',
+        confirmUrl || '(link indisponível)',
+        '',
+        'Se você quiser manter a conta, use este link:',
+        cancelUrl || '(link indisponível)',
+        '',
+        `Se não houver resposta até ${deleteAfter || '15 dias'}, a conta e os dados relacionados serão excluídos automaticamente.`,
+        `Suporte: ${supportEmail}`,
+      ].join('\n'),
+    };
+  }
+
   return {
     subject: 'CrossApp',
     text: String(payload.text || '').trim(),
@@ -566,6 +608,18 @@ function normalizePayload(payload) {
     }
   }
   return typeof payload === 'object' ? payload : {};
+}
+
+function formatEmailDate(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const date = new Date(raw);
+  if (!Number.isFinite(date.getTime())) return raw;
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'short',
+    timeStyle: 'short',
+    timeZone: 'America/Sao_Paulo',
+  }).format(date);
 }
 
 function mapEmailJob(row) {

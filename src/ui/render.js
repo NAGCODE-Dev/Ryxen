@@ -1288,6 +1288,10 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                       <span class="admin-statLabel">Assinaturas ativas</span>
                       <span class="admin-statValue">${Number(overview?.stats?.activeSubscriptions || 0)}</span>
                     </div>
+                    <div class="admin-statCard">
+                      <span class="admin-statLabel">Exclusões pendentes</span>
+                      <span class="admin-statValue">${Number(overview?.stats?.pendingAccountDeletions || 0)}</span>
+                    </div>
                   </div>
                   <div class="admin-userList">
                     ${(overview?.users || []).map((user) => `
@@ -1299,6 +1303,11 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                             Plano: ${escapeHtml(user.subscription_plan || 'free')} • ${escapeHtml(user.subscription_status || 'inactive')}
                             ${user.subscription_renew_at ? ` • renova em ${escapeHtml(formatDateShort(user.subscription_renew_at))}` : ''}
                           </div>
+                          ${user.pendingDeletion ? `
+                            <div class="account-hint" style="color:#f3c87b;">
+                              Exclusão pendente • apaga em ${escapeHtml(formatDateShort(user.pendingDeletion.delete_after || user.pendingDeletion.deleteAfter || ''))}
+                            </div>
+                          ` : ''}
                         </div>
                         <div class="admin-userControls">
                           <div class="admin-userMeta">${user.is_admin ? 'Admin' : 'User'}</div>
@@ -1306,6 +1315,8 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                             <button class="btn-secondary" data-action="admin:activate-plan" data-user-id="${Number(user.id)}" data-plan-id="starter" type="button">Starter</button>
                             <button class="btn-secondary" data-action="admin:activate-plan" data-user-id="${Number(user.id)}" data-plan-id="pro" type="button">Pro</button>
                             <button class="btn-secondary" data-action="admin:activate-plan" data-user-id="${Number(user.id)}" data-plan-id="performance" type="button">Performance</button>
+                            <button class="btn-secondary" data-action="admin:request-delete" data-user-id="${Number(user.id)}" data-user-email="${escapeHtml(user.email || '')}" type="button">${user.pendingDeletion ? 'Reenviar deleção' : 'Pedir deleção'}</button>
+                            <button class="btn-secondary" data-action="admin:delete-now" data-user-id="${Number(user.id)}" data-user-email="${escapeHtml(user.email || '')}" type="button">Excluir agora</button>
                           </div>
                         </div>
                       </div>

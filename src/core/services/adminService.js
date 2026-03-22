@@ -34,6 +34,18 @@ export async function createManualPasswordReset(userId) {
   });
 }
 
+export async function requestAccountDeletion(userId) {
+  return apiRequest(`/admin/users/${Number(userId)}/account-deletion/request`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteAccountNow(userId) {
+  return apiRequest(`/admin/users/${Number(userId)}/account-deletion/delete-now`, {
+    method: 'POST',
+  });
+}
+
 export async function getAdminOpsHealth(params = {}) {
   const search = new URLSearchParams();
   if (params.verify) search.set('verify', '1');
