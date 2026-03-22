@@ -10,7 +10,7 @@
     "build:android": "npm run build",
     "android:sync": "npm run build:android && npx cap sync android",
     "android:copy": "npm run build:android && npx cap copy android",
-    "android:open": "npx cap open android",
+    "android:open": "CAPACITOR_ANDROID_STUDIO_PATH=$PWD/scripts/open-android-studio.sh npx cap open android",
     "android:run": "npm run build:android && npx cap run android",
     "generate:import-fixtures": "node scripts/generate-import-fixtures.mjs",
     "report:import-support": "node scripts/report-import-format-support.mjs",
