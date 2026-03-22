@@ -24,6 +24,7 @@ import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
 
 const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+const GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
 
 async function withUserBootstrap(normalizedEmail, factory) {
   const client = await pool.connect();
@@ -222,6 +223,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       appCallback,
       at: Date.now(),
     });
+    setGoogleOAuthContextCookie(res, { returnTo, appCallback });
     const redirectUri = getGoogleRedirectUri(req);
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
@@ -236,8 +238,11 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
   router.get('/google/callback', async (req, res) => {
     const statePayload = parseGoogleOAuthState(req.query?.state);
-    const returnTo = normalizeFrontendReturnTo(statePayload?.returnTo);
-    const appCallback = normalizeNativeAppCallback(statePayload?.appCallback, returnTo);
+    const cookiePayload = parseGoogleOAuthContextCookie(req);
+    clearGoogleOAuthContextCookie(res);
+    const context = statePayload || cookiePayload || {};
+    const returnTo = normalizeFrontendReturnTo(context?.returnTo);
+    const appCallback = normalizeNativeAppCallback(context?.appCallback, returnTo);
 
     if (req.query?.error) {
       return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, {
@@ -246,7 +251,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     }
 
     if (!statePayload) {
-      return res.redirect(buildAuthRedirectUrl({ returnTo }, {
+      return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, {
         error: 'Sessão de login expirada. Tente novamente.',
       }));
     }
@@ -601,7 +606,7 @@ function getGoogleRedirectUri(req) {
 function normalizeFrontendReturnTo(value) {
   const raw = String(value || '').trim();
   if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
-    return '/sports/cross/';
+    return '/sports/cross/index.html';
   }
   return raw;
 }
@@ -654,6 +659,57 @@ function buildNativeAppAuthRedirectUrl(appCallback, { token = '', user = null, e
   if (user) target.searchParams.set('authUser', encodeBase64Url(JSON.stringify(user)));
   if (error) target.searchParams.set('authError', error);
   return target.toString();
+}
+
+function setGoogleOAuthContextCookie(res, payload) {
+  const encoded = createGoogleOAuthState(payload);
+  res.append('Set-Cookie', serializeCookie(GOOGLE_OAUTH_CONTEXT_COOKIE, encoded, {
+    httpOnly: true,
+    maxAge: 10 * 60,
+    path: '/auth',
+    sameSite: 'Lax',
+    secure: IS_PRODUCTION,
+  }));
+}
+
+function clearGoogleOAuthContextCookie(res) {
+  res.append('Set-Cookie', serializeCookie(GOOGLE_OAUTH_CONTEXT_COOKIE, '', {
+    httpOnly: true,
+    maxAge: 0,
+    path: '/auth',
+    sameSite: 'Lax',
+    secure: IS_PRODUCTION,
+  }));
+}
+
+function parseGoogleOAuthContextCookie(req) {
+  const raw = parseCookieHeader(req.headers?.cookie || '')[GOOGLE_OAUTH_CONTEXT_COOKIE];
+  return parseGoogleOAuthState(raw);
+}
+
+function parseCookieHeader(header) {
+  return String(header || '')
+    .split(';')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .reduce((acc, entry) => {
+      const separatorIndex = entry.indexOf('=');
+      if (separatorIndex <= 0) return acc;
+      const key = entry.slice(0, separatorIndex).trim();
+      const value = entry.slice(separatorIndex + 1).trim();
+      acc[key] = decodeURIComponent(value);
+      return acc;
+    }, {});
+}
+
+function serializeCookie(name, value, options = {}) {
+  const parts = [`${name}=${encodeURIComponent(String(value || ''))}`];
+  if (options.maxAge !== undefined) parts.push(`Max-Age=${Math.max(0, Number(options.maxAge) || 0)}`);
+  if (options.path) parts.push(`Path=${options.path}`);
+  if (options.httpOnly) parts.push('HttpOnly');
+  if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
+  if (options.secure) parts.push('Secure');
+  return parts.join('; ');
 }
 
 function createGoogleOAuthState(payload) {

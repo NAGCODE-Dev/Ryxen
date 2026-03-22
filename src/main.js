@@ -31,12 +31,13 @@ async function bootstrap() {
   initAuxiliaryBrowserLayer();
   initNativeBackHandling();
   const nativeAuthRedirect = await setupNativeAuthRedirects();
+  if (nativeAuthRedirect?.handled) return;
   setupErrorMonitoring();
   setupVercelObservability();
   setupGlobalTelemetryHandlers();
   registerServiceWorker();
   mountConsentBanner();
-  const authRedirect = nativeAuthRedirect?.handled ? nativeAuthRedirect : applyAuthRedirectFromLocation();
+  const authRedirect = applyAuthRedirectFromLocation();
 
   const result = await init();
   if (!result?.success) {
@@ -84,7 +85,6 @@ async function setupNativeAuthRedirects() {
     const launch = await appPlugin.getLaunchUrl?.();
     const result = applyAuthRedirectFromUrl(String(launch?.url || ''));
     if (result?.handled) {
-      redirectAfterNativeAuth(result);
       return result;
     }
   } catch {

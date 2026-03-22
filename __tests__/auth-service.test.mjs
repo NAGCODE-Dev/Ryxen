@@ -43,3 +43,44 @@ test('buildGoogleRedirectUrl resolve apiBaseUrl relativa no browser', async (t) 
   const { buildGoogleRedirectUrl } = await import(`../src/core/services/authService.js?test=${Date.now()}`);
   assert.equal(buildGoogleRedirectUrl().toString(), 'https://crossapp.com/api/auth/google/start');
 });
+
+test('applyAuthRedirectFromUrl le auth em querystring de callback nativo', async (t) => {
+  const storage = createStorageMock();
+  globalThis.localStorage = storage;
+  globalThis.window = {
+    location: {
+      href: 'https://crossapp.com/sports/cross/index.html',
+      origin: 'https://crossapp.com',
+      pathname: '/sports/cross/index.html',
+      search: '',
+    },
+    atob(value) {
+      return Buffer.from(value, 'base64').toString('utf8');
+    },
+    history: { replaceState() {} },
+    localStorage: storage,
+    __CROSSAPP_CONFIG__: {
+      apiBaseUrl: '/api',
+    },
+  };
+
+  t.after(() => {
+    globalThis.window = originalWindow;
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  const authUser = Buffer.from(JSON.stringify({ email: 'athlete@test.local' }))
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+
+  const { applyAuthRedirectFromUrl, getStoredProfile } = await import(`../src/core/services/authService.js?test=${Date.now()}1`);
+  const result = applyAuthRedirectFromUrl(`crossapp://auth/callback?returnTo=%2Fsports%2Fcross%2Findex.html&authToken=abc123&authUser=${authUser}`);
+
+  assert.equal(result.handled, true);
+  assert.equal(result.success, true);
+  assert.equal(result.returnTo, '/sports/cross/index.html');
+  assert.equal(storage.getItem('crossapp-auth-token'), 'abc123');
+  assert.deepEqual(getStoredProfile(), { email: 'athlete@test.local' });
+});

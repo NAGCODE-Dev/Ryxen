@@ -68,34 +68,108 @@ function bindEvents(root, sports) {
 function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
   const selectedSport = lastSport || 'cross';
   const hasBeta = availableSports.some((sport) => sport.tier === 'beta');
+  const selectedSportMeta = availableSports.find((sport) => sport.value === selectedSport) || availableSports[0] || null;
   return `
     <main class="hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Hub</div>
-        <h1>Use sozinho ou conectado ao seu coach, sem complicar a rotina.</h1>
-        <p class="hub-lead">
-          O CrossApp funciona de dois jeitos: como app diário do atleta no modo solo, ou conectado a um coach que publica treino e organiza a operação do box no portal separado.
-        </p>
-        <div class="hub-actions">
-          <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
-            Abrir ${escapeHtml(labelForSport(selectedSport))}
-          </button>
-          <a class="hub-secondaryAction" href="/coach/index.html">Abrir Coach Portal</a>
-        </div>
-        <div class="hub-meta">
-          <span>Use solo com app liberado</span>
-          <span>Imports e histórico completos</span>
-          <span>${hasBeta ? 'Beta disponível para modalidades extras' : 'Fluxo principal focado em Cross'}</span>
+        <div class="hub-heroGrid">
+          <div class="hub-heroMain">
+            <div class="hub-kicker">CrossApp para atleta e coach</div>
+            <h1>Importe treino, acompanhe evolução e centralize a rotina do box no mesmo ecossistema.</h1>
+            <p class="hub-lead">
+              O CrossApp foi feito para quem treina de verdade: atleta que precisa de clareza no dia a dia e coach que quer publicar treino, organizar grupos e manter operação sem planilha solta no WhatsApp.
+            </p>
+            <div class="hub-proofRow">
+              <span>Importação por PDF, imagem e OCR</span>
+              <span>Histórico, PRs e uso offline</span>
+              <span>Coach Portal separado da experiência do atleta</span>
+            </div>
+            <div class="hub-actions">
+              <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
+                Abrir ${escapeHtml(labelForSport(selectedSport))}
+              </button>
+              <a class="hub-secondaryAction" href="/coach/index.html">Entrar no Coach Portal</a>
+            </div>
+            <div class="hub-meta">
+              <span>Fluxo principal pronto para Cross</span>
+              <span>${hasBeta ? 'Running e Strength em expansão' : 'Expansão modular para outras modalidades'}</span>
+              <span>Conta única, experiências separadas</span>
+            </div>
+          </div>
+
+          <aside class="hub-heroPanel">
+            <div class="hub-panelEyebrow">Escolha atual</div>
+            <h2>${escapeHtml(selectedSportMeta?.title || 'Cross / Conditioning')}</h2>
+            <p>${escapeHtml(selectedSportMeta?.description || 'Treino do dia, histórico, importação e coach no mesmo fluxo.')}</p>
+            <div class="hub-panelStats">
+              <div class="hub-stat">
+                <strong>Solo</strong>
+                <span>Importe treino, registre PRs e acompanhe progresso.</span>
+              </div>
+              <div class="hub-stat">
+                <strong>Coach</strong>
+                <span>Publique treinos, opere grupos e conecte atletas sem misturar interfaces.</span>
+              </div>
+              <div class="hub-stat">
+                <strong>Conta conectada</strong>
+                <span>Alternância entre treino enviado e treino importado pelo atleta.</span>
+              </div>
+            </div>
+          </aside>
         </div>
       </section>
 
-      <section class="hub-grid hub-grid-onboarding">
-        ${renderGuideCard('1. Escolha sua rotina', 'Entre direto no app da modalidade que faz sentido para o seu dia. Hoje o fluxo principal está em Cross.')}
-        ${renderGuideCard('2. Use sozinho ou com coach', 'Sozinho você já importa planilha, registra treino e acompanha histórico. Com coach ativo, você recebe treino do box sem perder a simplicidade do app do atleta.')}
-        ${renderGuideCard('3. Coach opera no portal', 'A parte operacional fica separada no Coach Portal: grupos, atletas, publicação e rotina do box.')}
+      <section class="hub-section">
+        <div class="hub-sectionHeader">
+          <div>
+            <div class="hub-sectionKicker">Por que existe</div>
+            <h2>O produto resolve três dores logo na entrada.</h2>
+          </div>
+          <p>Sem prometer “gestão completa” genérica. A proposta é direta: treino claro para o atleta, operação separada para o coach e menos improviso no dia a dia.</p>
+        </div>
+        <div class="hub-grid hub-grid-proof">
+          ${renderGuideCard('Treino organizado', 'Importe programação por PDF, imagem ou OCR e transforme material solto em rotina utilizável.')}
+          ${renderGuideCard('Evolução visível', 'Mantenha PRs, histórico e contexto da semana sem depender de memória, foto perdida ou nota no celular.')}
+          ${renderGuideCard('Operação limpa', 'Coach publica treino, organiza grupos e acompanha o box no portal, enquanto o atleta continua com uma UI enxuta.')}
+        </div>
       </section>
 
-      <section class="hub-grid">
+      <section class="hub-section">
+        <div class="hub-sectionHeader">
+          <div>
+            <div class="hub-sectionKicker">Escolha seu fluxo</div>
+            <h2>Entre pelo lado certo do produto.</h2>
+          </div>
+          <p>O app do atleta e o portal do coach compartilham conta e contexto, mas não competem pela mesma interface.</p>
+        </div>
+        <div class="hub-grid hub-grid-roles">
+          ${renderRoleCard('Atleta solo', 'Para quem quer treinar com clareza sem depender do box estar online o tempo todo.', [
+            'Importa treino e mantém histórico',
+            'Registra PRs, medidas e rotina',
+            'Usa o app mesmo fora do modo coach'
+          ], `Abrir ${labelForSport(selectedSport)}`, lastSportUrl, selectedSport, true)}
+          ${renderRoleCard('Atleta conectado', 'Para quem recebe treino do coach, mas ainda quer autonomia para consultar e adaptar a própria rotina.', [
+            'Recebe treino publicado pelo coach',
+            'Alterna entre treino enviado e treino importado',
+            'Mantém a experiência do atleta sem poluição operacional'
+          ], 'Entrar como atleta', lastSportUrl, selectedSport, false)}
+          ${renderRoleCard('Coach / Box', 'Para operação, publicação e organização do treino em escala, com portal separado.', [
+            'Gerencia grupos e atletas',
+            'Publica treino por contexto',
+            'Centraliza rotina operacional do box'
+          ], 'Abrir Coach Portal', '/coach/index.html', 'coach', false)}
+        </div>
+      </section>
+
+      <section class="hub-section">
+        <div class="hub-sectionHeader">
+          <div>
+            <div class="hub-sectionKicker">Modalidades</div>
+            <h2>Hoje o núcleo está em Cross. O restante cresce em cima da mesma base.</h2>
+          </div>
+          <p>Você entra por uma modalidade, mas a arquitetura já considera expansão para corrida, força e experiências conectadas ao coach.</p>
+        </div>
+        <div class="hub-grid">
         ${availableSports.map((sport) => renderSportCard({
           sport: sport.value,
           title: sport.title,
@@ -105,6 +179,23 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
           selected: selectedSport === sport.value,
           tier: sport.tier,
         })).join('')}
+        </div>
+      </section>
+
+      <section class="hub-section hub-section-cta">
+        <div class="hub-ctaCard">
+          <div>
+            <div class="hub-sectionKicker">Comece pelo essencial</div>
+            <h2>Se você é atleta, abra o app. Se você opera o treino do box, entre no portal.</h2>
+            <p>O objetivo aqui não é mostrar vinte menus. É deixar claro o caminho certo de entrada para cada perfil.</p>
+          </div>
+          <div class="hub-actions">
+            <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
+              Abrir ${escapeHtml(labelForSport(selectedSport))}
+            </button>
+            <a class="hub-secondaryAction" href="/coach/index.html">Abrir Coach Portal</a>
+          </div>
+        </div>
       </section>
     </main>
   `;
@@ -115,6 +206,25 @@ function renderGuideCard(title, description) {
     <article class="hub-card hub-card-guide">
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(description)}</p>
+    </article>
+  `;
+}
+
+function renderRoleCard(title, description, bullets, ctaLabel, href, sport, highlight) {
+  return `
+    <article class="hub-card hub-roleCard ${highlight ? 'hub-roleCard-highlight' : ''}">
+      <div class="hub-cardTop">
+        <span class="sport-badge">${escapeHtml(title)}</span>
+        <span class="hub-status">${highlight ? 'Recomendado' : 'Disponível'}</span>
+      </div>
+      <h2>${escapeHtml(title)}</h2>
+      <p>${escapeHtml(description)}</p>
+      <ul class="hub-list">
+        ${bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}
+      </ul>
+      <div class="hub-cardActions">
+        <button class="hub-cardLink ${highlight ? 'hub-cardLink-primary' : ''}" type="button" data-nav-href="${escapeHtml(href)}" data-sport-link="${escapeHtml(sport)}">${escapeHtml(ctaLabel)}</button>
+      </div>
     </article>
   `;
 }
