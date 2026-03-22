@@ -1313,6 +1313,9 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
 
           <div class="auth-googleBlock" id="google-signin-shell">
             <div id="google-signin-button"></div>
+            <button class="btn-secondary auth-googleRedirect" data-action="auth:google-redirect" type="button">
+              Entrar com Google no navegador
+            </button>
           </div>
 
           <div class="auth-divider">ou continue com email</div>

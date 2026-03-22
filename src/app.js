@@ -1328,6 +1328,10 @@ export async function handleSignInWithGoogle(payload) {
   return result;
 }
 
+export function handleStartGoogleRedirect(payload) {
+  return remoteHandlers.handleStartGoogleRedirect(payload);
+}
+
 export async function handleRefreshSession() {
   const result = await remoteHandlers.handleRefreshSession();
   triggerPostAuthHydration();
@@ -1637,6 +1641,7 @@ function exposeDebugAPIs() {
     confirmSignUp: handleConfirmSignUp,
     signIn: handleSignIn,
     signInWithGoogle: handleSignInWithGoogle,
+    startGoogleSignInRedirect: handleStartGoogleRedirect,
     refreshSession: handleRefreshSession,
     requestPasswordReset: handleRequestPasswordReset,
     confirmPasswordReset: handleConfirmPasswordReset,
