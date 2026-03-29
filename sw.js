@@ -1,27 +1,24 @@
 /**
  * Service Worker
- * Versão: 3.2.0
+ * Versão: 3.3.0
  */
 
-const CACHE_NAME = 'crossapp-v3-2';
+const CACHE_NAME = 'crossapp-v3-3';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './sports/cross/index.html',
+  './sports/running/index.html',
+  './sports/strength/index.html',
   './manifest.json',
   './privacy.html',
   './terms.html',
   './support.html',
+  './src/hub/main.js',
+  './src/hub/styles.css',
+  './sports/running/main.js',
+  './sports/strength/main.js',
   './src/main.js',
-  './src/app.js',
-  './src/app/auxiliaryBrowser.js',
-  './src/app/nativeBack.js',
-  './src/config/runtime.js',
-  './src/ui/ui.js',
-  './src/ui/render.js',
-  './src/ui/actions.js',
-  './src/ui/events.js',
-  './src/ui/consent.js',
-  './src/ui/styles.css',
   './src/core/services/apiClient.js',
   './src/core/services/authService.js',
   './src/core/services/subscriptionService.js',
@@ -57,38 +54,50 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
+  const responsePromise = resolveFetchResponse(event.request);
+  if (responsePromise) {
+    event.respondWith(responsePromise);
+  }
+});
+
+function resolveNavigationFallback(pathname = '/') {
+  if (pathname.startsWith('/sports/running')) return './sports/running/index.html';
+  if (pathname.startsWith('/sports/strength')) return './sports/strength/index.html';
+  if (pathname.startsWith('/sports/cross')) return './sports/cross/index.html';
+  return './index.html';
+}
+
+function resolveFetchResponse(request) {
   const url = new URL(request.url);
 
-  if (request.method !== 'GET') return;
-  if (url.origin !== self.location.origin) return;
+  if (!isCacheableRequest(request, url)) return null;
 
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkOnly(request));
-    return;
+  if (isApiRequest(url)) {
+    return networkOnly(request);
   }
 
-  // Navegação: network-first com fallback para shell
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, './index.html'));
-    return;
+    return networkFirst(request, resolveNavigationFallback(url.pathname));
   }
 
-  // Módulos/scripts devem priorizar rede para evitar mismatch entre imports ESM.
   if (isScriptLikeAsset(request)) {
-    event.respondWith(networkFirst(request));
-    return;
+    return networkFirst(request);
   }
 
-  // Estáticos restantes: stale-while-revalidate
   if (isStaticAsset(request)) {
-    event.respondWith(staleWhileRevalidate(request));
-    return;
+    return staleWhileRevalidate(request);
   }
 
-  // API/JSON/outros: network-first com fallback cache
-  event.respondWith(networkFirst(request));
-});
+  return networkFirst(request);
+}
+
+function isApiRequest(url) {
+  return url.pathname.startsWith('/api/');
+}
+
+function isCacheableRequest(request, url) {
+  return request.method === 'GET' && url.origin === self.location.origin;
+}
 
 self.addEventListener('message', (event) => {
   if (!event.data) return;

@@ -3,6 +3,8 @@ import { initAuxiliaryBrowserLayer } from '../app/auxiliaryBrowser.js';
 import { initNativeBackHandling } from '../app/nativeBack.js';
 
 const STORAGE_KEY = 'crossapp-active-sport';
+const HUB_SEEN_KEY = 'crossapp-hub-seen-v1';
+const ENTRY_TARGET_KEY = 'crossapp-entry-target';
 
 boot();
 
@@ -20,6 +22,8 @@ function boot() {
   const lastSport = getLastSport();
   const selectedSport = availableSports.some((sport) => sport.value === lastSport) ? lastSport : fallbackSport;
   const lastSportUrl = sports[selectedSport] || sports.cross || '/sports/cross/index.html';
+  const coachUrl = '/coach/index.html';
+  const shouldAutoSkipHub = shouldSkipHub(availableSports);
 
   if (isNativePlatform()) {
     setLastSport(selectedSport);
@@ -27,8 +31,14 @@ function boot() {
     return;
   }
 
-  root.innerHTML = renderHub({ sports, availableSports, lastSport: selectedSport, lastSportUrl });
+  if (shouldAutoSkipHub) {
+    window.location.replace(resolveEntryUrl({ selectedSport, athleteUrl: lastSportUrl, coachUrl }));
+    return;
+  }
+
+  root.innerHTML = renderHub({ sports, availableSports, lastSport: selectedSport, lastSportUrl, coachUrl });
   bindEvents(root, sports);
+  markHubAsSeen();
 }
 
 function bindEvents(root, sports) {
@@ -36,7 +46,7 @@ function bindEvents(root, sports) {
     const target = event.target.closest('[data-sport-link]');
     if (!target) return;
     const sport = target.getAttribute('data-sport-link');
-    if (sport) setLastSport(sport);
+    if (sport && sports[sport]) setLastSport(sport);
   });
 
   root.addEventListener('click', (event) => {
@@ -44,6 +54,8 @@ function bindEvents(root, sports) {
     if (!target) return;
     const href = String(target.getAttribute('data-nav-href') || '').trim();
     if (!href) return;
+    const entryTarget = String(target.getAttribute('data-entry-target') || '').trim();
+    if (entryTarget) setEntryTarget(entryTarget);
     event.preventDefault();
     window.location.assign(href);
   });
@@ -65,7 +77,7 @@ function bindEvents(root, sports) {
   });
 }
 
-function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
+function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl }) {
   const selectedSport = lastSport || 'cross';
   const hasBeta = availableSports.some((sport) => sport.tier === 'beta');
   const selectedSportMeta = availableSports.find((sport) => sport.value === selectedSport) || availableSports[0] || null;
@@ -85,10 +97,10 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
               <span>Coach Portal separado da experiência do atleta</span>
             </div>
             <div class="hub-actions">
-              <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
+              <button class="hub-primaryAction" type="button" data-hub-primary data-entry-target="athlete" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
                 Abrir ${escapeHtml(labelForSport(selectedSport))}
               </button>
-              <a class="hub-secondaryAction" href="/coach/index.html">Entrar no Coach Portal</a>
+              <button class="hub-secondaryAction" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Entrar no Coach Portal</button>
             </div>
             <div class="hub-meta">
               <span>Fluxo principal pronto para Cross</span>
@@ -147,17 +159,17 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             'Importa treino e mantém histórico',
             'Registra PRs, medidas e rotina',
             'Usa o app mesmo fora do modo coach'
-          ], `Abrir ${labelForSport(selectedSport)}`, lastSportUrl, selectedSport, true)}
+          ], `Abrir ${labelForSport(selectedSport)}`, lastSportUrl, selectedSport, true, 'athlete')}
           ${renderRoleCard('Atleta conectado', 'Para quem recebe treino do coach, mas ainda quer autonomia para consultar e adaptar a própria rotina.', [
             'Recebe treino publicado pelo coach',
             'Alterna entre treino enviado e treino importado',
             'Mantém a experiência do atleta sem poluição operacional'
-          ], 'Entrar como atleta', lastSportUrl, selectedSport, false)}
+          ], 'Entrar como atleta', lastSportUrl, selectedSport, false, 'athlete')}
           ${renderRoleCard('Coach / Box', 'Para operação, publicação e organização do treino em escala, com portal separado.', [
             'Gerencia grupos e atletas',
             'Publica treino por contexto',
             'Centraliza rotina operacional do box'
-          ], 'Abrir Coach Portal', '/coach/index.html', 'coach', false)}
+          ], 'Abrir Coach Portal', coachUrl, 'coach', false, 'coach')}
         </div>
       </section>
 
@@ -193,7 +205,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
               Abrir ${escapeHtml(labelForSport(selectedSport))}
             </button>
-            <a class="hub-secondaryAction" href="/coach/index.html">Abrir Coach Portal</a>
+            <button class="hub-secondaryAction" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Abrir Coach Portal</button>
           </div>
         </div>
       </section>
@@ -210,7 +222,7 @@ function renderGuideCard(title, description) {
   `;
 }
 
-function renderRoleCard(title, description, bullets, ctaLabel, href, sport, highlight) {
+function renderRoleCard(title, description, bullets, ctaLabel, href, sport, highlight, entryTarget = 'athlete') {
   return `
     <article class="hub-card hub-roleCard ${highlight ? 'hub-roleCard-highlight' : ''}">
       <div class="hub-cardTop">
@@ -223,7 +235,7 @@ function renderRoleCard(title, description, bullets, ctaLabel, href, sport, high
         ${bullets.map((bullet) => `<li>${escapeHtml(bullet)}</li>`).join('')}
       </ul>
       <div class="hub-cardActions">
-        <button class="hub-cardLink ${highlight ? 'hub-cardLink-primary' : ''}" type="button" data-nav-href="${escapeHtml(href)}" data-sport-link="${escapeHtml(sport)}">${escapeHtml(ctaLabel)}</button>
+        <button class="hub-cardLink ${highlight ? 'hub-cardLink-primary' : ''}" type="button" data-entry-target="${escapeHtml(entryTarget)}" data-nav-href="${escapeHtml(href)}" data-sport-link="${escapeHtml(sport)}">${escapeHtml(ctaLabel)}</button>
       </div>
     </article>
   `;
@@ -306,6 +318,51 @@ function setLastSport(sport) {
   } catch {
     // no-op
   }
+}
+
+function hasSeenHub() {
+  try {
+    return localStorage.getItem(HUB_SEEN_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function markHubAsSeen() {
+  try {
+    localStorage.setItem(HUB_SEEN_KEY, '1');
+  } catch {
+    // no-op
+  }
+}
+
+function shouldSkipHub(availableSports) {
+  if (!hasSeenHub()) return false;
+  return availableSports.length === 1 && availableSports[0]?.value === 'cross';
+}
+
+function getEntryTarget() {
+  try {
+    return localStorage.getItem(ENTRY_TARGET_KEY) || 'athlete';
+  } catch {
+    return 'athlete';
+  }
+}
+
+function setEntryTarget(entryTarget) {
+  const normalized = entryTarget === 'coach' ? 'coach' : 'athlete';
+  try {
+    localStorage.setItem(ENTRY_TARGET_KEY, normalized);
+  } catch {
+    // no-op
+  }
+}
+
+function resolveEntryUrl({ selectedSport, athleteUrl, coachUrl }) {
+  const entryTarget = getEntryTarget();
+  if (entryTarget === 'coach') return coachUrl;
+  setLastSport(selectedSport || 'cross');
+  return athleteUrl || '/sports/cross/index.html';
 }
 
 function escapeHtml(text) {

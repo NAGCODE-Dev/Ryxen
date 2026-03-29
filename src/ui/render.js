@@ -1053,62 +1053,70 @@ function renderSettingsModal(settings = {}) {
     <div class="modal-overlay isOpen" id="ui-settingsModalBackdrop">
       <div class="modal-container">
         <div class="modal-header">
-          <h2 class="modal-title">⚙️ Configurações</h2>
+          <h2 class="modal-title">⚙️ Configurações do app</h2>
           <button class="modal-close" data-action="modal:close" type="button">✕</button>
         </div>
 
         <div class="modal-body">
-          <div class="settings-group">
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showLbsConversion"
-                ${showLbsConversion ? 'checked' : ''}
-              />
-              <span>Mostrar conversão lbs → kg</span>
-            </label>
+          <div class="settings-layout">
+            <section class="settings-section">
+              <h3 class="settings-sectionTitle">Preferências visuais</h3>
+              <p class="settings-hint">Ajustes de leitura e apresentação no app do atleta.</p>
+              <div class="settings-group">
+                <label class="settings-label">
+                  <input
+                    type="checkbox"
+                    id="setting-showLbsConversion"
+                    ${showLbsConversion ? 'checked' : ''}
+                  />
+                  <span>Mostrar conversão lbs → kg</span>
+                </label>
 
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showEmojis"
-                ${showEmojis ? 'checked' : ''}
-              />
-              <span>Mostrar emojis</span>
-            </label>
+                <label class="settings-label">
+                  <input
+                    type="checkbox"
+                    id="setting-showEmojis"
+                    ${showEmojis ? 'checked' : ''}
+                  />
+                  <span>Mostrar emojis</span>
+                </label>
 
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showObjectives"
-                ${showObjectivesInWods ? 'checked' : ''}
-              />
-              <span>Mostrar objetivos nos WODs</span>
-            </label>
+                <label class="settings-label">
+                  <input
+                    type="checkbox"
+                    id="setting-showObjectives"
+                    ${showObjectivesInWods ? 'checked' : ''}
+                  />
+                  <span>Mostrar objetivos nos WODs</span>
+                </label>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h3 class="settings-sectionTitle">Conta e operação</h3>
+              <p class="settings-hint">Atalhos úteis para operação do box e gestão da conta.</p>
+              <div class="settings-linkGrid">
+                <a class="btn-secondary settings-linkCard" href="/coach/index.html" target="_blank" rel="noopener noreferrer">Abrir Coach Portal</a>
+                <a class="btn-secondary settings-linkCard" href="/pricing.html" target="_blank" rel="noopener noreferrer">Planos</a>
+                <a class="btn-secondary settings-linkCard" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacidade</a>
+                <a class="btn-secondary settings-linkCard" href="/terms.html" target="_blank" rel="noopener noreferrer">Termos</a>
+              </div>
+            </section>
+
+            <section class="settings-section">
+              <h3 class="settings-sectionTitle">Dados locais</h3>
+              <p class="settings-hint">Exporte/importe backup e limpe dados locais quando necessário.</p>
+              <div class="settings-actions settings-actionsUtility">
+                <button class="btn-secondary" data-action="backup:export" type="button">Exportar backup</button>
+                <button class="btn-secondary" data-action="backup:import" type="button">Importar backup</button>
+                <button class="btn-secondary" data-action="pdf:clear" type="button">Limpar dados locais</button>
+              </div>
+            </section>
           </div>
 
           <div class="settings-actions">
-            <button class="btn-primary" data-action="settings:save" type="button">
-              💾 Salvar
-            </button>
-            <button class="btn-secondary" data-action="backup:export" type="button">
-              🧰 Backup
-            </button>
-            <button class="btn-secondary" data-action="backup:import" type="button">
-              ♻️ Restaurar
-            </button>
-            <button class="btn-secondary" data-action="pdf:clear" type="button">
-              🗑️ Limpar Tudo
-            </button>
-            <a class="btn-secondary" href="/privacy.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              🔐 Privacidade
-            </a>
-            <a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              💳 Planos
-            </a>
-            <a class="btn-secondary" href="/terms.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              📄 Termos
-            </a>
+            <button class="btn-secondary" data-action="settings:reset" type="button">Restaurar padrão</button>
+            <button class="btn-primary" data-action="settings:save" type="button">Salvar configurações</button>
           </div>
         </div>
       </div>
