@@ -49,6 +49,13 @@ export async function getAthleteSummary(params = {}) {
   return apiRequest(`/athletes/me/summary${suffix}`, { method: 'GET' });
 }
 
+export async function getAthleteDashboard(params = {}) {
+  const search = new URLSearchParams();
+  if (params?.sportType) search.set('sportType', params.sportType);
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+  return apiRequest(`/athletes/me/dashboard${suffix}`, { method: 'GET' });
+}
+
 export async function getAthleteResultsSummary(params = {}) {
   const search = new URLSearchParams();
   if (params?.sportType) search.set('sportType', params.sportType);

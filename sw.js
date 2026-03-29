@@ -1,27 +1,24 @@
 /**
  * Service Worker
- * Versão: 3.2.0
+ * Versão: 3.3.0
  */
 
-const CACHE_NAME = 'crossapp-v3-2';
+const CACHE_NAME = 'crossapp-v3-3';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './sports/cross/index.html',
+  './sports/running/index.html',
+  './sports/strength/index.html',
   './manifest.json',
   './privacy.html',
   './terms.html',
   './support.html',
+  './src/hub/main.js',
+  './src/hub/styles.css',
+  './sports/running/main.js',
+  './sports/strength/main.js',
   './src/main.js',
-  './src/app.js',
-  './src/app/auxiliaryBrowser.js',
-  './src/app/nativeBack.js',
-  './src/config/runtime.js',
-  './src/ui/ui.js',
-  './src/ui/render.js',
-  './src/ui/actions.js',
-  './src/ui/events.js',
-  './src/ui/consent.js',
-  './src/ui/styles.css',
   './src/core/services/apiClient.js',
   './src/core/services/authService.js',
   './src/core/services/subscriptionService.js',
