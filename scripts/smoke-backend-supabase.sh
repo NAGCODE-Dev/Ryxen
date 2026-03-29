@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+if [[ ! -f "$ROOT_DIR/.env.supabase" ]]; then
+  echo "[smoke-backend-supabase] Arquivo .env.supabase não encontrado na raiz do projeto."
+  exit 1
+fi
+
+set -a
+source "$ROOT_DIR/.env.supabase"
+set +a
+
+export CROSSAPP_API_BASE_URL="${CROSSAPP_API_BASE_URL:-http://localhost:8788}"
+export CROSSAPP_COACH_EMAIL="${CROSSAPP_COACH_EMAIL:-coach1.1@crossapp.local}"
+export CROSSAPP_COACH_PASSWORD="${CROSSAPP_COACH_PASSWORD:-CrossAppSeed123}"
+export CROSSAPP_ATHLETE_EMAIL="${CROSSAPP_ATHLETE_EMAIL:-athlete1.1@crossapp.local}"
+export CROSSAPP_ATHLETE_PASSWORD="${CROSSAPP_ATHLETE_PASSWORD:-CrossAppSeed123}"
+
+cd "$ROOT_DIR"
+
+echo "[smoke-backend-supabase] smoke:auth"
+npm run smoke:auth
+
+echo "[smoke-backend-supabase] smoke:coach-trial"
+npm run smoke:coach-trial
