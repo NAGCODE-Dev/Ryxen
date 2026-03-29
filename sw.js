@@ -1,27 +1,24 @@
 /**
  * Service Worker
- * Versão: 3.2.0
+ * Versão: 3.3.0
  */
 
-const CACHE_NAME = 'crossapp-v3-2';
+const CACHE_NAME = 'crossapp-v3-3';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './sports/cross/index.html',
+  './sports/running/index.html',
+  './sports/strength/index.html',
   './manifest.json',
   './privacy.html',
   './terms.html',
   './support.html',
+  './src/hub/main.js',
+  './src/hub/styles.css',
+  './sports/running/main.js',
+  './sports/strength/main.js',
   './src/main.js',
-  './src/app.js',
-  './src/app/auxiliaryBrowser.js',
-  './src/app/nativeBack.js',
-  './src/config/runtime.js',
-  './src/ui/ui.js',
-  './src/ui/render.js',
-  './src/ui/actions.js',
-  './src/ui/events.js',
-  './src/ui/consent.js',
-  './src/ui/styles.css',
   './src/core/services/apiClient.js',
   './src/core/services/authService.js',
   './src/core/services/subscriptionService.js',
@@ -70,7 +67,7 @@ self.addEventListener('fetch', (event) => {
 
   // Navegação: network-first com fallback para shell
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, './index.html'));
+    event.respondWith(networkFirst(request, resolveNavigationFallback(url.pathname)));
     return;
   }
 
@@ -89,6 +86,13 @@ self.addEventListener('fetch', (event) => {
   // API/JSON/outros: network-first com fallback cache
   event.respondWith(networkFirst(request));
 });
+
+function resolveNavigationFallback(pathname = '/') {
+  if (pathname.startsWith('/sports/running')) return './sports/running/index.html';
+  if (pathname.startsWith('/sports/strength')) return './sports/strength/index.html';
+  if (pathname.startsWith('/sports/cross')) return './sports/cross/index.html';
+  return './index.html';
+}
 
 self.addEventListener('message', (event) => {
   if (!event.data) return;
