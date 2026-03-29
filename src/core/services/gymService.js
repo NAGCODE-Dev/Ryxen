@@ -1,5 +1,12 @@
 import { apiRequest } from './apiClient.js';
 
+function buildSportSuffix(params = {}) {
+  const search = new URLSearchParams();
+  if (params?.sportType) search.set('sportType', params.sportType);
+  const query = search.toString();
+  return query ? `?${query}` : '';
+}
+
 export async function createGym(payload) {
   return apiRequest('/gyms', { method: 'POST', body: payload });
 }
@@ -17,9 +24,7 @@ export async function listGymMembers(gymId) {
 }
 
 export async function listGymGroups(gymId, params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/gyms/${gymId}/groups${suffix}`, { method: 'GET' });
 }
 
@@ -32,9 +37,7 @@ export async function publishGymWorkout(gymId, payload) {
 }
 
 export async function getWorkoutFeed(params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/workouts/feed${suffix}`, { method: 'GET' });
 }
 
@@ -43,23 +46,22 @@ export async function getAccessContext() {
 }
 
 export async function getAthleteSummary(params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/athletes/me/summary${suffix}`, { method: 'GET' });
 }
 
+export async function getAthleteDashboard(params = {}) {
+  const suffix = buildSportSuffix(params);
+  return apiRequest(`/athletes/me/dashboard${suffix}`, { method: 'GET' });
+}
+
 export async function getAthleteResultsSummary(params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/athletes/me/results/summary${suffix}`, { method: 'GET' });
 }
 
 export async function getAthleteWorkoutsRecent(params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/athletes/me/workouts/recent${suffix}`, { method: 'GET' });
 }
 
@@ -68,16 +70,12 @@ export async function getImportedPlanSnapshot() {
 }
 
 export async function getAppStateSnapshot(params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/athletes/me/app-state${suffix}`, { method: 'GET' });
 }
 
 export async function saveAppStateSnapshot(payload, params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/athletes/me/app-state${suffix}`, { method: 'PUT', body: payload });
 }
 
@@ -90,9 +88,7 @@ export async function deleteImportedPlanSnapshot() {
 }
 
 export async function getGymInsights(gymId, params = {}) {
-  const search = new URLSearchParams();
-  if (params?.sportType) search.set('sportType', params.sportType);
-  const suffix = search.toString() ? `?${search.toString()}` : '';
+  const suffix = buildSportSuffix(params);
   return apiRequest(`/gyms/${gymId}/insights${suffix}`, { method: 'GET' });
 }
 

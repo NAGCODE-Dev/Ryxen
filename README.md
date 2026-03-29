@@ -214,8 +214,8 @@ Rankings disponíveis:
 Portal separado em framework:
 
 - URL: `/coach/`
-- frontend: [coach/index.html](/home/nagc/Downloads/CrossApp/coach/index.html)
-- runtime: [coach/main.js](/home/nagc/Downloads/CrossApp/coach/main.js)
+- frontend: `coach/index.html`
+- runtime: `coach/main.js`
 
 ## Documentação complementar
 

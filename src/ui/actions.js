@@ -692,6 +692,18 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
+        case 'settings:reset': {
+          const defaults = {
+            showLbsConversion: true,
+            showEmojis: true,
+            showObjectivesInWods: true,
+          };
+          await setUiState({ settings: defaults, modal: 'settings' });
+          toast('Configurações restauradas para o padrão');
+          await rerender();
+          return;
+        }
+
         case 'auth:switch': {
           const mode = el.dataset.mode === 'signup' ? 'signup' : 'signin';
           await patchUiState((s) => ({

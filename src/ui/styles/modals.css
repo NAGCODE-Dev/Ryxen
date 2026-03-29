@@ -79,6 +79,46 @@
   width: 100%;
 }
 
+.settings-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.settings-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+
+.settings-sectionTitle {
+  margin: 0;
+  font-size: 0.98rem;
+  letter-spacing: -0.01em;
+}
+
+.settings-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.settings-actionsUtility {
+  margin-top: 2px;
+}
+
+.settings-linkGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.settings-linkCard {
+  text-decoration: none;
+}
+
 .auth-switch {
   display: flex;
   gap: 10px;
@@ -186,6 +226,10 @@
   .auth-switch {
     display: grid;
     grid-template-columns: 1fr 1fr;
+  }
+
+  .settings-linkGrid {
+    grid-template-columns: 1fr;
   }
 }
 
