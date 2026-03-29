@@ -77,11 +77,17 @@ export function getWorkoutStats() {
   if (!workout) {
     return { exercises: 0, sets: 0, sections: 0 };
   }
-  
+
+  const sections = workout.blocks || workout.sections || [];
+
   return {
-    sections: workout.blocks?.length || workout.sections?.length || 0,
-    exercises: (workout.blocks || workout.sections || []).reduce((acc, s) => acc + (s.lines?.length || 0), 0),
-    sets: 0, // TODO: calcular sets totais
+    sections: sections.length,
+    exercises: sections.reduce((acc, s) => acc + (s.lines?.length || 0), 0),
+    sets: sections.reduce((acc, section) => {
+      return acc + (section.lines || []).reduce((lineAcc, rawLine) => {
+        return lineAcc + extractSetCount(rawLine);
+      }, 0);
+    }, 0),
   };
 }
 
@@ -91,4 +97,32 @@ export function getWorkoutStats() {
 export function hasWarnings() {
   const state = getState();
   return state.ui.hasWarnings || getMissingPRs().length > 0;
+}
+
+function extractSetCount(rawLine) {
+  const line = typeof rawLine === 'string'
+    ? rawLine
+    : String(rawLine?.raw || rawLine?.text || '');
+
+  if (!line) return 0;
+
+  const normalized = line.trim();
+
+  const setPatterns = [
+    /^(\d+)\s*[x×]\s*\d+/i,
+    /\b(\d+)\s*sets?\b/i,
+    /\bfor\s+(\d+)\s*sets?\b/i,
+    /^emom\s+(\d+)\b/i,
+    /^every\s+\d+\s*(?:min|mins|minute|minutes)\s*x\s*(\d+)\b/i,
+    /^(\d+)\s*rounds?\b/i,
+  ];
+
+  for (const pattern of setPatterns) {
+    const match = normalized.match(pattern);
+    if (!match) continue;
+    const value = Number(match[1]);
+    if (Number.isFinite(value) && value > 0) return value;
+  }
+
+  return 0;
 }

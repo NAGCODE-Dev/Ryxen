@@ -105,6 +105,7 @@ function setupVercelObservability() {
 }
 
 function registerServiceWorker() {
+  if (isNativePlatform()) return;
   if (!('serviceWorker' in navigator)) return;
 
   window.addEventListener('load', () => {
@@ -118,6 +119,16 @@ function registerServiceWorker() {
         console.error('Erro no Service Worker:', err);
       });
   });
+}
+
+function isNativePlatform() {
+  try {
+    if (window.Capacitor?.isNativePlatform?.()) return true;
+    const protocol = String(window.location?.protocol || '').toLowerCase();
+    return protocol === 'capacitor:' || protocol === 'file:' || protocol === 'https:' && window.location?.hostname === 'localhost';
+  } catch {
+    return false;
+  }
 }
 
 function applyAppContext() {

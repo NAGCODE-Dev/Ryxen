@@ -7,6 +7,7 @@ const STORAGE_KEY = 'crossapp-runtime-config';
 
 const defaults = {
   apiBaseUrl: '/api',
+  nativeApiBaseUrl: '',
   telemetryEnabled: true,
   auth: {
     googleClientId: '',
@@ -52,7 +53,11 @@ export function getRuntimeConfig() {
   const fromWindow = safeWindowConfig();
   const fromAppContext = safeAppContext();
   const fromStorage = safeStorageConfig();
-  return deepMerge(defaults, deepMerge(deepMerge(fromWindow, fromAppContext), fromStorage));
+  const merged = deepMerge(defaults, deepMerge(deepMerge(fromWindow, fromAppContext), fromStorage));
+  return {
+    ...merged,
+    apiBaseUrl: resolveApiBaseUrl(merged),
+  };
 }
 
 export function setRuntimeConfig(nextConfig) {
@@ -113,4 +118,31 @@ function deepMerge(base, override) {
 
 function isObject(v) {
   return v && typeof v === 'object' && !Array.isArray(v);
+}
+
+function resolveApiBaseUrl(config) {
+  const rawApiBaseUrl = String(config?.apiBaseUrl || '').trim();
+  const nativeApiBaseUrl = String(config?.nativeApiBaseUrl || '').trim();
+
+  if (isNativePlatform()) {
+    if (nativeApiBaseUrl) return nativeApiBaseUrl;
+    if (isAbsoluteUrl(rawApiBaseUrl)) return rawApiBaseUrl;
+    if (rawApiBaseUrl === '/api') return 'http://10.0.2.2:8787';
+  }
+
+  return rawApiBaseUrl;
+}
+
+function isAbsoluteUrl(value) {
+  return /^[a-z][a-z\d+\-.]*:\/\//i.test(String(value || '').trim());
+}
+
+function isNativePlatform() {
+  try {
+    if (window.Capacitor?.isNativePlatform?.()) return true;
+    const protocol = String(window.location?.protocol || '').toLowerCase();
+    return protocol === 'capacitor:' || protocol === 'file:' || protocol === 'https:' && window.location?.hostname === 'localhost';
+  } catch {
+    return false;
+  }
 }

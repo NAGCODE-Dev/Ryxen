@@ -101,6 +101,8 @@ KIWIFY_PRODUCT_PRO_ID=
 KIWIFY_PRODUCT_PERFORMANCE_ID=
 ```
 
+Mantenha `EXPOSE_RESET_CODE=false` em Render, staging e produção. Expor o código na resposta é aceitável apenas em desenvolvimento local controlado.
+
 ### Teste
 
 Depois do deploy:

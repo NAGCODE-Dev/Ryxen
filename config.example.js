@@ -1,5 +1,6 @@
 window.__CROSSAPP_CONFIG__ = {
   apiBaseUrl: 'https://your-backend.up.railway.app',
+  nativeApiBaseUrl: 'https://your-backend.up.railway.app',
   telemetryEnabled: true,
   auth: {
     googleClientId: 'your-google-client-id.apps.googleusercontent.com',

@@ -24,9 +24,13 @@ export const PORT = Number(process.env.PORT || 8787);
 export const DATABASE_URL = String(process.env.DATABASE_URL || '').trim();
 export const JWT_SECRET = String(process.env.JWT_SECRET || '').trim();
 export const FRONTEND_ORIGIN = String(process.env.FRONTEND_ORIGIN || (IS_PRODUCTION ? '' : '*')).trim();
+export const NATIVE_APP_ORIGINS = parseList(process.env.NATIVE_APP_ORIGINS || 'capacitor://localhost,https://localhost,http://localhost,ionic://localhost');
 export const ALLOWED_ORIGINS = FRONTEND_ORIGIN === '*'
   ? '*'
-  : parseList(FRONTEND_ORIGIN);
+  : Array.from(new Set([
+      ...parseList(FRONTEND_ORIGIN),
+      ...NATIVE_APP_ORIGINS,
+    ]));
 export const SUPPORT_EMAIL = String(process.env.SUPPORT_EMAIL || 'nagcode.contact@gmail.com').toLowerCase().trim();
 export const ADMIN_EMAILS = Array.from(new Set([
   ...parseList(process.env.ADMIN_EMAILS || ''),

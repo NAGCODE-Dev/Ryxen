@@ -31,7 +31,7 @@ services:
       SUPPORT_EMAIL: nagcode.contact@gmail.com
       ADMIN_EMAILS: nagcode.contact@gmail.com
       DEV_EMAILS: nagcode.contact@gmail.com
-      EXPOSE_RESET_CODE: "false"
+      EXPOSE_RESET_CODE: ${EXPOSE_RESET_CODE:-true}
       SMTP_FROM: nagcode.contact@gmail.com
     ports:
       - "8787:8787"

@@ -11,6 +11,7 @@ Checklist objetivo para liberar o app para 1 semana de teste com coach real.
 - [ ] `FRONTEND_ORIGIN` apontando para o frontend real
 - [ ] `JWT_SECRET` forte configurado
 - [ ] `EXPOSE_RESET_CODE=false`
+- [ ] SMTP ou Resend configurado para signup e reset de senha
 
 ## 2. Conta do coach
 

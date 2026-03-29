@@ -93,6 +93,8 @@ SMTP_PASS=
 SMTP_FROM=nagcode.contact@gmail.com
 ```
 
+Use `EXPOSE_RESET_CODE=false` em qualquer ambiente publicado. O modo com código exposto deve ficar restrito ao desenvolvimento local.
+
 ### Healthcheck
 
 Depois do deploy:

@@ -25,6 +25,7 @@ const fileConfig = await loadFileConfig();
 
 const runtimeConfig = deepMerge(fileConfig, {
   apiBaseUrl: process.env.CROSSAPP_API_BASE_URL || '/api',
+  nativeApiBaseUrl: process.env.CROSSAPP_NATIVE_API_BASE_URL || fileConfig?.nativeApiBaseUrl || process.env.CROSSAPP_API_BASE_URL || '',
   telemetryEnabled: process.env.CROSSAPP_TELEMETRY_ENABLED !== 'false',
   auth: {
     googleClientId: process.env.CROSSAPP_GOOGLE_CLIENT_ID || fileConfig?.auth?.googleClientId || '',

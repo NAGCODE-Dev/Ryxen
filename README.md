@@ -64,6 +64,12 @@ docker compose up -d
 - Backend direto: `http://localhost:8787`
 - Postgres: `localhost:5432`
 
+Notas para desenvolvimento local com Docker:
+
+- O `docker-compose.yml` habilita `EXPOSE_RESET_CODE=true` por padrão para destravar fluxo de auth local com email de desenvolvimento.
+- Para simular produção localmente, rode `EXPOSE_RESET_CODE=false docker compose up -d`.
+- Nunca publique ambiente compartilhado ou produção com `EXPOSE_RESET_CODE=true`.
+
 ### Sem Docker
 
 Frontend:
@@ -80,6 +86,12 @@ cp .env.example .env
 npm install
 npm run start
 ```
+
+Para desenvolvimento sem SMTP:
+
+- use um email listado em `DEV_EMAILS`
+- mantenha `EXPOSE_RESET_CODE=true` apenas em ambiente local
+- em staging/produção, configure SMTP ou Resend e use `EXPOSE_RESET_CODE=false`
 
 ## Deploy recomendado
 
@@ -152,6 +164,7 @@ APIs já preparadas para:
 
 - Em ambiente local, o backend só expõe o código na resposta para a conta de desenvolvimento e apenas se `EXPOSE_RESET_CODE=true`.
 - Se SMTP não estiver configurado, o backend usa conta de teste Ethereal e retorna `previewUrl` quando possível.
+- Em produção, `EXPOSE_RESET_CODE` deve permanecer `false`.
 
 ## Configuração importante
 
@@ -190,6 +203,7 @@ CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL=
 
 Notas rápidas:
 
+- Em Docker local, o Compose pode sobrescrever `EXPOSE_RESET_CODE` para facilitar smoke tests de autenticação.
 - Para produção inicial com Resend, use `RESEND_FROM=onboarding@resend.dev` até verificar seu domínio.
 - `SENTRY_DSN` deve ficar vazio se você ainda não tiver um DSN real.
 - O backend agora poda automaticamente tabelas operacionais (`telemetry_events`, `ops_events`, `email_jobs`, tokens e `sync_snapshots`).
