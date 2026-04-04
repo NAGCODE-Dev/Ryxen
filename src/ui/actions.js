@@ -1400,10 +1400,9 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           await setUiState({
             settings: { showLbsConversion, showEmojis, showObjectivesInWods },
-            modal: null,
           });
 
-          toast('Configurações salvas');
+          toast('Preferências salvas');
           await rerender();
           return;
         }
@@ -1934,6 +1933,40 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
   // Dia manual (select)
   root.addEventListener('change', async (e) => {
+    const settingsToggle = e.target?.closest?.('[data-setting-toggle]');
+    if (settingsToggle) {
+      const showLbsConversion = !!root.querySelector('#setting-showLbsConversion')?.checked;
+      const showEmojis = !!root.querySelector('#setting-showEmojis')?.checked;
+      const showObjectivesInWods = !!root.querySelector('#setting-showObjectives')?.checked;
+
+      try {
+        if (typeof getAppBridge()?.setPreferences === 'function') {
+          const corePrefsResult = await getAppBridge().setPreferences({
+            showLbsConversion,
+            showEmojis,
+            showGoals: showObjectivesInWods,
+            autoConvertLbs: showLbsConversion,
+          });
+
+          if (!corePrefsResult?.success) {
+            throw new Error(corePrefsResult?.error || 'Falha ao salvar preferências');
+          }
+        }
+
+        await patchUiState((s) => ({
+          ...s,
+          settings: { showLbsConversion, showEmojis, showObjectivesInWods },
+        }));
+
+        toast('Preferência salva');
+        await rerender();
+      } catch (err) {
+        toast(err?.message || 'Erro ao salvar preferência');
+        console.error(err);
+      }
+      return;
+    }
+
     const el = e.target.closest('[data-action="day:set"]');
     if (!el) return;
 

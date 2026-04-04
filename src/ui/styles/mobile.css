@@ -231,6 +231,10 @@
     grid-template-columns: 1fr;
   }
 
+  .settings-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
   .crossai-historyHead,
   .crossai-historyCardHead,
   .crossai-historyActions,
