@@ -13,6 +13,16 @@ import {
 } from '../core/services/subscriptionService.js';
 import { createHydrationController } from '../app/hydration.js';
 import { getAppBridge } from '../app/bridge.js';
+import {
+  getCrossAiMeta,
+  explainWorkout,
+  getWorkoutStrategy,
+  adaptWorkout,
+  analyzeWorkoutResult,
+  importWorkoutWithAI,
+  chatWithCoach,
+  getResearchAnswer,
+} from '../core/services/crossAiService.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
@@ -21,6 +31,38 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
   const IMAGE_COMPRESS_THRESHOLD_BYTES = 8 * 1024 * 1024;
   const IMAGE_TARGET_MAX_BYTES = 4 * 1024 * 1024;
   const IMAGE_MAX_DIMENSION = 2200;
+  const CROSSAI_ACTIONS = {
+    explainWorkout: {
+      routeKey: 'explainWorkout',
+      call: explainWorkout,
+      buildPayload: () => serializeWorkoutForCrossAi('Explique o treino atual do atleta.'),
+    },
+    strategy: {
+      routeKey: 'strategy',
+      call: getWorkoutStrategy,
+      buildPayload: () => serializeWorkoutForCrossAi('Monte a estratégia ideal para o treino atual do atleta.'),
+    },
+    adaptWorkout: {
+      routeKey: 'adaptWorkout',
+      call: adaptWorkout,
+      buildPayload: () => serializeWorkoutForCrossAi('Adapte o treino atual do atleta preservando o estímulo original.'),
+    },
+    analyzeResult: {
+      routeKey: 'analyzeResult',
+      call: analyzeWorkoutResult,
+      buildPayload: () => serializeAnalyzeResultPayload(),
+    },
+    importWorkout: {
+      routeKey: 'importWorkout',
+      call: importWorkoutWithAI,
+      buildPayload: () => serializeImportWorkoutPayload(),
+    },
+    researchAnswer: {
+      routeKey: 'researchAnswer',
+      call: getResearchAnswer,
+      buildPayload: () => serializeResearchAnswerPayload(),
+    },
+  };
 
   let googleScriptPromise = null;
   let googleInitializedClientId = '';
@@ -60,6 +102,609 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const overviewBenefits = uiState?.athleteOverview?.athleteBenefits || null;
     const accessBenefits = accessContext?.data?.athleteBenefits || accessContext?.athleteBenefits || null;
     return normalizeAthleteBenefits(overviewBenefits || accessBenefits || null);
+  }
+
+  function emptyCrossAiMeta(message = '') {
+    return {
+      status: 'idle',
+      enabled: false,
+      configured: false,
+      model: '',
+      version: 'v1',
+      routes: {
+        explainWorkout: false,
+        strategy: false,
+        adaptWorkout: false,
+        analyzeResult: false,
+        importWorkout: false,
+        chatCoach: false,
+        researchAnswer: false,
+      },
+      message,
+    };
+  }
+
+  function buildCrossAiRoutesMap(routes = []) {
+    return {
+      explainWorkout: routes.some((item) => item?.mode === 'explain-workout' && item?.available !== false),
+      strategy: routes.some((item) => item?.mode === 'strategy' && item?.available !== false),
+      adaptWorkout: routes.some((item) => item?.mode === 'adapt-workout' && item?.available !== false),
+      analyzeResult: routes.some((item) => item?.mode === 'analyze-result' && item?.available !== false),
+      importWorkout: routes.some((item) => item?.mode === 'import-workout' && item?.available !== false),
+      chatCoach: routes.some((item) => item?.mode === 'chat-coach' && item?.available !== false),
+      researchAnswer: routes.some((item) => item?.mode === 'research-answer' && item?.available !== false),
+    };
+  }
+
+  async function refreshCrossAiMeta() {
+    const profile = getAppBridge()?.getProfile?.()?.data || null;
+    if (!profile?.email) {
+      await patchUiState((s) => ({
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          meta: emptyCrossAiMeta('Entre para usar a CrossAI.'),
+        },
+      }));
+      await rerender();
+      return;
+    }
+
+    await patchUiState((s) => ({
+      ...s,
+      crossAi: {
+        ...(s.crossAi || {}),
+        meta: {
+          ...(s.crossAi?.meta || emptyCrossAiMeta()),
+          status: 'loading',
+        },
+      },
+    }));
+    await rerender();
+
+    try {
+      const result = await getCrossAiMeta();
+      const routes = buildCrossAiRoutesMap(result?.routes || []);
+      await patchUiState((s) => ({
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          meta: {
+            status: 'ready',
+            enabled: !!result?.configured,
+            configured: !!result?.configured,
+            model: String(result?.model || s.crossAi?.meta?.model || ''),
+            version: String(result?.version || 'v1'),
+            routes,
+            message: result?.configured ? '' : 'A IA não está disponível no momento.',
+          },
+        },
+      }));
+    } catch (error) {
+      const message = error?.status === 401
+        ? 'Entre para usar a CrossAI.'
+        : error?.message || 'A IA não está disponível no momento.';
+      await patchUiState((s) => ({
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          meta: {
+            ...emptyCrossAiMeta(message),
+            status: 'error',
+          },
+        },
+      }));
+    }
+
+    await rerender();
+  }
+
+  function buildCrossAiWorkoutRef() {
+    const state = getAppBridge()?.getState?.() || {};
+    const workout = state?.workoutOfDay || state?.workout || null;
+    const day = String(workout?.day || state?.currentDay || 'Hoje');
+    const week = state?.activeWeekNumber ?? '0';
+
+    return {
+      workoutId: `${week}:${day.toLowerCase()}`,
+      title: state?.workoutMeta?.title || workout?.title || workout?.day || 'Treino do dia',
+      dayLabel: day,
+      weekNumber: week,
+      source: state?.workoutMeta?.source || null,
+    };
+  }
+
+  function serializeWorkoutForCrossAi(message = 'Analise o treino atual do atleta.') {
+    const state = getAppBridge()?.getState?.() || {};
+    const workout = state?.workoutOfDay || state?.workout || null;
+    const profile = getAppBridge()?.getProfile?.()?.data || null;
+    const blocks = Array.isArray(workout?.blocks) ? workout.blocks : [];
+    const workoutRef = buildCrossAiWorkoutRef();
+
+    return {
+      message,
+      workout: {
+        day: workout?.day || state?.currentDay || 'Hoje',
+        title: workoutRef.title,
+        description: state?.workoutMeta?.description || workout?.description || '',
+        source: workoutRef.source,
+        blocks: blocks.map((block) => ({
+          title: String(block?.title || block?.type || 'Bloco').trim(),
+          lines: Array.isArray(block?.lines)
+            ? block.lines
+              .map((line) => {
+                if (typeof line === 'string') return line;
+                if (line?.raw) return line.raw;
+                if (line?.calculated) return line.calculated;
+                if (line?.label) return line.label;
+                return '';
+              })
+              .filter(Boolean)
+            : [],
+        })),
+      },
+      athleteProfile: {
+        name: profile?.name || null,
+        email: profile?.email || null,
+      },
+      workoutContext: {
+        currentDay: state?.currentDay || null,
+        activeWeekNumber: state?.activeWeekNumber || null,
+        warnings: workout?.warnings || [],
+      },
+      workoutRef,
+    };
+  }
+
+  function serializeAnalyzeResultPayload() {
+    const base = serializeWorkoutForCrossAi('Analise o resultado do atleta no treino atual.');
+    const ui = getUiState?.() || {};
+    const draft = ui?.crossAi?.drafts?.analyzeResult || {};
+    const score = String(draft.result || '').trim();
+    const notes = String(draft.notes || '').trim();
+    const splits = String(draft.splits || '').trim();
+
+    if (!score) {
+      throw new Error('Informe o resultado final do treino');
+    }
+
+    return {
+      ...base,
+      result: {
+        score,
+        splits,
+      },
+      athleteNotes: notes,
+    };
+  }
+
+  function serializeImportWorkoutPayload() {
+    const base = serializeWorkoutForCrossAi('Extraia e organize o treino enviado pelo usuário.');
+    const ui = getUiState?.() || {};
+    const draft = ui?.crossAi?.drafts?.importWorkout || {};
+    const sourceText = String(draft.sourceText || '').trim();
+    const context = String(draft.context || '').trim();
+
+    if (!sourceText) {
+      throw new Error('Cole o treino ou o texto que você quer organizar');
+    }
+
+    return {
+      ...base,
+      sourceText,
+      importContext: context,
+    };
+  }
+
+  function serializeResearchAnswerPayload() {
+    const ui = getUiState?.() || {};
+    const draft = ui?.crossAi?.drafts?.researchAnswer || {};
+    const question = String(draft.question || '').trim();
+
+    if (!question) {
+      throw new Error('Escreva sua pergunta para consultar a base científica');
+    }
+
+    return {
+      question,
+      sources: ['science-library'],
+      workoutContext: serializeWorkoutForCrossAi('Use o contexto do treino apenas se ele ajudar a interpretar a pergunta.').workoutContext,
+    };
+  }
+
+  async function patchCrossAiDraft(mode, nextDraft) {
+    await patchUiState((s) => ({
+      ...s,
+      crossAi: {
+        ...(s.crossAi || {}),
+        drafts: {
+          ...(s.crossAi?.drafts || {}),
+          [mode]: {
+            ...((s.crossAi?.drafts || {})[mode] || {}),
+            ...(nextDraft || {}),
+          },
+        },
+      },
+    }));
+  }
+
+  function createCrossAiMessage(role, text) {
+    return {
+      id: `${role}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      role: role === 'user' ? 'user' : 'assistant',
+      text: String(text || '').trim(),
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  function getDefaultCoachQuickActions() {
+    return [
+      'Explica esse treino melhor',
+      'Me dá pacing',
+      'Adapta pra hoje',
+      'O que evitar nesse treino?',
+    ];
+  }
+
+  function getCurrentCoachBucket(ui = getUiState?.() || {}) {
+    const workoutRef = buildCrossAiWorkoutRef();
+    return ui?.crossAi?.coachByWorkout?.[workoutRef.workoutId] || null;
+  }
+
+  function getCoachConversationPayload(messages = []) {
+    return messages
+      .filter((message) => message?.role && message?.text)
+      .slice(-8)
+      .map((message) => ({
+        role: message.role === 'user' ? 'user' : 'assistant',
+        text: String(message.text || ''),
+      }));
+  }
+
+  function buildChatCoachPayload(message, messages) {
+    const base = serializeWorkoutForCrossAi('Atue como um coach conversacional prático e objetivo para o treino atual.');
+    return {
+      ...base,
+      message,
+      conversation: getCoachConversationPayload(messages),
+    };
+  }
+
+  async function ensureCoachChatReady() {
+    const workoutRef = buildCrossAiWorkoutRef();
+    const initialMessage = `Vi seu treino de ${workoutRef.dayLabel}. Posso te ajudar com estratégia, adaptação ou risco de fadiga.`;
+
+    await patchUiState((s) => {
+      const coachByWorkout = { ...(s.crossAi?.coachByWorkout || {}) };
+      const current = coachByWorkout[workoutRef.workoutId] || {
+        input: '',
+        loading: false,
+        error: '',
+        updatedAt: '',
+        messages: [],
+        quickActions: [],
+      };
+
+      if (!current.messages.length) {
+        current.messages = [createCrossAiMessage('assistant', initialMessage)];
+      }
+      if (!current.quickActions?.length) {
+        current.quickActions = getDefaultCoachQuickActions();
+      }
+
+      coachByWorkout[workoutRef.workoutId] = current;
+      return {
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          coachByWorkout,
+        },
+      };
+    });
+  }
+
+  async function openCoachChat() {
+    const currentUi = getUiState?.() || {};
+    const meta = currentUi?.crossAi?.meta || emptyCrossAiMeta();
+    if (!getAppBridge()?.getProfile?.()?.data?.email) {
+      throw new Error('Entre para usar a CrossAI');
+    }
+    if (!meta.configured) {
+      throw new Error(meta.message || 'A IA não está disponível no momento');
+    }
+    if (!meta.routes?.chatCoach) {
+      throw new Error('Essa ação ainda não está disponível');
+    }
+
+    await ensureCoachChatReady();
+    await patchUiState((s) => ({
+      ...s,
+      modal: 'crossai',
+      crossAi: {
+        ...(s.crossAi || {}),
+        activeAction: 'chatCoach',
+      },
+    }));
+    await rerender();
+  }
+
+  async function patchCoachChat(next) {
+    const workoutRef = buildCrossAiWorkoutRef();
+    await patchUiState((s) => {
+      const coachByWorkout = { ...(s.crossAi?.coachByWorkout || {}) };
+      const current = coachByWorkout[workoutRef.workoutId] || {
+        input: '',
+        loading: false,
+        error: '',
+        updatedAt: '',
+        messages: [],
+        quickActions: getDefaultCoachQuickActions(),
+      };
+
+      coachByWorkout[workoutRef.workoutId] = {
+        ...current,
+        ...(next || {}),
+      };
+
+      return {
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          coachByWorkout,
+        },
+      };
+    });
+  }
+
+  function resolveCoachQuickAction(label = '') {
+    const normalized = String(label || '').trim().toLowerCase();
+    if (!normalized) return { type: 'chat', message: '' };
+    if (normalized.includes('pacing') || normalized.includes('estratégia') || normalized.includes('estrategia')) {
+      return { type: 'route', mode: 'strategy' };
+    }
+    if (normalized.includes('adapta')) {
+      return { type: 'route', mode: 'adaptWorkout' };
+    }
+    if (normalized.includes('explica')) {
+      return { type: 'route', mode: 'explainWorkout' };
+    }
+    return { type: 'chat', message: label };
+  }
+
+  async function sendCoachMessage(rawMessage) {
+    const message = String(rawMessage || '').trim();
+    if (!message) {
+      throw new Error('Escreva sua pergunta para falar com o coach');
+    }
+
+    await ensureCoachChatReady();
+    const existingBucket = getCurrentCoachBucket() || {};
+    const currentMessages = Array.isArray(existingBucket.messages) ? existingBucket.messages : [];
+    const nextMessages = [...currentMessages, createCrossAiMessage('user', message)];
+
+    await patchCoachChat({
+      input: '',
+      loading: true,
+      error: '',
+      messages: nextMessages,
+    });
+    await rerender();
+
+    try {
+      const response = await chatWithCoach(buildChatCoachPayload(message, nextMessages));
+      const reply = String(response?.data?.reply || '').trim();
+      const quickActions = Array.isArray(response?.data?.quickActions) && response.data.quickActions.length
+        ? response.data.quickActions
+        : getDefaultCoachQuickActions();
+      const updatedMessages = reply
+        ? [...nextMessages, createCrossAiMessage('assistant', reply)]
+        : nextMessages;
+
+      await patchCoachChat({
+        loading: false,
+        error: '',
+        updatedAt: new Date().toISOString(),
+        quickActions,
+        messages: updatedMessages,
+      });
+    } catch (error) {
+      await patchCoachChat({
+        loading: false,
+        error: error?.message || 'Erro ao falar com o coach',
+        messages: nextMessages,
+      });
+      throw error;
+    }
+
+    await rerender();
+  }
+
+  async function openCrossAiAction(mode) {
+    const definition = CROSSAI_ACTIONS[mode];
+    if (!definition) {
+      throw new Error('Ação da IA inválida');
+    }
+
+    const currentUi = getUiState?.() || {};
+    const meta = currentUi?.crossAi?.meta || emptyCrossAiMeta();
+    if (!getAppBridge()?.getProfile?.()?.data?.email) {
+      throw new Error('Entre para usar a CrossAI');
+    }
+    if (!meta.configured) {
+      throw new Error(meta.message || 'A IA não está disponível no momento');
+    }
+    if (!meta.routes?.[definition.routeKey]) {
+      throw new Error('Essa ação ainda não está disponível');
+    }
+
+    await patchUiState((s) => ({
+      ...s,
+      modal: 'crossai',
+      crossAi: {
+        ...(s.crossAi || {}),
+        activeAction: mode,
+        actions: {
+          ...(s.crossAi?.actions || {}),
+          [mode]: {
+            ...(s.crossAi?.actions?.[mode] || {}),
+            loading: false,
+            error: '',
+            response: mode === 'analyzeResult' || mode === 'importWorkout'
+              ? null
+              : (s.crossAi?.actions?.[mode]?.response || null),
+          },
+        },
+      },
+    }));
+    await rerender();
+  }
+
+  function buildCrossAiHistoryEntry(actionKey, response) {
+    return {
+      actionKey,
+      mode: String(response?.mode || ''),
+      version: String(response?.version || 'v1'),
+      data: response?.data || {},
+      meta: response?.meta || {},
+      response,
+      savedAt: new Date().toISOString(),
+    };
+  }
+
+  async function saveCrossAiHistory(actionKey, response) {
+    const workoutRef = buildCrossAiWorkoutRef();
+    const entry = buildCrossAiHistoryEntry(actionKey, response);
+
+    await patchUiState((s) => {
+      const historyByWorkout = { ...(s.crossAi?.historyByWorkout || {}) };
+      const current = historyByWorkout[workoutRef.workoutId] || {
+        workoutId: workoutRef.workoutId,
+        title: workoutRef.title,
+        dayLabel: workoutRef.dayLabel,
+        updatedAt: '',
+        entries: [],
+      };
+      const previousEntries = Array.isArray(current.entries) ? current.entries : [];
+      historyByWorkout[workoutRef.workoutId] = {
+        ...current,
+        title: workoutRef.title,
+        dayLabel: workoutRef.dayLabel,
+        updatedAt: entry.savedAt,
+        entries: [entry, ...previousEntries.filter((item) => item?.actionKey !== actionKey)].slice(0, 8),
+      };
+
+      return {
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          historyByWorkout,
+        },
+      };
+    });
+  }
+
+  async function viewCrossAiHistoryEntry(mode) {
+    const workoutRef = buildCrossAiWorkoutRef();
+    const ui = getUiState?.() || {};
+    const bucket = ui?.crossAi?.historyByWorkout?.[workoutRef.workoutId] || null;
+    const entry = bucket?.entries?.find((item) => item?.actionKey === mode) || null;
+    if (!entry?.response) {
+      throw new Error('Nenhum insight salvo para esta ação');
+    }
+
+    await patchUiState((s) => ({
+      ...s,
+      modal: 'crossai',
+      crossAi: {
+        ...(s.crossAi || {}),
+        activeAction: mode,
+        actions: {
+          ...(s.crossAi?.actions || {}),
+          [mode]: {
+            loading: false,
+            error: '',
+            response: entry.response,
+          },
+        },
+      },
+    }));
+    await rerender();
+  }
+
+  async function runCrossAiAction(mode) {
+    const definition = CROSSAI_ACTIONS[mode];
+    if (!definition) {
+      throw new Error('Ação da IA inválida');
+    }
+
+    const currentUi = getUiState?.() || {};
+    const meta = currentUi?.crossAi?.meta || emptyCrossAiMeta();
+    if (!getAppBridge()?.getProfile?.()?.data?.email) {
+      throw new Error('Entre para usar a CrossAI');
+    }
+    if (!meta.configured) {
+      throw new Error(meta.message || 'A IA não está disponível no momento');
+    }
+    if (!meta.routes?.[definition.routeKey]) {
+      throw new Error('Essa ação ainda não está disponível');
+    }
+
+    await patchUiState((s) => ({
+      ...s,
+      modal: 'crossai',
+      crossAi: {
+        ...(s.crossAi || {}),
+        activeAction: mode,
+        actions: {
+          ...(s.crossAi?.actions || {}),
+          [mode]: {
+            loading: true,
+            error: '',
+            response: s.crossAi?.actions?.[mode]?.response || null,
+          },
+        },
+      },
+    }));
+    await rerender();
+
+    try {
+      const response = await definition.call(definition.buildPayload());
+      await saveCrossAiHistory(mode, response);
+      await patchUiState((s) => ({
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          activeAction: mode,
+          actions: {
+            ...(s.crossAi?.actions || {}),
+            [mode]: {
+              loading: false,
+              error: '',
+              response,
+            },
+          },
+        },
+      }));
+    } catch (error) {
+      await patchUiState((s) => ({
+        ...s,
+        crossAi: {
+          ...(s.crossAi || {}),
+          activeAction: mode,
+          actions: {
+            ...(s.crossAi?.actions || {}),
+            [mode]: {
+              loading: false,
+              error: error?.message || 'Erro ao executar ação da IA',
+              response: null,
+            },
+          },
+        },
+      }));
+      throw error;
+    }
+
+    await rerender();
   }
 
   function isNativeAppRuntime() {
@@ -342,6 +987,20 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     filterPrs(root, t.value);
   });
 
+  root.addEventListener('input', async (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    const field = target.dataset.crossaiField;
+    const mode = target.dataset.crossaiMode;
+    const chatInput = target.dataset.crossaiChatInput;
+    if (chatInput === '1') {
+      await patchCoachChat({ input: target.value || '', error: '' });
+      return;
+    }
+    if (!field || !mode) return;
+    await patchCrossAiDraft(mode, { [field]: target.value || '' });
+  });
+
   function filterPrs(root, query) {
     const q = String(query || '').trim().toUpperCase();
     const table = root.querySelector('#ui-prsTable');
@@ -495,6 +1154,12 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           return;
         }
 
+        case 'crossai:run': {
+          const mode = String(el.dataset.mode || '').trim();
+          await runCrossAiAction(mode);
+          return;
+        }
+
         case 'workout:export': {
           await setUiState({ modal: null });
           const st = getAppBridge()?.getState?.() || {};
@@ -609,6 +1274,57 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           if (modal === 'prs') root.querySelector('#ui-prsSearch')?.focus();
           if (modal === 'auth') root.querySelector('#auth-email')?.focus();
+          return;
+        }
+
+        case 'crossai:open-form': {
+          const mode = String(el.dataset.mode || '').trim();
+          await openCrossAiAction(mode);
+          return;
+        }
+
+        case 'crossai:coach-open': {
+          await openCoachChat();
+          return;
+        }
+
+        case 'crossai:submit': {
+          const mode = String(el.dataset.mode || '').trim();
+          await runCrossAiAction(mode);
+          return;
+        }
+
+        case 'crossai:view-history': {
+          const mode = String(el.dataset.mode || '').trim();
+          await viewCrossAiHistoryEntry(mode);
+          return;
+        }
+
+        case 'crossai:rerun': {
+          const mode = String(el.dataset.mode || '').trim();
+          if (mode === 'analyzeResult' || mode === 'importWorkout') {
+            await openCrossAiAction(mode);
+          } else {
+            await runCrossAiAction(mode);
+          }
+          return;
+        }
+
+        case 'crossai:coach-send': {
+          const ui = getUiState?.() || {};
+          const message = ui?.crossAi?.coachByWorkout?.[buildCrossAiWorkoutRef().workoutId]?.input || '';
+          await sendCoachMessage(message);
+          return;
+        }
+
+        case 'crossai:coach-quick': {
+          const label = String(el.dataset.label || '').trim();
+          const resolved = resolveCoachQuickAction(label);
+          if (resolved.type === 'route' && resolved.mode) {
+            await runCrossAiAction(resolved.mode);
+            return;
+          }
+          await sendCoachMessage(resolved.message || label);
           return;
         }
 
@@ -775,6 +1491,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await setUiState({ modal: null, authMode: 'signin', signupVerification: {} });
           toast(mode === 'signup' ? 'Conta criada' : 'Login efetuado');
           await rerender();
+          await refreshCrossAiMeta();
           const currentPage = getUiState?.()?.currentPage || 'today';
           if (shouldHydratePage(currentPage)) {
             hydratePage(profile, currentPage, null);
@@ -878,6 +1595,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           invalidateHydrationCache();
           toast('Sessão atualizada');
           await rerender();
+          await refreshCrossAiMeta();
           if (shouldHydratePage(ui?.currentPage || 'today')) {
             hydratePage(profile, ui?.currentPage || 'today', ui?.coachPortal?.selectedGymId || null);
           }
@@ -920,7 +1638,21 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         case 'auth:signout': {
           await getAppBridge().signOut();
           invalidateHydrationCache();
-          await setUiState({ modal: null, authMode: 'signin', coachPortal: emptyCoachPortal(), athleteOverview: emptyAthleteOverview(), admin: { overview: null, query: '' } });
+          await setUiState({
+            modal: null,
+            authMode: 'signin',
+            coachPortal: emptyCoachPortal(),
+            athleteOverview: emptyAthleteOverview(),
+            admin: { overview: null, query: '' },
+            crossAi: {
+              meta: emptyCrossAiMeta('Entre para usar a CrossAI.'),
+              activeAction: null,
+              actions: {},
+              drafts: {},
+              historyByWorkout: {},
+              coachByWorkout: {},
+            },
+          });
           toast('Sessão encerrada');
           await rerender();
           return;
@@ -1225,6 +1957,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     try {
       await maybePrimeCheckoutIntentFromUrl();
       await ensureGoogleSignInUi();
+      await refreshCrossAiMeta();
       if (peekCheckoutIntent() && hasCheckoutAuth() && getAppBridge()?.getProfile?.()?.data?.email) {
         await maybeResumePendingCheckout();
       }

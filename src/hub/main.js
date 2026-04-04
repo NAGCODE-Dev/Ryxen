@@ -86,33 +86,33 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             </div>
             <div class="hub-actions">
               <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
-                Abrir ${escapeHtml(labelForSport(selectedSport))}
+                Sou atleta
               </button>
-              <a class="hub-secondaryAction" href="/coach/index.html">Entrar no Coach Portal</a>
+              <a class="hub-secondaryAction" href="/coach/index.html">Sou coach / box</a>
             </div>
             <div class="hub-meta">
-              <span>Fluxo principal pronto para Cross</span>
+              <span>Entrada mais rápida para o atleta</span>
               <span>${hasBeta ? 'Running e Strength em expansão' : 'Expansão modular para outras modalidades'}</span>
               <span>Conta única, experiências separadas</span>
             </div>
           </div>
 
           <aside class="hub-heroPanel">
-            <div class="hub-panelEyebrow">Escolha atual</div>
-            <h2>${escapeHtml(selectedSportMeta?.title || 'Cross / Conditioning')}</h2>
-            <p>${escapeHtml(selectedSportMeta?.description || 'Treino do dia, histórico, importação e coach no mesmo fluxo.')}</p>
+            <div class="hub-panelEyebrow">Entrada principal</div>
+            <h2>Dois caminhos. Sem confusão.</h2>
+            <p>Quem treina entra no app do atleta. Quem organiza o box entra no portal do coach. O resto aparece depois, no contexto certo.</p>
             <div class="hub-panelStats">
               <div class="hub-stat">
-                <strong>Solo</strong>
-                <span>Importe treino, registre PRs e acompanhe progresso.</span>
+                <strong>Atleta</strong>
+                <span>Treino do dia, PRs, histórico, estratégia e IA no fluxo principal.</span>
               </div>
               <div class="hub-stat">
                 <strong>Coach</strong>
-                <span>Publique treinos, opere grupos e conecte atletas sem misturar interfaces.</span>
+                <span>Publicação, grupos, atletas e operação em uma interface separada.</span>
               </div>
               <div class="hub-stat">
-                <strong>Conta conectada</strong>
-                <span>Alternância entre treino enviado e treino importado pelo atleta.</span>
+                <strong>${escapeHtml(selectedSportMeta?.title || 'Cross / Conditioning')}</strong>
+                <span>${escapeHtml(selectedSportMeta?.description || 'Treino do dia, histórico, importação e coach no mesmo fluxo.')}</span>
               </div>
             </div>
           </aside>
@@ -138,26 +138,21 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
         <div class="hub-sectionHeader">
           <div>
             <div class="hub-sectionKicker">Escolha seu fluxo</div>
-            <h2>Entre pelo lado certo do produto.</h2>
+            <h2>Escolha só o seu papel agora.</h2>
           </div>
-          <p>O app do atleta e o portal do coach compartilham conta e contexto, mas não competem pela mesma interface.</p>
+          <p>Primeiro atleta ou coach. As variações aparecem depois, sem exigir que a pessoa entenda toda a arquitetura antes de começar.</p>
         </div>
         <div class="hub-grid hub-grid-roles">
-          ${renderRoleCard('Atleta solo', 'Para quem quer treinar com clareza sem depender do box estar online o tempo todo.', [
+          ${renderRoleCard('Sou atleta', 'Para quem quer abrir o treino, importar rotina, acompanhar PRs e usar a IA sem perder tempo com operação do box.', [
             'Importa treino e mantém histórico',
-            'Registra PRs, medidas e rotina',
-            'Usa o app mesmo fora do modo coach'
-          ], `Abrir ${labelForSport(selectedSport)}`, lastSportUrl, selectedSport, true)}
-          ${renderRoleCard('Atleta conectado', 'Para quem recebe treino do coach, mas ainda quer autonomia para consultar e adaptar a própria rotina.', [
-            'Recebe treino publicado pelo coach',
-            'Alterna entre treino enviado e treino importado',
-            'Mantém a experiência do atleta sem poluição operacional'
-          ], 'Entrar como atleta', lastSportUrl, selectedSport, false)}
-          ${renderRoleCard('Coach / Box', 'Para operação, publicação e organização do treino em escala, com portal separado.', [
+            'Recebe estratégia, adaptação e análise da IA',
+            'Continua usando mesmo sem coach online'
+          ], 'Entrar como atleta', lastSportUrl, selectedSport, true)}
+          ${renderRoleCard('Sou coach / box', 'Para operação, publicação e organização do treino em escala, com portal separado da rotina do atleta.', [
             'Gerencia grupos e atletas',
             'Publica treino por contexto',
             'Centraliza rotina operacional do box'
-          ], 'Abrir Coach Portal', '/coach/index.html', 'coach', false)}
+          ], 'Entrar como coach', '/coach/index.html', 'coach', false)}
         </div>
       </section>
 
@@ -186,14 +181,14 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
         <div class="hub-ctaCard">
           <div>
             <div class="hub-sectionKicker">Comece pelo essencial</div>
-            <h2>Se você é atleta, abra o app. Se você opera o treino do box, entre no portal.</h2>
-            <p>O objetivo aqui não é mostrar vinte menus. É deixar claro o caminho certo de entrada para cada perfil.</p>
+            <h2>Entre pelo lado certo e o resto aparece no momento certo.</h2>
+            <p>Atleta entra para ver treino, histórico e IA. Coach entra para operar o box. Menos decisão no início, mais clareza no uso.</p>
           </div>
           <div class="hub-actions">
             <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
-              Abrir ${escapeHtml(labelForSport(selectedSport))}
+              Sou atleta
             </button>
-            <a class="hub-secondaryAction" href="/coach/index.html">Abrir Coach Portal</a>
+            <a class="hub-secondaryAction" href="/coach/index.html">Sou coach / box</a>
           </div>
         </div>
       </section>

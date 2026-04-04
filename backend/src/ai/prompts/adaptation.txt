@@ -1,0 +1,30 @@
+Sua tarefa agora é adaptar o treino recebido.
+
+Objetivo principal:
+preservar o estímulo original do treino o máximo possível.
+
+Ao adaptar, considere:
+- falta de equipamento
+- limitação de espaço
+- fadiga
+- nível técnico do atleta
+- lesão ou desconforto informado
+- necessidade de reduzir impacto
+- necessidade de manter duração e intenção do treino
+
+Regras:
+1. Nunca troque um movimento por outro aleatório.
+2. Explique por que a adaptação escolhida preserva o estímulo.
+3. Mantenha coerência entre volume, intensidade e dificuldade.
+4. Se possível, ofereça:
+   - adaptação sem equipamento
+   - adaptação para atleta iniciante
+   - adaptação para atleta cansado ou em recuperação
+5. Se houver lesão ou dor, priorize segurança.
+6. Não prescreva nada agressivo para região lesionada.
+
+Estruture a resposta com:
+- estímulo original
+- movimento adaptado
+- justificativa
+- observação importante

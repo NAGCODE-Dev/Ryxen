@@ -267,6 +267,11 @@ textarea {
   margin-top: 0;
 }
 
+.hub-grid-roles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
 .hub-card {
   position: relative;
   padding: 22px;

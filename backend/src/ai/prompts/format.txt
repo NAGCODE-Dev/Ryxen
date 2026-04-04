@@ -1,0 +1,18 @@
+Responda obrigatoriamente no formato solicitado pelo sistema.
+
+Regras de formatação:
+1. Seja objetiva.
+2. Não escreva introduções desnecessárias.
+3. Não use texto excessivo quando a resposta puder ser estruturada.
+4. Priorize campos claros, curtos e úteis.
+5. Separe:
+   - resumo
+   - objetivo
+   - estratégia
+   - quebras
+   - adaptação
+   - alertas
+   - observações
+6. Não misture análise com motivação genérica.
+7. Escreva de forma fácil de renderizar em cards no app.
+8. Se o sistema pedir JSON, responda apenas com JSON válido.

@@ -22,6 +22,353 @@
   box-shadow: var(--shadow-sm);
 }
 
+.crossai-card {
+  display: grid;
+  gap: 16px;
+  padding: 17px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.crossai-cardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crossai-eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.crossai-title {
+  margin: 4px 0 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.crossai-meta {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.crossai-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.crossai-actionBtn {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  min-height: 86px;
+  align-content: start;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface) 86%, white 14%);
+  color: inherit;
+  text-align: left;
+  box-shadow: var(--shadow-xs);
+}
+
+.crossai-actionBtn span {
+  font-weight: 700;
+}
+
+.crossai-actionBtn small {
+  color: var(--text-secondary);
+}
+
+.crossai-actionBtn:disabled {
+  opacity: 0.5;
+}
+
+.crossai-unavailable {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface) 84%, white 16%);
+}
+
+.crossai-result {
+  display: grid;
+  gap: 16px;
+}
+
+.crossai-section {
+  display: grid;
+  gap: 10px;
+}
+
+.crossai-section h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.crossai-copy {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.crossai-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 8px;
+}
+
+.crossai-resultMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.crossai-history {
+  display: grid;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+.crossai-historyHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crossai-historyHead h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.crossai-historyHead span,
+.crossai-historyHead small {
+  color: var(--text-secondary);
+}
+
+.crossai-historyList {
+  display: grid;
+  gap: 10px;
+}
+
+.crossai-historyCard {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface) 84%, white 16%);
+}
+
+.crossai-historyCard p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.crossai-historyCardHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.crossai-historyCardHead span {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.crossai-historyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.crossai-form {
+  display: grid;
+  gap: 14px;
+}
+
+.crossai-formIntro {
+  display: grid;
+  gap: 4px;
+}
+
+.crossai-formIntro span {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.crossai-field {
+  display: grid;
+  gap: 8px;
+}
+
+.crossai-field span {
+  font-weight: 600;
+}
+
+.crossai-textarea {
+  min-height: 110px;
+  padding: 12px 14px;
+  resize: vertical;
+}
+
+.crossai-textarea-lg {
+  min-height: 180px;
+}
+
+.crossai-evidenceBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-weight: 700;
+  width: fit-content;
+}
+
+.crossai-evidenceBadge.ishigh {
+  background: rgba(77, 208, 122, 0.14);
+  color: #9cf0ae;
+}
+
+.crossai-evidenceBadge.ismedium {
+  background: rgba(255, 196, 87, 0.14);
+  color: #ffd071;
+}
+
+.crossai-evidenceBadge.islow {
+  background: rgba(255, 116, 116, 0.14);
+  color: #ff9c9c;
+}
+
+.crossai-citationList {
+  display: grid;
+  gap: 10px;
+}
+
+.crossai-citationCard {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface) 84%, white 16%);
+}
+
+.crossai-citationCard p,
+.crossai-citationCard span {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.modal-body-crossaiChat {
+  display: grid;
+  gap: 16px;
+}
+
+.modal-container-crossai {
+  width: min(100%, 760px);
+}
+
+.crossai-chatIntro {
+  display: grid;
+  gap: 4px;
+}
+
+.crossai-chatIntro span {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.crossai-chatMessages {
+  display: grid;
+  gap: 10px;
+  max-height: 42vh;
+  overflow-y: auto;
+  padding: 4px 4px 4px 0;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface) 74%, white 26%);
+}
+
+.crossai-chatMessage {
+  display: flex;
+}
+
+.crossai-chatMessage.isUser {
+  justify-content: flex-end;
+}
+
+.crossai-chatBubble {
+  max-width: 88%;
+  padding: 12px 14px;
+  border-radius: 16px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.crossai-chatBubble.isAssistant {
+  background: color-mix(in srgb, var(--bg-surface) 82%, white 18%);
+  border: 1px solid var(--line);
+}
+
+.crossai-chatBubble.isUser {
+  background: #e8edf3;
+  color: #0d1116;
+}
+
+.crossai-chatBubble.isTyping {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.crossai-chatBubble.isTyping span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--text-secondary);
+  opacity: 0.55;
+}
+
+.crossai-chatQuickActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.crossai-chatComposer {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.sheet-skeletonLine {
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-surface) 78%, white 22%);
+}
+
+.sheet-skeletonLine.short {
+  width: 62%;
+}
+
 .workout-title,
 .section-title {
   font-size: 1.1rem;
@@ -53,6 +400,12 @@
 
 .page-actions-inline {
   justify-content: center;
+  align-items: stretch;
+}
+
+.page-actions-inline .btn-primary,
+.page-actions-inline .btn-secondary {
+  min-width: 148px;
 }
 
 .page-fold {
@@ -339,11 +692,31 @@
 
 .empty-state {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   justify-items: center;
   text-align: center;
-  min-height: 200px;
+  min-height: 216px;
   align-content: center;
+}
+
+.empty-stateTips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.empty-stateTips span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.3;
 }
 
 .empty-icon,

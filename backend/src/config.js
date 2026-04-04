@@ -7,6 +7,13 @@ function parseList(value) {
     .filter(Boolean);
 }
 
+function parseCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 function parseTrustProxy(value, isProduction) {
   if (value === undefined || value === null || value === '') {
     return isProduction ? 1 : false;
@@ -68,6 +75,10 @@ export const RETENTION_PASSWORD_RESET_DAYS = Math.max(Number(process.env.RETENTI
 export const RETENTION_EMAIL_VERIFICATION_DAYS = Math.max(Number(process.env.RETENTION_EMAIL_VERIFICATION_DAYS || 2), 1);
 export const RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER = Math.max(Number(process.env.RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER || 5), 1);
 export const RETENTION_ACCOUNT_DELETION_DAYS = Math.max(Number(process.env.RETENTION_ACCOUNT_DELETION_DAYS || 90), 1);
+export const OPENAI_API_KEY = String(process.env.OPENAI_API_KEY || '').trim();
+export const CROSSAI_MODEL = String(process.env.CROSSAI_MODEL || 'gpt-5.4').trim();
+export const CROSSAI_REASONING_EFFORT = String(process.env.CROSSAI_REASONING_EFFORT || 'medium').trim().toLowerCase();
+export const CROSSAI_SCIENCE_VECTOR_STORE_IDS = Array.from(new Set(parseCsv(process.env.CROSSAI_SCIENCE_VECTOR_STORE_IDS || '')));
 
 export function validateConfig() {
   if (!DATABASE_URL) {

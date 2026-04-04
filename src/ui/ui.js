@@ -95,6 +95,11 @@ export async function mountUI({ root }) {
   }
 
   async function restoreUiStateFromAccount() {
+    const localProfile = safeGetProfile();
+    if (!localProfile?.email) {
+      return null;
+    }
+
     try {
       const response = await getAppBridge()?.getAppStateSnapshot?.();
       const snapshot = response?.data?.appState?.snapshot || null;
@@ -224,6 +229,24 @@ function normalizeUiState(s) {
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
   next.signupVerification = next.signupVerification && typeof next.signupVerification === 'object' ? next.signupVerification : {};
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
+  next.crossAi = next.crossAi && typeof next.crossAi === 'object'
+    ? next.crossAi
+    : {
+        meta: {
+          status: 'idle',
+          enabled: false,
+          configured: false,
+          model: '',
+          version: 'v1',
+          routes: {},
+          message: '',
+        },
+        activeAction: null,
+        actions: {},
+        drafts: {},
+        historyByWorkout: {},
+        coachByWorkout: {},
+      };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
     : {
@@ -284,6 +307,115 @@ function normalizeUiState(s) {
   if (typeof next.coachPortal.selectedGymId !== 'number') next.coachPortal.selectedGymId = next.coachPortal.selectedGymId || null;
   if (typeof next.coachPortal.status !== 'string') next.coachPortal.status = 'idle';
   if (typeof next.coachPortal.error !== 'string') next.coachPortal.error = '';
+  next.crossAi.meta = next.crossAi.meta && typeof next.crossAi.meta === 'object'
+    ? next.crossAi.meta
+    : {};
+  next.crossAi.meta.status = typeof next.crossAi.meta.status === 'string' ? next.crossAi.meta.status : 'idle';
+  next.crossAi.meta.enabled = !!next.crossAi.meta.enabled;
+  next.crossAi.meta.configured = !!next.crossAi.meta.configured;
+  next.crossAi.meta.model = String(next.crossAi.meta.model || '');
+  next.crossAi.meta.version = String(next.crossAi.meta.version || 'v1');
+  next.crossAi.meta.routes = next.crossAi.meta.routes && typeof next.crossAi.meta.routes === 'object' ? next.crossAi.meta.routes : {};
+  next.crossAi.meta.message = String(next.crossAi.meta.message || '');
+  next.crossAi.activeAction = typeof next.crossAi.activeAction === 'string' ? next.crossAi.activeAction : null;
+  next.crossAi.actions = next.crossAi.actions && typeof next.crossAi.actions === 'object' ? next.crossAi.actions : {};
+  for (const key of ['explainWorkout', 'strategy', 'adaptWorkout', 'analyzeResult', 'importWorkout', 'researchAnswer']) {
+    const current = next.crossAi.actions[key];
+    next.crossAi.actions[key] = current && typeof current === 'object'
+      ? {
+          loading: !!current.loading,
+          error: String(current.error || ''),
+          response: current.response && typeof current.response === 'object' ? current.response : null,
+        }
+      : {
+          loading: false,
+          error: '',
+          response: null,
+        };
+  }
+  next.crossAi.drafts = next.crossAi.drafts && typeof next.crossAi.drafts === 'object' ? next.crossAi.drafts : {};
+  next.crossAi.drafts.analyzeResult = next.crossAi.drafts.analyzeResult && typeof next.crossAi.drafts.analyzeResult === 'object'
+    ? {
+        result: String(next.crossAi.drafts.analyzeResult.result || ''),
+        notes: String(next.crossAi.drafts.analyzeResult.notes || ''),
+        splits: String(next.crossAi.drafts.analyzeResult.splits || ''),
+      }
+    : { result: '', notes: '', splits: '' };
+  next.crossAi.drafts.importWorkout = next.crossAi.drafts.importWorkout && typeof next.crossAi.drafts.importWorkout === 'object'
+    ? {
+        sourceText: String(next.crossAi.drafts.importWorkout.sourceText || ''),
+        context: String(next.crossAi.drafts.importWorkout.context || ''),
+      }
+    : { sourceText: '', context: '' };
+  next.crossAi.drafts.researchAnswer = next.crossAi.drafts.researchAnswer && typeof next.crossAi.drafts.researchAnswer === 'object'
+    ? {
+        question: String(next.crossAi.drafts.researchAnswer.question || ''),
+      }
+    : { question: '' };
+  next.crossAi.historyByWorkout = next.crossAi.historyByWorkout && typeof next.crossAi.historyByWorkout === 'object'
+    ? next.crossAi.historyByWorkout
+    : {};
+  next.crossAi.coachByWorkout = next.crossAi.coachByWorkout && typeof next.crossAi.coachByWorkout === 'object'
+    ? next.crossAi.coachByWorkout
+    : {};
+
+  Object.keys(next.crossAi.historyByWorkout).forEach((workoutId) => {
+    const bucket = next.crossAi.historyByWorkout[workoutId];
+    if (!bucket || typeof bucket !== 'object') {
+      delete next.crossAi.historyByWorkout[workoutId];
+      return;
+    }
+
+    const entries = Array.isArray(bucket.entries) ? bucket.entries : [];
+    next.crossAi.historyByWorkout[workoutId] = {
+      workoutId: String(bucket.workoutId || workoutId),
+      title: String(bucket.title || ''),
+      dayLabel: String(bucket.dayLabel || ''),
+      updatedAt: String(bucket.updatedAt || ''),
+      entries: entries
+        .filter((entry) => entry && typeof entry === 'object')
+        .map((entry) => ({
+          actionKey: String(entry.actionKey || ''),
+          mode: String(entry.mode || ''),
+          version: String(entry.version || 'v1'),
+          data: entry.data && typeof entry.data === 'object' ? entry.data : {},
+          meta: entry.meta && typeof entry.meta === 'object' ? entry.meta : {},
+          response: entry.response && typeof entry.response === 'object' ? entry.response : null,
+          savedAt: String(entry.savedAt || ''),
+        }))
+        .filter((entry) => entry.actionKey),
+      };
+  });
+  Object.keys(next.crossAi.coachByWorkout).forEach((workoutId) => {
+    const bucket = next.crossAi.coachByWorkout[workoutId];
+    if (!bucket || typeof bucket !== 'object') {
+      delete next.crossAi.coachByWorkout[workoutId];
+      return;
+    }
+
+    const messages = Array.isArray(bucket.messages) ? bucket.messages : [];
+    const quickActions = Array.isArray(bucket.quickActions) ? bucket.quickActions : [];
+
+    next.crossAi.coachByWorkout[workoutId] = {
+      input: String(bucket.input || ''),
+      loading: !!bucket.loading,
+      error: String(bucket.error || ''),
+      updatedAt: String(bucket.updatedAt || ''),
+      messages: messages
+        .filter((message) => message && typeof message === 'object')
+        .map((message) => ({
+          id: String(message.id || ''),
+          role: message.role === 'user' ? 'user' : 'assistant',
+          text: String(message.text || ''),
+          createdAt: String(message.createdAt || ''),
+        }))
+        .filter((message) => message.text),
+      quickActions: quickActions
+        .map((item) => String(item || '').trim())
+        .filter(Boolean)
+        .slice(0, 6),
+    };
+  });
 
   Object.keys(next.wod).forEach((key) => {
     const entry = next.wod[key];
@@ -319,6 +451,7 @@ function buildUiForRender(state, uiState, uiBusy = false) {
     passwordReset: uiState.passwordReset,
     signupVerification: uiState.signupVerification,
     admin: uiState.admin,
+    crossAi: uiState.crossAi,
     athleteOverview: uiState.athleteOverview,
     coachPortal: uiState.coachPortal,
 

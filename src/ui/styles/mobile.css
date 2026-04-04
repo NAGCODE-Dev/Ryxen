@@ -227,6 +227,37 @@
     padding: 13px;
   }
 
+  .crossai-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .crossai-historyHead,
+  .crossai-historyCardHead,
+  .crossai-historyActions,
+  .crossai-chatQuickActions {
+    display: grid;
+  }
+
+  .crossai-chatMessages {
+    max-height: 38vh;
+    padding: 2px;
+  }
+
+  .crossai-chatBubble {
+    max-width: 92%;
+  }
+
+  .empty-stateTips {
+    display: grid;
+    width: 100%;
+  }
+
+  .empty-stateTips span,
+  .page-actions-inline .btn-primary,
+  .page-actions-inline .btn-secondary {
+    width: 100%;
+  }
+
   .quick-action {
     flex-basis: 128px;
   }

@@ -1,0 +1,23 @@
+Sua tarefa agora é comparar o treino e o resultado atual com o histórico do atleta.
+
+Analise:
+1. evolução geral
+2. regressão, se houver
+3. consistência entre sessões
+4. padrões repetidos de quebra
+5. tendência de melhora em pacing
+6. tendência de melhora em força local
+7. tendência de melhora em capacidade aeróbica
+8. fraqueza persistente
+9. progresso relevante
+10. prioridade atual de desenvolvimento
+
+Regras:
+- use apenas dados realmente disponíveis
+- não invente histórico
+- destaque padrões e tendências, não só números
+- mostre o que mudou e o que ainda não mudou
+- se a melhora for pequena, diga isso com honestidade
+- se a piora fizer sentido por fadiga, carga, contexto ou variação de treino, explique
+
+Seu papel é detectar padrão, não apenas repetir resultados antigos.

@@ -135,6 +135,231 @@ Frontend dedicado:
 
 - Coach Portal: `http://localhost:8000/coach/`
 
+## CrossAI
+
+O backend agora inclui uma base inicial da CrossAI com:
+
+- prompts versionados em `backend/src/ai/prompts/*.txt`
+- composição de camadas por endpoint
+- resposta estruturada em JSON via OpenAI Responses API
+- rotas prontas para atleta e coach
+
+Configuração mínima:
+
+```env
+OPENAI_API_KEY=
+CROSSAI_MODEL=gpt-5.4
+CROSSAI_REASONING_EFFORT=medium
+```
+
+Memória esportiva inicial da CrossAI:
+
+```sql
+\i backend/sql/2026-04-04-crossai-memory.sql
+```
+
+Tabelas incluídas:
+
+- `athlete_context`
+  - preferências persistentes do atleta por modalidade
+  - equipamento, limitações e notas curtas de contexto
+- `crossai_insights`
+  - respostas estruturadas da CrossAI salvas por usuário, modo e treino
+  - request payload + response data/meta para reuso futuro
+
+Persistência atual:
+
+- toda rota `/ai/*` tenta salvar a resposta em `crossai_insights`
+- se as tabelas ainda não existirem, o backend continua respondendo sem quebrar a IA
+
+Contexto atual:
+
+- `POST /ai/analyze-result` já consulta `buildCrossAiContext()`
+- o contexto inclui:
+  - `athlete_context` do usuário/modalidade
+  - últimos `benchmark_results`
+  - últimos `athlete_pr_records` quando o esporte é `cross`
+  - últimos insights de `analyze-result`
+
+Rotas disponíveis:
+
+- `GET /ai/meta`
+- `POST /ai/explain-workout`
+- `POST /ai/strategy`
+- `POST /ai/adapt-workout`
+- `POST /ai/analyze-result`
+- `POST /ai/compare-history`
+- `POST /ai/import-workout`
+- `POST /ai/competition-plan`
+- `POST /ai/recovery-check`
+- `POST /ai/coach-review`
+- `POST /ai/chat-coach`
+- `POST /ai/research-answer`
+- `POST /ai/verify-study`
+
+Todas exigem autenticação Bearer.
+
+Envelope de resposta:
+
+```json
+{
+  "ok": true,
+  "mode": "strategy",
+  "version": "v1",
+  "data": {},
+  "meta": {
+    "model": "gpt-5.4",
+    "generatedAt": "2026-04-04T00:00:00.000Z"
+  }
+}
+```
+
+Payload sugerido:
+
+```json
+{
+  "message": "Analisa este WOD",
+  "workout": {
+    "title": "For time",
+    "description": "21-15-9 thrusters e pull-ups"
+  },
+  "athleteProfile": {
+    "level": "intermediate",
+    "limitations": [],
+    "goal": "competir melhor"
+  },
+  "history": [],
+  "result": null,
+  "assets": []
+}
+```
+
+Contracts V1 prioritários:
+
+- `POST /ai/explain-workout`
+  - `data.summary`
+  - `data.goal`
+  - `data.stimulus`
+  - `data.demands[]`
+  - `data.commonMistakes[]`
+  - `data.notes[]`
+- `POST /ai/strategy`
+  - `data.summary`
+  - `data.opening`
+  - `data.pacing[]`
+  - `data.breakPlan[]`
+  - `data.transitions[]`
+  - `data.riskFlags[]`
+  - `data.finish`
+- `POST /ai/adapt-workout`
+  - `data.summary`
+  - `data.originalStimulus`
+  - `data.adaptedWorkout[]`
+  - `data.whyItWorks[]`
+  - `data.scenarios.noEquipment[]`
+  - `data.scenarios.beginner[]`
+  - `data.scenarios.fatigued[]`
+  - `data.warnings[]`
+- `POST /ai/analyze-result`
+  - `data.summary`
+  - `data.strengths[]`
+  - `data.mainLimiter`
+  - `data.pacingRead`
+  - `data.movementBreakdown[]`
+  - `data.nextFocus[]`
+  - `data.coachNote`
+- `POST /ai/import-workout`
+  - `data.summary`
+  - `data.structuredWorkout.warmup[]`
+  - `data.structuredWorkout.strength[]`
+  - `data.structuredWorkout.skill[]`
+  - `data.structuredWorkout.wod[]`
+  - `data.structuredWorkout.accessories[]`
+  - `data.structuredWorkout.notes[]`
+  - `data.uncertainParts[]`
+  - `data.detectedGoal`
+
+Contract de conversa guiada:
+
+- `POST /ai/chat-coach`
+  - `data.reply`
+  - `data.quickActions[]`
+  - `data.tone` = `coach`
+  - `data.focus[]`
+  - `data.followUpPrompt`
+
+Payload sugerido para conversa:
+
+```json
+{
+  "message": "Hoje tô com a lombar cansada, mas quero fazer o treino bem. Como você faria?",
+  "workout": {
+    "title": "Treino do dia",
+    "blocks": [
+      { "title": "WOD", "lines": ["21-15-9 deadlift e burpees"] }
+    ]
+  },
+  "athlete": {
+    "level": "intermediate",
+    "limitations": ["lombar cansada"],
+    "goal": "treinar bem sem acumular risco"
+  },
+  "conversation": [
+    { "role": "user", "content": "Ontem fiz terra pesado." },
+    { "role": "assistant", "content": "Hoje vale controlar posterior e evitar ego no início." }
+  ]
+}
+```
+
+Contracts de evidência:
+
+- `POST /ai/research-answer`
+  - usa `file_search` com `CROSSAI_SCIENCE_VECTOR_STORE_IDS`
+  - `data.answer`
+  - `data.bottomLine`
+  - `data.evidenceLevel`
+  - `data.citations[]`
+  - `data.caveats[]`
+
+- `POST /ai/verify-study`
+  - exige `fileId` ou `fileUrl`
+  - `data.answer`
+  - `data.verdict`
+  - `data.evidenceLevel`
+  - `data.citations[]`
+  - `data.caveats[]`
+
+Configuração adicional para biblioteca científica:
+
+```env
+CROSSAI_SCIENCE_VECTOR_STORE_IDS=vs_123,vs_456
+```
+
+Payload sugerido para pesquisa:
+
+```json
+{
+  "question": "Treinar força e cardio no mesmo bloco atrapalha hipertrofia?",
+  "sources": ["science-library"]
+}
+```
+
+Payload sugerido para verificação:
+
+```json
+{
+  "question": "Esse artigo realmente sustenta que HIIT piora ganho de força?",
+  "fileId": "file_123"
+}
+```
+
+Observações:
+
+- sem `OPENAI_API_KEY`, as rotas `/ai/*` retornam `503`
+- sem `CROSSAI_SCIENCE_VECTOR_STORE_IDS`, `POST /ai/research-answer` retorna `503`
+- os contracts por tela ficam em `backend/src/ai/contracts.js`
+- a composição de camadas fica em `backend/src/ai/presets.js`
+
 Deploy recomendado:
 
 - frontend no Vercel

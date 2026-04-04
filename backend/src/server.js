@@ -17,6 +17,7 @@ import { createBenchmarkRouter } from './routes/benchmarkRoutes.js';
 import { createGymRouter } from './routes/gymRoutes.js';
 import { createAthleteRouter } from './routes/athleteRoutes.js';
 import { createAdminOpsRouter } from './routes/adminOpsRoutes.js';
+import { createAiRouter } from './routes/aiRoutes.js';
 import { requireGymManager, slugify } from './utils/gymUtils.js';
 import { runMigrations } from './migrations/index.js';
 import { startEmailWorker } from './mailer.js';
@@ -49,6 +50,7 @@ app.use('/benchmarks', createBenchmarkRouter({ resolveBenchmarkOrder }));
 app.use(createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }));
 app.use(createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSeries }));
 app.use(createAdminOpsRouter());
+app.use(createAiRouter());
 
 app.get('/', (_req, res) => {
   res.json({

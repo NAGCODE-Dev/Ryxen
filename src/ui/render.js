@@ -94,7 +94,8 @@ function renderModals(state) {
 
   if (modal === 'prs') return renderPrsModal(prs);
   if (modal === 'settings') return renderSettingsModal(settings);
-  if (modal === 'import') return renderImportModal();
+  if (modal === 'import') return renderImportModal(state);
+  if (modal === 'crossai') return renderCrossAiModal(state);
   if (modal === 'auth') return renderAuthModal({
     auth: {
       ...(state?.__ui?.auth || {}),
@@ -194,6 +195,7 @@ function renderMainContent(state) {
     return `
       <div class="workout-container">
         ${renderTodayPageIntro(state)}
+        ${renderCrossAiActionsCard(state)}
         ${renderEmptyState(state)}
         ${renderBottomTools(state)}
       </div>
@@ -210,6 +212,7 @@ function renderMainContent(state) {
   return `
     <div class="workout-container">
       ${renderTodayPageIntro(state)}
+      ${renderCrossAiActionsCard(state)}
       ${showWorkoutHeader ? `
         <div class="workout-header">
           ${showSourceToggle ? `
@@ -245,6 +248,558 @@ function renderMainContent(state) {
       ${renderBottomTools(state)}
     </div>
   `;
+}
+
+function renderCrossAiActionsCard(state) {
+  const crossAi = state?.__ui?.crossAi || {};
+  const meta = crossAi.meta || {};
+  const actions = crossAi.actions || {};
+  const profile = state?.__ui?.auth?.profile || null;
+  const isAuthenticated = !!profile?.email;
+  const isMetaLoading = meta.status === 'loading';
+  const hasWorkout = !!(state?.workout?.blocks?.length || state?.workoutOfDay?.blocks?.length);
+  const routeFlags = meta.routes || {};
+  const hasResearch = !!routeFlags.researchAnswer;
+  if (!hasWorkout && !hasResearch && !isAuthenticated) return '';
+
+  const gateMessage = !isAuthenticated
+    ? 'Entre para usar a CrossAI.'
+    : !meta.configured
+      ? 'A IA não está disponível no momento.'
+      : meta.message || '';
+
+  const title = hasWorkout ? 'Ações inteligentes do treino' : 'CrossAI baseada em evidência';
+
+  return `
+    <section class="crossai-card">
+      <div class="crossai-cardHead">
+        <div>
+          <div class="crossai-eyebrow">CrossAI</div>
+          <h3 class="crossai-title">${escapeHtml(title)}</h3>
+        </div>
+        <div class="crossai-meta">
+          <span>${escapeHtml(meta.model || 'modelo indisponível')}</span>
+          <span>${escapeHtml(meta.version || 'v1')}</span>
+        </div>
+      </div>
+
+      ${(!isAuthenticated || !meta.configured) ? `
+        <div class="crossai-unavailable">
+          <strong>CrossAI indisponível</strong>
+          <span>${escapeHtml(gateMessage)}</span>
+        </div>
+      ` : ''}
+
+      <div class="crossai-actions">
+        ${renderCrossAiActionButton({
+          label: 'Explicar treino',
+          mode: 'explainWorkout',
+          action: 'crossai:run',
+          enabled: hasWorkout && isAuthenticated && meta.configured && routeFlags.explainWorkout,
+          loading: isMetaLoading || actions?.explainWorkout?.loading,
+        })}
+        ${renderCrossAiActionButton({
+          label: 'Montar estratégia',
+          mode: 'strategy',
+          action: 'crossai:run',
+          enabled: hasWorkout && isAuthenticated && meta.configured && routeFlags.strategy,
+          loading: isMetaLoading || actions?.strategy?.loading,
+        })}
+        ${renderCrossAiActionButton({
+          label: 'Adaptar',
+          mode: 'adaptWorkout',
+          action: 'crossai:run',
+          enabled: hasWorkout && isAuthenticated && meta.configured && routeFlags.adaptWorkout,
+          loading: isMetaLoading || actions?.adaptWorkout?.loading,
+        })}
+        ${renderCrossAiActionButton({
+          label: 'Analisar resultado',
+          mode: 'analyzeResult',
+          action: 'crossai:open-form',
+          enabled: hasWorkout && isAuthenticated && meta.configured && routeFlags.analyzeResult,
+          loading: isMetaLoading || actions?.analyzeResult?.loading,
+        })}
+        ${renderCrossAiActionButton({
+          label: 'Falar com coach',
+          mode: 'chatCoach',
+          action: 'crossai:coach-open',
+          enabled: hasWorkout && isAuthenticated && meta.configured && routeFlags.chatCoach,
+          loading: false,
+        })}
+        ${renderCrossAiActionButton({
+          label: 'Base científica',
+          mode: 'researchAnswer',
+          action: 'crossai:open-form',
+          enabled: isAuthenticated && meta.configured && routeFlags.researchAnswer,
+          loading: isMetaLoading || actions?.researchAnswer?.loading,
+        })}
+      </div>
+
+      ${renderCrossAiInsights(state)}
+    </section>
+  `;
+}
+
+function renderCrossAiActionButton({ label, mode, action, enabled, loading }) {
+  return `
+    <button
+      class="crossai-actionBtn ${loading ? 'isLoading' : ''}"
+      data-action="${escapeHtml(action || 'crossai:run')}"
+      data-mode="${escapeHtml(mode)}"
+      type="button"
+      ${enabled && !loading ? '' : 'disabled'}
+    >
+      <span>${escapeHtml(label)}</span>
+      <small>${loading ? 'Carregando...' : 'Abrir análise'}</small>
+    </button>
+  `;
+}
+
+function renderCrossAiInsights(state) {
+  const bucket = state?.__ui?.crossAi?.historyByWorkout?.[state?.__ui?.wodKey] || null;
+  const entries = Array.isArray(bucket?.entries) ? bucket.entries.filter((entry) => entry?.response) : [];
+  if (!entries.length) return '';
+
+  return `
+    <section class="crossai-history">
+      <div class="crossai-historyHead">
+        <div>
+          <h3>Insights da CrossAI</h3>
+          <span>${escapeHtml(bucket?.title || 'Treino atual')}</span>
+        </div>
+        <small>${escapeHtml(bucket?.updatedAt || '')}</small>
+      </div>
+      <div class="crossai-historyList">
+        ${entries.map((entry) => renderCrossAiInsightCard(entry)).join('')}
+      </div>
+    </section>
+  `;
+}
+
+function renderCrossAiInsightCard(entry) {
+  const response = entry?.response || {};
+  const summary = extractCrossAiSummary(response?.data || {});
+
+  return `
+    <article class="crossai-historyCard">
+      <div class="crossai-historyCardHead">
+        <strong>${escapeHtml(formatCrossAiActionLabel(entry?.actionKey || entry?.mode || 'CrossAI'))}</strong>
+        <span>${escapeHtml(entry?.meta?.generatedAt || entry?.savedAt || '')}</span>
+      </div>
+      <p>${escapeHtml(summary)}</p>
+      <div class="crossai-historyActions">
+        <button class="btn-secondary" data-action="crossai:view-history" data-mode="${escapeHtml(entry?.actionKey || '')}" type="button">Ver última análise</button>
+        <button class="btn-secondary" data-action="crossai:rerun" data-mode="${escapeHtml(entry?.actionKey || '')}" type="button">Refazer</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderCrossAiModal(state) {
+  const crossAi = state?.__ui?.crossAi || {};
+  const activeAction = crossAi.activeAction || 'explainWorkout';
+  const actionState = crossAi.actions?.[activeAction] || {};
+  const response = actionState.response || null;
+  const data = response?.data || {};
+  const drafts = crossAi.drafts || {};
+  const titleMap = {
+    explainWorkout: 'Explicar treino',
+    strategy: 'Montar estratégia',
+    adaptWorkout: 'Adaptar treino',
+    analyzeResult: 'Analisar resultado',
+    importWorkout: 'Importar treino',
+    chatCoach: 'Falar com coach',
+    researchAnswer: 'Base científica',
+  };
+
+  if (activeAction === 'chatCoach') {
+    return renderCoachChatModal(state);
+  }
+
+  return `
+    <div class="modal-overlay isOpen">
+      <div class="modal-container modal-container-crossai">
+        <div class="modal-header">
+          <h2 class="modal-title">${escapeHtml(titleMap[activeAction] || 'CrossAI')}</h2>
+          <button class="modal-close" data-action="modal:close" type="button">✕</button>
+        </div>
+        <div class="modal-body">
+          ${actionState.loading ? renderCrossAiLoadingState() : ''}
+          ${!actionState.loading && actionState.error ? `
+            <div class="crossai-unavailable">
+              <strong>Não foi possível concluir</strong>
+              <span>${escapeHtml(actionState.error)}</span>
+            </div>
+          ` : ''}
+          ${!actionState.loading && !response ? renderCrossAiActionForm(activeAction, drafts[activeAction] || {}) : ''}
+          ${!actionState.loading && response ? renderCrossAiResult(activeAction, data, response.meta || {}) : ''}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCrossAiActionForm(mode, draft) {
+  if (mode === 'analyzeResult') {
+    return `
+      <div class="crossai-form">
+        <div class="crossai-formIntro">
+          <strong>Pós-WOD</strong>
+          <span>Preencha o resultado para a CrossAI ler o que seu desempenho mostrou.</span>
+        </div>
+        <label class="crossai-field">
+          <span>Resultado final</span>
+          <input
+            class="add-input"
+            id="crossai-result"
+            data-crossai-mode="analyzeResult"
+            data-crossai-field="result"
+            value="${escapeHtml(draft?.result || '')}"
+            placeholder="Ex.: 8:42, 5 rounds + 12 reps, 92 reps"
+          />
+        </label>
+        <label class="crossai-field">
+          <span>Observações do atleta</span>
+          <textarea
+            class="add-input crossai-textarea"
+            data-crossai-mode="analyzeResult"
+            data-crossai-field="notes"
+            placeholder="Ex.: quebrou no grip na segunda metade, perna pesada, abriu forte demais"
+          >${escapeHtml(draft?.notes || '')}</textarea>
+        </label>
+        <label class="crossai-field">
+          <span>Splits ou quebras</span>
+          <textarea
+            class="add-input crossai-textarea"
+            data-crossai-mode="analyzeResult"
+            data-crossai-field="splits"
+            placeholder="Ex.: T2B 10-6-4 / wall balls unbroken / snatch em singles"
+          >${escapeHtml(draft?.splits || '')}</textarea>
+        </label>
+        <button class="btn-primary" data-action="crossai:submit" data-mode="analyzeResult" type="button">Gerar análise</button>
+      </div>
+    `;
+  }
+
+  if (mode === 'importWorkout') {
+    return `
+      <div class="crossai-form">
+        <div class="crossai-formIntro">
+          <strong>Organizar treino</strong>
+          <span>Cole o texto do quadro, OCR, screenshot ou PDF para a CrossAI estruturar.</span>
+        </div>
+        <label class="crossai-field">
+          <span>Treino bruto</span>
+          <textarea
+            class="add-input crossai-textarea crossai-textarea-lg"
+            data-crossai-mode="importWorkout"
+            data-crossai-field="sourceText"
+            placeholder="Cole aqui o treino bruto"
+          >${escapeHtml(draft?.sourceText || '')}</textarea>
+        </label>
+        <label class="crossai-field">
+          <span>Contexto opcional</span>
+          <textarea
+            class="add-input crossai-textarea"
+            data-crossai-mode="importWorkout"
+            data-crossai-field="context"
+            placeholder="Ex.: quadro da aula, WOD da competição, print com OCR imperfeito"
+          >${escapeHtml(draft?.context || '')}</textarea>
+        </label>
+        <button class="btn-primary" data-action="crossai:submit" data-mode="importWorkout" type="button">Organizar com CrossAI</button>
+      </div>
+    `;
+  }
+
+  if (mode === 'researchAnswer') {
+    return `
+      <div class="crossai-form">
+        <div class="crossai-formIntro">
+          <strong>Pergunte à base científica</strong>
+          <span>Use a biblioteca da CrossAI para responder com evidência, citações e ressalvas.</span>
+        </div>
+        <label class="crossai-field">
+          <span>Pergunta</span>
+          <textarea
+            class="add-input crossai-textarea crossai-textarea-lg"
+            data-crossai-mode="researchAnswer"
+            data-crossai-field="question"
+            placeholder="Ex.: cardio atrapalha força em atleta treinado?"
+          >${escapeHtml(draft?.question || '')}</textarea>
+        </label>
+        <button class="btn-primary" data-action="crossai:submit" data-mode="researchAnswer" type="button">Buscar evidência</button>
+      </div>
+    `;
+  }
+
+  return '';
+}
+
+function renderCoachChatModal(state) {
+  const workoutKey = state?.__ui?.wodKey || '';
+  const coachChat = state?.__ui?.crossAi?.coachByWorkout?.[workoutKey] || {};
+  const messages = Array.isArray(coachChat.messages) ? coachChat.messages : [];
+  const quickActions = Array.isArray(coachChat.quickActions) ? coachChat.quickActions : [];
+  const input = String(coachChat.input || '');
+  const isLoading = !!coachChat.loading;
+  const error = String(coachChat.error || '');
+
+  return `
+    <div class="modal-overlay isOpen">
+      <div class="modal-container modal-container-crossai">
+        <div class="modal-header">
+          <h2 class="modal-title">Falar com coach</h2>
+          <button class="modal-close" data-action="modal:close" type="button">✕</button>
+        </div>
+        <div class="modal-body modal-body-crossaiChat">
+          <div class="crossai-chatIntro">
+            <strong>Coach do treino atual</strong>
+            <span>O contexto do treino já entra automático. Você só precisa dizer o que precisa agora.</span>
+          </div>
+
+          <div class="crossai-chatMessages">
+            ${messages.map((message) => renderCoachChatMessage(message)).join('')}
+            ${isLoading ? `
+              <div class="crossai-chatBubble isAssistant isTyping">
+                <span></span><span></span><span></span>
+              </div>
+            ` : ''}
+          </div>
+
+          ${error ? `
+            <div class="crossai-unavailable">
+              <strong>Não foi possível falar com o coach</strong>
+              <span>${escapeHtml(error)}</span>
+            </div>
+          ` : ''}
+
+          ${quickActions.length ? `
+            <div class="crossai-chatQuickActions">
+              ${quickActions.map((label) => `
+                <button class="btn-secondary" data-action="crossai:coach-quick" data-label="${escapeHtml(label)}" type="button" ${isLoading ? 'disabled' : ''}>
+                  ${escapeHtml(label)}
+                </button>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <div class="crossai-chatComposer">
+            <textarea
+              class="add-input crossai-textarea"
+              data-crossai-chat-input="1"
+              placeholder="Ex.: estou com posterior cansado, como você faria esse treino hoje?"
+              ${isLoading ? 'disabled' : ''}
+            >${escapeHtml(input)}</textarea>
+            <button class="btn-primary" data-action="crossai:coach-send" type="button" ${isLoading ? 'disabled' : ''}>
+              ${isLoading ? 'Enviando...' : 'Enviar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function renderCoachChatMessage(message) {
+  const roleClass = message?.role === 'user' ? 'isUser' : 'isAssistant';
+  return `
+    <div class="crossai-chatMessage ${roleClass}">
+      <div class="crossai-chatBubble ${roleClass}">
+        ${escapeHtml(message?.text || '')}
+      </div>
+    </div>
+  `;
+}
+
+function renderCrossAiLoadingState() {
+  return `
+    <div class="sheet-stack isSkeleton">
+      <div class="sheet-skeletonLine"></div>
+      <div class="sheet-skeletonLine short"></div>
+      <div class="sheet-skeletonLine"></div>
+      <div class="sheet-skeletonLine short"></div>
+    </div>
+  `;
+}
+
+function renderCrossAiResult(mode, data, meta) {
+  if (mode === 'strategy') {
+    return renderCrossAiSections([
+      ['Resumo', [data.summary]],
+      ['Abertura', [data.opening]],
+      ['Pacing', data.pacing],
+      ['Plano de Quebras', data.breakPlan],
+      ['Transições', data.transitions],
+      ['Alertas', data.riskFlags],
+      ['Finalização', [data.finish]],
+    ], meta);
+  }
+
+  if (mode === 'adaptWorkout') {
+    const scenarios = data.scenarios || {};
+    return renderCrossAiSections([
+      ['Resumo', [data.summary]],
+      ['Estímulo Original', [data.originalStimulus]],
+      ['Treino Adaptado', data.adaptedWorkout],
+      ['Por Que Funciona', data.whyItWorks],
+      ['Sem Equipamento', scenarios.noEquipment],
+      ['Iniciante', scenarios.beginner],
+      ['Cansado / Recuperação', scenarios.fatigued],
+      ['Avisos', data.warnings],
+    ], meta);
+  }
+
+  if (mode === 'analyzeResult') {
+    return renderCrossAiSections([
+      ['Resumo', [data.summary]],
+      ['Pontos Fortes', data.strengths],
+      ['Limitador Principal', [data.mainLimiter]],
+      ['Leitura de Pacing', [data.pacingRead]],
+      ['Quebra por Movimento', data.movementBreakdown],
+      ['Próximo Foco', data.nextFocus],
+      ['Nota do Coach', [data.coachNote]],
+    ], meta, mode);
+  }
+
+  if (mode === 'importWorkout') {
+    const structuredWorkout = data.structuredWorkout || {};
+    return renderCrossAiSections([
+      ['Resumo', [data.summary]],
+      ['Objetivo Detectado', [data.detectedGoal]],
+      ['Aquecimento', structuredWorkout.warmup],
+      ['Força', structuredWorkout.strength],
+      ['Skill', structuredWorkout.skill],
+      ['WOD', structuredWorkout.wod],
+      ['Acessórios', structuredWorkout.accessories],
+      ['Notas', structuredWorkout.notes],
+      ['Partes Incertas', data.uncertainParts],
+    ], meta, mode);
+  }
+
+  if (mode === 'researchAnswer') {
+    return renderResearchAnswerResult(data, meta);
+  }
+
+  return renderCrossAiSections([
+    ['Resumo', [data.summary]],
+    ['Objetivo', [data.goal]],
+    ['Estímulo', [data.stimulus]],
+    ['Demandas', data.demands],
+    ['Erros Comuns', data.commonMistakes],
+    ['Observações', data.notes],
+  ], meta, mode);
+}
+
+function renderCrossAiSections(sections, meta = {}, mode = '') {
+  return `
+    <div class="crossai-result">
+      ${sections
+        .filter(([, items]) => Array.isArray(items) && items.filter(Boolean).length)
+        .map(([title, items]) => `
+          <section class="crossai-section">
+            <h3>${escapeHtml(title)}</h3>
+            <ul class="crossai-list">
+              ${items.filter(Boolean).map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </section>
+        `).join('')}
+      <div class="crossai-resultMeta">
+        <span>${escapeHtml(meta.model || '')}</span>
+        <span>${escapeHtml(meta.generatedAt || '')}</span>
+      </div>
+      ${(mode === 'analyzeResult' || mode === 'importWorkout') ? `
+        <div class="crossai-historyActions">
+          <button class="btn-secondary" data-action="crossai:rerun" data-mode="${escapeHtml(mode)}" type="button">
+            ${mode === 'analyzeResult' ? 'Refazer análise' : 'Organizar outro treino'}
+          </button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderResearchAnswerResult(data, meta = {}) {
+  const citations = Array.isArray(data?.citations) ? data.citations.filter(Boolean) : [];
+  const caveats = Array.isArray(data?.caveats) ? data.caveats.filter(Boolean) : [];
+
+  return `
+    <div class="crossai-result">
+      <section class="crossai-section">
+        <h3>Resposta</h3>
+        <p class="crossai-copy">${escapeHtml(data.answer || '')}</p>
+      </section>
+      <section class="crossai-section">
+        <h3>Conclusão</h3>
+        <p class="crossai-copy">${escapeHtml(data.bottomLine || '')}</p>
+      </section>
+      <section class="crossai-section">
+        <h3>Nível de Evidência</h3>
+        <div class="crossai-evidenceBadge is${escapeHtml(String(data.evidenceLevel || '').toLowerCase())}">
+          ${escapeHtml(formatEvidenceLevel(data.evidenceLevel))}
+        </div>
+      </section>
+      ${caveats.length ? `
+        <section class="crossai-section">
+          <h3>Ressalvas</h3>
+          <ul class="crossai-list">
+            ${caveats.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}
+          </ul>
+        </section>
+      ` : ''}
+      ${citations.length ? `
+        <section class="crossai-section">
+          <h3>Citações</h3>
+          <div class="crossai-citationList">
+            ${citations.map((citation) => renderCitationCard(citation)).join('')}
+          </div>
+        </section>
+      ` : ''}
+      <div class="crossai-resultMeta">
+        <span>${escapeHtml(meta.model || '')}</span>
+        <span>${escapeHtml(meta.generatedAt || '')}</span>
+      </div>
+      <div class="crossai-historyActions">
+        <button class="btn-secondary" data-action="crossai:rerun" data-mode="researchAnswer" type="button">Nova pergunta</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderCitationCard(citation) {
+  return `
+    <article class="crossai-citationCard">
+      <strong>${escapeHtml(citation?.title || 'Fonte')}</strong>
+      <p>${escapeHtml(citation?.excerpt || '')}</p>
+      <span>${escapeHtml(citation?.sourceId || '')}</span>
+    </article>
+  `;
+}
+
+function extractCrossAiSummary(data = {}) {
+  if (typeof data?.summary === 'string' && data.summary.trim()) return data.summary.trim();
+  if (typeof data?.bottomLine === 'string' && data.bottomLine.trim()) return data.bottomLine.trim();
+  if (typeof data?.reply === 'string' && data.reply.trim()) return data.reply.trim();
+  return 'Insight salvo para este treino.';
+}
+
+function formatCrossAiActionLabel(actionKey = '') {
+  const labels = {
+    explainWorkout: 'Explicar treino',
+    strategy: 'Montar estratégia',
+    adaptWorkout: 'Adaptar treino',
+    analyzeResult: 'Analisar resultado',
+    importWorkout: 'Importar treino',
+    researchAnswer: 'Base científica',
+  };
+  return labels[actionKey] || 'CrossAI';
+}
+
+function formatEvidenceLevel(value = '') {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'high') return 'Alta';
+  if (normalized === 'medium') return 'Média';
+  if (normalized === 'low') return 'Baixa';
+  return 'Não informado';
 }
 
 function renderBottomNav(state) {
@@ -293,15 +848,24 @@ function renderAthleteAccessBanner(state) {
 function renderEmptyState(state) {
   const hasWeeks = (state?.weeks?.length ?? 0) > 0;
   const day = formatDay(state?.currentDay);
+  const canUseResearch = !!state?.__ui?.crossAi?.meta?.routes?.researchAnswer;
+  const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
 
   if (!hasWeeks) {
     return `
       <div class="empty-state">
         <div class="empty-icon">📋</div>
         <h2>Nenhum treino carregado</h2>
-        <p>Envie um arquivo e deixe o treino do dia pronto.</p>
+        <p>Comece por uma ação clara: importar treino, organizar um texto com IA ou entrar na sua conta.</p>
+        <div class="empty-stateTips">
+          <span>Importe um PDF, print ou texto bruto</span>
+          <span>Use a IA para estruturar ou tirar dúvidas</span>
+          <span>Salve histórico e PRs quando entrar na conta</span>
+        </div>
         <div class="page-actions page-actions-inline">
           <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
+          <button class="btn-secondary" data-action="crossai:open-form" data-mode="researchAnswer" type="button" ${isAuthenticated && canUseResearch ? '' : 'disabled'}>Perguntar à IA</button>
+          <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">${isAuthenticated ? 'Conta' : 'Entrar'}</button>
         </div>
       </div>
     `;
@@ -312,6 +876,11 @@ function renderEmptyState(state) {
       <div class="empty-icon">😴</div>
       <h2>Sem treino para ${escapeHtml(day)}</h2>
       <p>Volte para o automático ou troque a importação atual.</p>
+      <div class="empty-stateTips">
+        <span>Volte para a semana automática</span>
+        <span>Troque a planilha do dia</span>
+        <span>Abra a IA para revisar o contexto</span>
+      </div>
       <div class="page-actions page-actions-inline">
         <button class="btn-secondary" data-action="day:auto" type="button">Voltar para auto</button>
         <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Trocar treino</button>
@@ -484,37 +1053,32 @@ function renderAccountPage(state) {
       ${renderPageHero({
         eyebrow: 'Conta',
         title: profile.name || 'Sua conta',
-        subtitle: 'Sessão, plano e portal do coach.',
+        subtitle: 'Resumo da conta, plano atual e próximos passos.',
         actions: `
           <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
         `,
       })}
 
-      <div class="summary-strip summary-strip-4">
+      <div class="summary-strip summary-strip-3">
         ${renderSummaryTile('Conta', isBusy ? '...' : escapeHtml(profile.name || 'Sem nome'), isBusy ? '' : escapeHtml(profile.email || ''))}
         ${renderSummaryTile('Plano', isBusy || coachPortal?.status === 'loading' ? '...' : escapeHtml(planName), isBusy ? '' : escapeHtml(planStatus))}
-        ${renderSummaryTile('Atleta', isBusy || isSummaryLoading ? '...' : athleteBenefits.label, isBusy ? '' : athleteBenefitSource)}
-        ${renderSummaryTile('Imports', isBusy || isSummaryLoading ? '...' : (importUsage.unlimited ? 'Ilimitado' : `${importUsage.remaining}/${importUsage.limit}`), isBusy ? '' : (importUsage.unlimited ? 'PDF e mídia sem limite' : `${importUsage.used} uso(s) neste mês`))}
+        ${renderSummaryTile('Acesso', isBusy || isSummaryLoading ? '...' : athleteBenefits.label, isBusy ? '' : athleteBenefitSource)}
       </div>
 
       <div class="coach-grid">
         ${renderPageFold({
-          title: 'Sessão',
-          subtitle: 'Conta ativa e acesso salvo.',
+          title: 'Perfil',
+          subtitle: 'O essencial da sua conta em um só lugar.',
           content: `
-          ${isBusy || isSummaryLoading ? renderAccountSkeleton() : `
-            <div class="account-name">${escapeHtml(profile.name || 'Sem nome')}</div>
-            <div class="account-email">${escapeHtml(profile.email || '')}</div>
-          `}
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
               <strong>Acesso do atleta</strong>
               <span>${isSummaryLoading ? 'Carregando resumo da conta...' : `${escapeHtml(athleteBenefits.label)} • ${escapeHtml(athleteBenefitSource)}`}</span>
             </div>
             <div class="coach-listItem static">
-              <strong>Resumo</strong>
-              <span>${isSummaryLoading ? 'Buscando indicadores básicos...' : `${Number(athleteStats?.resultsLogged || 0)} resultado(s) • ${Number(athleteStats?.assignedWorkouts || 0)} treino(s)`}</span>
+              <strong>Uso do app</strong>
+              <span>${isSummaryLoading ? 'Buscando indicadores básicos...' : `${Number(athleteStats?.resultsLogged || 0)} resultado(s) • ${importUsage.unlimited ? 'imports livres' : `${importUsage.remaining} restante(s)`}`}</span>
             </div>
           </div>
           <div class="page-actions">
@@ -524,39 +1088,31 @@ function renderAccountPage(state) {
         })}
 
         ${renderPageFold({
-          title: 'Plano e portal',
-          subtitle: 'Plano atual e operação do coach.',
+          title: 'Plano e coach portal',
+          subtitle: 'Status atual e o único próximo passo importante.',
           content: `
-          ${isBusy || coachPortal?.status === 'loading' ? renderAccountSkeleton() : `
-            <div class="account-name">${escapeHtml(planName)}</div>
-            <div class="account-email">${escapeHtml(planStatus)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</div>
-          `}
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
-              <strong>Imports</strong>
-              <span>${importUsage.unlimited ? 'PDF e mídia ilimitados' : `${importUsage.remaining} restante(s) de ${importUsage.limit}`}</span>
+              <strong>Plano atual</strong>
+              <span>${escapeHtml(planName)}${renewAt ? ` • renova em ${escapeHtml(formatDateShort(renewAt))}` : ''}</span>
             </div>
             <div class="coach-listItem static">
-              <strong>Coach</strong>
-              <span>${canCoachManage ? 'Liberado para gestão' : 'Bloqueado até ativar plano'}</span>
-            </div>
-            <div class="coach-listItem static">
-              <strong>Gyms</strong>
-              <span>${gyms.length} gym(s) visível(is) nesta conta</span>
+              <strong>Coach Portal</strong>
+              <span>${canCoachManage ? `Liberado • ${gyms.length} gym(s) visível(is)` : 'Indisponível no plano atual'}</span>
             </div>
           </div>
           <div class="page-actions">
-            ${!canCoachManage ? '<button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Assinar Coach</button>' : ''}
+            ${!canCoachManage ? '<button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Ver upgrade</button>' : ''}
             ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
-            <a class="btn-secondary" href="/coach/index.html" target="_blank" rel="noopener noreferrer">Abrir portal</a>
+            ${canCoachManage ? '<a class="btn-secondary" href="/coach/index.html" target="_blank" rel="noopener noreferrer">Abrir Coach Portal</a>' : ''}
             <a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer">Ver planos</a>
           </div>
           `,
         })}
 
         ${renderPageFold({
-          title: 'Atividade da conta',
-          subtitle: 'Blocos do atleta carregam em segundo plano.',
+          title: 'Atividade recente',
+          subtitle: 'O que já existe de uso e histórico.',
           content: `
           <div class="coach-list coach-listCompact">
             <div class="coach-listItem static">
@@ -638,7 +1194,11 @@ function renderPageFold({ title, subtitle = '', content = '', open = true }) {
   `;
 }
 
-export function renderImportModal() {
+export function renderImportModal(state = {}) {
+  const crossAiMeta = state?.__ui?.crossAi?.meta || {};
+  const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
+  const canUseImportAi = isAuthenticated && crossAiMeta.configured && crossAiMeta.routes?.importWorkout;
+
   return `
     <div class="modal-overlay isOpen">
       <div class="modal-container">
@@ -668,7 +1228,12 @@ export function renderImportModal() {
               <span class="quick-actionIcon">EXP</span>
               <span class="quick-actionLabel">Exportar treino atual</span>
             </button>
+            <button class="quick-action quick-action-modal" data-action="crossai:open-form" data-mode="importWorkout" type="button" ${canUseImportAi ? '' : 'disabled'}>
+              <span class="quick-actionIcon">AI</span>
+              <span class="quick-actionLabel">Organizar com CrossAI</span>
+            </button>
           </div>
+          ${canUseImportAi ? '' : '<p class="account-hint">Entre e habilite a CrossAI para organizar treinos por texto.</p>'}
         </div>
       </div>
     </div>
@@ -1051,65 +1616,91 @@ function renderSettingsModal(settings = {}) {
 
   return `
     <div class="modal-overlay isOpen" id="ui-settingsModalBackdrop">
-      <div class="modal-container">
+      <div class="modal-container modal-container-settings">
         <div class="modal-header">
           <h2 class="modal-title">⚙️ Configurações</h2>
           <button class="modal-close" data-action="modal:close" type="button">✕</button>
         </div>
 
-        <div class="modal-body">
-          <div class="settings-group">
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showLbsConversion"
-                ${showLbsConversion ? 'checked' : ''}
-              />
-              <span>Mostrar conversão lbs → kg</span>
-            </label>
+        <div class="modal-body modal-body-settings">
+          <section class="settings-section">
+            <div class="settings-sectionHead">
+              <strong>Preferências</strong>
+              <span>Salvam automaticamente quando você toca.</span>
+            </div>
+            <div class="settings-group">
+              <label class="settings-label">
+                <input
+                  type="checkbox"
+                  id="setting-showLbsConversion"
+                  data-setting-toggle="showLbsConversion"
+                  ${showLbsConversion ? 'checked' : ''}
+                />
+                <span>
+                  <strong>Mostrar conversão lbs → kg</strong>
+                  <small>Ajuda a ler cargas importadas em libras sem fazer conta mental.</small>
+                </span>
+              </label>
 
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showEmojis"
-                ${showEmojis ? 'checked' : ''}
-              />
-              <span>Mostrar emojis</span>
-            </label>
+              <label class="settings-label">
+                <input
+                  type="checkbox"
+                  id="setting-showEmojis"
+                  data-setting-toggle="showEmojis"
+                  ${showEmojis ? 'checked' : ''}
+                />
+                <span>
+                  <strong>Mostrar emojis</strong>
+                  <small>Mantém a leitura mais leve nas áreas que usam sinais visuais rápidos.</small>
+                </span>
+              </label>
 
-            <label class="settings-label">
-              <input
-                type="checkbox"
-                id="setting-showObjectives"
-                ${showObjectivesInWods ? 'checked' : ''}
-              />
-              <span>Mostrar objetivos nos WODs</span>
-            </label>
-          </div>
+              <label class="settings-label">
+                <input
+                  type="checkbox"
+                  id="setting-showObjectives"
+                  data-setting-toggle="showObjectivesInWods"
+                  ${showObjectivesInWods ? 'checked' : ''}
+                />
+                <span>
+                  <strong>Mostrar objetivos nos WODs</strong>
+                  <small>Exibe a intenção do treino quando o conteúdo tiver esse contexto.</small>
+                </span>
+              </label>
+            </div>
+          </section>
 
-          <div class="settings-actions">
-            <button class="btn-primary" data-action="settings:save" type="button">
-              💾 Salvar
-            </button>
-            <button class="btn-secondary" data-action="backup:export" type="button">
-              🧰 Backup
-            </button>
-            <button class="btn-secondary" data-action="backup:import" type="button">
-              ♻️ Restaurar
-            </button>
-            <button class="btn-secondary" data-action="pdf:clear" type="button">
-              🗑️ Limpar Tudo
-            </button>
-            <a class="btn-secondary" href="/privacy.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              🔐 Privacidade
-            </a>
-            <a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              💳 Planos
-            </a>
-            <a class="btn-secondary" href="/terms.html" target="_blank" rel="noopener noreferrer" style="text-decoration:none;display:inline-flex;align-items:center;justify-content:center;">
-              📄 Termos
-            </a>
-          </div>
+          <section class="settings-section">
+            <div class="settings-sectionHead">
+              <strong>Dados</strong>
+              <span>Ferramentas para guardar ou recuperar seu app.</span>
+            </div>
+            <div class="settings-actions settings-actions-grid">
+              <button class="btn-secondary" data-action="backup:export" type="button">🧰 Fazer backup</button>
+              <button class="btn-secondary" data-action="backup:import" type="button">♻️ Restaurar backup</button>
+            </div>
+          </section>
+
+          <section class="settings-section settings-section-danger">
+            <div class="settings-sectionHead">
+              <strong>Avançado</strong>
+              <span>Ação crítica. Use só quando quiser zerar os dados locais do app.</span>
+            </div>
+            <div class="settings-actions">
+              <button class="btn-secondary btn-dangerSoft" data-action="pdf:clear" type="button">🗑️ Limpar dados do app</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="settings-sectionHead">
+              <strong>Sobre</strong>
+              <span>Informações legais e privacidade.</span>
+            </div>
+            <div class="settings-actions settings-actions-grid">
+              <a class="btn-secondary settings-linkBtn" href="/privacy.html" target="_blank" rel="noopener noreferrer">🔐 Privacidade</a>
+              <a class="btn-secondary settings-linkBtn" href="/terms.html" target="_blank" rel="noopener noreferrer">📄 Termos</a>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -1347,6 +1938,13 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
         </div>
 
         <div class="modal-body modal-body-auth">
+          <div class="auth-intro auth-intro-auth">
+            <div class="section-kicker">${isSignup ? 'Criar conta' : 'Entrar'}</div>
+            <p class="account-hint">${isSignup
+              ? 'Crie sua conta para salvar treino, histórico e progresso sem misturar isso com a operação do box.'
+              : 'Entre para retomar treino, histórico e IA exatamente de onde parou.'}</p>
+          </div>
+
           <div class="auth-switch">
             <button class="btn-secondary ${!isSignup ? 'isSelected' : ''}" data-action="auth:switch" data-mode="signin" type="button">Entrar</button>
             <button class="btn-secondary ${isSignup ? 'isSelected' : ''}" data-action="auth:switch" data-mode="signup" type="button">Cadastrar</button>

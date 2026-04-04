@@ -30,7 +30,7 @@
 }
 
 .modal-container-auth {
-  width: min(100%, 720px);
+  width: min(100%, 560px);
   margin: auto;
 }
 
@@ -65,7 +65,7 @@
 
 .modal-body-auth {
   display: grid;
-  gap: 14px;
+  gap: 12px;
   justify-items: center;
 }
 
@@ -143,9 +143,23 @@
 .auth-googleBlock,
 .auth-divider,
 .auth-form,
-.auth-resetBox {
+.auth-resetBox,
+.auth-intro-auth {
   width: min(100%, 420px);
   margin-inline: auto;
+}
+
+.auth-intro-auth {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  box-shadow: none;
+  background: var(--bg-soft);
+}
+
+.auth-intro-auth .account-hint {
+  margin: 0;
 }
 
 .auth-signupVerify {
