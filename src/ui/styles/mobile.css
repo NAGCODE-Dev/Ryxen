@@ -5,7 +5,7 @@
   }
 
   .app-main {
-    padding: 14px 12px 24px;
+    padding: 16px 12px calc(var(--safe-bottom) + 24px);
   }
 
   .page-hero {
@@ -135,16 +135,6 @@
     margin: auto;
   }
 
-  body[data-page="account"] .app-main,
-  body[data-page="history"] .app-main {
-    padding-inline: 0;
-  }
-
-  body[data-page="account"] .page-hero,
-  body[data-page="history"] .page-hero {
-    padding-inline: 16px;
-  }
-
   body[data-page="account"] .page-section,
   body[data-page="history"] .page-section,
   body[data-page="account"] .page-fold,
@@ -152,6 +142,8 @@
   body[data-page="account"] .workout-header,
   body[data-page="history"] .workout-header,
   body[data-page="today"] .workout-header,
+  body[data-page="today"] .today-overviewCard,
+  body[data-page="today"] .today-sessionCard,
   body[data-page="today"] .empty-state,
   body[data-page="today"] .workout-block,
   body[data-page="today"] .athlete-accessBanner {
@@ -177,7 +169,7 @@
   }
 
   .app-main {
-    padding: 14px 12px 24px;
+    padding: 16px 12px calc(var(--safe-bottom) + 24px);
   }
 }
 
@@ -237,6 +229,8 @@
   }
 
   .workout-block,
+  .today-overviewCard,
+  .today-sessionCard,
   .empty-state,
   .auth-intro,
   .reset-codePreview,
@@ -256,6 +250,17 @@
 
   .settings-actions-grid {
     grid-template-columns: 1fr;
+  }
+
+  .empty-state {
+    min-height: 0;
+    align-content: start;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .empty-state .page-actions-inline {
+    width: 100%;
   }
 
   .modal-body-settings {
@@ -318,5 +323,186 @@
     padding: 14px 12px calc(var(--safe-bottom) + 16px);
     font-size: 0.72rem;
     opacity: 0.72;
+  }
+}
+
+@media (max-width: 640px) {
+  body[data-native-app="true"] {
+    background:
+      radial-gradient(circle at top, rgba(59, 130, 246, 0.08), transparent 26%),
+      linear-gradient(180deg, #071019 0%, #0a1118 100%);
+  }
+
+  body[data-native-app="true"] .app-container {
+    border-inline: 0;
+    backdrop-filter: none;
+    background: transparent;
+  }
+
+  body[data-native-app="true"] .app-header {
+    padding-inline: 12px;
+    padding-bottom: 6px;
+    background: linear-gradient(180deg, rgba(8, 13, 20, 0.96), rgba(8, 13, 20, 0.78));
+    border-bottom: 0;
+    backdrop-filter: blur(18px);
+  }
+
+  body[data-native-app="true"] .header-badge {
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: rgba(226, 232, 240, 0.82);
+    letter-spacing: 0.08em;
+  }
+
+  body[data-native-app="true"] .header-account-btn {
+    min-height: 36px;
+    padding-inline: 12px;
+    border-radius: 14px;
+    background: rgba(17, 24, 39, 0.88);
+    border-color: rgba(255, 255, 255, 0.06);
+    box-shadow: none;
+  }
+
+  body[data-native-app="true"] .bottom-nav {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    padding: 10px 12px calc(var(--safe-bottom) + 10px);
+    background:
+      linear-gradient(180deg, rgba(8, 13, 20, 0), rgba(8, 13, 20, 0.86) 24%, rgba(8, 13, 20, 0.98));
+    border-bottom: 0;
+  }
+
+  body[data-native-app="true"] .bottom-navItems {
+    width: 100%;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(15, 23, 34, 0.94);
+    backdrop-filter: blur(22px);
+    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.34);
+  }
+
+  body[data-native-app="true"] .nav-btn {
+    min-height: 48px;
+    gap: 0;
+    border-radius: 16px;
+  }
+
+  body[data-native-app="true"] .nav-icon {
+    display: none;
+  }
+
+  body[data-native-app="true"] .nav-label {
+    font-size: 0.7rem;
+    letter-spacing: 0;
+    text-transform: none;
+    font-weight: 700;
+  }
+
+  body[data-native-app="true"] .nav-btn-active,
+  body[data-native-app="true"] .nav-btn-primary.nav-btn-active {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  }
+
+  body[data-native-app="true"] .app-main {
+    padding-top: 12px;
+    padding-bottom: calc(var(--safe-bottom) + 96px);
+  }
+
+  body[data-native-app="true"] .page-hero {
+    gap: 10px;
+    padding-top: 0;
+  }
+
+  body[data-native-app="true"] .page-heroActions {
+    display: grid;
+    grid-template-columns: minmax(0, 108px) minmax(0, 1fr);
+    width: 100%;
+  }
+
+  body[data-native-app="true"] .page-heroTitle,
+  body[data-native-app="true"][data-page="history"] .page-heroTitle,
+  body[data-native-app="true"][data-page="account"] .page-heroTitle {
+    font-size: 1.18rem;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    text-transform: none;
+  }
+
+  body[data-native-app="true"] .page-heroSubtitle,
+  body[data-native-app="true"][data-page="history"] .page-heroSubtitle,
+  body[data-native-app="true"][data-page="account"] .page-heroSubtitle {
+    max-width: none;
+    font-size: 0.79rem;
+    line-height: 1.45;
+  }
+
+  body[data-native-app="true"] .summary-strip {
+    gap: 8px;
+  }
+
+  body[data-native-app="true"] .summary-tile,
+  body[data-native-app="true"] .page-fold,
+  body[data-native-app="true"] .workout-header,
+  body[data-native-app="true"] .today-overviewCard,
+  body[data-native-app="true"] .today-sessionCard,
+  body[data-native-app="true"] .workout-block,
+  body[data-native-app="true"] .empty-state,
+  body[data-native-app="true"] .athlete-accessBanner,
+  body[data-native-app="true"] .account-fold,
+  body[data-native-app="true"] .trend-card,
+  body[data-native-app="true"] .coach-selectionPanel,
+  body[data-native-app="true"] .coach-audienceBlock {
+    border-radius: 20px;
+    border-color: rgba(255, 255, 255, 0.05);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01)),
+      rgba(15, 23, 33, 0.96);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+  }
+
+  body[data-native-app="true"] .page-foldSummaryRow,
+  body[data-native-app="true"] .page-foldBody,
+  body[data-native-app="true"] .account-foldSummary,
+  body[data-native-app="true"] .account-foldBody {
+    padding-inline: 14px;
+  }
+
+  body[data-native-app="true"] .summary-label,
+  body[data-native-app="true"] .section-kicker,
+  body[data-native-app="true"] .page-heroEyebrow,
+  body[data-native-app="true"] .account-heroEyebrow {
+    letter-spacing: 0.08em;
+  }
+
+  body[data-native-app="true"] .page-actions-inline .btn-primary,
+  body[data-native-app="true"] .page-actions-inline .btn-secondary,
+  body[data-native-app="true"] .page-actions .btn-primary,
+  body[data-native-app="true"] .page-actions .btn-secondary {
+    min-height: 46px;
+    border-radius: 14px;
+  }
+
+  body[data-native-app="true"] .page-heroActions .btn-secondary,
+  body[data-native-app="true"] .page-heroActions .btn-primary,
+  body[data-native-app="true"] .page-heroActions .day-select {
+    width: 100%;
+  }
+
+  body[data-native-app="true"] .quick-action {
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01)),
+      rgba(15, 23, 33, 0.92);
+    box-shadow: none;
   }
 }

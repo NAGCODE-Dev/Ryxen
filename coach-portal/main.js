@@ -63,9 +63,9 @@ function App() {
     return React.createElement('div', { className: 'portal-shell auth-shell' },
       React.createElement('div', { className: 'auth-layout' },
         React.createElement('section', { className: 'auth-card' },
-          React.createElement('div', { className: 'eyebrow' }, 'CrossApp'),
+          React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
           React.createElement('h1', null, 'Coach Portal'),
-          React.createElement('p', { className: 'muted' }, 'Acesse a operação do box, publique treinos e gerencie atletas em um portal separado do app do atleta.'),
+          React.createElement('p', { className: 'muted' }, 'Entre para publicar treinos, organizar atletas e acompanhar o box sem depender de planilha solta.'),
           error ? React.createElement('div', { className: 'notice error' }, error) : null,
           message ? React.createElement('div', { className: 'notice success' }, message) : null,
           React.createElement('form', { className: 'stack', onSubmit: handleLogin },
@@ -85,12 +85,15 @@ function App() {
             }),
             React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading }, loading ? 'Entrando...' : 'Entrar')
           ),
-          React.createElement('a', { className: 'portal-link', href: '/' }, 'Abrir app do atleta')
+          React.createElement('div', { className: 'auth-links' },
+            React.createElement('a', { className: 'portal-link', href: '/' }, 'Abrir app do atleta'),
+            React.createElement('a', { className: 'portal-link', href: '/pricing.html' }, 'Ver planos')
+          )
         ),
         React.createElement('aside', { className: 'auth-panel' },
           React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
-          React.createElement('h2', null, 'Organize a rotina do box sem depender de planilha solta e mensagens dispersas.'),
-          React.createElement('p', { className: 'muted auth-panelCopy' }, 'O Coach Portal concentra publicação de treinos, grupos, atletas, benchmarks e acesso do box em uma interface única.'),
+          React.createElement('h2', null, 'Um portal só para operar o box com mais clareza.'),
+          React.createElement('p', { className: 'muted auth-panelCopy' }, 'O Coach Portal concentra programação, grupos, atletas, benchmarks, rankings e assinatura em uma experiência separada do app do atleta.'),
           React.createElement('div', { className: 'auth-panelGrid' },
             authFeatureCard('Publique treinos', 'Envie programação para todos, grupos ou atletas específicos.'),
             authFeatureCard('Gerencie atletas', 'Centralize membros, grupos e contexto operacional do gym.'),

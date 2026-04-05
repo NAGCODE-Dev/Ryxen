@@ -1,0 +1,9 @@
+<svg width="940" height="240" viewBox="0 0 940 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(28 2) scale(0.96)">
+    <path d="M164 64C140 47 111 38 80 38C28 38 6 75 6 120C6 165 28 202 80 202C111 202 139 193 162 176" transform="translate(34 0)" stroke="currentColor" stroke-width="24" stroke-linecap="round"/>
+    <path d="M0 0L68 112" transform="translate(149 64)" stroke="currentColor" stroke-width="18" stroke-linecap="square"/>
+    <path d="M66 0L0 112" transform="translate(151 64)" stroke="currentColor" stroke-width="18" stroke-linecap="square"/>
+  </g>
+  <text x="305" y="130" fill="currentColor" font-size="70" font-weight="600" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">Cross</text>
+  <text x="540" y="130" fill="currentColor" font-size="70" font-weight="500" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">App</text>
+</svg>

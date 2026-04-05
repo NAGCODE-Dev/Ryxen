@@ -74,6 +74,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
       <section class="hub-hero">
         <div class="hub-heroGrid">
           <div class="hub-heroMain">
+            <img class="hub-wordmark" src="/icons/crossapp-wordmark.svg" alt="CrossApp">
             <div class="hub-kicker">CrossApp para atleta e coach</div>
             <h1>Importe treino, acompanhe evolução e centralize a rotina do box no mesmo ecossistema.</h1>
             <p class="hub-lead">

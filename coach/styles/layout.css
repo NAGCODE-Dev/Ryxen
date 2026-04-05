@@ -5,9 +5,15 @@
 }
 
 .sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  min-height: 100vh;
   padding: 24px;
   border-right: 1px solid var(--line);
-  background: linear-gradient(180deg, rgba(12,15,20,0.98), rgba(12,15,20,0.9));
+  background:
+    linear-gradient(180deg, rgba(15, 20, 28, 0.98), rgba(10, 14, 20, 0.92)),
+    radial-gradient(circle at top, rgba(89, 209, 255, 0.07), transparent 28%);
 }
 
 .sidebar-title {
@@ -23,7 +29,7 @@
 }
 
 .portal-main {
-  padding: 20px;
+  padding: 24px;
 }
 
 .hero,
@@ -61,6 +67,9 @@
   gap: 16px;
   align-items: center;
   margin-bottom: 18px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015)),
+    var(--surface);
 }
 
 .hero h2 {
@@ -73,6 +82,171 @@
   margin: 8px 0 0;
   color: var(--muted);
   max-width: 680px;
+}
+
+.portal-toolbarCard {
+  margin-bottom: 18px;
+}
+
+.portal-viewTabs {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+
+.publish-flow {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.publish-step,
+.publish-metaCard {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.publish-step {
+  grid-template-columns: auto 1fr;
+  align-items: start;
+}
+
+.publish-stepIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: rgba(89, 209, 255, 0.12);
+  color: #f7fbff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.publish-step strong,
+.publish-metaCard strong {
+  display: block;
+}
+
+.publish-step span:last-child,
+.publish-metaCard span {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.publish-step.isActive {
+  border-color: rgba(89, 209, 255, 0.2);
+  background: linear-gradient(180deg, rgba(89, 209, 255, 0.08), rgba(255,255,255,0.01)), var(--surface-2);
+}
+
+.publish-metaCard {
+  margin-top: 2px;
+}
+
+.publish-previewCard {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.012)),
+    var(--surface-2);
+}
+
+.publish-previewHead,
+.publish-previewMeta {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.publish-previewHead strong {
+  font-size: 1rem;
+}
+
+.publish-previewHead span,
+.publish-previewMeta span {
+  color: var(--muted);
+}
+
+.publish-previewList {
+  display: grid;
+  gap: 8px;
+}
+
+.publish-previewLine {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+}
+
+.publish-previewDot {
+  width: 8px;
+  height: 8px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #59D1FF, #2F8FFF);
+}
+
+.publish-validationCard {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(243, 197, 127, 0.18);
+  background: rgba(243, 197, 127, 0.06);
+}
+
+.publish-validationCard.isReady {
+  border-color: rgba(154, 213, 173, 0.18);
+  background: rgba(154, 213, 173, 0.06);
+}
+
+.publish-validationList {
+  display: grid;
+  gap: 8px;
+}
+
+.publish-validationItem {
+  color: var(--text);
+}
+
+.draft-statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.portal-sectionHeader {
+  display: grid;
+  gap: 6px;
+  margin: 4px 0 14px;
+}
+
+.portal-sectionHeader h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  line-height: 1.04;
+}
+
+.portal-sectionHeader p {
+  margin: 0;
+}
+
+.portal-sectionHeader-inline {
+  margin: 0 0 16px;
 }
 
 .hero-pills,
@@ -279,6 +453,43 @@
 .auth-feature span {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.auth-links {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.sidebar-nav {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.sidebar-navLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sidebar-navLink:hover {
+  border-color: var(--line-strong);
+  background: rgba(255,255,255,0.05);
+}
+
+.sidebar-navLink.isActive {
+  border-color: rgba(89, 209, 255, 0.22);
+  background: rgba(89, 209, 255, 0.08);
+  color: #f7fbff;
 }
 
 .portal-link {

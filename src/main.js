@@ -135,9 +135,11 @@ function applyAppContext() {
   const cfg = getRuntimeConfig();
   const appLabel = cfg?.app?.appLabel || 'CrossApp';
   const sport = cfg?.app?.sport || 'cross';
+  const nativeApp = isNativePlatform();
 
   document.title = appLabel;
   document.body.dataset.sport = sport;
+  document.body.dataset.nativeApp = nativeApp ? 'true' : 'false';
 }
 
 function setupErrorMonitoring() {

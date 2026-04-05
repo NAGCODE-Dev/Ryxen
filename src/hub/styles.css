@@ -85,6 +85,13 @@ textarea {
   z-index: 1;
 }
 
+.hub-wordmark {
+  display: block;
+  width: min(100%, 320px);
+  height: auto;
+  margin-bottom: 18px;
+}
+
 .hub-kicker,
 .sport-badge,
 .hub-status,

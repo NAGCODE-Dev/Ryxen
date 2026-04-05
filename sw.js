@@ -1,9 +1,9 @@
 /**
  * Service Worker
- * Versão: 3.3.0
+ * Versão: 3.4.0
  */
 
-const CACHE_NAME = 'crossapp-v3-3';
+const CACHE_NAME = 'crossapp-v3-4';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -29,8 +29,10 @@ const CORE_ASSETS = [
   './src/adapters/media/videoTextReader.js',
   './src/libs/pdf.mjs',
   './src/libs/pdf.worker.mjs',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './branding/exports/crossapp-icon-32.png',
+  './branding/exports/crossapp-icon-180.png',
+  './branding/exports/crossapp-icon-192.png',
+  './branding/exports/crossapp-icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {

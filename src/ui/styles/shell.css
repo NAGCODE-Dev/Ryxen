@@ -23,6 +23,7 @@
 .header-badge {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border-radius: 999px;
   background: var(--bg-soft);
@@ -32,6 +33,13 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.header-badgeMark {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  flex: 0 0 auto;
 }
 
 .header-account {
@@ -221,6 +229,10 @@ textarea.add-input:focus {
   align-content: flex-start;
 }
 
+.page-heroActions > * {
+  flex: 0 0 auto;
+}
+
 .page-heroActions .btn-secondary {
   min-height: 40px;
   padding: 0 14px;
@@ -389,7 +401,7 @@ body[data-page="account"] .page-heroActions {
 .nav-btn {
   display: grid;
   place-items: center;
-  gap: 3px;
+  gap: 2px;
   min-height: 42px;
   border: 0;
   border-radius: 13px;
@@ -416,6 +428,6 @@ body[data-page="account"] .page-heroActions {
 .nav-label {
   font-size: 0.63rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-transform: none;
 }

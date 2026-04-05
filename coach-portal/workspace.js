@@ -5,6 +5,29 @@ const STORAGE_KEYS = {
   token: 'crossapp-auth-token',
   profile: 'crossapp-user-profile',
   runtime: 'crossapp-runtime-config',
+  workoutDraft: 'crossapp-coach-workout-draft',
+};
+
+const DEFAULT_WORKOUT_DRAFT = {
+  workoutTitle: '',
+  workoutDate: '',
+  workoutBenchmarkSlug: '',
+  workoutLines: '',
+  runningSessionType: 'easy',
+  runningDistanceKm: '',
+  runningDurationMin: '',
+  runningTargetPace: '',
+  runningZone: '',
+  runningNotes: '',
+  runningSegments: [{ label: '', distanceMeters: '', targetPace: '', restSeconds: '' }],
+  strengthFocus: '',
+  strengthLoadGuidance: '',
+  strengthRir: '',
+  strengthRestSeconds: '',
+  strengthExercises: [{ name: '', sets: '', reps: '', load: '', rir: '' }],
+  workoutAudienceMode: 'all',
+  targetMembershipIds: [],
+  targetGroupIds: [],
 };
 
 const SPORT_OPTIONS = [
@@ -18,6 +41,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   const profile = initialProfile || readProfile();
   const availableSportOptions = getAvailableSportOptions(readRuntimeConfig());
   const [loading, setLoading] = useState(false);
+  const [activeSection, setActiveSection] = useState('overview');
+  const [draftStatus, setDraftStatus] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [dashboard, setDashboard] = useState({
@@ -46,25 +71,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     groupName: '',
     groupDescription: '',
     selectedGroupMemberIds: [],
-    workoutTitle: '',
-    workoutDate: '',
-    workoutBenchmarkSlug: '',
-    workoutLines: '',
-    runningSessionType: 'easy',
-    runningDistanceKm: '',
-    runningDurationMin: '',
-    runningTargetPace: '',
-    runningZone: '',
-    runningNotes: '',
-    runningSegments: [{ label: '', distanceMeters: '', targetPace: '', restSeconds: '' }],
-    strengthFocus: '',
-    strengthLoadGuidance: '',
-    strengthRir: '',
-    strengthRestSeconds: '',
-    strengthExercises: [{ name: '', sets: '', reps: '', load: '', rir: '' }],
-    workoutAudienceMode: 'all',
-    targetMembershipIds: [],
-    targetGroupIds: [],
+    ...DEFAULT_WORKOUT_DRAFT,
     benchmarkQuery: '',
     benchmarkCategory: '',
     benchmarkSource: '',
@@ -95,6 +102,38 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       loadDashboard();
     }
   }, [token]);
+
+  useEffect(() => {
+    const draft = readWorkoutDraft();
+    if (!draft) return;
+    setForms((prev) => ({ ...prev, ...draft }));
+    setDraftStatus('Rascunho recuperado automaticamente');
+  }, []);
+
+  useEffect(() => {
+    writeWorkoutDraft(forms);
+    setDraftStatus(hasWorkoutDraftContent(forms) ? 'Rascunho salvo automaticamente' : '');
+  }, [
+    forms.workoutTitle,
+    forms.workoutDate,
+    forms.workoutBenchmarkSlug,
+    forms.workoutLines,
+    forms.runningSessionType,
+    forms.runningDistanceKm,
+    forms.runningDurationMin,
+    forms.runningTargetPace,
+    forms.runningZone,
+    forms.runningNotes,
+    forms.runningSegments,
+    forms.strengthFocus,
+    forms.strengthLoadGuidance,
+    forms.strengthRir,
+    forms.strengthRestSeconds,
+    forms.strengthExercises,
+    forms.workoutAudienceMode,
+    forms.targetMembershipIds,
+    forms.targetGroupIds,
+  ]);
 
   async function loadDashboard(nextGymId = null, nextSportType = null) {
     setLoading(true);
@@ -348,26 +387,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       });
       setForms((prev) => ({
         ...prev,
-        workoutTitle: '',
-        workoutDate: '',
-        workoutBenchmarkSlug: '',
-        workoutLines: '',
-        runningSessionType: 'easy',
-        runningDistanceKm: '',
-        runningDurationMin: '',
-        runningTargetPace: '',
-        runningZone: '',
-        runningNotes: '',
-        runningSegments: [{ label: '', distanceMeters: '', targetPace: '', restSeconds: '' }],
-        strengthFocus: '',
-        strengthLoadGuidance: '',
-        strengthRir: '',
-        strengthRestSeconds: '',
-        strengthExercises: [{ name: '', sets: '', reps: '', load: '', rir: '' }],
-        workoutAudienceMode: 'all',
-        targetMembershipIds: [],
-        targetGroupIds: [],
+        ...DEFAULT_WORKOUT_DRAFT,
       }));
+      clearWorkoutDraft();
+      setDraftStatus('');
       setMessage('Treino publicado');
       await loadDashboard(dashboard.selectedGymId, dashboard.selectedSportType);
     } catch (err) {
@@ -609,6 +632,13 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     if (typeof onLogout === 'function') onLogout();
   }
 
+  function handleClearWorkoutDraft() {
+    setForms((prev) => ({ ...prev, ...DEFAULT_WORKOUT_DRAFT }));
+    clearWorkoutDraft();
+    setDraftStatus('');
+    setMessage('Rascunho limpo');
+  }
+
   const canCoachManage = dashboard.entitlements.includes('coach_portal');
   const canAthleteUseApp = dashboard.entitlements.includes('athlete_app');
   const subscription = dashboard.subscription || null;
@@ -622,6 +652,45 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   const showSkeleton = loading && !dashboard.gyms.length && !dashboard.feed.length && !dashboard.benchmarks.length;
   const isRunning = dashboard.selectedSportType === 'running';
   const isStrength = dashboard.selectedSportType === 'strength';
+  const quickSections = [
+    ['overview', 'Visão geral'],
+    ['operation', 'Operação'],
+    ['programming', 'Programação'],
+    ['library', 'Biblioteca'],
+    ['competition', 'Competições'],
+    ['leaderboards', 'Rankings'],
+  ];
+  const isOverviewSection = activeSection === 'overview';
+  const isOperationSection = activeSection === 'operation';
+  const isProgrammingSection = activeSection === 'programming';
+  const isLibrarySection = activeSection === 'library';
+  const isCompetitionSection = activeSection === 'competition';
+  const isLeaderboardsSection = activeSection === 'leaderboards';
+  const publishAudienceMode = forms.workoutAudienceMode || 'all';
+  const hasSelectedAthletes = forms.targetMembershipIds.length > 0;
+  const hasSelectedGroups = forms.targetGroupIds.length > 0;
+  const publishSummary = publishAudienceMode === 'groups'
+    ? (hasSelectedGroups ? `${forms.targetGroupIds.length} grupo(s) selecionado(s)` : 'Nenhum grupo selecionado')
+    : publishAudienceMode === 'selected'
+      ? (hasSelectedAthletes ? `${forms.targetMembershipIds.length} atleta(s) selecionado(s)` : 'Nenhum atleta selecionado')
+      : 'Todos os atletas do gym';
+  const previewLines = String(forms.workoutLines || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(0, 6);
+  const previewOverflow = Math.max(0, String(forms.workoutLines || '')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean).length - previewLines.length);
+  const publishErrors = getPublishValidationErrors({
+    forms,
+    selectedGymId: dashboard.selectedGymId,
+    athleteMembers,
+    groups: dashboard.groups,
+    canCoachManage,
+  });
+  const canPublishWorkout = !loading && publishErrors.length === 0;
 
   function renderSportSpecificWorkoutFields() {
     if (isRunning) {
@@ -834,7 +903,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     React.createElement('aside', { className: 'sidebar' },
       React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
       React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
-      React.createElement('p', { className: 'sidebar-copy' }, 'Operação do box, assinatura, benchmarks e programação em um workspace único.'),
+      React.createElement('p', { className: 'sidebar-copy' }, 'Operação do box, assinatura, benchmarks, rankings e programação em um workspace mais claro.'),
       React.createElement('div', { className: 'profile-box' },
         React.createElement('strong', null, profile?.name || profile?.email || 'Coach'),
         React.createElement('span', null, profile?.email || '')
@@ -848,6 +917,16 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             : 'Sem renovação'
         )
       ),
+      React.createElement('nav', { className: 'sidebar-nav', 'aria-label': 'Seções do portal' },
+        quickSections.map(([id, label]) =>
+          React.createElement('button', {
+            key: id,
+            type: 'button',
+            className: `sidebar-navLink ${activeSection === id ? 'isActive' : ''}`,
+            onClick: () => setActiveSection(id),
+          }, label)
+        )
+      ),
       React.createElement('div', { className: 'stack' },
         React.createElement('button', { className: 'btn btn-secondary', onClick: () => loadDashboard(dashboard.selectedGymId, dashboard.selectedSportType) }, 'Atualizar dados'),
         React.createElement('button', { className: 'btn btn-secondary', onClick: handleLogout }, 'Sair'),
@@ -855,18 +934,21 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       )
     ),
     React.createElement('main', { className: 'portal-main' },
-      React.createElement('section', { className: 'hero' },
+      React.createElement('section', { className: 'hero', id: 'overview' },
         React.createElement('div', null,
           React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
-          React.createElement('h2', null, 'Gyms, membros, benchmarks e billing em um portal pronto para escala'),
-          React.createElement('p', { className: 'hero-copy' }, 'Gerencie a programação, monitore o acesso dos atletas e mantenha a assinatura do box sob controle.')
+          React.createElement('h2', null, selectedGym ? `Operação de ${selectedGym.name}` : 'Seu painel de operação do box'),
+          React.createElement('p', { className: 'hero-copy' }, selectedGym
+            ? `Publicação, grupos, atletas, benchmarks e assinatura do ${selectedGym.name} em um fluxo só.`
+            : 'Escolha um gym para começar a publicar programação, acompanhar atletas e operar o portal com mais clareza.')
         ),
         React.createElement('div', { className: 'hero-pills' },
+          React.createElement('span', { className: 'pill' }, sportLabel(dashboard.selectedSportType)),
           React.createElement('span', { className: `pill ${canCoachManage ? 'ok' : 'warn'}` }, canCoachManage ? 'Coach liberado' : 'Coach bloqueado'),
           React.createElement('span', { className: `pill ${canAthleteUseApp ? 'ok' : 'warn'}` }, canAthleteUseApp ? 'Atletas com acesso' : 'Atletas limitados')
         )
       ),
-      React.createElement('section', { className: 'card' },
+      React.createElement('section', { className: 'portal-toolbarCard card' },
         React.createElement('div', { className: 'stack' },
           React.createElement('div', { className: 'eyebrow' }, 'Modalidade ativa'),
           React.createElement('strong', null, 'Troque o contexto do portal para publicar e gerenciar por esporte'),
@@ -882,9 +964,19 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
           )
         )
       ),
+      React.createElement('section', { className: 'portal-viewTabs', 'aria-label': 'Áreas do portal' },
+        quickSections.map(([id, label]) =>
+          React.createElement('button', {
+            key: id,
+            type: 'button',
+            className: `btn btn-chip ${activeSection === id ? 'is-active' : ''}`,
+            onClick: () => setActiveSection(id),
+          }, label)
+        )
+      ),
       error ? React.createElement('div', { className: 'notice error' }, error) : null,
       message ? React.createElement('div', { className: 'notice success' }, message) : null,
-      React.createElement('section', { className: `billing-banner billing-banner-${billingTone}` },
+      React.createElement('section', { className: `billing-banner billing-banner-${billingTone}`, hidden: !isOverviewSection },
         React.createElement('div', null,
           React.createElement('div', { className: 'eyebrow' }, 'Assinatura'),
           React.createElement('strong', { className: 'billing-bannerTitle' },
@@ -904,7 +996,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
           React.createElement('a', { className: 'btn btn-link', href: '/terms.html', target: '_blank', rel: 'noreferrer' }, 'Termos')
         )
       ),
-      React.createElement('section', { className: 'grid stats-grid' },
+      React.createElement('section', { className: 'grid stats-grid', hidden: !isOverviewSection },
         showSkeleton
           ? Array.from({ length: 6 }, (_, index) => portalSkeletonCard(`stat-${index}`))
           : [
@@ -917,7 +1009,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               statCard('Resultados', String(dashboard.insights?.stats?.results || 0)),
             ]
       ),
-      React.createElement('section', { className: 'plan-grid' },
+      React.createElement('section', { className: 'portal-sectionHeader', id: 'operation', hidden: !isOperationSection },
+        React.createElement('div', { className: 'eyebrow' }, 'Operação'),
+        React.createElement('h3', null, 'Estrutura do box'),
+        React.createElement('p', { className: 'muted' }, 'Gyms, membros, grupos e indicadores operacionais em leitura direta.')
+      ),
+      React.createElement('section', { className: 'plan-grid', hidden: !isOverviewSection },
         planCard({
           name: 'Coach Starter',
           price: 'R$ 49,90/mês',
@@ -946,8 +1043,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
           loading,
         })
       ),
-      React.createElement('section', { className: 'grid portal-grid' },
-        React.createElement('div', { className: 'card' },
+      React.createElement('section', { className: 'grid portal-grid', hidden: !(isOperationSection || isProgrammingSection || isLibrarySection) },
+        React.createElement('div', { className: 'card', hidden: !isOperationSection },
           React.createElement('h3', null, 'Gyms'),
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
@@ -980,7 +1077,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading }, 'Criar gym')
           )
         ),
-        React.createElement('div', { className: 'card' },
+        React.createElement('div', { className: 'card', hidden: !isOperationSection },
           React.createElement('h3', null, selectedGym ? `Membros de ${selectedGym.name}` : 'Membros'),
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
@@ -1012,7 +1109,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym }, 'Adicionar membro')
           )
         ),
-        React.createElement('div', { className: 'card' },
+        React.createElement('div', { className: 'card', hidden: !isOperationSection },
           React.createElement('h3', null, selectedGym ? `Grupos de ${selectedGym.name}` : 'Grupos'),
           React.createElement('p', { className: 'muted' }, `Mostrando grupos de ${sportLabel(dashboard.selectedSportType)}.`),
           React.createElement('div', { className: 'stack list-block' },
@@ -1059,7 +1156,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !selectedGym || !forms.groupName }, 'Criar grupo')
           )
         ),
-        React.createElement('div', { className: 'card' },
+        React.createElement('div', { className: 'card', hidden: !isOperationSection },
           React.createElement('h3', null, selectedGym ? `Insights de ${selectedGym.name}` : 'Insights do gym'),
           React.createElement('p', { className: 'muted' }, `Métricas filtradas em ${sportLabel(dashboard.selectedSportType)}.`),
           showSkeleton
@@ -1085,9 +1182,85 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               )
             : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.')
         ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, `Publicar treino • ${sportLabel(dashboard.selectedSportType)}`),
+        React.createElement('div', { className: 'card wide', hidden: !isProgrammingSection },
+          React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline', id: 'programming' },
+            React.createElement('div', { className: 'eyebrow' }, 'Programação'),
+            React.createElement('h3', null, `Publicar treino • ${sportLabel(dashboard.selectedSportType)}`),
+            React.createElement('p', { className: 'muted' }, 'Monte a sessão, escolha a audiência e publique sem sair do portal.')
+          ),
           React.createElement('form', { className: 'stack', onSubmit: handlePublishWorkout },
+            React.createElement('div', { className: 'publish-flow' },
+              React.createElement('div', { className: 'publish-step isActive' },
+                React.createElement('span', { className: 'publish-stepIndex' }, '1'),
+                React.createElement('div', null,
+                  React.createElement('strong', null, 'Sessão'),
+                  React.createElement('span', null, 'Título, data e estrutura do treino')
+                )
+              ),
+              React.createElement('div', { className: 'publish-step' },
+                React.createElement('span', { className: 'publish-stepIndex' }, '2'),
+                React.createElement('div', null,
+                  React.createElement('strong', null, 'Audiência'),
+                  React.createElement('span', null, publishSummary)
+                )
+              ),
+              React.createElement('div', { className: 'publish-step' },
+                React.createElement('span', { className: 'publish-stepIndex' }, '3'),
+                React.createElement('div', null,
+                  React.createElement('strong', null, 'Publicação'),
+                  React.createElement('span', null, selectedGym ? `Vai para ${selectedGym.name}` : 'Selecione um gym')
+                )
+              )
+            ),
+            React.createElement('div', { className: 'publish-metaCard' },
+              React.createElement('strong', null, 'Resumo rápido'),
+              React.createElement('span', null, selectedGym ? `${selectedGym.name} • ${sportLabel(dashboard.selectedSportType)}` : 'Escolha um gym para publicar'),
+              React.createElement('span', null, publishSummary)
+            ),
+            React.createElement('div', { className: 'publish-previewCard' },
+              React.createElement('div', { className: 'publish-previewHead' },
+                React.createElement('strong', null, 'Prévia do atleta'),
+                React.createElement('span', null, forms.workoutTitle || 'Título do treino')
+              ),
+              React.createElement('div', { className: 'publish-previewMeta' },
+                React.createElement('span', null, forms.workoutDate ? formatDateLabel(forms.workoutDate) : 'Sem data definida'),
+                React.createElement('span', null, publishSummary)
+              ),
+              previewLines.length
+                ? React.createElement('div', { className: 'publish-previewList' },
+                    previewLines.map((line, index) =>
+                      React.createElement('div', { key: `preview-line-${index}`, className: 'publish-previewLine' },
+                        React.createElement('span', { className: 'publish-previewDot', 'aria-hidden': 'true' }),
+                        React.createElement('span', null, line)
+                      )
+                    ),
+                    previewOverflow > 0
+                      ? React.createElement('span', { className: 'muted' }, `+${previewOverflow} linha(s) na publicação`)
+                      : null
+                  )
+                : React.createElement('p', { className: 'muted' }, 'A prévia aparece conforme você preenche o treino.')
+            ),
+            publishErrors.length
+              ? React.createElement('div', { className: 'publish-validationCard' },
+                  React.createElement('strong', null, 'Falta ajustar antes de publicar'),
+                  React.createElement('div', { className: 'publish-validationList' },
+                    publishErrors.map((item) =>
+                      React.createElement('span', { key: item, className: 'publish-validationItem' }, item)
+                    )
+                  )
+                )
+              : React.createElement('div', { className: 'publish-validationCard isReady' },
+                  React.createElement('strong', null, 'Pronto para publicar'),
+                  React.createElement('span', { className: 'muted' }, 'O treino já tem o mínimo necessário para ser enviado.')
+                ),
+            draftStatus ? React.createElement('div', { className: 'draft-statusRow' },
+              React.createElement('span', { className: 'muted' }, draftStatus),
+              React.createElement('button', {
+                type: 'button',
+                className: 'btn btn-secondary',
+                onClick: handleClearWorkoutDraft,
+              }, 'Limpar rascunho')
+            ) : null,
             React.createElement('input', {
               className: 'field',
               placeholder: 'Título do treino',
@@ -1113,6 +1286,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             }),
             React.createElement('div', { className: 'stack nested-card audience-card' },
               React.createElement('strong', null, 'Audiência'),
+              React.createElement('span', { className: 'muted' }, 'Escolha só o destino que precisa publicar agora.'),
               React.createElement('div', { className: 'tabs' },
                 [
                   ['all', 'Todos os atletas'],
@@ -1127,8 +1301,9 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   }, label)
                 )
               ),
-              React.createElement('div', { className: 'selection-panels' },
+              React.createElement('div', { className: 'selection-panels', hidden: publishAudienceMode === 'all' },
                 React.createElement('div', { className: 'selection-panel' },
+                  publishAudienceMode === 'groups' ? null : React.createElement(React.Fragment, null,
                   React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
                   React.createElement('div', { className: 'selection-grid' },
                     athleteMembers.length
@@ -1147,8 +1322,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                         )
                       : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
                   )
+                  )
                 ),
                 React.createElement('div', { className: 'selection-panel' },
+                  publishAudienceMode === 'selected' ? null : React.createElement(React.Fragment, null,
                   React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
                   React.createElement('div', { className: 'selection-grid' },
                     dashboard.groups.length
@@ -1167,14 +1344,19 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                         )
                       : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
                   )
+                  )
                 )
               )
             ),
-            React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !selectedGym || !canCoachManage }, 'Publicar treino')
+            React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: !canPublishWorkout }, loading ? 'Publicando...' : 'Publicar treino')
           )
         ),
-        React.createElement('div', { className: 'card' },
-          React.createElement('h3', null, 'Benchmark Library'),
+        React.createElement('div', { className: 'card', id: 'library', hidden: !isLibrarySection },
+          React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline' },
+            React.createElement('div', { className: 'eyebrow' }, 'Biblioteca'),
+            React.createElement('h3', null, 'Benchmarks'),
+            React.createElement('p', { className: 'muted' }, 'Busque e filtre a biblioteca oficial em leitura rápida.')
+          ),
           React.createElement('div', { className: 'toolbar' },
             React.createElement('input', {
               className: 'field',
@@ -1243,7 +1425,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             }, 'Próxima')
           )
         ),
-        React.createElement('div', { className: 'card' },
+        React.createElement('div', { className: 'card', hidden: !isProgrammingSection },
           React.createElement('h3', null, `Feed do app • ${sportLabel(dashboard.selectedSportType)}`),
           React.createElement('div', { className: 'stack list-block' },
             showSkeleton
@@ -1257,8 +1439,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             dashboard.feed.length === 0 ? React.createElement('p', { className: 'muted' }, 'Sem treinos publicados ainda.') : null
           )
         ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, 'Calendário de competições'),
+        React.createElement('div', { className: 'card wide', id: 'competition', hidden: !isCompetitionSection },
+          React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline' },
+            React.createElement('div', { className: 'eyebrow' }, 'Competições'),
+            React.createElement('h3', null, 'Calendário e eventos'),
+            React.createElement('p', { className: 'muted' }, 'Crie competições, eventos e mantenha o calendário do box organizado.')
+          ),
           React.createElement('div', { className: 'stack list-block competition-list' },
             dashboard.competitions.map((competition) =>
               React.createElement('div', { key: competition.id, className: 'list-item static competition-item' },
@@ -1341,8 +1527,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             )
           )
         ),
-        React.createElement('div', { className: 'card wide' },
-          React.createElement('h3', null, 'Leaderboard e resultados'),
+        React.createElement('div', { className: 'card wide', id: 'leaderboards', hidden: !isLeaderboardsSection },
+          React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline' },
+            React.createElement('div', { className: 'eyebrow' }, 'Rankings'),
+            React.createElement('h3', null, 'Leaderboards e resultados'),
+            React.createElement('p', { className: 'muted' }, 'Consulte rankings e registre resultados sem trocar de contexto.')
+          ),
           React.createElement('div', { className: 'grid dual-grid' },
             React.createElement('div', { className: 'card nested-card stack' },
               React.createElement('h4', null, 'Leaderboard'),
@@ -1565,6 +1755,123 @@ function readProfile() {
   } catch {
     return null;
   }
+}
+
+function getWorkoutDraftPayload(forms = {}) {
+  return {
+    ...DEFAULT_WORKOUT_DRAFT,
+    workoutTitle: String(forms.workoutTitle || ''),
+    workoutDate: String(forms.workoutDate || ''),
+    workoutBenchmarkSlug: String(forms.workoutBenchmarkSlug || ''),
+    workoutLines: String(forms.workoutLines || ''),
+    runningSessionType: String(forms.runningSessionType || 'easy'),
+    runningDistanceKm: String(forms.runningDistanceKm || ''),
+    runningDurationMin: String(forms.runningDurationMin || ''),
+    runningTargetPace: String(forms.runningTargetPace || ''),
+    runningZone: String(forms.runningZone || ''),
+    runningNotes: String(forms.runningNotes || ''),
+    runningSegments: Array.isArray(forms.runningSegments) && forms.runningSegments.length
+      ? forms.runningSegments.map((segment) => ({
+          label: String(segment?.label || ''),
+          distanceMeters: String(segment?.distanceMeters || ''),
+          targetPace: String(segment?.targetPace || ''),
+          restSeconds: String(segment?.restSeconds || ''),
+        }))
+      : DEFAULT_WORKOUT_DRAFT.runningSegments,
+    strengthFocus: String(forms.strengthFocus || ''),
+    strengthLoadGuidance: String(forms.strengthLoadGuidance || ''),
+    strengthRir: String(forms.strengthRir || ''),
+    strengthRestSeconds: String(forms.strengthRestSeconds || ''),
+    strengthExercises: Array.isArray(forms.strengthExercises) && forms.strengthExercises.length
+      ? forms.strengthExercises.map((exercise) => ({
+          name: String(exercise?.name || ''),
+          sets: String(exercise?.sets || ''),
+          reps: String(exercise?.reps || ''),
+          load: String(exercise?.load || ''),
+          rir: String(exercise?.rir || ''),
+        }))
+      : DEFAULT_WORKOUT_DRAFT.strengthExercises,
+    workoutAudienceMode: String(forms.workoutAudienceMode || 'all'),
+    targetMembershipIds: Array.isArray(forms.targetMembershipIds) ? forms.targetMembershipIds.filter(Boolean) : [],
+    targetGroupIds: Array.isArray(forms.targetGroupIds) ? forms.targetGroupIds.filter(Boolean) : [],
+  };
+}
+
+function hasWorkoutDraftContent(forms = {}) {
+  const draft = getWorkoutDraftPayload(forms);
+  return !!(
+    draft.workoutTitle
+    || draft.workoutDate
+    || draft.workoutBenchmarkSlug
+    || draft.workoutLines
+    || draft.runningDistanceKm
+    || draft.runningDurationMin
+    || draft.runningTargetPace
+    || draft.runningZone
+    || draft.runningNotes
+    || draft.runningSegments.some((segment) => segment.label || segment.distanceMeters || segment.targetPace || segment.restSeconds)
+    || draft.strengthFocus
+    || draft.strengthLoadGuidance
+    || draft.strengthRir
+    || draft.strengthRestSeconds
+    || draft.strengthExercises.some((exercise) => exercise.name || exercise.sets || exercise.reps || exercise.load || exercise.rir)
+    || draft.workoutAudienceMode !== 'all'
+    || draft.targetMembershipIds.length
+    || draft.targetGroupIds.length
+  );
+}
+
+function readWorkoutDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.workoutDraft);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return getWorkoutDraftPayload(parsed);
+  } catch {
+    return null;
+  }
+}
+
+function writeWorkoutDraft(forms = {}) {
+  try {
+    if (!hasWorkoutDraftContent(forms)) {
+      localStorage.removeItem(STORAGE_KEYS.workoutDraft);
+      return;
+    }
+    localStorage.setItem(STORAGE_KEYS.workoutDraft, JSON.stringify(getWorkoutDraftPayload(forms)));
+  } catch {
+    // no-op
+  }
+}
+
+function clearWorkoutDraft() {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.workoutDraft);
+  } catch {
+    // no-op
+  }
+}
+
+function getPublishValidationErrors({ forms = {}, selectedGymId = '', athleteMembers = [], groups = [], canCoachManage = false } = {}) {
+  const errors = [];
+  const title = String(forms.workoutTitle || '').trim();
+  const date = String(forms.workoutDate || '').trim();
+  const lines = String(forms.workoutLines || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  const audienceMode = String(forms.workoutAudienceMode || 'all');
+  const selectedAthletes = Array.isArray(forms.targetMembershipIds) ? forms.targetMembershipIds.filter(Boolean) : [];
+  const selectedGroups = Array.isArray(forms.targetGroupIds) ? forms.targetGroupIds.filter(Boolean) : [];
+
+  if (!selectedGymId) errors.push('Selecione um gym');
+  if (!canCoachManage) errors.push('Seu plano atual não libera a publicação no portal');
+  if (!title) errors.push('Defina um título para o treino');
+  if (!date) errors.push('Escolha a data da publicação');
+  if (!lines.length) errors.push('Adicione pelo menos uma linha no treino');
+  if (audienceMode === 'selected' && !selectedAthletes.length) errors.push('Escolha pelo menos um atleta');
+  if (audienceMode === 'groups' && !selectedGroups.length) errors.push('Escolha pelo menos um grupo');
+  if (audienceMode === 'selected' && !athleteMembers.length) errors.push('Não há atletas ativos para selecionar');
+  if (audienceMode === 'groups' && !groups.length) errors.push('Não há grupos disponíveis para esse gym');
+
+  return errors;
 }
 
 function writeProfile(profile) {

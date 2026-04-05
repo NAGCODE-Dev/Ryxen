@@ -1,0 +1,25 @@
+<svg width="940" height="240" viewBox="0 0 940 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wordBBg" x1="60" y1="20" x2="880" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1B31"/>
+      <stop offset="1" stop-color="#071427"/>
+    </linearGradient>
+    <linearGradient id="wordBC" x1="36" y1="36" x2="150" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#59D1FF"/>
+      <stop offset="1" stop-color="#2F8FFF"/>
+    </linearGradient>
+    <linearGradient id="wordBX" x1="132" y1="60" x2="194" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFBE55"/>
+      <stop offset="1" stop-color="#FF8A2A"/>
+    </linearGradient>
+  </defs>
+  <rect width="940" height="240" rx="52" fill="#040C17"/>
+  <rect x="12" y="12" width="916" height="216" rx="42" fill="url(#wordBBg)" stroke="#FFFFFF" stroke-opacity="0.05"/>
+  <g transform="translate(28 2) scale(0.96)">
+    <path d="M164 64C140 47 111 38 80 38C28 38 6 75 6 120C6 165 28 202 80 202C111 202 139 193 162 176" transform="translate(34 0)" stroke="url(#wordBC)" stroke-width="24" stroke-linecap="round"/>
+    <path d="M0 0L68 112" transform="translate(149 64)" stroke="url(#wordBX)" stroke-width="18" stroke-linecap="square"/>
+    <path d="M66 0L0 112" transform="translate(151 64)" stroke="url(#wordBX)" stroke-width="18" stroke-linecap="square"/>
+  </g>
+  <text x="305" y="130" fill="#F7FBFF" font-size="70" font-weight="600" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">Cross</text>
+  <text x="540" y="130" fill="#C8D6E5" font-size="70" font-weight="500" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">App</text>
+</svg>

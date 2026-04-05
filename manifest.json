@@ -2,26 +2,28 @@
   "id": "/CrossApp/",
   "name": "CrossApp",
   "short_name": "CrossApp",
-  "description": "PWA para planejamento, cálculo de cargas e gestão de treinos de CrossFit.",
+  "description": "CrossApp para atleta e coach: treino do dia, evolução e rotina do box em um só ecossistema.",
   "lang": "pt-BR",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#1a1a2e",
+  "background_color": "#071427",
+  "theme_color": "#071427",
   "orientation": "portrait-primary",
   "categories": ["sports", "health", "fitness", "productivity"],
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "branding/exports/crossapp-icon-192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "branding/exports/crossapp-icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

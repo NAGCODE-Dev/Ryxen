@@ -3,6 +3,11 @@
     grid-template-columns: 1fr;
   }
 
+  .sidebar {
+    position: static;
+    min-height: 0;
+  }
+
   .stats-grid,
   .plan-grid,
   .dual-grid,
@@ -17,6 +22,10 @@
   .portal-main,
   .auth-shell {
     padding: 14px;
+  }
+
+  .portal-main {
+    padding-top: 10px;
   }
 
   .auth-layout,
@@ -55,7 +64,25 @@
     grid-template-columns: 1fr;
   }
 
+  .sidebar-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portal-viewTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 4px;
+  }
+
+  .publish-flow {
+    grid-template-columns: 1fr;
+  }
+
   .hero h2 {
     font-size: 1.28rem;
+  }
+
+  .portal-sectionHeader h3 {
+    font-size: 1.08rem;
   }
 }

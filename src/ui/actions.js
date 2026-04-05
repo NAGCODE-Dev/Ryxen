@@ -288,6 +288,48 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     }
   }
 
+  function getImportStatusState() {
+    return getUiState?.()?.importStatus || {};
+  }
+
+  function isImportBusy() {
+    return !!getImportStatusState()?.active;
+  }
+
+  function explainImportFailure(error, file) {
+    const rawMessage = String(error?.message || error || '').trim();
+    const fileName = String(file?.name || '').trim();
+    const lower = rawMessage.toLowerCase();
+
+    if (!rawMessage) {
+      return 'Nao foi possivel importar esse arquivo.';
+    }
+
+    if (lower.includes('não foi possível extrair frames') || lower.includes('nao foi possivel extrair frames')) {
+      return 'Nao consegui ler esse video. Tente um video mais curto, com texto mais nítido ou envie uma imagem/PDF.';
+    }
+
+    if (lower.includes('pdf vazio') || lower.includes('texto não extraído') || lower.includes('texto nao extraido')) {
+      return 'Esse PDF nao trouxe texto legivel. Tente um PDF mais nítido ou envie imagem/planilha.';
+    }
+
+    if (lower.includes('não é um') || lower.includes('nao e um')) {
+      return fileName
+        ? `O arquivo ${fileName} nao parece estar em um formato suportado para esse fluxo.`
+        : 'Esse arquivo nao parece estar em um formato suportado para esse fluxo.';
+    }
+
+    if (lower.includes('vazio')) {
+      return 'O arquivo foi lido, mas nao encontrei conteudo suficiente para montar o treino.';
+    }
+
+    if (lower.includes('limite')) {
+      return rawMessage;
+    }
+
+    return rawMessage;
+  }
+
   async function measureAsync(name, fn, meta = {}) {
     const startedAt = performance.now();
     try {
@@ -346,6 +388,34 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     filterPrs(root, t.value);
   });
 
+  root.addEventListener('keydown', async (e) => {
+    const target = e.target;
+    if (!(target instanceof HTMLElement)) return;
+    if (e.key !== 'Enter') return;
+
+    const modal = getUiState?.()?.modal || null;
+    if (modal !== 'auth') return;
+
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLTextAreaElement) return;
+    if (activeElement instanceof HTMLButtonElement) return;
+
+    const ui = getUiState?.() || {};
+    const authMode = ui.authMode === 'signup' ? 'signup' : 'signin';
+    const reset = ui.passwordReset || {};
+
+    const trigger = reset?.open && reset?.step === 'confirm'
+      ? root.querySelector('[data-action="auth:reset-confirm"]')
+      : reset?.open
+        ? root.querySelector('[data-action="auth:reset-request"]')
+        : root.querySelector(`[data-action="auth:submit"][data-mode="${authMode}"]`);
+
+    if (!trigger) return;
+
+    e.preventDefault();
+    trigger.click();
+  });
+
   function filterPrs(root, query) {
     const q = String(query || '').trim().toUpperCase();
     const table = root.querySelector('#ui-prsTable');
@@ -376,6 +446,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       switch (action) {
         // ----- PDF / semana / treino -----
         case 'pdf:pick': {
+          if (isImportBusy()) {
+            toast('Aguarde a importacao atual terminar');
+            return;
+          }
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('pdf', ui);
           await setUiState({
@@ -430,6 +504,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'media:pick': {
+          if (isImportBusy()) {
+            toast('Aguarde a importacao atual terminar');
+            return;
+          }
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('media', ui);
           await setUiState({
@@ -470,7 +548,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           await rerender();
           const result = await getAppBridge().importFromFile(file);
           if (!result?.success) {
-            throw new Error(result?.error || 'Falha ao importar arquivo');
+            throw new Error(explainImportFailure(result?.error || 'Falha ao importar arquivo', file));
           }
 
           if (selectedFile && file !== selectedFile) {
@@ -580,6 +658,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'workout:import': {
+          if (isImportBusy()) {
+            toast('Aguarde a importacao atual terminar');
+            return;
+          }
           await setUiState({ modal: null });
           const input = document.createElement('input');
           input.type = 'file';
@@ -596,10 +678,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
                 toast('✅ Treino importado!'); // 🔥 ADICIONA TOAST
                 await rerender();
               } else {
-                toast(result?.error || 'Erro ao importar');
+                toast(explainImportFailure(result?.error || 'Erro ao importar', file));
               }
             } catch (err) {
-              toast(err?.message || 'Erro ao importar');
+              toast(explainImportFailure(err?.message || 'Erro ao importar', file));
               console.error(err);
             } finally {
               document.body.removeChild(input);
@@ -681,6 +763,10 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         }
 
         case 'modal:close': {
+          if (isImportBusy()) {
+            toast('A importacao ainda esta em andamento');
+            return;
+          }
           await patchUiState((s) => ({
             ...s,
             modal: null,
@@ -820,6 +906,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           }));
           await rerender();
           await ensureGoogleSignInUi();
+          if (!(getUiState?.()?.passwordReset?.open)) return;
           root.querySelector('#reset-email')?.focus();
           return;
         }
@@ -860,6 +947,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           toast(showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Código enviado para seu email');
           await rerender();
           await ensureGoogleSignInUi();
+          root.querySelector('#reset-code')?.focus();
           return;
         }
 
@@ -877,15 +965,16 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
           await patchUiState((s) => ({
             ...s,
+            authMode: 'signin',
             passwordReset: {
               open: false,
               step: 'request',
-              email: '',
+              email,
               code: '',
               previewCode: '',
               previewUrl: '',
               supportEmail: '',
-              message: '',
+              message: 'Senha atualizada. Entre com a nova senha.',
               requestedAt: '',
               cooldownUntil: 0,
               deliveryStatus: '',
@@ -894,6 +983,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           toast('Senha atualizada');
           await rerender();
           await ensureGoogleSignInUi();
+          root.querySelector('#auth-email')?.focus();
           return;
         }
 

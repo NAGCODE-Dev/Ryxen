@@ -1,0 +1,23 @@
+<svg width="940" height="240" viewBox="0 0 940 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="wordABg" x1="60" y1="20" x2="880" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1B31"/>
+      <stop offset="1" stop-color="#071427"/>
+    </linearGradient>
+    <linearGradient id="wordAC" x1="36" y1="36" x2="150" y2="202" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#59D1FF"/>
+      <stop offset="1" stop-color="#2F8FFF"/>
+    </linearGradient>
+    <linearGradient id="wordAX" x1="132" y1="60" x2="194" y2="168" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFBE55"/>
+      <stop offset="1" stop-color="#FF8A2A"/>
+    </linearGradient>
+  </defs>
+  <rect width="940" height="240" rx="52" fill="#040C17"/>
+  <rect x="12" y="12" width="916" height="216" rx="42" fill="url(#wordABg)" stroke="#FFFFFF" stroke-opacity="0.05"/>
+  <path d="M164 64C140 47 111 38 80 38C28 38 6 75 6 120C6 165 28 202 80 202C111 202 139 193 162 176" transform="translate(34 0)" stroke="url(#wordAC)" stroke-width="24" stroke-linecap="round"/>
+  <path d="M0 0L68 112" transform="translate(149 64)" stroke="url(#wordAX)" stroke-width="18" stroke-linecap="square"/>
+  <path d="M66 0L0 112" transform="translate(151 64)" stroke="url(#wordAX)" stroke-width="18" stroke-linecap="square"/>
+  <text x="280" y="135" fill="#F7FBFF" font-size="74" font-weight="600" font-family="Sora, Inter, Manrope, Montserrat, Arial, sans-serif" letter-spacing="-1.5">Cross</text>
+  <text x="520" y="135" fill="#D6E3F1" font-size="74" font-weight="500" font-family="Sora, Inter, Manrope, Montserrat, Arial, sans-serif" letter-spacing="-1.5">App</text>
+</svg>
