@@ -203,8 +203,16 @@ function buildPrTrendSeries(rows = []) {
 
   return Array.from(byExercise.values())
     .map((item) => {
-      const points = item.points
-        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+      const sortedPoints = item.points
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const latestPoint = sortedPoints[sortedPoints.length - 1] || null;
+
+      if (latestPoint?.source === 'snapshot_removed') {
+        return null;
+      }
+
+      const points = sortedPoints
+        .filter((point) => point.source !== 'snapshot_removed')
         .slice(-12);
       const firstValue = points[0]?.value ?? null;
       const lastValue = points[points.length - 1]?.value ?? null;
@@ -215,6 +223,7 @@ function buildPrTrendSeries(rows = []) {
         delta: points.length > 1 && firstValue !== null && lastValue !== null ? lastValue - firstValue : null,
       };
     })
+    .filter(Boolean)
     .sort((a, b) => new Date(b.points[b.points.length - 1]?.createdAt || 0) - new Date(a.points[a.points.length - 1]?.createdAt || 0))
     .slice(0, 6);
 }

@@ -87,9 +87,10 @@ npm install
 npm run start
 ```
 
-Para desenvolvimento sem SMTP:
+Para desenvolvimento local com `docker compose`:
 
-- use um email listado em `DEV_EMAILS`
+- o inbox SMTP sobe junto em `http://127.0.0.1:8025`
+- recuperação de senha e verificação de cadastro passam pelo Mailpit local
 - mantenha `EXPOSE_RESET_CODE=true` apenas em ambiente local
 - em staging/produção, configure SMTP ou Resend e use `EXPOSE_RESET_CODE=false`
 
@@ -162,8 +163,9 @@ APIs já preparadas para:
 
 ## Reset de senha
 
-- Em ambiente local, o backend só expõe o código na resposta para a conta de desenvolvimento e apenas se `EXPOSE_RESET_CODE=true`.
-- Se SMTP não estiver configurado, o backend usa conta de teste Ethereal e retorna `previewUrl` quando possível.
+- Em ambiente local com `docker compose`, o backend usa o Mailpit em `http://127.0.0.1:8025` como inbox SMTP.
+- O backend só expõe o código na resposta para a conta de desenvolvimento e apenas se `EXPOSE_RESET_CODE=true`.
+- Fora do Mailpit/SMTP configurado, o backend usa conta de teste Ethereal e retorna `previewUrl` quando possível.
 - Em produção, `EXPOSE_RESET_CODE` deve permanecer `false`.
 
 ## Configuração importante

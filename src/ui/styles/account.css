@@ -5,15 +5,15 @@
 }
 
 .account-name {
-  font-size: 1.1rem;
+  font-size: 1.02rem;
   font-weight: 800;
-  line-height: 1.15;
+  line-height: 1.18;
 }
 
 .account-email {
   margin-top: 4px;
   color: var(--text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.82rem;
   line-height: 1.45;
 }
 
@@ -51,12 +51,12 @@
 
 .account-foldSummary strong {
   display: block;
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .account-foldMeta {
   color: var(--text-secondary);
-  font-size: 0.86rem;
+  font-size: 0.76rem;
   text-align: right;
 }
 
@@ -72,7 +72,7 @@
 }
 
 .account-sectionHead strong {
-  font-size: 1rem;
+  font-size: 0.95rem;
 }
 
 .page-actions {

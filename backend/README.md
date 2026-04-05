@@ -48,7 +48,7 @@ Se você quiser apontar para outro backend, ajuste o `config.js` ou as variávei
 - `POST /auth/request-password-reset`
 - `POST /auth/confirm-password-reset`
 
-Se `RESEND_API_KEY` estiver configurado, o backend usa Resend como provedor principal. Se não estiver, tenta SMTP. Se nenhum estiver configurado, usa Ethereal para preview de email. O preview/código só é exposto para a conta de desenvolvimento e apenas quando `EXPOSE_RESET_CODE=true`.
+Se `RESEND_API_KEY` estiver configurado, o backend usa Resend como provedor principal. Se não estiver, tenta SMTP. O SMTP pode ser autenticado ou local sem `user/pass` como Mailpit/MailHog. Se nenhum estiver configurado, usa Ethereal para preview de email. O preview/código só é exposto para a conta de desenvolvimento e apenas quando `EXPOSE_RESET_CODE=true`.
 
 Resend + SMTP com fallback e fila:
 
@@ -89,6 +89,7 @@ RETENTION_ACCOUNT_DELETION_DAYS=90
 
 Notas:
 
+- Em Docker local, o `docker-compose.yml` sobe Mailpit em `http://127.0.0.1:8025` e aponta o backend para `SMTP_HOST=mailpit`.
 - Em produção inicial, use `RESEND_FROM=onboarding@resend.dev` até validar domínio próprio no Resend.
 - `SENTRY_DSN` é opcional. Se não tiver um DSN real, deixe vazio; não use `...`.
 - O worker de retenção remove dados operacionais antigos automaticamente e mantém apenas os snapshots mais recentes por usuário.

@@ -14,7 +14,7 @@
   }
 
   .page-heroTitle {
-    font-size: 1.18rem;
+    font-size: 1.24rem;
   }
 
   body[data-page="history"] .page-heroTitle,
@@ -23,8 +23,8 @@
   }
 
   .page-heroSubtitle {
-    font-size: 0.8rem;
-    line-height: 1.45;
+    font-size: 0.76rem;
+    line-height: 1.42;
   }
 
   .page-heroActions {
@@ -41,17 +41,31 @@
   }
 
   .bottom-tools {
-    padding-top: 2px;
+    padding-top: 4px;
+  }
+
+  .page-foldTitle {
+    font-size: 0.95rem;
+  }
+
+  .page-foldSubtitle {
+    font-size: 0.73rem;
+    line-height: 1.42;
   }
 
   .quick-action {
-    flex-basis: 138px;
-    padding: 11px 12px;
+    flex-basis: 100%;
+    padding: 12px 13px;
   }
 
   .quick-action-wide,
   .quick-action-modal {
     flex-basis: 100%;
+  }
+
+  .quick-actionMeta,
+  .bottom-toolsHint {
+    font-size: 0.72rem;
   }
 
   .bottom-nav {
@@ -68,6 +82,15 @@
   .nav-btn {
     min-height: 38px;
     border-radius: 10px;
+  }
+
+  .nav-icon {
+    font-size: 0.82rem;
+  }
+
+  .nav-label {
+    font-size: 0.58rem;
+    letter-spacing: 0.11em;
   }
 
   .pr-item,
@@ -182,9 +205,13 @@
     font-size: 0.72rem;
   }
 
+  .page-heroEyebrow {
+    font-size: 0.64rem;
+  }
+
   .page-heroTitle {
-    font-size: 1.04rem;
-    line-height: 1.04;
+    font-size: 1.08rem;
+    line-height: 1.08;
   }
 
   body[data-page="history"] .page-heroTitle,
@@ -259,6 +286,12 @@
     font-size: 0.82rem;
   }
 
+  .quick-actionMeta,
+  .bottom-toolsHint {
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
   .page-foldSummaryRow,
   .page-foldBody {
     padding-inline: 14px;
@@ -272,11 +305,18 @@
   .coach-listCompact .coach-listItem span,
   .summary-detail,
   .account-hint {
-    font-size: 0.76rem;
-    line-height: 1.4;
+    font-size: 0.74rem;
+    line-height: 1.45;
   }
 
   .nav-label {
     font-size: 0.62rem;
+  }
+
+  .site-footer {
+    gap: 10px;
+    padding: 14px 12px calc(var(--safe-bottom) + 16px);
+    font-size: 0.72rem;
+    opacity: 0.72;
   }
 }

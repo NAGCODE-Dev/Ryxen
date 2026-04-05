@@ -1,4 +1,4 @@
-const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
+const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const DEV_EMAIL_DOMAIN = String(process.env.CROSSAPP_DEV_EMAIL_DOMAIN || 'nagcode.contact@gmail.com')
   .trim()
   .toLowerCase();

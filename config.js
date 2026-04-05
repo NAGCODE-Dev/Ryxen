@@ -1,6 +1,6 @@
 window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || {
   apiBaseUrl: '/api',
-  nativeApiBaseUrl: '',
+  nativeApiBaseUrl: 'https://crossapp-znmj.onrender.com',
   telemetryEnabled: true,
   auth: {
     googleClientId: '581596457498-9vrde3rt79ikqqm751v8bfhngemm2k23.apps.googleusercontent.com',

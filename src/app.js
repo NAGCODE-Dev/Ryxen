@@ -19,7 +19,7 @@ import { on, emit } from './core/events/eventBus.js';
 // Use-cases
 import { calculateLoads } from './core/usecases/calculateLoads.js';
 import { copyWorkout } from './core/usecases/copyWorkout.js';
-import { exportWorkout, importWorkout } from './core/usecases/exportWorkout.js';
+import { exportWorkout, importWorkout, importWorkoutAsWeeks } from './core/usecases/exportWorkout.js';
 import { exportPRs } from './core/usecases/exportPRs.js';
 import { importPRs } from './core/usecases/importPRs.js';
 import { exportAppBackup, importAppBackup } from './core/usecases/backupData.js';
@@ -257,6 +257,7 @@ async function loadSavedWeeks() {
  */
 function setupEventListeners() {
   let prsSaveTimeout = null;
+  let prsSyncTimeout = null;
   let prefsSaveTimeout = null;
   let isProcessing = false; // Flag global para evitar loops
   
@@ -269,6 +270,13 @@ function setupEventListeners() {
       prsSaveTimeout = setTimeout(() => {
         savePRsToStorage(newState.prs);
       }, 500);
+
+      clearTimeout(prsSyncTimeout);
+      prsSyncTimeout = setTimeout(() => {
+        syncAthletePrSnapshotWithQueue(newState.prs).catch((error) => {
+          console.warn('Falha ao sincronizar PRs da conta:', error?.message || error);
+        });
+      }, 800);
     }
   });
   
@@ -577,7 +585,12 @@ export async function handleMultiWeekPdfUpload(file) {
   emit('pdf:uploading', { fileName: file.name });
 
   try {
-    const result = await saveMultiWeekPdf(file);
+    const result = await saveMultiWeekPdf(file, {
+      onProgress: (progress) => emit('pdf:progress', {
+        fileName: file.name,
+        ...progress,
+      }),
+    });
 
     if (!result.success) {
       emit('pdf:error', { error: result.error });
@@ -640,27 +653,81 @@ export async function handleUniversalImport(file) {
   try {
     let rawText = '';
     let source = 'text';
+    let parsedWeeks = [];
 
     if (isImageFile(file)) {
       source = 'image';
+      emit('media:progress', {
+        fileName: file.name,
+        type: source,
+        message: 'Lendo texto da imagem...',
+      });
       rawText = await extractTextFromImageFile(file);
     } else if (isVideoFile(file)) {
       source = 'video';
-      rawText = await extractTextFromVideoFile(file);
+      emit('media:progress', {
+        fileName: file.name,
+        type: source,
+        message: 'Preparando vídeo para OCR...',
+      });
+      rawText = await extractTextFromVideoFile(file, {
+        onProgress: (progress) => emit('media:progress', {
+          fileName: file.name,
+          type: source,
+          ...progress,
+        }),
+      });
     } else if (isSpreadsheetFile(file)) {
       source = 'spreadsheet';
-      rawText = await extractTextFromSpreadsheetFile(file);
+      emit('media:progress', {
+        fileName: file.name,
+        type: source,
+        message: 'Lendo planilha...',
+      });
+      rawText = await extractTextFromSpreadsheetFile(file, {
+        onProgress: (progress) => emit('media:progress', {
+          fileName: file.name,
+          type: source,
+          ...progress,
+        }),
+      });
     } else if (isTextLikeImportFile(file)) {
       source = 'text';
+      emit('media:progress', {
+        fileName: file.name,
+        type: source,
+        message: 'Lendo conteúdo do arquivo...',
+      });
       rawText = await file.text();
+      const maybeStructuredWorkout = importWorkoutAsWeeks(rawText, getState().activeWeekNumber);
+      if (maybeStructuredWorkout?.success) {
+        source = 'structured-json';
+        parsedWeeks = maybeStructuredWorkout.data;
+      }
     } else {
       throw new Error(fileInfo.error || `Formato não suportado: ${type || file.name}`);
     }
 
-    const parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
+    emit('media:progress', {
+      fileName: file.name,
+      type: source,
+      message: parsedWeeks.length
+        ? 'Convertendo JSON em semana importável...'
+        : 'Organizando treinos importados...',
+    });
+
+    if (!parsedWeeks.length) {
+      parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
+    }
     if (!parsedWeeks.length) {
       throw new Error('Não foi possível identificar treinos no conteúdo importado');
     }
+
+    emit('media:progress', {
+      fileName: file.name,
+      type: source,
+      message: 'Salvando treino importado...',
+    });
 
     const saveResult = await saveParsedWeeks(parsedWeeks, {
       fileName: file.name,

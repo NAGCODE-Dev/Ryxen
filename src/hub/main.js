@@ -313,7 +313,7 @@ function isNativePlatform() {
   try {
     if (window.Capacitor?.isNativePlatform?.()) return true;
     const protocol = String(window.location?.protocol || '').toLowerCase();
-    return protocol === 'capacitor:' || protocol === 'file:';
+    return protocol === 'capacitor:' || protocol === 'file:' || (protocol === 'https:' && window.location?.hostname === 'localhost');
   } catch {
     return false;
   }

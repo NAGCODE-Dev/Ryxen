@@ -65,7 +65,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     try {
       if (window.Capacitor?.isNativePlatform?.()) return true;
       const protocol = String(window.location?.protocol || '').toLowerCase();
-      return protocol === 'capacitor:' || protocol === 'file:';
+      return protocol === 'capacitor:' || protocol === 'file:' || (protocol === 'https:' && window.location?.hostname === 'localhost');
     } catch {
       return false;
     }
@@ -119,26 +119,31 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const runtime = getAppBridge()?.getRuntimeConfig?.()?.data || {};
     const clientId = String(runtime?.auth?.googleClientId || '').trim();
     if (!clientId) {
-      shell.innerHTML = '<p class="account-hint auth-googleHint">Google Sign-In não configurado.</p>';
+      shell.style.display = 'none';
+      shell.innerHTML = '';
       return;
     }
     if (!navigator.onLine) {
-      shell.innerHTML = '<p class="account-hint auth-googleHint">Google Sign-In disponível quando houver internet.</p>';
+      shell.style.display = 'none';
+      shell.innerHTML = '';
       return;
     }
     if (isNativeAppRuntime()) {
+      shell.style.display = '';
       shell.innerHTML = `
-        <button class="btn-secondary auth-googleNativeButton" data-action="auth:google-redirect" type="button">
-          Entrar com Google
+        <button class="btn-secondary auth-googleNativeButton auth-googleCta" data-action="auth:google-redirect" type="button">
+          <span class="auth-googleMark" aria-hidden="true">G</span>
+          <span>Continuar com Google</span>
         </button>
-        <p class="account-hint auth-googleHint">No app Android, o login do Google abre no navegador para concluir com segurança.</p>
       `;
       return;
     }
 
     const googleApi = await loadGoogleScript();
     if (!googleApi?.accounts?.id) {
-      throw new Error('Google Sign-In indisponível');
+      shell.style.display = 'none';
+      shell.innerHTML = '';
+      return;
     }
 
     shell.style.display = '';
@@ -373,8 +378,29 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         case 'pdf:pick': {
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('pdf', ui);
-          await setUiState({ modal: null });
+          await setUiState({
+            importStatus: {
+              active: false,
+              tone: 'idle',
+              title: '',
+              message: '',
+              fileName: '',
+            },
+          });
           const selectedFile = await pickPdfFile();
+          if (!selectedFile) {
+            await setUiState({
+              importStatus: {
+                active: false,
+                tone: 'idle',
+                title: '',
+                message: '',
+                fileName: '',
+              },
+            });
+            await rerender();
+            return;
+          }
           const file = await prepareImportFileForClientUse(selectedFile, {
             hardMaxBytes: IMPORT_HARD_MAX_BYTES,
             imageCompressThresholdBytes: IMAGE_COMPRESS_THRESHOLD_BYTES,
@@ -382,11 +408,22 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             imageMaxDimension: IMAGE_MAX_DIMENSION,
           });
           if (!file) return;
+          await rerender();
           const result = await getAppBridge().uploadMultiWeekPdf(file);
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao importar PDF');
           }
           consumeAthleteImport(importPolicy.benefits, 'pdf');
+          await setUiState({
+            modal: null,
+            importStatus: {
+              active: false,
+              tone: 'idle',
+              title: '',
+              message: '',
+              fileName: '',
+            },
+          });
           toast('PDF importado');
           await rerender();
           return;
@@ -395,8 +432,29 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         case 'media:pick': {
           const ui = getUiState?.() || {};
           const importPolicy = await guardAthleteImport('media', ui);
-          await setUiState({ modal: null });
+          await setUiState({
+            importStatus: {
+              active: false,
+              tone: 'idle',
+              title: '',
+              message: '',
+              fileName: '',
+            },
+          });
           const selectedFile = await pickUniversalFile();
+          if (!selectedFile) {
+            await setUiState({
+              importStatus: {
+                active: false,
+                tone: 'idle',
+                title: '',
+                message: '',
+                fileName: '',
+              },
+            });
+            await rerender();
+            return;
+          }
           const file = await prepareImportFileForClientUse(selectedFile, {
             hardMaxBytes: IMPORT_HARD_MAX_BYTES,
             imageCompressThresholdBytes: IMAGE_COMPRESS_THRESHOLD_BYTES,
@@ -409,6 +467,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             throw new Error('Importação universal não disponível');
           }
 
+          await rerender();
           const result = await getAppBridge().importFromFile(file);
           if (!result?.success) {
             throw new Error(result?.error || 'Falha ao importar arquivo');
@@ -419,6 +478,16 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           }
 
           consumeAthleteImport(importPolicy.benefits, 'media');
+          await setUiState({
+            modal: null,
+            importStatus: {
+              active: false,
+              tone: 'idle',
+              title: '',
+              message: '',
+              fileName: '',
+            },
+          });
           toast('Arquivo importado');
           await rerender();
           return;
@@ -746,6 +815,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             passwordReset: {
               ...(s.passwordReset || {}),
               open: !(s.passwordReset?.open),
+              step: s.passwordReset?.open ? 'request' : (s.passwordReset?.step || 'request'),
             },
           }));
           await rerender();
@@ -773,6 +843,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             passwordReset: {
               ...(s.passwordReset || {}),
               open: true,
+              step: 'confirm',
               email,
               code: '',
               requestedAt: new Date(requestedAt).toISOString(),
@@ -808,6 +879,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
             ...s,
             passwordReset: {
               open: false,
+              step: 'request',
               email: '',
               code: '',
               previewCode: '',

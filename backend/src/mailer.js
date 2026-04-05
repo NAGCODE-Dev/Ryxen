@@ -466,8 +466,9 @@ function createResendProvider({ name, apiKey, from }) {
 }
 
 async function createProvider({ name, host, port, secure, user, pass, from }) {
-  if (!(host && user && pass)) return null;
+  if (!host) return null;
 
+  const authConfigured = Boolean(user && pass);
   const transport = nodemailer.createTransport({
     host,
     port: Number(port || 587),
@@ -475,7 +476,7 @@ async function createProvider({ name, host, port, secure, user, pass, from }) {
     connectionTimeout: SMTP_CONNECTION_TIMEOUT_MS,
     greetingTimeout: SMTP_GREETING_TIMEOUT_MS,
     socketTimeout: SMTP_SOCKET_TIMEOUT_MS,
-    auth: { user, pass },
+    ...(authConfigured ? { auth: { user, pass } } : {}),
   });
 
   return {

@@ -7,7 +7,7 @@ export function renderAppShell() {
     <!-- LOADING SCREEN -->
     <div class="loading-screen" id="loading-screen">
       <div class="spinner"></div>
-      <p>Carregando...</p>
+      <p data-loading-label>Carregando...</p>
     </div>
 
     <div class="app-container">
@@ -67,19 +67,26 @@ function renderBottomTools(state) {
 
   return `
     <div class="bottom-tools">
+      <div class="bottom-toolsHead">
+        <span class="section-kicker">Ações rápidas</span>
+        <span class="bottom-toolsHint">${hasWorkout ? 'Mantenha o treino em movimento sem sair da tela principal.' : 'Comece pelo treino e organize o resto depois.'}</span>
+      </div>
       ${hasWorkout ? `
         <button class="quick-action quick-action-primary" data-action="workout:copy" type="button">
           <span class="quick-actionIcon">COP</span>
           <span class="quick-actionLabel">Copiar treino</span>
+          <span class="quick-actionMeta">Leve a sessão para mensagem, nota ou WhatsApp.</span>
         </button>
         <button class="quick-action quick-action-wide" data-action="modal:open" data-modal="import" type="button">
           <span class="quick-actionIcon">+</span>
           <span class="quick-actionLabel">Trocar treino</span>
+          <span class="quick-actionMeta">Substitua a planilha atual sem perder a navegação.</span>
         </button>
       ` : `
         <button class="quick-action quick-action-primary quick-action-wide" data-action="modal:open" data-modal="import" type="button">
           <span class="quick-actionIcon">+</span>
           <span class="quick-actionLabel">Importar treino</span>
+          <span class="quick-actionMeta">PDF, imagem, vídeo, texto ou planilha em um só fluxo.</span>
         </button>
       `}
     </div>
@@ -194,6 +201,7 @@ function renderMainContent(state) {
     return `
       <div class="workout-container">
         ${renderTodayPageIntro(state)}
+        ${renderTodayOverview(state, null)}
         ${renderEmptyState(state)}
         ${renderBottomTools(state)}
       </div>
@@ -210,6 +218,7 @@ function renderMainContent(state) {
   return `
     <div class="workout-container">
       ${renderTodayPageIntro(state)}
+      ${renderTodayOverview(state, workout)}
       ${showWorkoutHeader ? `
         <div class="workout-header">
           ${showSourceToggle ? `
@@ -250,13 +259,13 @@ function renderMainContent(state) {
 function renderBottomNav(state) {
   const currentPage = state?.__ui?.currentPage || 'today';
   const items = [
-    { page: 'today', icon: '◉', label: 'Hoje' },
-    { page: 'history', icon: '↗', label: 'Histórico' },
-    { page: 'account', icon: 'ID', label: 'Conta' },
+    { page: 'today', icon: '●', label: 'Hoje' },
+    { page: 'history', icon: '↗', label: 'Evolução' },
+    { page: 'account', icon: '◌', label: 'Conta' },
   ];
 
   return items.map((item) => `
-    <button class="nav-btn ${currentPage === item.page ? 'nav-btn-active' : ''} ${item.page === 'today' ? 'nav-btn-primary' : ''}" data-action="page:set" data-page="${item.page}" type="button">
+    <button class="nav-btn ${currentPage === item.page ? 'nav-btn-active' : ''} ${item.page === 'today' ? 'nav-btn-primary' : ''}" data-action="page:set" data-page="${item.page}" aria-current="${currentPage === item.page ? 'page' : 'false'}" type="button">
       <span class="nav-icon">${item.icon}</span>
       <span class="nav-label">${item.label}</span>
     </button>
@@ -602,6 +611,35 @@ function renderTodayPageIntro(state) {
   `;
 }
 
+function renderTodayOverview(state, workout) {
+  const weeks = state?.weeks?.length ?? 0;
+  const activeWeek = state?.activeWeekNumber ?? null;
+  const activeSource = state?.workoutContext?.activeSource || 'uploaded';
+  const warningsCount = workout?.warnings?.length || 0;
+  const lines = (workout?.blocks || []).reduce((sum, block) => sum + (block?.lines?.length || 0), 0);
+  const blocks = workout?.blocks?.length || 0;
+
+  if (!workout && !weeks) return '';
+
+  if (!workout) {
+    return `
+      <div class="summary-strip summary-strip-3 today-summaryStrip">
+        ${renderSummaryTile('Semana', weeks ? `Semana ${activeWeek || 1}` : 'Livre', weeks ? 'pronta para navegar' : 'sem importação')}
+        ${renderSummaryTile('Status', 'Sem treino', weeks ? 'escolha o dia ou troque a planilha' : 'importe uma sessão para começar')}
+        ${renderSummaryTile('Próximo passo', weeks ? 'Selecionar dia' : 'Importar', 'deixe só a próxima ação visível')}
+      </div>
+    `;
+  }
+
+  return `
+    <div class="summary-strip summary-strip-3 today-summaryStrip">
+      ${renderSummaryTile('Semana', weeks ? `Semana ${activeWeek || 1}` : 'Livre', weeks ? 'contexto ativo' : 'sessão avulsa')}
+      ${renderSummaryTile('Estrutura', `${blocks} bloco(s)`, `${lines} linha(s) no treino`)}
+      ${renderSummaryTile('Status', warningsCount ? `${warningsCount} aviso(s)` : 'Pronto', activeSource === 'coach' ? 'treino vindo do coach' : 'treino da sua planilha')}
+    </div>
+  `;
+}
+
 function renderPageHero({ eyebrow, title, subtitle, actions = '', footer = '' }) {
   return `
     <section class="page-hero">
@@ -636,6 +674,14 @@ function renderPageFold({ title, subtitle = '', content = '', open = true }) {
 }
 
 export function renderImportModal(state = {}) {
+  const importStatus = state?.__ui?.importStatus || {};
+  const importSteps = [
+    { key: 'selected', label: 'Selecionado' },
+    { key: 'read', label: 'Lendo' },
+    { key: 'organize', label: 'Organizando' },
+    { key: 'save', label: 'Salvo' },
+  ];
+  const activeStepIndex = importSteps.findIndex((item) => item.key === importStatus?.step);
   return `
     <div class="modal-overlay isOpen">
       <div class="modal-container">
@@ -648,6 +694,23 @@ export function renderImportModal(state = {}) {
             <div class="section-kicker">Importação</div>
             <p class="account-hint">Escolha o tipo de arquivo.</p>
           </div>
+          ${(importStatus?.active || importStatus?.message) ? `
+            <div class="import-statusCard is-${escapeHtml(importStatus.tone || 'idle')}" id="ui-importStatus">
+              <div class="import-statusHead">
+                <strong>${escapeHtml(importStatus.title || 'Importando arquivo')}</strong>
+                ${importStatus?.fileName ? `<span>${escapeHtml(importStatus.fileName)}</span>` : ''}
+              </div>
+              <div class="import-stepper" aria-hidden="true">
+                ${importSteps.map((step, index) => `
+                  <div class="import-step ${index <= activeStepIndex ? 'isDone' : ''} ${index === activeStepIndex ? 'isActive' : ''}">
+                    <span class="import-stepDot"></span>
+                    <span class="import-stepLabel">${escapeHtml(step.label)}</span>
+                  </div>
+                `).join('')}
+              </div>
+              <p>${escapeHtml(importStatus.message || 'Preparando importação...')}</p>
+            </div>
+          ` : ''}
           <div class="coach-grid">
             <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button">
               <span class="quick-actionIcon">PDF</span>
@@ -1145,6 +1208,7 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
   const isBusy = !!auth?.isBusy;
   const isSignup = authMode === 'signup';
   const reset = auth?.passwordReset || auth?.reset || {};
+  const resetStep = reset?.step === 'confirm' ? 'confirm' : 'request';
   const signupVerification = auth?.signupVerification || {};
   const admin = auth?.admin || {};
   const coachPortal = auth?.coachPortal || {};
@@ -1352,13 +1416,13 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
           <div class="auth-divider">ou continue com email</div>
 
           <form class="auth-form" id="ui-authForm">
-            <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
-            <input class="add-input" id="auth-email" type="email" placeholder="Seu email" autocomplete="email" value="${escapeHtml(signupVerification.email || '')}" />
-            <input class="add-input" id="auth-password" type="password" placeholder="Sua senha" autocomplete="${isSignup ? 'new-password' : 'current-password'}" />
+            <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" autocomplete="name" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
+            <input class="add-input" id="auth-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Seu email" value="${escapeHtml(signupVerification.email || '')}" />
+            <input class="add-input" id="auth-password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="Sua senha" />
             ${isSignup ? `
               <div class="auth-signupVerify">
                 <button class="btn-secondary" data-action="auth:signup-request-code" type="button">Enviar código</button>
-                <input class="add-input" id="auth-signup-code" type="text" placeholder="Código de verificação" value="${escapeHtml(signupVerification.code || signupVerification.previewCode || '')}" />
+                <input class="add-input" id="auth-signup-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Código de verificação" value="${escapeHtml(signupVerification.code || signupVerification.previewCode || '')}" />
                 ${signupVerification?.previewCode ? `
                   <div class="reset-codePreview">
                     Código temporário: <strong>${escapeHtml(signupVerification.previewCode)}</strong>
@@ -1372,39 +1436,49 @@ function renderAuthModal({ auth = {}, authMode = 'signin' } = {}) {
                 <p class="account-hint">Digite o código enviado ao seu email.</p>
               </div>
             ` : ''}
-            <button class="btn-primary" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
+            <button class="btn-primary auth-submitButton" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
               ${isSignup ? 'Criar conta com código' : 'Entrar'}
             </button>
           </form>
 
           ${!isSignup ? `
-            <div class="auth-resetBox">
-              <button class="btn-secondary auth-resetToggle" data-action="auth:reset-toggle" type="button">
-                ${reset?.open ? 'Fechar recuperação' : 'Esqueci minha senha'}
+            <div class="auth-assist">
+              <button class="auth-resetToggle ${reset?.open ? 'isOpen' : ''}" data-action="auth:reset-toggle" type="button">
+                ${reset?.open ? 'Voltar ao login' : 'Esqueci minha senha'}
               </button>
 
               ${reset?.open ? `
-                <div class="auth-resetForm">
-                  <input class="add-input" id="reset-email" type="email" placeholder="Email da conta" value="${escapeHtml(reset.email || '')}" />
-                  <button class="btn-secondary" data-action="auth:reset-request" type="button" ${Number(reset?.cooldownUntil || 0) > Date.now() ? 'disabled' : ''}>${escapeHtml(formatCooldownLabel(reset?.cooldownUntil || 0))}</button>
+                <div class="auth-resetBox">
+                  <div class="auth-resetIntro">
+                    <strong>Recuperar senha</strong>
+                    <p class="account-hint">${resetStep === 'confirm'
+                      ? 'Agora informe o codigo recebido e defina sua nova senha.'
+                      : 'Digite o email da conta para receber um codigo de recuperacao.'}</p>
+                  </div>
+                  <div class="auth-resetForm">
+                  <input class="add-input" id="reset-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Email da conta" value="${escapeHtml(reset.email || '')}" />
+                  <button class="btn-secondary auth-resetRequestButton" data-action="auth:reset-request" type="button" ${Number(reset?.cooldownUntil || 0) > Date.now() ? 'disabled' : ''}>${escapeHtml(formatCooldownLabel(reset?.cooldownUntil || 0))}</button>
+                  ${resetStep === 'confirm' ? `
                   ${reset?.previewCode ? `
                     <div class="reset-codePreview">
                       Código temporário: <strong>${escapeHtml(reset.previewCode)}</strong>
                     </div>
                   ` : ''}
                   ${reset?.previewUrl ? `
-                    <a class="reset-previewLink" href="${escapeHtml(reset.previewUrl)}" target="_blank" rel="noopener noreferrer">
-                      Abrir preview do email
-                    </a>
+                  <a class="reset-previewLink" href="${escapeHtml(reset.previewUrl)}" target="_blank" rel="noopener noreferrer">
+                    Abrir preview do email
+                  </a>
                   ` : ''}
-                  <input class="add-input" id="reset-code" type="text" placeholder="Código de 6 dígitos" value="${escapeHtml(reset.code || '')}" />
-                  <input class="add-input" id="reset-newPassword" type="password" placeholder="Nova senha" />
-                  <button class="btn-primary" data-action="auth:reset-confirm" type="button">Trocar senha</button>
+                  <input class="add-input" id="reset-code" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="Código de 6 dígitos" value="${escapeHtml(reset.code || '')}" />
+                  <input class="add-input" id="reset-newPassword" type="password" autocomplete="new-password" placeholder="Nova senha" />
+                  <button class="btn-primary auth-resetConfirmButton" data-action="auth:reset-confirm" type="button">Trocar senha</button>
+                  ` : ''}
                   ${reset?.message ? `
                     <p class="account-hint auth-resetStatus">${escapeHtml(reset.message)}</p>
                   ` : `
-                    <p class="account-hint auth-resetStatus">Vamos enviar um código de 6 dígitos para o email da conta.</p>
+                    <p class="account-hint auth-resetStatus">Vamos enviar um codigo de 6 digitos para o email da conta.</p>
                   `}
+                </div>
                 </div>
               ` : ''}
             </div>

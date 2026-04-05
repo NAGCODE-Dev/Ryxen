@@ -1,0 +1,11 @@
+name: CrossApp Local Llama
+version: 0.0.1
+schema: v1
+
+models:
+  - name: qwen-local
+    provider: openai
+    model: local-model
+    apiKey: dummy
+    apiBase: http://127.0.0.1:8080/v1
+    useResponsesApi: false

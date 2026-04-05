@@ -4,7 +4,13 @@ import assert from 'node:assert/strict';
 import { classifyUniversalImportFile } from '../src/app/importFileTypes.js';
 import { parseTextIntoWeeks } from '../src/app/workoutHelpers.js';
 import { isImageFile } from '../src/adapters/media/ocrReader.js';
-import { isVideoFile } from '../src/adapters/media/videoTextReader.js';
+import {
+  isVideoFile,
+  mergeDistinctOcrChunks,
+  normalizeOcrChunk,
+  resolveMaxVideoFrames,
+} from '../src/adapters/media/videoTextReader.js';
+import { importWorkoutAsWeeks } from '../src/core/usecases/exportWorkout.js';
 
 function fakeFile({ name, type }) {
   return { name, type };
@@ -80,4 +86,68 @@ test('json cru de treino salvo não entra no parser textual universal', () => {
 
   const weeks = parseTextIntoWeeks(json, 19);
   assert.equal(weeks.length, 0);
+});
+
+test('json estruturado de treino salvo pode virar semana no fluxo universal', () => {
+  const json = JSON.stringify({
+    version: '1.0.0',
+    weekNumber: 19,
+    day: 'Segunda',
+    sections: [{ type: 'DEFAULT', lines: ['BACK SQUAT', '5x5 @ 80%'] }],
+  });
+
+  const result = importWorkoutAsWeeks(json, 7);
+  assert.equal(result.success, true);
+  assert.equal(result.data.length, 1);
+  assert.equal(result.data[0].weekNumber, 19);
+  assert.equal(result.data[0].workouts.length, 1);
+  assert.equal(result.data[0].workouts[0].day, 'Segunda');
+});
+
+test('json estruturado com workouts e blocks também pode virar semana no fluxo universal', () => {
+  const json = JSON.stringify({
+    version: '1.0.0',
+    weekNumber: 19,
+    workouts: [
+      {
+        day: 'Segunda',
+        blocks: [{ type: 'DEFAULT', lines: ['BACK SQUAT', '5x5 @ 80%'] }],
+      },
+    ],
+  });
+
+  const result = importWorkoutAsWeeks(json, 7);
+  assert.equal(result.success, true);
+  assert.equal(result.data.length, 1);
+  assert.equal(result.data[0].weekNumber, 19);
+  assert.equal(result.data[0].workouts.length, 1);
+  assert.equal(result.data[0].workouts[0].sections[0].lines[0], 'BACK SQUAT');
+});
+
+test('OCR de vídeo remove frames duplicados antes do parser', () => {
+  const chunks = [
+    'SEMANA 19\nSEGUNDA\nBACK SQUAT',
+    'SEMANA 19\nSEGUNDA\nBACK SQUAT',
+    'SEMANA 19\nTERÇA\nFRAN',
+    'SEMANA 19\nTERÇA\nFRAN',
+    '',
+  ];
+
+  const result = mergeDistinctOcrChunks(chunks);
+  assert.deepEqual(result, [
+    'SEMANA 19\nSEGUNDA\nBACK SQUAT',
+    'SEMANA 19\nTERÇA\nFRAN',
+  ]);
+});
+
+test('normalização de OCR de vídeo compara chunks equivalentes', () => {
+  assert.equal(normalizeOcrChunk('  Semana 19 \n Segunda '), 'SEMANA 19 SEGUNDA');
+});
+
+test('amostragem de vídeo reduz frames por padrão conforme duração', () => {
+  assert.equal(resolveMaxVideoFrames(4), 4);
+  assert.equal(resolveMaxVideoFrames(15), 6);
+  assert.equal(resolveMaxVideoFrames(40), 8);
+  assert.equal(resolveMaxVideoFrames(120), 12);
+  assert.equal(resolveMaxVideoFrames(40, 3), 3);
 });

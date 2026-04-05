@@ -266,29 +266,65 @@ export function createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSer
       .map(([exercise, value]) => [String(exercise || '').trim().toUpperCase(), Number(value)])
       .filter(([exercise, value]) => exercise && Number.isFinite(value) && value > 0);
 
-    let insertedCount = 0;
+    const incoming = new Map(entries);
+    const client = await pool.connect();
 
-    for (const [exercise, value] of entries) {
-      const latest = await pool.query(
-        `SELECT value
+    try {
+      await client.query('BEGIN');
+
+      const latestRes = await client.query(
+        `SELECT DISTINCT ON (exercise) exercise, value, source
          FROM athlete_pr_records
-         WHERE user_id = $1 AND exercise = $2
-         ORDER BY created_at DESC
-         LIMIT 1`,
-        [req.user.userId, exercise],
+         WHERE user_id = $1
+         ORDER BY exercise ASC, created_at DESC`,
+        [req.user.userId],
       );
-      const current = latest.rows[0] ? Number(latest.rows[0].value) : null;
-      if (current === value) continue;
 
-      await pool.query(
-        `INSERT INTO athlete_pr_records (user_id, exercise, value, unit, source)
-         VALUES ($1,$2,$3,'kg','snapshot')`,
-        [req.user.userId, exercise, value],
+      const latestByExercise = new Map(
+        latestRes.rows.map((row) => [
+          String(row.exercise || '').trim().toUpperCase(),
+          {
+            value: Number(row.value),
+            source: String(row.source || 'manual').trim().toLowerCase(),
+          },
+        ]),
       );
-      insertedCount += 1;
+
+      let insertedCount = 0;
+      let removedCount = 0;
+
+      for (const [exercise, value] of incoming.entries()) {
+        const current = latestByExercise.get(exercise) || null;
+        if (current && current.source !== 'snapshot_removed' && current.value === value) continue;
+
+        await client.query(
+          `INSERT INTO athlete_pr_records (user_id, exercise, value, unit, source)
+           VALUES ($1,$2,$3,'kg','snapshot')`,
+          [req.user.userId, exercise, value],
+        );
+        insertedCount += 1;
+      }
+
+      for (const [exercise, current] of latestByExercise.entries()) {
+        if (incoming.has(exercise)) continue;
+        if (current?.source === 'snapshot_removed') continue;
+
+        await client.query(
+          `INSERT INTO athlete_pr_records (user_id, exercise, value, unit, source)
+           VALUES ($1,$2,0,'kg','snapshot_removed')`,
+          [req.user.userId, exercise],
+        );
+        removedCount += 1;
+      }
+
+      await client.query('COMMIT');
+      return res.json({ inserted: insertedCount, removed: removedCount, total: entries.length });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
-
-    return res.json({ inserted: insertedCount, total: entries.length });
   });
 
   router.get('/athletes/me/measurements/history', authRequired, async (req, res) => {

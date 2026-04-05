@@ -223,14 +223,19 @@ export async function updatePdf(file) {
 /**
  * Salva PDF multi-semana COM ACÚMULO
  */
-export async function saveMultiWeekPdf(file) {
+export async function saveMultiWeekPdf(file, options = {}) {
   const validation = validatePdfFile(file);
   if (!validation.valid) {
     return { success: false, error: validation.error };
   }
 
   try {
-    const rawText = await extractTextFromFile(file);
+    options.onProgress?.({
+      stage: 'pdf-start',
+      message: 'Preparando PDF para importação...',
+    });
+
+    const rawText = await extractTextFromFile(file, options);
     if (!rawText || rawText.length < 50) {
       return { success: false, error: 'PDF vazio ou com muito pouco texto' };
     }
@@ -241,6 +246,11 @@ export async function saveMultiWeekPdf(file) {
     const cleanedText = cleanPdfText(rawText);
     logDebug('🧹 Texto limpo:', cleanedText.length, 'chars');
     logDebug('🧹 Primeiros 200 chars:', cleanedText.substring(0, 200));
+
+    options.onProgress?.({
+      stage: 'pdf-parse',
+      message: 'Organizando semanas encontradas no PDF...',
+    });
 
     const parsedWeeks = parseMultiWeekPdf(cleanedText);
 
@@ -271,6 +281,11 @@ export async function saveMultiWeekPdf(file) {
 
     const mergedWeeks = Array.from(allWeeksMap.values())
       .sort((a, b) => Number(a.weekNumber) - Number(b.weekNumber));
+
+    options.onProgress?.({
+      stage: 'pdf-save',
+      message: 'Salvando semanas importadas...',
+    });
 
     logDebug('📦 Semanas após merge:', mergedWeeks.map(w => w.weekNumber));
 

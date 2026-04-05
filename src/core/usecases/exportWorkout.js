@@ -147,3 +147,75 @@ export function importWorkout(jsonString) {
     };
   }
 }
+
+/**
+ * Converte JSON estruturado de treino salvo em semanas importáveis
+ * para o fluxo universal de importação.
+ * @param {string} jsonString
+ * @param {number|null} fallbackWeekNumber
+ * @returns {Object}
+ */
+export function importWorkoutAsWeeks(jsonString, fallbackWeekNumber = null) {
+  if (!jsonString || typeof jsonString !== 'string') {
+    return {
+      success: false,
+      error: 'JSON vazio ou inválido',
+      data: null,
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(jsonString);
+    if (Array.isArray(parsed?.workouts) && parsed.workouts.length > 0) {
+      const weekNumber = Number(parsed.weekNumber || fallbackWeekNumber || 1);
+      return {
+        success: true,
+        data: [
+          {
+            weekNumber,
+            workouts: parsed.workouts.map((workout) => ({
+              day: workout?.day || 'Treino',
+              sections: Array.isArray(workout?.sections)
+                ? workout.sections
+                : (workout?.blocks || []).map((block) => ({
+                    type: block?.type || 'DEFAULT',
+                    lines: block?.lines || [],
+                  })),
+            })),
+          },
+        ],
+        version: parsed.version || 'unknown',
+        weekNumber,
+      };
+    }
+  } catch {
+    // deixa o importWorkout responder com a mensagem de erro consolidada abaixo
+  }
+
+  const imported = importWorkout(jsonString);
+  if (!imported?.success) {
+    return {
+      success: false,
+      error: imported?.error || 'Formato de treino inválido no JSON',
+      data: null,
+    };
+  }
+
+  const weekNumber = Number(imported.weekNumber || fallbackWeekNumber || 1);
+  return {
+    success: true,
+    data: [
+      {
+        weekNumber,
+        workouts: [
+          {
+            day: imported.data.day,
+            sections: imported.data.sections,
+          },
+        ],
+      },
+    ],
+    version: imported.version || 'unknown',
+    weekNumber,
+  };
+}

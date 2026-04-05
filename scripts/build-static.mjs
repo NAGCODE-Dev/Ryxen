@@ -51,6 +51,8 @@ const runtimeConfig = deepMerge(fileConfig, {
   },
 });
 
+reportNativeApiResolution(runtimeConfig);
+
 await rm(distDir, { recursive: true, force: true });
 await mkdir(distDir, { recursive: true });
 
@@ -106,4 +108,20 @@ function deepMerge(base, override) {
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function reportNativeApiResolution(config) {
+  const apiBaseUrl = String(config?.apiBaseUrl || '').trim();
+  const nativeApiBaseUrl = String(config?.nativeApiBaseUrl || '').trim();
+  const fallsBackToEmulator = apiBaseUrl === '/api' && !nativeApiBaseUrl;
+
+  if (!fallsBackToEmulator) return;
+
+  console.warn(
+    [
+      '[build-static] aviso: build nativa sem backend absoluto configurado.',
+      'No Android, "/api" cai em http://10.0.2.2:8787 por padrão.',
+      'Se o APK precisa falar com o backend real, defina CROSSAPP_NATIVE_API_BASE_URL ou CROSSAPP_API_BASE_URL com URL absoluta.',
+    ].join(' '),
+  );
 }

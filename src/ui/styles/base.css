@@ -99,6 +99,15 @@ textarea:focus-visible,
   transition: opacity 0.28s ease, visibility 0.28s ease;
 }
 
+.loading-screen p {
+  max-width: min(82vw, 320px);
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .loading-screen.hide {
   opacity: 0;
   visibility: hidden;

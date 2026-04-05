@@ -1,25 +1,22 @@
 /**
  * PDF Reader
  * Extrai texto bruto de arquivos PDF
- * Usa PDF.js via módulo local
+ * Carrega PDF.js sob demanda para não pesar o boot inicial do app.
  */
 
-import * as pdfjsLib from '../../libs/pdf.mjs';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  new URL('../../libs/pdf.worker.mjs', import.meta.url).toString();
 const DEBUG = typeof window !== 'undefined'
   && new URLSearchParams(window.location.search).get('debug') === '1';
 const logDebug = (...args) => {
   if (DEBUG) console.log(...args);
 };
+let pdfjsLibPromise = null;
 
 /**
  * Verifica se PDF.js está disponível
  * @returns {boolean}
  */
 export function isPdfJsAvailable() {
-  return !!pdfjsLib?.getDocument;
+  return typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
 
 /**
@@ -37,7 +34,7 @@ export function isPdfJsAvailable() {
  * @param {File} file - Arquivo PDF
  * @returns {Promise<string>} Texto extraído
  */
-export async function extractTextFromFile(file) {
+export async function extractTextFromFile(file, options = {}) {
   if (!file) {
     throw new Error('Arquivo não fornecido');
   }
@@ -51,6 +48,7 @@ export async function extractTextFromFile(file) {
   }
   
   try {
+    const pdfjsLib = await loadPdfJs();
     // Lê arquivo como ArrayBuffer
     const arrayBuffer = await readFileAsArrayBuffer(file);
     
@@ -62,9 +60,23 @@ export async function extractTextFromFile(file) {
     
     const totalPages = pdf.numPages;
     let fullText = '';
+
+    options.onProgress?.({
+      stage: 'pdf-open',
+      currentPage: 0,
+      totalPages,
+      message: `Lendo ${totalPages} página(s) do PDF...`,
+    });
     
     // Extrai texto de cada página
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      options.onProgress?.({
+        stage: 'pdf-text',
+        currentPage: pageNum,
+        totalPages,
+        message: `Extraindo texto do PDF (${pageNum}/${totalPages})...`,
+      });
+
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       
@@ -83,7 +95,14 @@ export async function extractTextFromFile(file) {
     trimmedText = trimmedText.replace(/\s{2,}/g, '\n');
     
     if (!trimmedText || trimmedText.length < 10) {
-      const ocrText = await extractTextWithOcrFallback(pdf);
+      options.onProgress?.({
+        stage: 'pdf-ocr-start',
+        currentPage: 0,
+        totalPages: Math.min(Number(pdf?.numPages || 0), 6),
+        message: 'Texto fraco no PDF. Tentando OCR nas páginas...',
+      });
+
+      const ocrText = await extractTextWithOcrFallback(pdf, options);
       if (ocrText && ocrText.length >= 10) {
         trimmedText = ocrText;
       } else {
@@ -108,7 +127,7 @@ export async function extractTextFromFile(file) {
   }
 }
 
-async function extractTextWithOcrFallback(pdf) {
+async function extractTextWithOcrFallback(pdf, options = {}) {
   if (typeof window === 'undefined') return '';
 
   try {
@@ -117,6 +136,13 @@ async function extractTextWithOcrFallback(pdf) {
     const chunks = [];
 
     for (let pageNum = 1; pageNum <= totalPages; pageNum += 1) {
+      options.onProgress?.({
+        stage: 'pdf-ocr',
+        currentPage: pageNum,
+        totalPages,
+        message: `Rodando OCR no PDF (${pageNum}/${totalPages})...`,
+      });
+
       const page = await pdf.getPage(pageNum);
       const viewport = page.getViewport({ scale: 1.8 });
       const canvas = document.createElement('canvas');
@@ -225,6 +251,7 @@ export async function extractMetadata(file) {
   }
   
   try {
+    const pdfjsLib = await loadPdfJs();
     const arrayBuffer = await readFileAsArrayBuffer(file);
     
     const pdf = await pdfjsLib.getDocument({
@@ -274,6 +301,18 @@ export function getInfo() {
     name: 'PDF Reader',
     library: 'PDF.js',
     available: isPdfJsAvailable(),
-    version: isPdfJsAvailable() ? pdfjsLib.version : 'N/A',
+    version: pdfjsLibPromise ? 'lazy-loaded' : 'lazy',
   };
 };
+
+async function loadPdfJs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = import('../../libs/pdf.mjs').then((pdfjsLib) => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        new URL('../../libs/pdf.worker.mjs', import.meta.url).toString();
+      return pdfjsLib;
+    });
+  }
+
+  return pdfjsLibPromise;
+}

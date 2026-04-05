@@ -12,7 +12,7 @@ export function isSpreadsheetFile(file) {
   return SPREADSHEET_MIME_TYPES.has(type) || SPREADSHEET_EXTENSIONS.test(name);
 }
 
-export async function extractTextFromSpreadsheetFile(file) {
+export async function extractTextFromSpreadsheetFile(file, options = {}) {
   if (!file) {
     throw new Error('Arquivo de planilha não fornecido');
   }
@@ -29,7 +29,21 @@ export async function extractTextFromSpreadsheetFile(file) {
     dense: true,
   });
 
-  const lines = workbook.SheetNames.flatMap((sheetName) => {
+  options.onProgress?.({
+    stage: 'sheet-read',
+    currentSheet: 0,
+    totalSheets: workbook.SheetNames.length,
+    message: `Lendo ${workbook.SheetNames.length} aba(s) da planilha...`,
+  });
+
+  const lines = workbook.SheetNames.flatMap((sheetName, index) => {
+    options.onProgress?.({
+      stage: 'sheet-parse',
+      currentSheet: index + 1,
+      totalSheets: workbook.SheetNames.length,
+      message: `Processando aba ${index + 1}/${workbook.SheetNames.length}...`,
+    });
+
     const sheet = workbook.Sheets[sheetName];
     if (!sheet) return [];
 

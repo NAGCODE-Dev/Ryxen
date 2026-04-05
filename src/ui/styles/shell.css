@@ -111,18 +111,20 @@ textarea.add-input:focus {
   gap: 8px;
   padding: 0 14px;
   border: 1px solid var(--line);
-  font-weight: 700;
+  font-weight: 680;
 }
 
 .btn-secondary {
-  background: var(--bg-soft);
-  color: var(--text-primary);
+  background: rgba(148, 163, 184, 0.05);
+  color: var(--text-secondary);
+  border-color: rgba(148, 163, 184, 0.12);
 }
 
 .btn-primary {
   background: #e8edf3;
   color: #0d1116;
   border-color: transparent;
+  box-shadow: 0 10px 24px rgba(232, 237, 243, 0.14);
 }
 
 .week-chips,
@@ -170,20 +172,20 @@ textarea.add-input:focus {
 
 .page-hero {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 4px 0 0;
 }
 
 .page-heroBody {
   display: grid;
-  gap: 6px;
+  gap: 5px;
 }
 
 .page-heroEyebrow {
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
@@ -197,8 +199,8 @@ textarea.add-input:focus {
 .page-heroSubtitle {
   max-width: 58ch;
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.48;
+  font-size: 0.81rem;
+  line-height: 1.52;
 }
 
 .summary-strip {
@@ -216,6 +218,7 @@ textarea.add-input:focus {
   gap: 8px;
   flex-wrap: wrap;
   align-items: center;
+  align-content: flex-start;
 }
 
 .page-heroActions .btn-secondary {
@@ -261,17 +264,32 @@ body[data-page="account"] .page-heroActions {
 }
 
 .bottom-tools {
+  display: grid;
+  gap: 10px;
   padding-top: 8px;
+}
+
+.bottom-toolsHead {
+  display: grid;
+  gap: 4px;
+}
+
+.bottom-toolsHint {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.42;
 }
 
 .quick-action {
   flex: 0 0 152px;
   display: grid;
-  gap: 4px;
-  padding: 12px 14px;
-  border-radius: 18px;
-  border: 1px solid var(--line);
-  background: rgba(18, 23, 29, 0.98);
+  gap: 5px;
+  padding: 14px 15px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)),
+    rgba(18, 23, 29, 0.98);
   box-shadow: var(--shadow-md);
   text-align: left;
 }
@@ -287,7 +305,9 @@ body[data-page="account"] .page-heroActions {
 }
 
 .quick-action-primary {
-  background: rgba(24, 30, 37, 0.98);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+    rgba(24, 30, 37, 0.98);
 }
 
 .quick-actionIcon {
@@ -302,6 +322,12 @@ body[data-page="account"] .page-heroActions {
   color: var(--text-primary);
   font-size: 0.88rem;
   font-weight: 700;
+}
+
+.quick-actionMeta {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.42;
 }
 
 .bottom-nav {
@@ -320,9 +346,11 @@ body[data-page="account"] .page-heroActions {
   width: min(100%, 760px);
   margin: 0 auto;
   padding: 4px;
-  border-radius: 16px;
-  border: 1px solid var(--line);
-  background: rgba(17, 22, 28, 0.95);
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01)),
+    rgba(17, 22, 28, 0.95);
   box-shadow: var(--shadow-md);
 }
 
@@ -361,28 +389,33 @@ body[data-page="account"] .page-heroActions {
 .nav-btn {
   display: grid;
   place-items: center;
-  gap: 2px;
-  min-height: 40px;
+  gap: 3px;
+  min-height: 42px;
   border: 0;
-  border-radius: 12px;
+  border-radius: 13px;
   background: transparent;
   color: var(--text-muted);
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.nav-btn:active {
+  transform: translateY(1px);
 }
 
 .nav-btn-active,
 .nav-btn-primary.nav-btn-active {
-  background: var(--bg-surface-3);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
 }
 
 .nav-icon {
-  font-size: 1rem;
+  font-size: 0.9rem;
   line-height: 1;
 }
 
 .nav-label {
-  font-size: 0.68rem;
+  font-size: 0.63rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
 }

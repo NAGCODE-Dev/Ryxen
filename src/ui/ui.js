@@ -19,6 +19,7 @@ export async function mountUI({ root }) {
   // Estado de UI (não depende do core)
   let uiState = normalizeUiState((await uiStorage.get('state')) || {});
   let uiBusy = false;
+  let uiBusyMessage = '';
   let uiSyncTimeout = null;
   let measurementSyncTimeout = null;
   let lastMeasurementSyncHash = getMeasurementSyncHash(uiState?.athleteOverview?.measurements);
@@ -31,6 +32,16 @@ export async function mountUI({ root }) {
   }
 
   const getUiState = () => uiState;
+
+  const setImportStatus = (nextStatus) => {
+    uiState = normalizeUiState({
+      ...uiState,
+      importStatus: nextStatus && typeof nextStatus === 'object'
+        ? { ...uiState.importStatus, ...nextStatus }
+        : null,
+    });
+    void uiStorage.set('state', uiState);
+  };
 
   const setUiState = async (next) => {
     const previous = uiState;
@@ -117,11 +128,15 @@ export async function mountUI({ root }) {
 
   const setBusy = (isBusy, message) => {
     uiBusy = !!isBusy;
+    uiBusyMessage = isBusy ? String(message || 'Carregando...') : '';
     const loadingEl = document.getElementById('loading-screen');
     if (!loadingEl) return;
+    const labelEl = loadingEl.querySelector('[data-loading-label]');
     loadingEl.classList.toggle('hide', !isBusy);
     document.body.classList.toggle('ui-busy', !!isBusy);
-    if (isBusy && message) toast(message);
+    if (labelEl) {
+      labelEl.textContent = uiBusyMessage || 'Carregando...';
+    }
   };
 
   const refs = getRefs(root);
@@ -188,6 +203,7 @@ export async function mountUI({ root }) {
     rerender: () => rerender(),
     toast,
     setBusy,
+    setImportStatus,
   });
 
   setupActions({
@@ -197,6 +213,7 @@ export async function mountUI({ root }) {
     getUiState,
     setUiState,
     patchUiState,
+    setImportStatus,
   });
 
   // Primeira renderização: some com loading inicial
@@ -228,6 +245,10 @@ function normalizeUiState(s) {
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
   next.signupVerification = next.signupVerification && typeof next.signupVerification === 'object' ? next.signupVerification : {};
+  next.importStatus = next.importStatus && typeof next.importStatus === 'object'
+    ? next.importStatus
+    : { active: false, tone: 'idle', title: '', message: '', fileName: '', step: 'idle' };
+  if (typeof next.importStatus.step !== 'string') next.importStatus.step = 'idle';
   next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
@@ -323,6 +344,7 @@ function buildUiForRender(state, uiState, uiBusy = false) {
     },
     passwordReset: uiState.passwordReset,
     signupVerification: uiState.signupVerification,
+    importStatus: uiState.importStatus,
     admin: uiState.admin,
     athleteOverview: uiState.athleteOverview,
     coachPortal: uiState.coachPortal,
