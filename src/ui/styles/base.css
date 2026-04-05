@@ -18,8 +18,9 @@ body {
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background:
-    radial-gradient(circle at top, rgba(255,255,255,0.04), transparent 24%),
-    linear-gradient(180deg, #090d12 0%, #0b0f14 45%, #070a0e 100%);
+    radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 28%),
+    radial-gradient(circle at 100% 12%, rgba(249, 115, 22, 0.08), transparent 22%),
+    linear-gradient(180deg, #091018 0%, #0b0f14 44%, #080c12 100%);
   color: var(--text-primary);
   font-size: 14px;
   touch-action: manipulation;
@@ -31,8 +32,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background:
-    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
   background-size: 22px 22px;
   opacity: 0.35;
 }
@@ -54,7 +55,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [role="button"]:focus-visible {
-  outline: 2px solid rgba(242, 244, 247, 0.92);
+  outline: 2px solid rgba(59, 130, 246, 0.92);
   outline-offset: 2px;
 }
 
@@ -69,7 +70,7 @@ textarea:focus-visible,
   max-width: 980px;
   min-height: 100%;
   margin: 0 auto;
-  background: linear-gradient(180deg, rgba(13, 17, 22, 0.94), rgba(9, 12, 16, 0.98));
+  background: linear-gradient(180deg, rgba(13, 17, 23, 0.96), rgba(10, 14, 20, 0.99));
   border-inline: 1px solid var(--line);
   backdrop-filter: blur(18px);
 }
@@ -93,7 +94,7 @@ textarea:focus-visible,
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: #090d12;
+  background: #091018;
   z-index: 99999;
   transition: opacity 0.28s ease, visibility 0.28s ease;
 }
@@ -108,8 +109,8 @@ textarea:focus-visible,
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  border: 3px solid rgba(255,255,255,0.08);
-  border-top-color: rgba(255,255,255,0.86);
+  border: 3px solid rgba(148, 163, 184, 0.18);
+  border-top-color: var(--accent);
   animation: spin 0.8s linear infinite;
   margin-bottom: 12px;
 }
@@ -127,7 +128,7 @@ textarea:focus-visible,
   max-width: min(92vw, 420px);
   padding: 12px 16px;
   border-radius: 999px;
-  background: rgba(19, 24, 30, 0.96);
+  background: rgba(18, 24, 33, 0.97);
   color: var(--text-primary);
   border: 1px solid var(--line-strong);
   box-shadow: var(--shadow-md);

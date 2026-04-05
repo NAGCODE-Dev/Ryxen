@@ -104,7 +104,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
             <div class="hub-panelStats">
               <div class="hub-stat">
                 <strong>Atleta</strong>
-                <span>Treino do dia, PRs, histórico, estratégia e IA no fluxo principal.</span>
+                <span>Treino do dia, PRs, histórico e rotina clara no fluxo principal.</span>
               </div>
               <div class="hub-stat">
                 <strong>Coach</strong>
@@ -143,9 +143,9 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
           <p>Primeiro atleta ou coach. As variações aparecem depois, sem exigir que a pessoa entenda toda a arquitetura antes de começar.</p>
         </div>
         <div class="hub-grid hub-grid-roles">
-          ${renderRoleCard('Sou atleta', 'Para quem quer abrir o treino, importar rotina, acompanhar PRs e usar a IA sem perder tempo com operação do box.', [
+          ${renderRoleCard('Sou atleta', 'Para quem quer abrir o treino, importar rotina, acompanhar PRs e treinar com clareza sem perder tempo com operação do box.', [
             'Importa treino e mantém histórico',
-            'Recebe estratégia, adaptação e análise da IA',
+            'Registra resultados, PRs e evolução',
             'Continua usando mesmo sem coach online'
           ], 'Entrar como atleta', lastSportUrl, selectedSport, true)}
           ${renderRoleCard('Sou coach / box', 'Para operação, publicação e organização do treino em escala, com portal separado da rotina do atleta.', [
@@ -182,7 +182,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl }) {
           <div>
             <div class="hub-sectionKicker">Comece pelo essencial</div>
             <h2>Entre pelo lado certo e o resto aparece no momento certo.</h2>
-            <p>Atleta entra para ver treino, histórico e IA. Coach entra para operar o box. Menos decisão no início, mais clareza no uso.</p>
+            <p>Atleta entra para ver treino, importar rotina e acompanhar evolução. Coach entra para operar o box. Menos decisão no início, mais clareza no uso.</p>
           </div>
           <div class="hub-actions">
             <button class="hub-primaryAction" type="button" data-hub-primary data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
