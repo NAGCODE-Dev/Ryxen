@@ -461,6 +461,62 @@
   flex-wrap: wrap;
 }
 
+.auth-divider {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin: -2px 0;
+}
+
+.auth-divider::before {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px solid var(--line);
+}
+
+.auth-dividerText {
+  position: relative;
+  padding: 0 12px;
+  background: var(--surface);
+}
+
+.auth-googlePortalBtn {
+  width: 100%;
+  justify-content: center;
+  gap: 12px;
+  min-height: 50px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)),
+    var(--surface-2);
+}
+
+.auth-googlePortalBtn:hover {
+  border-color: var(--line-strong);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03)),
+    var(--surface-2);
+}
+
+.auth-googlePortalBtn:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.auth-googlePortalMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #FFBE55, #FF8A2A);
+  color: #071427;
+  font-size: 0.92rem;
+  font-weight: 900;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.24);
+}
+
 .sidebar-nav {
   display: grid;
   gap: 8px;

@@ -5,6 +5,7 @@ import { injectSpeedInsights } from '@vercel/speed-insights';
 import '../coach/styles.css';
 
 const CoachWorkspace = React.lazy(() => import('./workspace.js'));
+const DEFAULT_COACH_RETURN_TO = '/coach/';
 
 const STORAGE_KEYS = {
   token: 'crossapp-auth-token',
@@ -21,6 +22,19 @@ function App() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [login, setLogin] = useState({ email: '', password: '' });
+
+  useEffect(() => {
+    const redirect = applyAuthRedirectFromLocation();
+    if (!redirect.handled) return;
+    if (redirect.token) setToken(redirect.token);
+    if (redirect.user) setProfile(redirect.user);
+    if (redirect.success) {
+      setMessage('Sessão iniciada com Google');
+      setError('');
+    } else {
+      setError(redirect.error || 'Não foi possível entrar com Google');
+    }
+  }, []);
 
   useEffect(() => {
     if (!token) return;
@@ -47,6 +61,21 @@ function App() {
       setError(err.message || 'Erro ao entrar');
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleGoogleLogin() {
+    setError('');
+    setMessage('');
+    setLoading(true);
+    try {
+      const target = buildGoogleRedirectUrl();
+      const returnTo = normalizeReturnTo(`${window.location.pathname}${window.location.search}`, DEFAULT_COACH_RETURN_TO);
+      target.searchParams.set('returnTo', returnTo);
+      window.location.assign(target.toString());
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Google Sign-In indisponível');
     }
   }
 
@@ -84,6 +113,18 @@ function App() {
               onChange: (e) => setLogin((prev) => ({ ...prev, password: e.target.value })),
             }),
             React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading }, loading ? 'Entrando...' : 'Entrar')
+          ),
+          React.createElement('div', { className: 'auth-divider', role: 'presentation' },
+            React.createElement('span', { className: 'auth-dividerText' }, 'ou continue com Google')
+          ),
+          React.createElement('button', {
+            className: 'btn btn-secondary auth-googlePortalBtn',
+            type: 'button',
+            disabled: loading,
+            onClick: handleGoogleLogin,
+          },
+            React.createElement('span', { className: 'auth-googlePortalMark', 'aria-hidden': 'true' }, 'G'),
+            React.createElement('span', null, 'Continuar com Google')
           ),
           React.createElement('div', { className: 'auth-links' },
             React.createElement('a', { className: 'portal-link', href: '/' }, 'Abrir app do atleta'),
@@ -172,6 +213,52 @@ function writeProfile(profile) {
   localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile || null));
 }
 
+function applyAuthRedirectFromLocation() {
+  return applyAuthRedirectFromUrl(window.location.href, { cleanupCurrentLocation: true });
+}
+
+function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = false } = {}) {
+  try {
+    const url = new URL(urlString, window.location.href);
+    const hashParams = new URLSearchParams((url.hash || '').replace(/^#/, ''));
+    const searchParams = new URLSearchParams(url.search || '');
+    const token = String(hashParams.get('authToken') || searchParams.get('authToken') || '').trim();
+    const encodedUser = String(hashParams.get('authUser') || searchParams.get('authUser') || '').trim();
+    const authError = String(hashParams.get('authError') || searchParams.get('authError') || '').trim();
+
+    if (!token && !encodedUser && !authError) {
+      return { success: false, handled: false };
+    }
+
+    let user = null;
+    if (encodedUser) {
+      user = parseBase64UrlJson(encodedUser);
+    }
+
+    if (token) writeToken(token);
+    if (user) writeProfile(user);
+
+    if (cleanupCurrentLocation) {
+      url.hash = '';
+      url.searchParams.delete('authToken');
+      url.searchParams.delete('authUser');
+      url.searchParams.delete('authError');
+      url.searchParams.delete('returnTo');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    return {
+      success: !authError,
+      handled: true,
+      token,
+      user,
+      error: authError || '',
+    };
+  } catch {
+    return { success: false, handled: false };
+  }
+}
+
 function authFeatureCard(title, copy) {
   return React.createElement('div', { className: 'auth-feature' },
     React.createElement('strong', null, title),
@@ -194,6 +281,40 @@ function readRuntimeConfig() {
   } catch {
     return window.__CROSSAPP_CONFIG__ || { apiBaseUrl: '/api' };
   }
+}
+
+function buildGoogleRedirectUrl() {
+  const cfg = readRuntimeConfig();
+  const apiBaseUrl = String(cfg.apiBaseUrl || '').trim();
+  if (!apiBaseUrl) {
+    throw new Error('API base URL não configurada');
+  }
+
+  const origin = String(window.location?.origin || '').trim();
+  const normalizedBase = apiBaseUrl.endsWith('/') ? apiBaseUrl : `${apiBaseUrl}/`;
+  const base = /^[a-z][a-z\d+\-.]*:/i.test(normalizedBase)
+    ? normalizedBase
+    : new URL(normalizedBase, origin || window.location.href).toString();
+
+  return new URL('auth/google/start', base);
+}
+
+function parseBase64UrlJson(value) {
+  try {
+    const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
+    return JSON.parse(window.atob(padded));
+  } catch {
+    return null;
+  }
+}
+
+function normalizeReturnTo(value, fallback = DEFAULT_COACH_RETURN_TO) {
+  const raw = String(value || '').trim();
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//')) {
+    return fallback;
+  }
+  return raw;
 }
 
 async function handleBillingReturn(setMessage, setError) {
