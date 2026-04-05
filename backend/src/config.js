@@ -7,13 +7,6 @@ function parseList(value) {
     .filter(Boolean);
 }
 
-function parseCsv(value) {
-  return String(value || '')
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 function parseTrustProxy(value, isProduction) {
   if (value === undefined || value === null || value === '') {
     return isProduction ? 1 : false;
@@ -75,17 +68,6 @@ export const RETENTION_PASSWORD_RESET_DAYS = Math.max(Number(process.env.RETENTI
 export const RETENTION_EMAIL_VERIFICATION_DAYS = Math.max(Number(process.env.RETENTION_EMAIL_VERIFICATION_DAYS || 2), 1);
 export const RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER = Math.max(Number(process.env.RETENTION_SYNC_SNAPSHOT_KEEP_PER_USER || 5), 1);
 export const RETENTION_ACCOUNT_DELETION_DAYS = Math.max(Number(process.env.RETENTION_ACCOUNT_DELETION_DAYS || 90), 1);
-export const CROSSAI_PROVIDER = String(process.env.CROSSAI_PROVIDER || 'openrouter').trim().toLowerCase();
-export const CROSSAI_MODEL = String(process.env.CROSSAI_MODEL || 'openrouter/free').trim();
-export const CROSSAI_REASONING_EFFORT = String(process.env.CROSSAI_REASONING_EFFORT || 'medium').trim().toLowerCase();
-export const CROSSAI_SCIENCE_VECTOR_STORE_IDS = Array.from(new Set(parseCsv(process.env.CROSSAI_SCIENCE_VECTOR_STORE_IDS || '')));
-export const CROSSAI_LOCAL_RESEARCH_ENABLED = String(process.env.CROSSAI_LOCAL_RESEARCH_ENABLED || 'false').trim().toLowerCase() === 'true';
-export const OPENROUTER_API_KEY = String(process.env.OPENROUTER_API_KEY || '').trim();
-export const OPENROUTER_BASE_URL = String(process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').trim().replace(/\/$/, '');
-export const OPENROUTER_SITE_URL = String(process.env.OPENROUTER_SITE_URL || FRONTEND_ORIGIN || '').trim();
-export const OPENROUTER_APP_NAME = String(process.env.OPENROUTER_APP_NAME || 'CrossApp').trim();
-export const GROQ_API_KEY = String(process.env.GROQ_API_KEY || '').trim();
-export const GROQ_BASE_URL = String(process.env.GROQ_BASE_URL || 'https://api.groq.com/openai/v1').trim().replace(/\/$/, '');
 
 export function validateConfig() {
   if (!DATABASE_URL) {

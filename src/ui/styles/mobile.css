@@ -227,10 +227,6 @@
     padding: 13px;
   }
 
-  .crossai-actions {
-    grid-template-columns: 1fr;
-  }
-
   .settings-actions-grid {
     grid-template-columns: 1fr;
   }
@@ -242,22 +238,6 @@
   .settings-section {
     padding: 12px;
     border-radius: 16px;
-  }
-
-  .crossai-historyHead,
-  .crossai-historyCardHead,
-  .crossai-historyActions,
-  .crossai-chatQuickActions {
-    display: grid;
-  }
-
-  .crossai-chatMessages {
-    max-height: 38vh;
-    padding: 2px;
-  }
-
-  .crossai-chatBubble {
-    max-width: 92%;
   }
 
   .empty-stateTips {
