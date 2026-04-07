@@ -54,7 +54,7 @@ export function renderAppShell() {
 
 function getAppLabel() {
   try {
-    return window.__CROSSAPP_APP_CONTEXT__?.appLabel || 'Ryxen Cross';
+    return window.__RYXEN_APP_CONTEXT__?.appLabel || window.__CROSSAPP_APP_CONTEXT__?.appLabel || 'Ryxen Cross';
   } catch {
     return 'Ryxen Cross';
   }

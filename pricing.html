@@ -346,9 +346,12 @@
   </main>
   <script>
     (function attachPlanLinks() {
-      const billing = (window.__CROSSAPP_CONFIG__ || {}).billing || {};
+      const billing = (window.__RYXEN_CONFIG__ || window.__CROSSAPP_CONFIG__ || {}).billing || {};
       const links = billing.links || {};
-      const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
+      const CHECKOUT_INTENT_KEY = 'ryxen-pending-checkout-v1';
+      const LEGACY_CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
+      const AUTH_TOKEN_KEY = 'ryxen-auth-token';
+      const LEGACY_AUTH_TOKEN_KEY = 'crossapp-auth-token';
       const aliases = {
         pro: ['pro', 'coach'],
         coach: ['coach', 'pro'],
@@ -363,19 +366,21 @@
           node.setAttribute('target', '_blank');
           node.setAttribute('rel', 'noopener noreferrer');
           node.addEventListener('click', (event) => {
-            const token = window.localStorage.getItem('crossapp-auth-token');
+            const token = window.localStorage.getItem(AUTH_TOKEN_KEY) || window.localStorage.getItem(LEGACY_AUTH_TOKEN_KEY);
             if (token) {
               return;
             }
 
             event.preventDefault();
             try {
-              window.localStorage.setItem(CHECKOUT_INTENT_KEY, JSON.stringify({
+              const serialized = JSON.stringify({
                 planId: key,
                 source: 'pricing',
                 returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
                 createdAt: new Date().toISOString(),
-              }));
+              });
+              window.localStorage.setItem(CHECKOUT_INTENT_KEY, serialized);
+              window.localStorage.setItem(LEGACY_CHECKOUT_INTENT_KEY, serialized);
             } catch {
               // no-op
             }

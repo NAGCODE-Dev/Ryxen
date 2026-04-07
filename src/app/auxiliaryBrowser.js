@@ -5,7 +5,8 @@ const AUXILIARY_PAGES = new Map([
   ['/support.html', 'Suporte'],
 ]);
 
-const OVERLAY_ID = 'crossapp-aux-browser';
+const OVERLAY_ID = 'ryxen-aux-browser';
+const LEGACY_OVERLAY_ID = 'crossapp-aux-browser';
 let isMounted = false;
 
 export function initAuxiliaryBrowserLayer() {
@@ -53,7 +54,7 @@ function openAuxiliaryOverlay(url, title) {
 }
 
 function closeAuxiliaryOverlay() {
-  const shell = document.getElementById(OVERLAY_ID);
+  const shell = document.getElementById(OVERLAY_ID) || document.getElementById(LEGACY_OVERLAY_ID);
   if (!shell) return;
   shell.hidden = true;
   const frameEl = shell.querySelector('[data-aux-frame]');
@@ -62,7 +63,7 @@ function closeAuxiliaryOverlay() {
 }
 
 function ensureOverlayShell() {
-  let shell = document.getElementById(OVERLAY_ID);
+  let shell = document.getElementById(OVERLAY_ID) || document.getElementById(LEGACY_OVERLAY_ID);
   if (shell) return shell;
 
   shell = document.createElement('div');

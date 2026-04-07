@@ -35,8 +35,8 @@ npm run start
 
 Com Docker, nenhuma configuração manual é necessária. O frontend usa `/api` por padrão e o nginx faz proxy para o backend.
 
-Se você quiser apontar para outro backend, ajuste o `config.js` ou as variáveis de build do frontend (`CROSSAPP_API_BASE_URL`).
-O prefixo `CROSSAPP_` permanece nas envs do frontend por compatibilidade com builds e automações já existentes.
+Se você quiser apontar para outro backend, ajuste o `config.js` ou as variáveis de build do frontend (`RYXEN_API_BASE_URL`).
+O prefixo `RYXEN_` é o principal; `CROSSAPP_` segue aceito temporariamente por compatibilidade com builds e automações antigas.
 
 ## Teste rápido de assinatura (modo mock)
 

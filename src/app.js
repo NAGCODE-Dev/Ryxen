@@ -104,17 +104,16 @@ const coachWorkoutStorage = createStorage('coach-workout-cache', 300_000);
 const PDF_KEY = 'workout-pdf';
 const METADATA_KEY = 'workout-pdf-metadata';
 const COACH_FEED_KEY = 'feed';
-// Preserve CrossApp-prefixed persisted keys so existing installs keep sessions, consent and cached state after the rebrand.
-const RUNTIME_CONFIG_KEY = 'crossapp-runtime-config';
-const TELEMETRY_CONSENT_KEY = 'crossapp-consent';
-const AUTH_TOKEN_KEY = 'crossapp-auth-token';
-const PROFILE_KEY = 'crossapp-user-profile';
-const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
+const RUNTIME_CONFIG_KEY = ['ryxen-runtime-config', 'crossapp-runtime-config'];
+const TELEMETRY_CONSENT_KEY = ['ryxen-consent', 'crossapp-consent'];
+const AUTH_TOKEN_KEY = ['ryxen-auth-token', 'crossapp-auth-token'];
+const PROFILE_KEY = ['ryxen-user-profile', 'crossapp-user-profile'];
+const CHECKOUT_INTENT_KEY = ['ryxen-pending-checkout-v1', 'crossapp-pending-checkout-v1'];
 const PR_HISTORY_KEY = 'pr_history';
-const ATHLETE_USAGE_KEY = 'crossapp-athlete-usage-v1';
-const TELEMETRY_QUEUE_KEY = 'crossapp-telemetry-queue';
-const APP_STATE_SYNC_KEY = 'crossapp-app-state-sync-v1';
-const SYNC_OUTBOX_KEY = 'crossapp-sync-outbox-v1';
+const ATHLETE_USAGE_KEY = ['ryxen-athlete-usage-v1', 'crossapp-athlete-usage-v1'];
+const TELEMETRY_QUEUE_KEY = ['ryxen-telemetry-queue', 'crossapp-telemetry-queue'];
+const APP_STATE_SYNC_KEY = ['ryxen-app-state-sync-v1', 'crossapp-app-state-sync-v1'];
+const SYNC_OUTBOX_KEY = ['ryxen-sync-outbox-v1', 'crossapp-sync-outbox-v1'];
 const PRESERVED_LOCAL_KEYS = [RUNTIME_CONFIG_KEY, TELEMETRY_CONSENT_KEY];
 
 const localSessionDomain = createLocalSessionDomain({

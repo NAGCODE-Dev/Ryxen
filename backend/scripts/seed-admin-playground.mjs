@@ -10,12 +10,12 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-const ADMIN_EMAIL = String(process.env.CROSSAPP_ADMIN_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
-const ADMIN_NAME = String(process.env.CROSSAPP_ADMIN_NAME || 'Nikolas Ayres').trim();
-const DEFAULT_PASSWORD = String(process.env.CROSSAPP_SEED_PASSWORD || 'RyxenSeed123').trim();
-const GYM_COUNT = Math.max(1, Number(process.env.CROSSAPP_SEED_GYMS || 2));
-const ATHLETES_PER_GYM = Math.max(3, Number(process.env.CROSSAPP_SEED_ATHLETES_PER_GYM || 6));
-const COACHES_PER_GYM = Math.max(1, Number(process.env.CROSSAPP_SEED_COACHES_PER_GYM || 1));
+const ADMIN_EMAIL = String(process.env.RYXEN_ADMIN_EMAIL || process.env.CROSSAPP_ADMIN_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
+const ADMIN_NAME = String(process.env.RYXEN_ADMIN_NAME || process.env.CROSSAPP_ADMIN_NAME || 'Nikolas Ayres').trim();
+const DEFAULT_PASSWORD = String(process.env.RYXEN_SEED_PASSWORD || process.env.CROSSAPP_SEED_PASSWORD || 'RyxenSeed123').trim();
+const GYM_COUNT = Math.max(1, Number(process.env.RYXEN_SEED_GYMS || process.env.CROSSAPP_SEED_GYMS || 2));
+const ATHLETES_PER_GYM = Math.max(3, Number(process.env.RYXEN_SEED_ATHLETES_PER_GYM || process.env.CROSSAPP_SEED_ATHLETES_PER_GYM || 6));
+const COACHES_PER_GYM = Math.max(1, Number(process.env.RYXEN_SEED_COACHES_PER_GYM || process.env.CROSSAPP_SEED_COACHES_PER_GYM || 1));
 
 const useRemoteSsl = !/localhost|127\.0\.0\.1|@db(?::|\/|$)/i.test(DATABASE_URL);
 const pool = new Pool({

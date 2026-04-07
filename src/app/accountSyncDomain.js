@@ -28,6 +28,34 @@ export function createAccountSyncDomain({
   let appStateSyncTimer = null;
   let onlineSyncListenerBound = false;
 
+  function normalizeStorageKeys(keys) {
+    return Array.isArray(keys) ? keys.filter(Boolean) : [keys].filter(Boolean);
+  }
+
+  function readLocalJson(keys, fallbackValue) {
+    try {
+      for (const key of normalizeStorageKeys(keys)) {
+        const raw = windowObject.localStorage.getItem(key);
+        if (!raw) continue;
+        return JSON.parse(raw);
+      }
+      return fallbackValue;
+    } catch {
+      return fallbackValue;
+    }
+  }
+
+  function writeLocalJson(keys, value) {
+    try {
+      const serialized = JSON.stringify(value);
+      normalizeStorageKeys(keys).forEach((key) => {
+        windowObject.localStorage.setItem(key, serialized);
+      });
+    } catch {
+      // no-op
+    }
+  }
+
   async function syncImportedPlanToAccount(weeks, metadata = {}) {
     const profile = handleGetProfile()?.data || null;
     if (!profile?.id || !Array.isArray(weeks) || !weeks.length) {
@@ -325,21 +353,12 @@ export function createAccountSyncDomain({
   }
 
   function readSyncOutbox() {
-    try {
-      const raw = windowObject.localStorage.getItem(SYNC_OUTBOX_KEY);
-      const parsed = raw ? JSON.parse(raw) : [];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
+    const parsed = readLocalJson(SYNC_OUTBOX_KEY, []);
+    return Array.isArray(parsed) ? parsed : [];
   }
 
   function writeSyncOutbox(items) {
-    try {
-      windowObject.localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(Array.isArray(items) ? items : []));
-    } catch {
-      // no-op
-    }
+    writeLocalJson(SYNC_OUTBOX_KEY, Array.isArray(items) ? items : []);
   }
 
   function queueSyncOutboxItem(kind, payload) {
@@ -358,20 +377,11 @@ export function createAccountSyncDomain({
   }
 
   function loadLocalAppStateEnvelope() {
-    try {
-      const raw = windowObject.localStorage.getItem(APP_STATE_SYNC_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    return readLocalJson(APP_STATE_SYNC_KEY, null);
   }
 
   function persistLocalAppStateEnvelope(envelope) {
-    try {
-      windowObject.localStorage.setItem(APP_STATE_SYNC_KEY, JSON.stringify(envelope || {}));
-    } catch {
-      // no-op
-    }
+    writeLocalJson(APP_STATE_SYNC_KEY, envelope || {});
   }
 
   function mergeAppStateSnapshot(base = {}, override = {}) {

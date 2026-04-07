@@ -3,10 +3,14 @@ import { getRuntimeConfig } from '../packages/shared-web/runtime.js';
 import '../coach/styles.css';
 
 const STORAGE_KEYS = {
-  token: 'crossapp-auth-token',
-  profile: 'crossapp-user-profile',
-  runtime: 'crossapp-runtime-config',
-  workoutDraft: 'crossapp-coach-workout-draft',
+  token: 'ryxen-auth-token',
+  legacyToken: 'crossapp-auth-token',
+  profile: 'ryxen-user-profile',
+  legacyProfile: 'crossapp-user-profile',
+  runtime: 'ryxen-runtime-config',
+  legacyRuntime: 'crossapp-runtime-config',
+  workoutDraft: 'ryxen-coach-workout-draft',
+  legacyWorkoutDraft: 'crossapp-coach-workout-draft',
 };
 
 const DEFAULT_WORKOUT_DRAFT = {
@@ -1840,7 +1844,7 @@ function isFeatureUnavailableError(error) {
 
 function readToken() {
   try {
-    return localStorage.getItem(STORAGE_KEYS.token) || '';
+    return localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem(STORAGE_KEYS.legacyToken) || '';
   } catch {
     return '';
   }
@@ -1848,11 +1852,12 @@ function readToken() {
 
 function writeToken(token) {
   localStorage.setItem(STORAGE_KEYS.token, token || '');
+  localStorage.setItem(STORAGE_KEYS.legacyToken, token || '');
 }
 
 function readProfile() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.profile);
+    const raw = localStorage.getItem(STORAGE_KEYS.profile) || localStorage.getItem(STORAGE_KEYS.legacyProfile);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -1925,7 +1930,7 @@ function hasWorkoutDraftContent(forms = {}) {
 
 function readWorkoutDraft() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.workoutDraft);
+    const raw = localStorage.getItem(STORAGE_KEYS.workoutDraft) || localStorage.getItem(STORAGE_KEYS.legacyWorkoutDraft);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     return getWorkoutDraftPayload(parsed);
@@ -1938,9 +1943,12 @@ function writeWorkoutDraft(forms = {}) {
   try {
     if (!hasWorkoutDraftContent(forms)) {
       localStorage.removeItem(STORAGE_KEYS.workoutDraft);
+      localStorage.removeItem(STORAGE_KEYS.legacyWorkoutDraft);
       return;
     }
-    localStorage.setItem(STORAGE_KEYS.workoutDraft, JSON.stringify(getWorkoutDraftPayload(forms)));
+    const serialized = JSON.stringify(getWorkoutDraftPayload(forms));
+    localStorage.setItem(STORAGE_KEYS.workoutDraft, serialized);
+    localStorage.setItem(STORAGE_KEYS.legacyWorkoutDraft, serialized);
   } catch {
     // no-op
   }
@@ -1949,6 +1957,7 @@ function writeWorkoutDraft(forms = {}) {
 function clearWorkoutDraft() {
   try {
     localStorage.removeItem(STORAGE_KEYS.workoutDraft);
+    localStorage.removeItem(STORAGE_KEYS.legacyWorkoutDraft);
   } catch {
     // no-op
   }
@@ -1977,7 +1986,9 @@ function getPublishValidationErrors({ forms = {}, selectedGymId = '', athleteMem
 }
 
 function writeProfile(profile) {
-  localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile || null));
+  const serialized = JSON.stringify(profile || null);
+  localStorage.setItem(STORAGE_KEYS.profile, serialized);
+  localStorage.setItem(STORAGE_KEYS.legacyProfile, serialized);
 }
 
 function readRuntimeConfig() {

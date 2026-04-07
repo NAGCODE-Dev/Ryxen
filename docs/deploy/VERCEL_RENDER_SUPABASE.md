@@ -1,7 +1,7 @@
 # Deploy recomendado sem custo inicial
 
 Nota:
-- as variáveis `CROSSAPP_*` abaixo continuam com prefixo legado para preservar compatibilidade com o pipeline atual de build.
+- use `RYXEN_*` como prefixo principal; `CROSSAPP_*` segue aceito temporariamente como fallback.
 
 Arquitetura recomendada para validar o produto sem custo imediato:
 
@@ -26,15 +26,15 @@ Arquitetura recomendada para validar o produto sem custo imediato:
 ### Variáveis do Vercel
 
 ```env
-CROSSAPP_API_BASE_URL=https://your-backend.onrender.com
-CROSSAPP_TELEMETRY_ENABLED=true
-CROSSAPP_BILLING_PROVIDER=kiwify_link
-CROSSAPP_BILLING_SUCCESS_URL=https://your-frontend.vercel.app/coach/?billing=success
-CROSSAPP_BILLING_CANCEL_URL=https://your-frontend.vercel.app/coach/?billing=cancel
-CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL=
-CROSSAPP_KIWIFY_CHECKOUT_PRO_URL=
-CROSSAPP_KIWIFY_CHECKOUT_COACH_URL=
-CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL=
+RYXEN_API_BASE_URL=https://your-backend.onrender.com
+RYXEN_TELEMETRY_ENABLED=true
+RYXEN_BILLING_PROVIDER=kiwify_link
+RYXEN_BILLING_SUCCESS_URL=https://your-frontend.vercel.app/coach/?billing=success
+RYXEN_BILLING_CANCEL_URL=https://your-frontend.vercel.app/coach/?billing=cancel
+RYXEN_KIWIFY_CHECKOUT_STARTER_URL=
+RYXEN_KIWIFY_CHECKOUT_PRO_URL=
+RYXEN_KIWIFY_CHECKOUT_COACH_URL=
+RYXEN_KIWIFY_CHECKOUT_PERFORMANCE_URL=
 ```
 
 Arquivo de referência no repositório:
@@ -119,7 +119,7 @@ curl https://your-backend.onrender.com/health
 Depois que o Render subir:
 
 1. copiar a URL pública do backend
-2. configurar `CROSSAPP_API_BASE_URL` no Vercel
+2. configurar `RYXEN_API_BASE_URL` no Vercel
 3. redeploy do frontend
 
 ## Billing atual

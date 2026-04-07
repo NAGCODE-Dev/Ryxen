@@ -11,6 +11,10 @@ export function createLocalSessionDomain({
   APP_STATE_SYNC_KEY,
   SYNC_OUTBOX_KEY,
 }) {
+  function normalizeKeys(keys = []) {
+    return keys.flatMap((key) => (Array.isArray(key) ? key : [key])).filter(Boolean);
+  }
+
   async function clearLocalUserData(options = {}) {
     const preserveAuth = options?.preserveAuth === true;
     const preserved = captureLocalValues([
@@ -36,7 +40,7 @@ export function createLocalSessionDomain({
 
   function captureLocalValues(keys = []) {
     const snapshot = new Map();
-    keys.forEach((key) => {
+    normalizeKeys(keys).forEach((key) => {
       try {
         const value = windowObject.localStorage.getItem(key);
         if (value !== null) snapshot.set(key, value);
@@ -58,11 +62,13 @@ export function createLocalSessionDomain({
   }
 
   function removeLocalValue(key) {
-    try {
-      windowObject.localStorage.removeItem(key);
-    } catch {
-      // no-op
-    }
+    normalizeKeys([key]).forEach((entry) => {
+      try {
+        windowObject.localStorage.removeItem(entry);
+      } catch {
+        // no-op
+      }
+    });
   }
 
   return {

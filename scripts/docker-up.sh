@@ -4,10 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-DB_PORT="${CROSSAPP_DB_PORT:-5432}"
-BACKEND_PORT="${CROSSAPP_BACKEND_PORT:-8787}"
-MAILPIT_PORT="${CROSSAPP_MAILPIT_PORT:-8025}"
-FRONTEND_PORT="${CROSSAPP_FRONTEND_PORT:-8000}"
+DB_PORT="${RYXEN_DB_PORT:-${CROSSAPP_DB_PORT:-5432}}"
+BACKEND_PORT="${RYXEN_BACKEND_PORT:-${CROSSAPP_BACKEND_PORT:-8787}}"
+MAILPIT_PORT="${RYXEN_MAILPIT_PORT:-${CROSSAPP_MAILPIT_PORT:-8025}}"
+FRONTEND_PORT="${RYXEN_FRONTEND_PORT:-${CROSSAPP_FRONTEND_PORT:-8000}}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "[docker-up] Docker não está instalado ou não está no PATH."
@@ -42,7 +42,7 @@ check_port "$FRONTEND_PORT" "frontend" || PORT_CONFLICT=1
 
 if [ "$PORT_CONFLICT" -ne 0 ]; then
   echo "[docker-up] Ajuste as portas antes de subir o stack. Exemplo:"
-  echo "  CROSSAPP_DB_PORT=5433 CROSSAPP_FRONTEND_PORT=8001 npm run docker:up"
+  echo "  RYXEN_DB_PORT=5433 RYXEN_FRONTEND_PORT=8001 npm run docker:up"
   exit 1
 fi
 

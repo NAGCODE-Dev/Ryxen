@@ -1,4 +1,4 @@
-package com.nagcode.crossapp;
+package com.nagcode.ryxen;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -1,12 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    // Preserve the legacy Android package for upgrade compatibility with installed builds.
-    namespace "com.nagcode.crossapp"
+    namespace "com.nagcode.ryxen"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        // Preserve the legacy applicationId for upgrade compatibility with installed builds.
-        applicationId "com.nagcode.crossapp"
+        applicationId "com.nagcode.ryxen"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

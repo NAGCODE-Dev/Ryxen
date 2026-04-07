@@ -28,7 +28,16 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    <!-- Keep legacy deep-link scheme for backward compatibility with already installed clients. -->
+                    android:scheme="ryxen"
+                    android:host="auth"
+                    android:path="/callback" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
                     android:scheme="crossapp"
                     android:host="auth"
                     android:path="/callback" />

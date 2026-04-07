@@ -53,10 +53,16 @@ export async function apiRequest(path, options = {}) {
   return data;
 }
 
+const AUTH_TOKEN_KEY = 'ryxen-auth-token';
+const LEGACY_AUTH_TOKEN_KEY = 'crossapp-auth-token';
+const REQUEST_METRICS_KEY = '__RYXEN_REQUEST_METRICS__';
+const LEGACY_REQUEST_METRICS_KEY = '__CROSSAPP_REQUEST_METRICS__';
+
 export function setAuthToken(token) {
   try {
-    // Keep legacy auth token key so users stay signed in after the rebrand.
-    localStorage.setItem('crossapp-auth-token', token || '');
+    const value = token || '';
+    localStorage.setItem(AUTH_TOKEN_KEY, value);
+    localStorage.setItem(LEGACY_AUTH_TOKEN_KEY, value);
   } catch {
     // no-op
   }
@@ -64,14 +70,19 @@ export function setAuthToken(token) {
 
 export function getAuthToken() {
   try {
-    return localStorage.getItem('crossapp-auth-token') || '';
+    return localStorage.getItem(AUTH_TOKEN_KEY) || localStorage.getItem(LEGACY_AUTH_TOKEN_KEY) || '';
   } catch {
     return '';
   }
 }
 
 export function clearAuthToken() {
-  setAuthToken('');
+  try {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_AUTH_TOKEN_KEY);
+  } catch {
+    // no-op
+  }
 }
 
 function safeParse(text) {
@@ -93,7 +104,7 @@ function safeByteLength(text) {
 
 function trackRequestMetric(entry) {
   try {
-    const current = window.__CROSSAPP_REQUEST_METRICS__ || { recent: [], slow: [], summary: {} };
+    const current = window[REQUEST_METRICS_KEY] || window[LEGACY_REQUEST_METRICS_KEY] || { recent: [], slow: [], summary: {} };
     const recent = [...(current.recent || []), { ...entry, at: new Date().toISOString() }].slice(-40);
     const slow = entry.durationMs >= 600
       ? [...(current.slow || []), { ...entry, at: new Date().toISOString() }].slice(-20)
@@ -110,7 +121,9 @@ function trackRequestMetric(entry) {
       lastStatus: entry.status,
       lastBytes: entry.responseBytes,
     };
-    window.__CROSSAPP_REQUEST_METRICS__ = { recent, slow, summary };
+    const nextMetrics = { recent, slow, summary };
+    window[REQUEST_METRICS_KEY] = nextMetrics;
+    window[LEGACY_REQUEST_METRICS_KEY] = nextMetrics;
     if (entry.durationMs >= 1200) {
       console.warn('[api:slow]', entry.method, entry.path, `${entry.durationMs}ms`, `${entry.responseBytes}B`, `status=${entry.status}`);
     }

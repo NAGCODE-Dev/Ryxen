@@ -24,8 +24,8 @@ import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
 
 const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
-// Keep the legacy cookie name to preserve in-flight OAuth handshakes during rollout.
-const GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
+const GOOGLE_OAUTH_CONTEXT_COOKIE = 'ryxen_google_oauth_ctx';
+const LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
 
 async function withUserBootstrap(normalizedEmail, factory) {
   const client = await pool.connect();
@@ -643,10 +643,12 @@ function normalizeNativeAppCallback(value, returnTo) {
 
   try {
     const parsed = new URL(raw);
-    // Keep the legacy crossapp:// callback for backward compatibility with already installed native clients.
-    if (parsed.protocol !== 'crossapp:' || parsed.hostname !== 'auth' || parsed.pathname !== '/callback') {
+    const protocol = String(parsed.protocol || '').toLowerCase();
+    const isSupportedScheme = protocol === 'ryxen:' || protocol === 'crossapp:';
+    if (!isSupportedScheme || parsed.hostname !== 'auth' || parsed.pathname !== '/callback') {
       return '';
     }
+    parsed.protocol = 'ryxen:';
     parsed.searchParams.set('returnTo', normalizeFrontendReturnTo(parsed.searchParams.get('returnTo') || returnTo));
     parsed.hash = '';
     return parsed.toString();
@@ -667,27 +669,32 @@ const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 function setGoogleOAuthContextCookie(res, payload) {
   const encoded = createGoogleOAuthState(payload);
-  res.append('Set-Cookie', serializeCookie(GOOGLE_OAUTH_CONTEXT_COOKIE, encoded, {
-    httpOnly: true,
-    maxAge: 10 * 60,
-    path: '/auth',
-    sameSite: 'Lax',
-    secure: IS_PRODUCTION,
-  }));
+  for (const cookieName of [GOOGLE_OAUTH_CONTEXT_COOKIE, LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE]) {
+    res.append('Set-Cookie', serializeCookie(cookieName, encoded, {
+      httpOnly: true,
+      maxAge: 10 * 60,
+      path: '/auth',
+      sameSite: 'Lax',
+      secure: IS_PRODUCTION,
+    }));
+  }
 }
 
 function clearGoogleOAuthContextCookie(res) {
-  res.append('Set-Cookie', serializeCookie(GOOGLE_OAUTH_CONTEXT_COOKIE, '', {
-    httpOnly: true,
-    maxAge: 0,
-    path: '/auth',
-    sameSite: 'Lax',
-    secure: IS_PRODUCTION,
-  }));
+  for (const cookieName of [GOOGLE_OAUTH_CONTEXT_COOKIE, LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE]) {
+    res.append('Set-Cookie', serializeCookie(cookieName, '', {
+      httpOnly: true,
+      maxAge: 0,
+      path: '/auth',
+      sameSite: 'Lax',
+      secure: IS_PRODUCTION,
+    }));
+  }
 }
 
 function parseGoogleOAuthContextCookie(req) {
-  const raw = parseCookieHeader(req.headers?.cookie || '')[GOOGLE_OAUTH_CONTEXT_COOKIE];
+  const cookies = parseCookieHeader(req.headers?.cookie || '');
+  const raw = cookies[GOOGLE_OAUTH_CONTEXT_COOKIE] || cookies[LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE];
   return parseGoogleOAuthState(raw);
 }
 

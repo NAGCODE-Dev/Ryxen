@@ -13,7 +13,7 @@ test('getRuntimeConfig não usa fallback implícito de emulador em runtime nativ
       protocol: 'https:',
       hostname: 'localhost',
     },
-    __CROSSAPP_CONFIG__: {
+    __RYXEN_CONFIG__: {
       apiBaseUrl: '/api',
     },
   };
@@ -45,7 +45,7 @@ test('getRuntimeConfig usa fallback do emulador apenas quando target nativo é e
       protocol: 'https:',
       hostname: 'localhost',
     },
-    __CROSSAPP_CONFIG__: {
+    __RYXEN_CONFIG__: {
       apiBaseUrl: '/api',
       native: {
         target: 'emulator',

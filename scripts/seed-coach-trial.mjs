@@ -1,25 +1,25 @@
-const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
-const COACH_EMAIL = String(process.env.CROSSAPP_COACH_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
-const COACH_PASSWORD = String(process.env.CROSSAPP_COACH_PASSWORD || 'CoachTrial123').trim();
-const COACH_NAME = String(process.env.CROSSAPP_COACH_NAME || 'Coach Trial').trim();
-const GYM_NAME = String(process.env.CROSSAPP_GYM_NAME || 'Ryxen Test Box').trim();
-const GYM_SLUG = String(process.env.CROSSAPP_GYM_SLUG || 'ryxen-test-box').trim();
+const API_BASE_URL = String(process.env.RYXEN_API_BASE_URL || process.env.CROSSAPP_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
+const COACH_EMAIL = String(process.env.RYXEN_COACH_EMAIL || process.env.CROSSAPP_COACH_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
+const COACH_PASSWORD = String(process.env.RYXEN_COACH_PASSWORD || process.env.CROSSAPP_COACH_PASSWORD || 'CoachTrial123').trim();
+const COACH_NAME = String(process.env.RYXEN_COACH_NAME || process.env.CROSSAPP_COACH_NAME || 'Coach Trial').trim();
+const GYM_NAME = String(process.env.RYXEN_GYM_NAME || process.env.CROSSAPP_GYM_NAME || 'Ryxen Test Box').trim();
+const GYM_SLUG = String(process.env.RYXEN_GYM_SLUG || process.env.CROSSAPP_GYM_SLUG || 'ryxen-test-box').trim();
 
 const ATHLETES = [
   {
-    email: String(process.env.CROSSAPP_ATHLETE_EMAIL || 'athlete1.test@ryxen.local').trim().toLowerCase(),
-    password: String(process.env.CROSSAPP_ATHLETE_PASSWORD || 'Athlete123').trim(),
-    name: String(process.env.CROSSAPP_ATHLETE_NAME || 'Athlete One').trim(),
+    email: String(process.env.RYXEN_ATHLETE_EMAIL || process.env.CROSSAPP_ATHLETE_EMAIL || 'athlete1.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.RYXEN_ATHLETE_PASSWORD || process.env.CROSSAPP_ATHLETE_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.RYXEN_ATHLETE_NAME || process.env.CROSSAPP_ATHLETE_NAME || 'Athlete One').trim(),
   },
   {
-    email: String(process.env.CROSSAPP_ATHLETE2_EMAIL || 'athlete2.test@ryxen.local').trim().toLowerCase(),
-    password: String(process.env.CROSSAPP_ATHLETE2_PASSWORD || 'Athlete123').trim(),
-    name: String(process.env.CROSSAPP_ATHLETE2_NAME || 'Athlete Two').trim(),
+    email: String(process.env.RYXEN_ATHLETE2_EMAIL || process.env.CROSSAPP_ATHLETE2_EMAIL || 'athlete2.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.RYXEN_ATHLETE2_PASSWORD || process.env.CROSSAPP_ATHLETE2_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.RYXEN_ATHLETE2_NAME || process.env.CROSSAPP_ATHLETE2_NAME || 'Athlete Two').trim(),
   },
   {
-    email: String(process.env.CROSSAPP_ATHLETE3_EMAIL || 'athlete3.test@ryxen.local').trim().toLowerCase(),
-    password: String(process.env.CROSSAPP_ATHLETE3_PASSWORD || 'Athlete123').trim(),
-    name: String(process.env.CROSSAPP_ATHLETE3_NAME || 'Athlete Three').trim(),
+    email: String(process.env.RYXEN_ATHLETE3_EMAIL || process.env.CROSSAPP_ATHLETE3_EMAIL || 'athlete3.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.RYXEN_ATHLETE3_PASSWORD || process.env.CROSSAPP_ATHLETE3_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.RYXEN_ATHLETE3_NAME || process.env.CROSSAPP_ATHLETE3_NAME || 'Athlete Three').trim(),
   },
 ];
 

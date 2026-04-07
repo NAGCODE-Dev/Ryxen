@@ -1,10 +1,11 @@
 /**
  * Runtime configuration for integrations.
- * Uses localStorage override + optional window.__CROSSAPP_CONFIG__.
+ * Uses localStorage override + optional window.__RYXEN_CONFIG__ with
+ * legacy fallback to CrossApp globals/keys during the migration window.
  */
 
-// Preserve the CrossApp-prefixed key to keep existing installs and PWAs compatible.
-const STORAGE_KEY = 'crossapp-runtime-config';
+const STORAGE_KEY = 'ryxen-runtime-config';
+const LEGACY_STORAGE_KEY = 'crossapp-runtime-config';
 
 const defaults = {
   apiBaseUrl: '/api',
@@ -74,7 +75,7 @@ export function setRuntimeConfig(nextConfig) {
 
 function safeWindowConfig() {
   try {
-    return window.__CROSSAPP_CONFIG__ || {};
+    return window.__RYXEN_CONFIG__ || window.__CROSSAPP_CONFIG__ || {};
   } catch {
     return {};
   }
@@ -82,7 +83,7 @@ function safeWindowConfig() {
 
 function safeAppContext() {
   try {
-    const context = window.__CROSSAPP_APP_CONTEXT__ || {};
+    const context = window.__RYXEN_APP_CONTEXT__ || window.__CROSSAPP_APP_CONTEXT__ || {};
     if (!context || typeof context !== 'object') return {};
     return { app: context };
   } catch {
@@ -92,7 +93,7 @@ function safeAppContext() {
 
 function safeStorageConfig() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
@@ -101,7 +102,10 @@ function safeStorageConfig() {
 
 function safeSetStorage(value) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(value || {}));
+    const serialized = JSON.stringify(value || {});
+    localStorage.setItem(STORAGE_KEY, serialized);
+    // Keep writing the legacy key for already-installed clients during the transition.
+    localStorage.setItem(LEGACY_STORAGE_KEY, serialized);
   } catch {
     // no-op
   }

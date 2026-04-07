@@ -26,37 +26,45 @@ const dirsToCopy = [
 
 const fileConfig = await loadFileConfig();
 
+function readEnv(...names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
 const runtimeConfig = deepMerge(fileConfig, {
-  apiBaseUrl: process.env.CROSSAPP_API_BASE_URL || '/api',
-  nativeApiBaseUrl: process.env.CROSSAPP_NATIVE_API_BASE_URL || fileConfig?.nativeApiBaseUrl || process.env.CROSSAPP_API_BASE_URL || '',
+  apiBaseUrl: readEnv('RYXEN_API_BASE_URL', 'CROSSAPP_API_BASE_URL') || '/api',
+  nativeApiBaseUrl: readEnv('RYXEN_NATIVE_API_BASE_URL', 'CROSSAPP_NATIVE_API_BASE_URL') || fileConfig?.nativeApiBaseUrl || readEnv('RYXEN_API_BASE_URL', 'CROSSAPP_API_BASE_URL') || '',
   native: {
-    target: process.env.CROSSAPP_NATIVE_TARGET || fileConfig?.native?.target || 'device',
+    target: readEnv('RYXEN_NATIVE_TARGET', 'CROSSAPP_NATIVE_TARGET') || fileConfig?.native?.target || 'device',
     emulatorApiBaseUrl:
-      process.env.CROSSAPP_NATIVE_EMULATOR_API_BASE_URL
+      readEnv('RYXEN_NATIVE_EMULATOR_API_BASE_URL', 'CROSSAPP_NATIVE_EMULATOR_API_BASE_URL')
       || fileConfig?.native?.emulatorApiBaseUrl
       || 'http://10.0.2.2:8787',
   },
-  telemetryEnabled: process.env.CROSSAPP_TELEMETRY_ENABLED !== 'false',
+  telemetryEnabled: readEnv('RYXEN_TELEMETRY_ENABLED', 'CROSSAPP_TELEMETRY_ENABLED') !== 'false',
   auth: {
-    googleClientId: process.env.CROSSAPP_GOOGLE_CLIENT_ID || fileConfig?.auth?.googleClientId || '',
+    googleClientId: readEnv('RYXEN_GOOGLE_CLIENT_ID', 'CROSSAPP_GOOGLE_CLIENT_ID') || fileConfig?.auth?.googleClientId || '',
   },
   observability: {
     sentry: {
-      dsn: process.env.CROSSAPP_SENTRY_DSN || fileConfig?.observability?.sentry?.dsn || '',
-      environment: process.env.CROSSAPP_APP_ENV || process.env.VERCEL_ENV || fileConfig?.observability?.sentry?.environment || 'production',
-      release: process.env.CROSSAPP_APP_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || fileConfig?.observability?.sentry?.release || '',
+      dsn: readEnv('RYXEN_SENTRY_DSN', 'CROSSAPP_SENTRY_DSN') || fileConfig?.observability?.sentry?.dsn || '',
+      environment: readEnv('RYXEN_APP_ENV', 'CROSSAPP_APP_ENV') || process.env.VERCEL_ENV || fileConfig?.observability?.sentry?.environment || 'production',
+      release: readEnv('RYXEN_APP_RELEASE', 'CROSSAPP_APP_RELEASE') || process.env.VERCEL_GIT_COMMIT_SHA || fileConfig?.observability?.sentry?.release || '',
     },
   },
   billing: {
-    provider: process.env.CROSSAPP_BILLING_PROVIDER || fileConfig?.billing?.provider || 'kiwify_link',
-    successUrl: process.env.CROSSAPP_BILLING_SUCCESS_URL || fileConfig?.billing?.successUrl || '',
-    cancelUrl: process.env.CROSSAPP_BILLING_CANCEL_URL || fileConfig?.billing?.cancelUrl || '',
+    provider: readEnv('RYXEN_BILLING_PROVIDER', 'CROSSAPP_BILLING_PROVIDER') || fileConfig?.billing?.provider || 'kiwify_link',
+    successUrl: readEnv('RYXEN_BILLING_SUCCESS_URL', 'CROSSAPP_BILLING_SUCCESS_URL') || fileConfig?.billing?.successUrl || '',
+    cancelUrl: readEnv('RYXEN_BILLING_CANCEL_URL', 'CROSSAPP_BILLING_CANCEL_URL') || fileConfig?.billing?.cancelUrl || '',
     links: {
-      athlete_plus: process.env.CROSSAPP_KIWIFY_CHECKOUT_ATHLETE_PLUS_URL || fileConfig?.billing?.links?.athlete_plus || '',
-      starter: process.env.CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL || fileConfig?.billing?.links?.starter || '',
-      pro: process.env.CROSSAPP_KIWIFY_CHECKOUT_PRO_URL || fileConfig?.billing?.links?.pro || '',
-      coach: process.env.CROSSAPP_KIWIFY_CHECKOUT_COACH_URL || fileConfig?.billing?.links?.coach || '',
-      performance: process.env.CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL || fileConfig?.billing?.links?.performance || '',
+      athlete_plus: readEnv('RYXEN_KIWIFY_CHECKOUT_ATHLETE_PLUS_URL', 'CROSSAPP_KIWIFY_CHECKOUT_ATHLETE_PLUS_URL') || fileConfig?.billing?.links?.athlete_plus || '',
+      starter: readEnv('RYXEN_KIWIFY_CHECKOUT_STARTER_URL', 'CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL') || fileConfig?.billing?.links?.starter || '',
+      pro: readEnv('RYXEN_KIWIFY_CHECKOUT_PRO_URL', 'CROSSAPP_KIWIFY_CHECKOUT_PRO_URL') || fileConfig?.billing?.links?.pro || '',
+      coach: readEnv('RYXEN_KIWIFY_CHECKOUT_COACH_URL', 'CROSSAPP_KIWIFY_CHECKOUT_COACH_URL') || fileConfig?.billing?.links?.coach || '',
+      performance: readEnv('RYXEN_KIWIFY_CHECKOUT_PERFORMANCE_URL', 'CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL') || fileConfig?.billing?.links?.performance || '',
     },
   },
 });
@@ -74,7 +82,11 @@ for (const dir of dirsToCopy) {
   await cp(path.join(root, dir), path.join(distDir, dir), { recursive: true });
 }
 
-const frontendConfig = `window.__CROSSAPP_CONFIG__ = ${JSON.stringify(runtimeConfig, null, 2)};\n`;
+const frontendConfig = [
+  `window.__RYXEN_CONFIG__ = ${JSON.stringify(runtimeConfig, null, 2)};`,
+  'window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || window.__RYXEN_CONFIG__;',
+  '',
+].join('\n');
 await writeFile(path.join(distDir, 'config.js'), frontendConfig, 'utf8');
 
 await patchHtml(path.join(distDir, 'index.html'));
@@ -96,7 +108,7 @@ async function loadFileConfig() {
     const sandbox = { window: {} };
     vm.createContext(sandbox);
     vm.runInContext(raw, sandbox, { timeout: 1000 });
-    return sandbox.window.__CROSSAPP_CONFIG__ || {};
+    return sandbox.window.__RYXEN_CONFIG__ || sandbox.window.__CROSSAPP_CONFIG__ || {};
   } catch {
     return {};
   }
@@ -133,7 +145,7 @@ function reportNativeApiResolution(config) {
       [
         '[build-static] aviso: build nativa configurada para emulador.',
         `"/api" vai usar ${emulatorApiBaseUrl}.`,
-        'Para device real, defina CROSSAPP_NATIVE_API_BASE_URL com uma URL absoluta.',
+        'Para device real, defina RYXEN_NATIVE_API_BASE_URL com uma URL absoluta.',
       ].join(' '),
     );
     return;
@@ -143,7 +155,7 @@ function reportNativeApiResolution(config) {
     [
       '[build-static] aviso: build nativa sem backend absoluto configurado.',
       'Em device real, "/api" não será resolvido automaticamente.',
-      'Defina CROSSAPP_NATIVE_API_BASE_URL para produção/device ou CROSSAPP_NATIVE_TARGET=emulator para testes locais no Android emulator.',
+      'Defina RYXEN_NATIVE_API_BASE_URL para produção/device ou RYXEN_NATIVE_TARGET=emulator para testes locais no Android emulator.',
     ].join(' '),
   );
 }

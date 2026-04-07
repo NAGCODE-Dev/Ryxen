@@ -1,10 +1,10 @@
 /**
  * Service Worker
- * Versão: 3.5.0
+ * Versão: 3.5.1
  */
 
-// Cache version bumped on rebrand so installed PWAs refresh brand assets cleanly.
-const CACHE_NAME = 'ryxen-v4-0';
+// Cache version bumped to flush stale JS modules from previously installed PWAs.
+const CACHE_NAME = 'ryxen-v4-1';
 const CORE_ASSETS = [
   './',
   './index.html',

@@ -1,7 +1,7 @@
 # Android Studio Local Setup
 
 Nota:
-- o branding do produto é `Ryxen`, mas o callback `crossapp://` e as envs `CROSSAPP_*` continuam legados por compatibilidade com o app nativo atual.
+- o callback primário do app agora é `ryxen://auth/callback`; o callback `crossapp://auth/callback` continua aceito temporariamente para clientes antigos.
 
 Guia objetivo para rodar o app Android no emulador com comportamento o mais próximo possível do PWA.
 
@@ -99,15 +99,15 @@ npm run smoke:auth
 Se você quiser que o APK aponte para backend remoto em vez de `10.0.2.2`, configure:
 
 ```bash
-export CROSSAPP_API_BASE_URL=https://seu-backend
-export CROSSAPP_NATIVE_API_BASE_URL=https://seu-backend
+export RYXEN_API_BASE_URL=https://seu-backend
+export RYXEN_NATIVE_API_BASE_URL=https://seu-backend
 npm run android:sync
 ```
 
 Ou ajuste `config.js`:
 
 ```js
-window.__CROSSAPP_CONFIG__ = {
+window.__RYXEN_CONFIG__ = {
   apiBaseUrl: 'https://seu-backend',
   nativeApiBaseUrl: 'https://seu-backend',
 };
@@ -119,7 +119,7 @@ Para o fluxo de login com Google funcionar no APK:
 
 - o backend deve estar publicamente acessível
 - `BACKEND_PUBLIC_URL` deve apontar para a URL pública correta
-- o callback `crossapp://auth/callback` precisa permanecer configurado no AndroidManifest
+- o callback `ryxen://auth/callback` precisa estar configurado no AndroidManifest
 - o Google OAuth precisa aceitar o fluxo configurado no backend
 
 Sem backend público, o login normal por email pode ser validado localmente, mas o OAuth Google tende a depender da infraestrutura externa.
@@ -131,7 +131,7 @@ Hoje a base já cobre:
 - sync dos assets web para Android
 - build debug e release
 - back button nativo
-- callback `crossapp://auth/callback`
+- callback `ryxen://auth/callback`
 - fallback automático de API para emulador Android
 - permissões de rede para `10.0.2.2` e `localhost`
 

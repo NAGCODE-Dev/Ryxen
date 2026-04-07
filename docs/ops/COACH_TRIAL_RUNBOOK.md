@@ -1,7 +1,7 @@
 # Coach Trial Runbook
 
 Nota:
-- as envs do fluxo continuam com prefixo `CROSSAPP_` por compatibilidade com scripts já publicados, mesmo após o rebranding para Ryxen.
+- as envs primárias do fluxo agora usam prefixo `RYXEN_`; `CROSSAPP_` segue aceito temporariamente por compatibilidade.
 
 ## Objetivo
 
@@ -17,20 +17,20 @@ Preparar e acompanhar uma semana de uso real por um coach sem improviso operacio
 3. Popular ambiente com dados de teste:
 
 ```bash
-export CROSSAPP_API_BASE_URL=https://seu-backend
-export CROSSAPP_COACH_EMAIL=coach@dominio.com
-export CROSSAPP_COACH_PASSWORD='SenhaForte123'
+export RYXEN_API_BASE_URL=https://seu-backend
+export RYXEN_COACH_EMAIL=coach@dominio.com
+export RYXEN_COACH_PASSWORD='SenhaForte123'
 npm run seed:coach-trial
 ```
 
 4. Validar ambiente:
 
 ```bash
-export CROSSAPP_API_BASE_URL=https://seu-backend
-export CROSSAPP_COACH_EMAIL=coach@dominio.com
-export CROSSAPP_COACH_PASSWORD='SenhaForte123'
-export CROSSAPP_ATHLETE_EMAIL=athlete1.test@ryxen.local
-export CROSSAPP_ATHLETE_PASSWORD='Athlete123'
+export RYXEN_API_BASE_URL=https://seu-backend
+export RYXEN_COACH_EMAIL=coach@dominio.com
+export RYXEN_COACH_PASSWORD='SenhaForte123'
+export RYXEN_ATHLETE_EMAIL=athlete1.test@ryxen.local
+export RYXEN_ATHLETE_PASSWORD='Athlete123'
 npm run smoke:coach-trial
 ```
 

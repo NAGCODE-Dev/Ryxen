@@ -253,7 +253,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
   function recordPerfMetric(name, durationMs, meta = {}) {
     try {
-      const current = window.__CROSSAPP_UI_METRICS__ || { recent: [], summary: {} };
+      const current = window.__RYXEN_UI_METRICS__ || window.__CROSSAPP_UI_METRICS__ || { recent: [], summary: {} };
       const recent = [...(current.recent || []), { name, durationMs, at: new Date().toISOString(), ...meta }].slice(-30);
       const previous = current.summary?.[name] || { count: 0, maxMs: 0, avgMs: 0, lastMs: 0 };
       const count = previous.count + 1;
@@ -267,7 +267,9 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
           ...meta,
         },
       };
-      window.__CROSSAPP_UI_METRICS__ = { recent, summary };
+      const nextMetrics = { recent, summary };
+      window.__RYXEN_UI_METRICS__ = nextMetrics;
+      window.__CROSSAPP_UI_METRICS__ = nextMetrics;
       if (durationMs >= 1500) {
         console.warn('[ui:slow]', name, `${durationMs}ms`, meta);
       }
@@ -467,6 +469,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         invalidateHydrationCache,
         hydrateAthleteSummary,
         hydrateAthleteResultsBlock,
+        cssEscape,
         startRestTimer,
         consumeAthleteImport,
       });

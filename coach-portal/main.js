@@ -10,9 +10,12 @@ const CoachWorkspace = React.lazy(() => import('./workspace.js'));
 const DEFAULT_COACH_RETURN_TO = '/coach/';
 
 const STORAGE_KEYS = {
-  token: 'crossapp-auth-token',
-  profile: 'crossapp-user-profile',
-  runtime: 'crossapp-runtime-config',
+  token: 'ryxen-auth-token',
+  legacyToken: 'crossapp-auth-token',
+  profile: 'ryxen-user-profile',
+  legacyProfile: 'crossapp-user-profile',
+  runtime: 'ryxen-runtime-config',
+  legacyRuntime: 'crossapp-runtime-config',
 };
 
 setupVercelObservability();
@@ -83,7 +86,9 @@ function App() {
 
   function handleLogout() {
     localStorage.removeItem(STORAGE_KEYS.token);
+    localStorage.removeItem(STORAGE_KEYS.legacyToken);
     localStorage.removeItem(STORAGE_KEYS.profile);
+    localStorage.removeItem(STORAGE_KEYS.legacyProfile);
     setToken('');
     setProfile(null);
     setMessage('Sessão encerrada');
@@ -195,7 +200,7 @@ async function apiRequest(path, options = {}) {
 
 function readToken() {
   try {
-    return localStorage.getItem(STORAGE_KEYS.token) || '';
+    return localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem(STORAGE_KEYS.legacyToken) || '';
   } catch {
     return '';
   }
@@ -203,11 +208,12 @@ function readToken() {
 
 function writeToken(token) {
   localStorage.setItem(STORAGE_KEYS.token, token || '');
+  localStorage.setItem(STORAGE_KEYS.legacyToken, token || '');
 }
 
 function readProfile() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEYS.profile);
+    const raw = localStorage.getItem(STORAGE_KEYS.profile) || localStorage.getItem(STORAGE_KEYS.legacyProfile);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -215,7 +221,9 @@ function readProfile() {
 }
 
 function writeProfile(profile) {
-  localStorage.setItem(STORAGE_KEYS.profile, JSON.stringify(profile || null));
+  const serialized = JSON.stringify(profile || null);
+  localStorage.setItem(STORAGE_KEYS.profile, serialized);
+  localStorage.setItem(STORAGE_KEYS.legacyProfile, serialized);
 }
 
 function applyAuthRedirectFromLocation() {
@@ -263,7 +271,8 @@ function clearBillingParams(params) {
 }
 
 function setupVercelObservability() {
-  if (window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
+  if (window.__RYXEN_VERCEL_OBSERVABILITY__ || window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
+  window.__RYXEN_VERCEL_OBSERVABILITY__ = true;
   window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
   inject();
   injectSpeedInsights();

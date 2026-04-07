@@ -1,8 +1,8 @@
-const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
-const COACH_EMAIL = String(process.env.CROSSAPP_COACH_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
-const COACH_PASSWORD = String(process.env.CROSSAPP_COACH_PASSWORD || 'CoachTrial123').trim();
-const ATHLETE_EMAIL = String(process.env.CROSSAPP_ATHLETE_EMAIL || 'athlete1.test@ryxen.local').trim().toLowerCase();
-const ATHLETE_PASSWORD = String(process.env.CROSSAPP_ATHLETE_PASSWORD || 'Athlete123').trim();
+const API_BASE_URL = String(process.env.RYXEN_API_BASE_URL || process.env.CROSSAPP_API_BASE_URL || 'http://localhost:8787').replace(/\/$/, '');
+const COACH_EMAIL = String(process.env.RYXEN_COACH_EMAIL || process.env.CROSSAPP_COACH_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
+const COACH_PASSWORD = String(process.env.RYXEN_COACH_PASSWORD || process.env.CROSSAPP_COACH_PASSWORD || 'CoachTrial123').trim();
+const ATHLETE_EMAIL = String(process.env.RYXEN_ATHLETE_EMAIL || process.env.CROSSAPP_ATHLETE_EMAIL || 'athlete1.test@ryxen.local').trim().toLowerCase();
+const ATHLETE_PASSWORD = String(process.env.RYXEN_ATHLETE_PASSWORD || process.env.CROSSAPP_ATHLETE_PASSWORD || 'Athlete123').trim();
 
 async function main() {
   const coach = await apiRequest('/auth/signin', {

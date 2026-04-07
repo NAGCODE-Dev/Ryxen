@@ -1,6 +1,5 @@
-// Keep the legacy global name for backward compatibility with already deployed clients.
 // Keep the currently deployed backend hostname until infrastructure is cut over to a Ryxen-branded domain.
-window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || {
+window.__RYXEN_CONFIG__ = window.__RYXEN_CONFIG__ || {
   apiBaseUrl: '/api',
   nativeApiBaseUrl: 'https://crossapp-znmj.onrender.com',
   telemetryEnabled: true,
@@ -27,3 +26,5 @@ window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || {
     },
   },
 };
+
+window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || window.__RYXEN_CONFIG__;

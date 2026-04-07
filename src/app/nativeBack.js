@@ -15,7 +15,7 @@ export function initNativeBackHandling() {
 }
 
 function closeAuxiliaryOverlay() {
-  const closeButton = document.querySelector('#crossapp-aux-browser:not([hidden]) [data-aux-close]');
+  const closeButton = document.querySelector('#ryxen-aux-browser:not([hidden]) [data-aux-close], #crossapp-aux-browser:not([hidden]) [data-aux-close]');
   if (!closeButton) return false;
   closeButton.click();
   return true;

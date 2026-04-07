@@ -2,8 +2,8 @@ import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from './apiCli
 import { setErrorMonitorUser } from './errorMonitor.js';
 import { getRuntimeConfig } from '../../config/runtime.js';
 
-// Keep legacy profile key so existing browsers and installed PWAs do not lose sessions on rebrand.
-const PROFILE_KEY = 'crossapp-user-profile';
+const PROFILE_KEY = 'ryxen-user-profile';
+const LEGACY_PROFILE_KEY = 'crossapp-user-profile';
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
@@ -71,7 +71,7 @@ export async function signOut() {
 
 export function getStoredProfile() {
   try {
-    const raw = localStorage.getItem(PROFILE_KEY);
+    const raw = localStorage.getItem(PROFILE_KEY) || localStorage.getItem(LEGACY_PROFILE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -143,7 +143,9 @@ function handleAuthResponse(res) {
 
 function saveStoredProfile(profile) {
   try {
-    localStorage.setItem(PROFILE_KEY, JSON.stringify(profile || null));
+    const serialized = JSON.stringify(profile || null);
+    localStorage.setItem(PROFILE_KEY, serialized);
+    localStorage.setItem(LEGACY_PROFILE_KEY, serialized);
   } catch {
     // no-op
   }
@@ -152,6 +154,7 @@ function saveStoredProfile(profile) {
 function clearStoredProfile() {
   try {
     localStorage.removeItem(PROFILE_KEY);
+    localStorage.removeItem(LEGACY_PROFILE_KEY);
   } catch {
     // no-op
   }
@@ -202,8 +205,7 @@ export function buildGoogleRedirectUrl() {
 
 function buildNativeAppAuthCallbackUrl(returnTo) {
   if (!isNativePlatform()) return '';
-  // Keep the legacy callback scheme for compatibility with already installed native shells.
-  const callback = new URL('crossapp://auth/callback');
+  const callback = new URL('ryxen://auth/callback');
   callback.searchParams.set('returnTo', normalizeReturnTo(returnTo));
   return callback.toString();
 }

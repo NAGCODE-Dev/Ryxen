@@ -28,7 +28,7 @@ Fluxo usual:
 Atual:
 
 ```txt
-com.nagcode.crossapp
+com.nagcode.ryxen
 ```
 
 Se quiser publicar depois, troque para o identificador final antes de subir para a Play Store.

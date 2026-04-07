@@ -1,7 +1,7 @@
 # Deploy recomendado
 
 Nota:
-- as variáveis `CROSSAPP_*` abaixo continuam com prefixo legado para preservar compatibilidade com o pipeline atual de build.
+- use `RYXEN_*` como prefixo principal; `CROSSAPP_*` segue aceito temporariamente como fallback.
 
 Arquitetura recomendada para este projeto:
 
@@ -37,15 +37,15 @@ Arquivos usados:
 Defina:
 
 ```env
-CROSSAPP_API_BASE_URL=https://your-backend.up.railway.app
-CROSSAPP_TELEMETRY_ENABLED=true
-CROSSAPP_BILLING_PROVIDER=kiwify_link
-CROSSAPP_BILLING_SUCCESS_URL=https://your-frontend.vercel.app/coach/?billing=success
-CROSSAPP_BILLING_CANCEL_URL=https://your-frontend.vercel.app/coach/?billing=cancel
-CROSSAPP_KIWIFY_CHECKOUT_STARTER_URL=
-CROSSAPP_KIWIFY_CHECKOUT_PRO_URL=
-CROSSAPP_KIWIFY_CHECKOUT_COACH_URL=
-CROSSAPP_KIWIFY_CHECKOUT_PERFORMANCE_URL=
+RYXEN_API_BASE_URL=https://your-backend.up.railway.app
+RYXEN_TELEMETRY_ENABLED=true
+RYXEN_BILLING_PROVIDER=kiwify_link
+RYXEN_BILLING_SUCCESS_URL=https://your-frontend.vercel.app/coach/?billing=success
+RYXEN_BILLING_CANCEL_URL=https://your-frontend.vercel.app/coach/?billing=cancel
+RYXEN_KIWIFY_CHECKOUT_STARTER_URL=
+RYXEN_KIWIFY_CHECKOUT_PRO_URL=
+RYXEN_KIWIFY_CHECKOUT_COACH_URL=
+RYXEN_KIWIFY_CHECKOUT_PERFORMANCE_URL=
 ```
 
 ### Configuração do frontend
@@ -55,7 +55,7 @@ O build gera `dist/config.js` a partir das variáveis acima.
 Se quiser rodar sem build, use `config.example.js` como referência:
 
 ```js
-window.__CROSSAPP_CONFIG__ = {
+window.__RYXEN_CONFIG__ = {
   apiBaseUrl: 'https://your-backend.up.railway.app',
   telemetryEnabled: true,
   billing: {

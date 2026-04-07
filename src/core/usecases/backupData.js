@@ -3,6 +3,8 @@
  */
 
 const BACKUP_VERSION = '1.0.0';
+const BACKUP_TYPE = 'ryxen-backup';
+const LEGACY_BACKUP_TYPE = 'crossapp-backup';
 
 /**
  * Gera payload de backup do app
@@ -20,8 +22,7 @@ export function exportAppBackup(state, metadata = {}) {
   }
 
   const payload = {
-    // Preserve backup type for backward compatibility with previously exported files.
-    type: 'crossapp-backup',
+    type: BACKUP_TYPE,
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     metadata: {
@@ -80,7 +81,7 @@ export function importAppBackup(jsonString) {
     };
   }
 
-  if (parsed.type !== 'crossapp-backup') {
+  if (parsed.type !== BACKUP_TYPE && parsed.type !== LEGACY_BACKUP_TYPE) {
     return {
       success: false,
       error: 'Arquivo não é um backup do Ryxen',

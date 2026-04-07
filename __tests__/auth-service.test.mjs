@@ -30,7 +30,7 @@ test('buildGoogleRedirectUrl resolve apiBaseUrl relativa no browser', async (t) 
       search: '',
     },
     localStorage: storage,
-    __CROSSAPP_CONFIG__: {
+    __RYXEN_CONFIG__: {
       apiBaseUrl: '/api',
     },
   };
@@ -59,7 +59,7 @@ test('applyAuthRedirectFromUrl le auth em querystring de callback nativo', async
     },
     history: { replaceState() {} },
     localStorage: storage,
-    __CROSSAPP_CONFIG__: {
+    __RYXEN_CONFIG__: {
       apiBaseUrl: '/api',
     },
   };
@@ -81,6 +81,8 @@ test('applyAuthRedirectFromUrl le auth em querystring de callback nativo', async
   assert.equal(result.handled, true);
   assert.equal(result.success, true);
   assert.equal(result.returnTo, '/sports/cross/index.html');
+  assert.equal(storage.getItem('ryxen-auth-token'), 'abc123');
   assert.equal(storage.getItem('crossapp-auth-token'), 'abc123');
+  assert.deepEqual(JSON.parse(storage.getItem('ryxen-user-profile')), { email: 'athlete@test.local' });
   assert.deepEqual(getStoredProfile(), { email: 'athlete@test.local' });
 });

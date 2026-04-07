@@ -1,8 +1,9 @@
 import { getRuntimeConfig } from '../../config/runtime.js';
 
-// Keep legacy telemetry keys so consent and queued events survive app upgrades.
-const CONSENT_KEY = 'crossapp-consent';
-const QUEUE_KEY = 'crossapp-telemetry-queue';
+const CONSENT_KEY = 'ryxen-consent';
+const LEGACY_CONSENT_KEY = 'crossapp-consent';
+const QUEUE_KEY = 'ryxen-telemetry-queue';
+const LEGACY_QUEUE_KEY = 'crossapp-telemetry-queue';
 const MAX_QUEUE = 200;
 
 export function trackEvent(name, props = {}) {
@@ -49,7 +50,9 @@ export async function flushTelemetry() {
 
 export function setTelemetryConsent(consented) {
   try {
-    localStorage.setItem(CONSENT_KEY, JSON.stringify({ telemetry: !!consented }));
+    const serialized = JSON.stringify({ telemetry: !!consented });
+    localStorage.setItem(CONSENT_KEY, serialized);
+    localStorage.setItem(LEGACY_CONSENT_KEY, serialized);
   } catch {
     // no-op
   }
@@ -57,7 +60,7 @@ export function setTelemetryConsent(consented) {
 
 export function hasTelemetryConsent() {
   try {
-    const raw = localStorage.getItem(CONSENT_KEY);
+    const raw = localStorage.getItem(CONSENT_KEY) || localStorage.getItem(LEGACY_CONSENT_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
     return parsed?.telemetry === true;
@@ -75,7 +78,7 @@ function enqueue(item) {
 
 function readQueue() {
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw = localStorage.getItem(QUEUE_KEY) || localStorage.getItem(LEGACY_QUEUE_KEY);
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
@@ -84,7 +87,9 @@ function readQueue() {
 
 function writeQueue(queue) {
   try {
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue || []));
+    const serialized = JSON.stringify(queue || []);
+    localStorage.setItem(QUEUE_KEY, serialized);
+    localStorage.setItem(LEGACY_QUEUE_KEY, serialized);
   } catch {
     // no-op
   }

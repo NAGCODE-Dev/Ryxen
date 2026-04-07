@@ -1,8 +1,8 @@
-const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
-const DEV_EMAIL_DOMAIN = String(process.env.CROSSAPP_DEV_EMAIL_DOMAIN || 'nagcode.contact@gmail.com')
+const API_BASE_URL = String(process.env.RYXEN_API_BASE_URL || process.env.CROSSAPP_API_BASE_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
+const DEV_EMAIL_DOMAIN = String(process.env.RYXEN_DEV_EMAIL_DOMAIN || process.env.CROSSAPP_DEV_EMAIL_DOMAIN || 'nagcode.contact@gmail.com')
   .trim()
   .toLowerCase();
-const PASSWORD = String(process.env.CROSSAPP_SMOKE_AUTH_PASSWORD || 'SmokeAuth123').trim();
+const PASSWORD = String(process.env.RYXEN_SMOKE_AUTH_PASSWORD || process.env.CROSSAPP_SMOKE_AUTH_PASSWORD || 'SmokeAuth123').trim();
 
 async function main() {
   const email = buildSmokeEmail();

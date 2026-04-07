@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-FRONTEND_PORT="${CROSSAPP_FRONTEND_PORT:-8000}"
-BACKEND_PORT="${CROSSAPP_BACKEND_PORT:-8787}"
-KEEP_STACK_UP="${CROSSAPP_VALIDATE_KEEP_UP:-0}"
+FRONTEND_PORT="${RYXEN_FRONTEND_PORT:-${CROSSAPP_FRONTEND_PORT:-8000}}"
+BACKEND_PORT="${RYXEN_BACKEND_PORT:-${CROSSAPP_BACKEND_PORT:-8787}}"
+KEEP_STACK_UP="${RYXEN_VALIDATE_KEEP_UP:-${CROSSAPP_VALIDATE_KEEP_UP:-0}}"
 FRONTEND_BASE_URL="http://127.0.0.1:${FRONTEND_PORT}"
 API_BASE_URL="http://127.0.0.1:${BACKEND_PORT}"
 
@@ -16,7 +16,7 @@ cleanup() {
     echo "[validate:stack] derrubando stack Docker..."
     docker compose down >/dev/null 2>&1 || true
   else
-    echo "[validate:stack] stack mantido ativo porque CROSSAPP_VALIDATE_KEEP_UP=1"
+    echo "[validate:stack] stack mantido ativo porque RYXEN_VALIDATE_KEEP_UP=1"
   fi
   exit "$exit_code"
 }
@@ -47,7 +47,7 @@ wait_for_url "${API_BASE_URL}/health" "backend health"
 wait_for_url "${FRONTEND_BASE_URL}/health" "frontend health"
 
 echo "[validate:stack] rodando smoke do backend..."
-CROSSAPP_API_BASE_URL="${API_BASE_URL}" npm run smoke:auth
+RYXEN_API_BASE_URL="${API_BASE_URL}" npm run smoke:auth
 
 echo "[validate:stack] rodando e2e contra o frontend Docker..."
 PLAYWRIGHT_BASE_URL="${FRONTEND_BASE_URL}" npm run test:e2e

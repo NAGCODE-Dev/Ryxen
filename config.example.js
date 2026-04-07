@@ -1,5 +1,4 @@
-// Keep the legacy global name for backward compatibility with deployed bundles.
-window.__CROSSAPP_CONFIG__ = {
+window.__RYXEN_CONFIG__ = {
   apiBaseUrl: 'https://your-backend.up.railway.app',
   nativeApiBaseUrl: 'https://your-backend.up.railway.app',
   telemetryEnabled: true,
@@ -26,3 +25,5 @@ window.__CROSSAPP_CONFIG__ = {
     },
   },
 };
+
+window.__CROSSAPP_CONFIG__ = window.__CROSSAPP_CONFIG__ || window.__RYXEN_CONFIG__;

@@ -2,8 +2,8 @@ import { apiRequest } from './apiClient.js';
 import { hasStoredSession } from './authService.js';
 import { getRuntimeConfig } from '../../config/runtime.js';
 
-// Keep legacy storage key for backward compatibility with pending checkout resumes.
-const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
+const CHECKOUT_INTENT_KEY = 'ryxen-pending-checkout-v1';
+const LEGACY_CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
 
 /**
  * Billing orchestration for Kiwify link checkout and local mock activation.
@@ -55,7 +55,9 @@ export function queueCheckoutIntent(planId, options = {}) {
   };
 
   try {
-    localStorage.setItem(CHECKOUT_INTENT_KEY, JSON.stringify(next));
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(CHECKOUT_INTENT_KEY, serialized);
+    localStorage.setItem(LEGACY_CHECKOUT_INTENT_KEY, serialized);
   } catch {
     // no-op
   }
@@ -65,7 +67,7 @@ export function queueCheckoutIntent(planId, options = {}) {
 
 export function peekCheckoutIntent() {
   try {
-    const raw = localStorage.getItem(CHECKOUT_INTENT_KEY);
+    const raw = localStorage.getItem(CHECKOUT_INTENT_KEY) || localStorage.getItem(LEGACY_CHECKOUT_INTENT_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (!parsed?.planId) return null;
     return parsed;
@@ -77,6 +79,7 @@ export function peekCheckoutIntent() {
 export function clearCheckoutIntent() {
   try {
     localStorage.removeItem(CHECKOUT_INTENT_KEY);
+    localStorage.removeItem(LEGACY_CHECKOUT_INTENT_KEY);
   } catch {
     // no-op
   }
