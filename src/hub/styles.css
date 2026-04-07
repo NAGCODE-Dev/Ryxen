@@ -261,6 +261,168 @@ textarea {
   align-content: start;
 }
 
+.hub-heroMockup {
+  padding: 10px;
+  border-radius: 26px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background:
+    linear-gradient(180deg, rgba(13, 20, 31, 0.96), rgba(7, 11, 18, 0.99)),
+    radial-gradient(circle at top left, rgba(66, 142, 255, 0.18), transparent 32%);
+}
+
+.hub-deviceFrame {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: #08101a;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+}
+
+.hub-deviceTopbar {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.hub-deviceTopbar span {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(248, 250, 252, 0.2);
+}
+
+.hub-deviceBody {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  min-height: 280px;
+}
+
+.hub-deviceSidebar {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 16px 14px;
+  border-right: 1px solid rgba(148, 163, 184, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.hub-deviceBrand {
+  margin-bottom: 6px;
+  color: rgba(248, 250, 252, 0.86);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hub-deviceNav {
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.hub-deviceNav-active {
+  background: linear-gradient(90deg, rgba(66, 142, 255, 0.9), rgba(123, 225, 255, 0.9));
+}
+
+.hub-deviceScreen {
+  display: grid;
+  gap: 18px;
+  padding: 18px;
+}
+
+.hub-deviceMetricRow {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 12px;
+}
+
+.hub-deviceMetric {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hub-deviceMetric-accent {
+  background: linear-gradient(180deg, rgba(27, 57, 104, 0.6), rgba(9, 17, 28, 0.96));
+}
+
+.hub-deviceMetric small {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(148, 163, 184, 0.76);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hub-deviceMetric strong {
+  display: block;
+  color: #f8fafc;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.hub-deviceChart {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-items: end;
+  gap: 10px;
+  height: 112px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.hub-deviceBar {
+  display: block;
+  border-radius: 16px 16px 6px 6px;
+  background: linear-gradient(180deg, rgba(123, 225, 255, 0.92), rgba(47, 143, 255, 0.78));
+}
+
+.hub-deviceBar-a { height: 48px; }
+.hub-deviceBar-b { height: 82px; }
+.hub-deviceBar-c { height: 64px; }
+.hub-deviceBar-d { height: 94px; }
+
+.hub-deviceTimeline {
+  display: grid;
+  gap: 12px;
+}
+
+.hub-deviceLine {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.hub-deviceLine-coach {
+  background: linear-gradient(180deg, rgba(45, 52, 66, 0.8), rgba(12, 18, 26, 0.98));
+}
+
+.hub-deviceLine strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #f8fafc;
+  font-size: 0.95rem;
+}
+
+.hub-deviceLine span {
+  color: rgba(148, 163, 184, 0.82);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.hub-heroSplit {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
 .hub-heroTrack,
 .hub-heroSignal {
   padding: 20px;
@@ -368,6 +530,10 @@ textarea {
   min-height: 100%;
 }
 
+.hub-grid-platform {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .hub-card {
   position: relative;
   padding: 22px;
@@ -391,6 +557,37 @@ textarea {
 
 .hub-cardMiniKicker {
   color: var(--hub-accent);
+}
+
+.hub-platformCard {
+  display: flex;
+  flex-direction: column;
+}
+
+.hub-platformRail {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.hub-platformDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.25);
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.08);
+}
+
+.hub-platformDot-active {
+  background: linear-gradient(135deg, #7be1ff, #2f8fff);
+  box-shadow: 0 0 0 4px rgba(66, 142, 255, 0.16);
+}
+
+.hub-platformLine {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(66, 142, 255, 0.35), rgba(148, 163, 184, 0.08));
 }
 
 .hub-roleCard-highlight,
@@ -515,6 +712,26 @@ textarea {
 
   .hub-heroVisual {
     gap: 12px;
+  }
+
+  .hub-heroSplit,
+  .hub-grid-platform {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-deviceBody {
+    grid-template-columns: 1fr;
+  }
+
+  .hub-deviceSidebar {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    border-right: 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+  }
+
+  .hub-deviceMetricRow {
+    grid-template-columns: 1fr;
   }
 
   .hub-sectionHeader p {
