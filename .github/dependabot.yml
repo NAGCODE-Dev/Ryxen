@@ -4,16 +4,96 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+      day: "monday"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "security"
+    groups:
+      frontend-dev-deps:
+        patterns:
+          - "@eslint/*"
+          - "@playwright/*"
+          - "eslint"
+          - "globals"
+          - "playwright"
+          - "vite"
+        update-types:
+          - "minor"
+          - "patch"
+      frontend-runtime-deps:
+        patterns:
+          - "@sentry/browser"
+          - "@vercel/*"
+          - "react"
+          - "react-dom"
+          - "@lokalise/xlsx"
+        update-types:
+          - "minor"
+          - "patch"
+      capacitor-deps:
+        patterns:
+          - "@capacitor/*"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "@capacitor/*"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@eslint/js"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "globals"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "vite"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "npm"
     directory: "/backend"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
+      day: "monday"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "security"
+    groups:
+      backend-safe-updates:
+        patterns:
+          - "@sentry/node"
+          - "bcryptjs"
+          - "cors"
+          - "dotenv"
+          - "express"
+          - "jose"
+          - "jsonwebtoken"
+          - "nodemailer"
+          - "pg"
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "@sentry/node"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "bcryptjs"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "dotenv"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "express"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "jose"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "nodemailer"
+        update-types:
+          - "version-update:semver-major"
