@@ -11,6 +11,13 @@ function parseList(value) {
     .filter(Boolean);
 }
 
+const DEFAULT_FRONTEND_ORIGIN_ALIASES = [
+  'https://ryxen-app.vercel.app',
+  'https://cross-app-six.vercel.app',
+  'https://ryxen-nagcode-devs-projects.vercel.app',
+  'https://ryxen-git-main-nagcode-devs-projects.vercel.app',
+];
+
 function parseTrustProxy(value, isProduction) {
   if (value === undefined || value === null || value === '') {
     return isProduction ? 1 : false;
@@ -28,11 +35,16 @@ export const PORT = Number(process.env.PORT || 8787);
 export const DATABASE_URL = String(process.env.DATABASE_URL || '').trim();
 export const JWT_SECRET = String(process.env.JWT_SECRET || '').trim();
 export const FRONTEND_ORIGIN = String(process.env.FRONTEND_ORIGIN || (IS_PRODUCTION ? '' : '*')).trim();
+export const FRONTEND_ORIGIN_ALIASES = Array.from(new Set([
+  ...DEFAULT_FRONTEND_ORIGIN_ALIASES,
+  ...parseList(process.env.FRONTEND_ORIGIN_ALIASES || ''),
+]));
 export const NATIVE_APP_ORIGINS = parseList(process.env.NATIVE_APP_ORIGINS || 'capacitor://localhost,https://localhost,http://localhost,ionic://localhost');
 export const ALLOWED_ORIGINS = FRONTEND_ORIGIN === '*'
   ? '*'
   : Array.from(new Set([
       ...parseList(FRONTEND_ORIGIN),
+      ...FRONTEND_ORIGIN_ALIASES,
       ...NATIVE_APP_ORIGINS,
     ]));
 export const SUPPORT_EMAIL = String(process.env.SUPPORT_EMAIL || 'nagcode.contact@gmail.com').toLowerCase().trim();

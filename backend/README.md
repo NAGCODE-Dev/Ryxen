@@ -37,6 +37,7 @@ Com Docker, nenhuma configuração manual é necessária. O frontend usa `/api` 
 
 Se você quiser apontar para outro backend, ajuste o `config.js` ou as variáveis de build do frontend (`RYXEN_API_BASE_URL`).
 O prefixo `RYXEN_` é o principal; `CROSSAPP_` segue aceito temporariamente por compatibilidade com builds e automações antigas.
+Para CORS em produção, mantenha `FRONTEND_ORIGIN` e, se necessário, complemente com `FRONTEND_ORIGIN_ALIASES` para domínios adicionais de Vercel.
 
 ## Teste rápido de assinatura (modo mock)
 
