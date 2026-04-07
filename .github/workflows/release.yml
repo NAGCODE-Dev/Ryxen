@@ -11,6 +11,9 @@ on:
         required: true
         default: "production"
 
+permissions:
+  contents: write
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
