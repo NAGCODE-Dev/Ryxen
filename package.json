@@ -36,7 +36,7 @@
     "@capacitor/android": "^6.2.1",
     "@capacitor/app": "^6.0.3",
     "@capacitor/cli": "^6.2.1",
-    "@capacitor/core": "^6.2.1",
+    "@capacitor/core": "^8.3.0",
     "@lokalise/xlsx": "^0.20.3",
     "@sentry/browser": "^8.33.1",
     "@vercel/analytics": "^2.0.1",
