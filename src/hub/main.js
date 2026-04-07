@@ -192,6 +192,31 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
       </section>
 
       <section class="hub-section">
+        <div class="hub-showcase">
+          <div class="hub-showcaseCopy">
+            <div class="hub-sectionKicker">Produto real</div>
+            <h2>O atleta entra direto no treino, sem cair num painel genérico.</h2>
+            <p>Em vez de prometer “all-in-one”, o Ryxen começa com uma experiência prática: treino do dia, contexto da semana, histórico e progressão no mesmo ritmo de uso.</p>
+            <div class="hub-showcaseNotes">
+              <span>Treino do dia</span>
+              <span>Semana ativa</span>
+              <span>Histórico vivo</span>
+            </div>
+          </div>
+          <div class="hub-showcaseMedia">
+            <img
+              class="hub-productShot"
+              src="/branding/exports/ryxen-athlete-product-shot.png"
+              alt="Tela real do app do atleta do Ryxen mostrando treino, progresso e navegação principal"
+              width="1440"
+              height="1100"
+              loading="lazy"
+            >
+          </div>
+        </div>
+      </section>
+
+      <section class="hub-section">
         <div class="hub-sectionHeader">
           <div>
             <div class="hub-sectionKicker">Fluxos</div>
@@ -222,14 +247,14 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
         <div class="hub-sectionHeader">
           <div>
             <div class="hub-sectionKicker">Benefícios</div>
-            <h2>Três promessas centrais. Sem excesso de interface.</h2>
+            <h2>Três dores. Três respostas claras.</h2>
           </div>
-          <p>O produto não tenta parecer tudo ao mesmo tempo. Ele começa resolvendo treino, evolução e operação com uma estrutura clara.</p>
+          <p>Sem checklist infinito de features. O produto começa resolvendo o que pesa no uso real, com uma resposta simples para cada dor.</p>
         </div>
-        <div class="hub-grid hub-grid-proof">
-          ${renderGuideCard('Treino organizado', 'Material solto vira rotina utilizável. Você entra no dia já com a estrutura pronta.')}
-          ${renderGuideCard('Evolução visível', 'PRs, histórico e contexto da semana ficam acessíveis sem depender de memória ou nota perdida.')}
-          ${renderGuideCard('Operação separada', 'Coach publica e organiza no portal. Atleta continua com foco em treino, não em administração.')}
+        <div class="hub-editorialList">
+          ${renderBenefitRow('Treino organizado', 'Material solto vira rotina utilizável.', 'Você entra no dia com treino legível, contexto de semana e menos improviso.')}
+          ${renderBenefitRow('Evolução visível', 'PRs, histórico e semana ativa ficam acessíveis.', 'Acompanhamento deixa de depender de memória, nota perdida ou print antigo.')}
+          ${renderBenefitRow('Operação limpa', 'Coach publica e organiza no portal separado.', 'O atleta mantém foco em treino enquanto o box ganha uma operação mais consistente.')}
         </div>
       </section>
 
@@ -256,16 +281,16 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
 
       <section class="hub-section hub-section-cta">
         <div class="hub-ctaCard">
-          <div>
+          <div class="hub-ctaCopy">
             <div class="hub-sectionKicker">Comece pelo essencial</div>
-            <h2>Entre pelo lado certo e o resto aparece no momento certo.</h2>
-            <p>Atleta entra para ver treino, importar rotina e acompanhar evolução. Coach entra para operar o box. Menos decisão no início, mais clareza no uso.</p>
+            <h2>Entre pelo papel certo. O resto aparece no contexto certo.</h2>
+            <p>Atleta entra para treinar. Coach entra para operar. O produto cresce sem exigir que a pessoa aprenda tudo no primeiro minuto.</p>
           </div>
-          <div class="hub-actions">
-            <button class="hub-primaryAction" type="button" data-hub-primary data-entry-target="athlete" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
-              Abrir ${escapeHtml(labelForSport(selectedSport))}
+          <div class="hub-ctaActions">
+            <button class="hub-primaryAction hub-ctaPrimary" type="button" data-hub-primary data-entry-target="athlete" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
+              Entrar como atleta
             </button>
-            <button class="hub-secondaryAction" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Abrir Coach Portal</button>
+            <button class="hub-secondaryAction hub-ctaSecondary" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Abrir Coach Portal</button>
           </div>
         </div>
       </section>
@@ -279,6 +304,21 @@ function renderGuideCard(title, description) {
       <div class="hub-cardMiniKicker">Ryxen</div>
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(description)}</p>
+    </article>
+  `;
+}
+
+function renderBenefitRow(title, kicker, description) {
+  return `
+    <article class="hub-benefitRow">
+      <div class="hub-benefitIntro">
+        <div class="hub-cardMiniKicker">Ryxen</div>
+        <h3>${escapeHtml(title)}</h3>
+      </div>
+      <div class="hub-benefitBody">
+        <strong>${escapeHtml(kicker)}</strong>
+        <p>${escapeHtml(description)}</p>
+      </div>
     </article>
   `;
 }
