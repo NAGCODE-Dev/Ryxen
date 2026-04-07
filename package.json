@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
-    "@capacitor/app": "^6.0.3",
+    "@capacitor/app": "^8.1.0",
     "@capacitor/cli": "^6.2.1",
     "@capacitor/core": "^6.2.1",
     "@lokalise/xlsx": "^0.20.3",
