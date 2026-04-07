@@ -41,7 +41,7 @@
     "@capacitor/cli": "^6.2.1",
     "@capacitor/core": "^6.2.1",
     "@lokalise/xlsx": "^0.20.3",
-    "@sentry/browser": "^8.33.1",
+    "@sentry/browser": "^10.47.0",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
     "react": "^18.3.1",
