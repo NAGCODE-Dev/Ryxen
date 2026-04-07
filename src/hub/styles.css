@@ -530,6 +530,10 @@ textarea {
   min-height: 100%;
 }
 
+.hub-grid-roles-main {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .hub-grid-platform {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -715,7 +719,8 @@ textarea {
   }
 
   .hub-heroSplit,
-  .hub-grid-platform {
+  .hub-grid-platform,
+  .hub-grid-roles-main {
     grid-template-columns: 1fr;
   }
 

@@ -12,7 +12,7 @@ test('landing page shows athlete and coach entry points', async ({ page }) => {
   await page.goto('/');
 
   await expect(page).toHaveTitle(/Ryxen/);
-  await expect(page.getByRole('heading', { name: /importe treino, acompanhe evolução/i })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /importe treino\. acompanhe evolução\./i })).toBeVisible();
   await expect(page.getByRole('button', { name: /abrir cross/i }).first()).toBeVisible();
   await expect(page.getByRole('button', { name: /coach portal/i }).first()).toBeVisible();
   await expect(page.getByText(/dois caminhos\. sem confusão\./i)).toBeVisible();

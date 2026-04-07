@@ -110,9 +110,9 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
           <div class="hub-heroMain">
             <img class="hub-wordmark" src="/branding/ryxen-logo-horizontal.svg" alt="Ryxen" width="940" height="240" fetchpriority="high">
             <div class="hub-kicker">Ryxen para atleta e coach</div>
-            <h1>Importe treino, acompanhe evolução e entre no fluxo certo desde o primeiro toque.</h1>
+            <h1>Importe treino. Acompanhe evolução. Entre no fluxo certo.</h1>
             <p class="hub-lead">
-              Um ecossistema de performance com duas entradas claras: atleta abre o treino e mantém evolução sob controle; coach publica, organiza grupos e opera o box sem ruído.
+              Performance para atleta e coach com entradas separadas, rotina clara e operação sem ruído.
             </p>
             <div class="hub-actions">
               <button class="hub-primaryAction" type="button" data-hub-primary data-entry-target="athlete" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
@@ -205,6 +205,11 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
             'Importação por PDF, imagem e OCR',
             'PRs, medidas e uso fora do fluxo coach',
           ], `Abrir ${labelForSport(selectedSport)}`, lastSportUrl, selectedSport, true, 'athlete')}
+          ${renderRoleCard('Atleta conectado', 'Recebo treino publicado pelo coach, mas continuo com autonomia para consultar, adaptar e acompanhar minha própria evolução.', [
+            'Treino enviado pelo coach no mesmo fluxo',
+            'Alternância entre treino publicado e importado',
+            'Experiência limpa sem entrar no portal operacional',
+          ], 'Entrar como atleta', lastSportUrl, selectedSport, false, 'athlete')}
           ${renderRoleCard('Sou coach / box', 'Entro num portal separado para publicar programação, organizar atletas e operar o box com mais estrutura e menos improviso.', [
             'Grupos, atletas e publicação por contexto',
             'Portal separado da experiência do atleta',
