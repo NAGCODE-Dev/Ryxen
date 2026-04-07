@@ -126,18 +126,64 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
           <aside class="hub-heroPanel">
             <div class="hub-panelEyebrow">Visão do produto</div>
             <div class="hub-heroVisual">
-              <div class="hub-heroTrack hub-heroTrack-athlete">
-                <span class="hub-heroTrackLabel">Atleta</span>
-                <strong>Treino claro, histórico vivo e evolução sem fricção.</strong>
-                <p>Importação por PDF, imagem e OCR. PRs, rotina e progresso no mesmo lugar.</p>
+              <div class="hub-heroMockup" aria-hidden="true">
+                <div class="hub-deviceFrame">
+                  <div class="hub-deviceTopbar">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <div class="hub-deviceBody">
+                    <div class="hub-deviceSidebar">
+                      <div class="hub-deviceBrand">Ryxen</div>
+                      <div class="hub-deviceNav"></div>
+                      <div class="hub-deviceNav hub-deviceNav-active"></div>
+                      <div class="hub-deviceNav"></div>
+                    </div>
+                    <div class="hub-deviceScreen">
+                      <div class="hub-deviceMetricRow">
+                        <div class="hub-deviceMetric">
+                          <small>Hoje</small>
+                          <strong>Back Squat</strong>
+                        </div>
+                        <div class="hub-deviceMetric hub-deviceMetric-accent">
+                          <small>Coach</small>
+                          <strong>Grupo RX</strong>
+                        </div>
+                      </div>
+                      <div class="hub-deviceChart">
+                        <span class="hub-deviceBar hub-deviceBar-a"></span>
+                        <span class="hub-deviceBar hub-deviceBar-b"></span>
+                        <span class="hub-deviceBar hub-deviceBar-c"></span>
+                        <span class="hub-deviceBar hub-deviceBar-d"></span>
+                      </div>
+                      <div class="hub-deviceTimeline">
+                        <div class="hub-deviceLine">
+                          <strong>Athlete flow</strong>
+                          <span>Treino, PRs e histórico no mesmo ritmo.</span>
+                        </div>
+                        <div class="hub-deviceLine hub-deviceLine-coach">
+                          <strong>Coach flow</strong>
+                          <span>Publicação, grupos e operação sem poluir o atleta.</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div class="hub-heroTrack hub-heroTrack-coach">
-                <span class="hub-heroTrackLabel">Coach</span>
-                <strong>Portal separado para publicar, organizar grupos e operar com contexto.</strong>
-                <p>Conta única, experiência diferente. O atleta vê o que precisa. O coach opera sem poluir o fluxo principal.</p>
+              <div class="hub-heroSplit">
+                <div class="hub-heroTrack hub-heroTrack-athlete">
+                  <span class="hub-heroTrackLabel">Atleta</span>
+                  <strong>Treino claro, histórico vivo e evolução sem fricção.</strong>
+                  <p>Importação por PDF, imagem e OCR. PRs, rotina e progresso no mesmo lugar.</p>
+                </div>
+                <div class="hub-heroTrack hub-heroTrack-coach">
+                  <span class="hub-heroTrackLabel">Coach</span>
+                  <strong>Portal separado para publicar, organizar grupos e operar com contexto.</strong>
+                  <p>Conta única, experiência diferente. O atleta vê o que precisa. O coach opera sem poluir o fluxo principal.</p>
+                </div>
               </div>
               <div class="hub-heroSignal">
                 <span class="hub-heroSignalTag">${escapeHtml(selectedSportMeta?.title || 'Cross / Conditioning')}</span>
+                <strong>Uma base que cresce sem refazer a experiência.</strong>
                 <p>${escapeHtml(selectedSportMeta?.description || 'Treino do dia, histórico, importação e coach no mesmo fluxo.')}</p>
               </div>
             </div>
@@ -190,7 +236,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
           </div>
           <p>Hoje a entrada mais madura está em Cross. Running e Strength crescem sobre a mesma base, com o mesmo princípio de clareza entre atleta e coach.</p>
         </div>
-        <div class="hub-grid">
+        <div class="hub-grid hub-grid-platform">
         ${availableSports.map((sport) => renderSportCard({
           sport: sport.value,
           title: sport.title,
@@ -253,20 +299,19 @@ function renderRoleCard(title, description, bullets, ctaLabel, href, sport, high
 
 function renderSportCard({ sport, title, description, status, href, selected, tier }) {
   return `
-    <article class="hub-card ${selected ? 'hub-card-selected' : ''}">
-      <label class="hub-cardChoice">
-        <input type="radio" name="hub-sport" value="${escapeHtml(sport)}" ${selected ? 'checked' : ''} />
-        <span class="hub-cardIndicator"></span>
-        <span class="hub-cardLabel">Selecionar</span>
-      </label>
+    <article class="hub-card hub-platformCard ${selected ? 'hub-card-selected' : ''}">
       <div class="hub-cardTop">
         <span class="sport-badge">${escapeHtml(labelForSport(sport))}</span>
         <span class="hub-status">${escapeHtml(status)}${tier === 'beta' ? ' · Beta' : ''}</span>
       </div>
       <h2>${escapeHtml(title)}</h2>
       <p>${escapeHtml(description)}</p>
+      <div class="hub-platformRail">
+        <span class="hub-platformDot ${selected ? 'hub-platformDot-active' : ''}"></span>
+        <span class="hub-platformLine"></span>
+      </div>
       <div class="hub-cardActions">
-        <button class="hub-cardLink" type="button" data-nav-href="${escapeHtml(href)}" data-sport-link="${escapeHtml(sport)}">Entrar</button>
+        <button class="hub-cardLink" type="button" data-nav-href="${escapeHtml(href)}" data-sport-link="${escapeHtml(sport)}">Explorar ${escapeHtml(labelForSport(sport))}</button>
       </div>
     </article>
   `;
