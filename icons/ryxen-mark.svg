@@ -1,15 +1,16 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="ryxenBlue" x1="132" y1="118" x2="340" y2="342" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ryxenBlue" x1="108" y1="90" x2="338" y2="404" gradientUnits="userSpaceOnUse">
       <stop stop-color="#7BE1FF"/>
       <stop offset="1" stop-color="#2F8FFF"/>
     </linearGradient>
-    <linearGradient id="ryxenOrange" x1="250" y1="286" x2="376" y2="408" gradientUnits="userSpaceOnUse">
+    <linearGradient id="ryxenOrange" x1="212" y1="254" x2="392" y2="410" gradientUnits="userSpaceOnUse">
       <stop stop-color="#FFC56B"/>
       <stop offset="1" stop-color="#FF8230"/>
     </linearGradient>
   </defs>
-  <path d="M156 120V392" stroke="url(#ryxenBlue)" stroke-width="52" stroke-linecap="round"/>
-  <path d="M156 146H258C313 146 356 182 356 232C356 281 313 318 258 318H156" stroke="url(#ryxenBlue)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M248 292L368 392" stroke="url(#ryxenOrange)" stroke-width="48" stroke-linecap="round"/>
+  <path d="M116 92H258C335 92 392 145 392 214C392 282 335 336 258 336H200V292H246C296 292 332 260 332 214C332 167 296 136 246 136H200V404H116V92Z" fill="url(#ryxenBlue)"/>
+  <path d="M182 136H258C309 136 346 170 346 214C346 258 309 292 258 292H182" stroke="#09111F" stroke-opacity="0.9" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M218 264L388 404" stroke="url(#ryxenOrange)" stroke-width="58" stroke-linecap="round"/>
+  <path d="M202 166H268C303 166 328 185 340 214" stroke="#F6FBFF" stroke-opacity="0.42" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
