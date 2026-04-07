@@ -2,13 +2,25 @@ const API_BASE_URL = String(process.env.CROSSAPP_API_BASE_URL || 'http://localho
 const COACH_EMAIL = String(process.env.CROSSAPP_COACH_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
 const COACH_PASSWORD = String(process.env.CROSSAPP_COACH_PASSWORD || 'CoachTrial123').trim();
 const COACH_NAME = String(process.env.CROSSAPP_COACH_NAME || 'Coach Trial').trim();
-const GYM_NAME = String(process.env.CROSSAPP_GYM_NAME || 'CrossApp Test Box').trim();
-const GYM_SLUG = String(process.env.CROSSAPP_GYM_SLUG || 'crossapp-test-box').trim();
+const GYM_NAME = String(process.env.CROSSAPP_GYM_NAME || 'Ryxen Test Box').trim();
+const GYM_SLUG = String(process.env.CROSSAPP_GYM_SLUG || 'ryxen-test-box').trim();
 
 const ATHLETES = [
-  { email: 'athlete1.test@crossapp.local', password: 'Athlete123', name: 'Athlete One' },
-  { email: 'athlete2.test@crossapp.local', password: 'Athlete123', name: 'Athlete Two' },
-  { email: 'athlete3.test@crossapp.local', password: 'Athlete123', name: 'Athlete Three' },
+  {
+    email: String(process.env.CROSSAPP_ATHLETE_EMAIL || 'athlete1.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.CROSSAPP_ATHLETE_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.CROSSAPP_ATHLETE_NAME || 'Athlete One').trim(),
+  },
+  {
+    email: String(process.env.CROSSAPP_ATHLETE2_EMAIL || 'athlete2.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.CROSSAPP_ATHLETE2_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.CROSSAPP_ATHLETE2_NAME || 'Athlete Two').trim(),
+  },
+  {
+    email: String(process.env.CROSSAPP_ATHLETE3_EMAIL || 'athlete3.test@ryxen.local').trim().toLowerCase(),
+    password: String(process.env.CROSSAPP_ATHLETE3_PASSWORD || 'Athlete123').trim(),
+    name: String(process.env.CROSSAPP_ATHLETE3_NAME || 'Athlete Three').trim(),
+  },
 ];
 
 async function main() {
@@ -53,7 +65,19 @@ async function ensureUser({ email, password, name }) {
       method: 'POST',
       body: { email, password, name },
     });
-    return signup;
+
+    if (signup?.previewCode) {
+      const confirmed = await apiRequest('/auth/signup/confirm', {
+        method: 'POST',
+        body: { email, code: signup.previewCode },
+      });
+      if (confirmed?.token) return confirmed;
+    }
+
+    return apiRequest('/auth/signin', {
+      method: 'POST',
+      body: { email, password },
+    });
   } catch (error) {
     if (!String(error.message || '').includes('Email já cadastrado')) throw error;
     return apiRequest('/auth/signin', {
@@ -68,12 +92,24 @@ async function ensureGym(token) {
   const existing = (current.gyms || []).find((gym) => gym.slug === GYM_SLUG || gym.name === GYM_NAME);
   if (existing) return existing;
 
-  const created = await apiRequest('/gyms', {
-    method: 'POST',
-    token,
-    body: { name: GYM_NAME, slug: GYM_SLUG },
-  });
-  return created.gym;
+  try {
+    const created = await apiRequest('/gyms', {
+      method: 'POST',
+      token,
+      body: { name: GYM_NAME, slug: GYM_SLUG },
+    });
+    return created.gym;
+  } catch (error) {
+    if (!String(error.message || '').includes('Slug do gym já existe')) throw error;
+
+    const fallbackSlug = `${GYM_SLUG}-${Date.now().toString().slice(-6)}`;
+    const created = await apiRequest('/gyms', {
+      method: 'POST',
+      token,
+      body: { name: `${GYM_NAME} ${fallbackSlug.slice(-6)}`, slug: fallbackSlug },
+    });
+    return created.gym;
+  }
 }
 
 async function addMembership(token, gymId, email, role) {
@@ -185,7 +221,7 @@ async function createCompetition(token, gymId) {
     });
     return result.competition;
   } catch (error) {
-    console.warn(`[seed] competition skipped -> ${error.message}`);
+    console.warn(`[seed] competition skipped -> ${normalizeSeedError(error)}`);
     return null;
   }
 }
@@ -203,7 +239,7 @@ async function createCompetitionEvent(token, competitionId) {
       },
     });
   } catch (error) {
-    console.warn(`[seed] event skipped -> ${error.message}`);
+    console.warn(`[seed] event skipped -> ${normalizeSeedError(error)}`);
   }
 }
 
@@ -218,13 +254,29 @@ async function apiRequest(path, { method = 'GET', body, token } = {}) {
   });
 
   const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
+  const contentType = String(response.headers.get('content-type') || '').toLowerCase();
+  const isJson = contentType.includes('application/json');
+  const data = text
+    ? (isJson ? JSON.parse(text) : null)
+    : null;
 
   if (!response.ok) {
     throw new Error(data?.error || `HTTP ${response.status}`);
   }
 
+  if (text && !isJson) {
+    throw new Error(`Resposta não-JSON em ${path}`);
+  }
+
   return data;
+}
+
+function normalizeSeedError(error) {
+  const message = String(error?.message || error || '').trim();
+  if (message.includes('Resposta não-JSON')) {
+    return 'rota indisponível neste ambiente';
+  }
+  return message || 'erro desconhecido';
 }
 
 main().catch((error) => {

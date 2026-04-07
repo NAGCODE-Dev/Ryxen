@@ -1,0 +1,17 @@
+export {
+  applyAuthRedirectFromLocation,
+  applyAuthRedirectFromUrl,
+  buildGoogleRedirectUrl,
+  confirmPasswordReset,
+  confirmSignUp,
+  getStoredProfile,
+  hasStoredSession,
+  refreshSession,
+  requestPasswordReset,
+  requestSignUpVerification,
+  signIn,
+  signInWithGoogle,
+  signOut,
+  signUp,
+  startGoogleRedirect,
+} from '../../src/core/services/authService.js';

@@ -1,8 +1,8 @@
 {
-  "id": "/CrossApp/",
-  "name": "CrossApp",
-  "short_name": "CrossApp",
-  "description": "CrossApp para atleta e coach: treino do dia, evolução e rotina do box em um só ecossistema.",
+  "id": "/Ryxen/",
+  "name": "Ryxen",
+  "short_name": "Ryxen",
+  "description": "Ryxen conecta atleta e coach com treino do dia, evolução e operação de performance em um só ecossistema.",
   "lang": "pt-BR",
   "start_url": "./index.html",
   "scope": "./",
@@ -14,13 +14,13 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "branding/exports/crossapp-icon-192.png",
+      "src": "branding/exports/ryxen-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "branding/exports/crossapp-icon-512.png",
+      "src": "branding/exports/ryxen-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"

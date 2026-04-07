@@ -1,5 +1,6 @@
 services:
   - type: web
+    # Preserve the legacy Render service name to avoid breaking existing deploy wiring during the Ryxen transition.
     name: crossapp-backend
     runtime: docker
     rootDir: backend

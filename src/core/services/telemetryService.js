@@ -1,5 +1,6 @@
 import { getRuntimeConfig } from '../../config/runtime.js';
 
+// Keep legacy telemetry keys so consent and queued events survive app upgrades.
 const CONSENT_KEY = 'crossapp-consent';
 const QUEUE_KEY = 'crossapp-telemetry-queue';
 const MAX_QUEUE = 200;

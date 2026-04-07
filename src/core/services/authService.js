@@ -2,6 +2,7 @@ import { apiRequest, clearAuthToken, getAuthToken, setAuthToken } from './apiCli
 import { setErrorMonitorUser } from './errorMonitor.js';
 import { getRuntimeConfig } from '../../config/runtime.js';
 
+// Keep legacy profile key so existing browsers and installed PWAs do not lose sessions on rebrand.
 const PROFILE_KEY = 'crossapp-user-profile';
 
 export async function signUp(payload) {
@@ -201,6 +202,7 @@ export function buildGoogleRedirectUrl() {
 
 function buildNativeAppAuthCallbackUrl(returnTo) {
   if (!isNativePlatform()) return '';
+  // Keep the legacy callback scheme for compatibility with already installed native shells.
   const callback = new URL('crossapp://auth/callback');
   callback.searchParams.set('returnTo', normalizeReturnTo(returnTo));
   return callback.toString();

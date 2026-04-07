@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { getRuntimeConfig } from '../packages/shared-web/runtime.js';
 import '../coach/styles.css';
 
 const STORAGE_KEYS = {
@@ -49,6 +50,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     subscription: null,
     entitlements: [],
     gymAccess: [],
+    features: {
+      competitions: false,
+      leaderboards: false,
+    },
     gyms: [],
     feed: [],
     competitions: [],
@@ -135,6 +140,16 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     forms.targetGroupIds,
   ]);
 
+  useEffect(() => {
+    if (activeSection === 'competition' && !dashboard.features?.competitions) {
+      setActiveSection('overview');
+      return;
+    }
+    if (activeSection === 'leaderboards' && !dashboard.features?.leaderboards) {
+      setActiveSection('overview');
+    }
+  }, [activeSection, dashboard.features]);
+
   async function loadDashboard(nextGymId = null, nextSportType = null) {
     setLoading(true);
     setError('');
@@ -143,13 +158,14 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       const selectedSportType = availableSportOptions.some((sport) => sport.value === preferredSportType)
         ? preferredSportType
         : (availableSportOptions[0]?.value || 'cross');
-      const [subscription, entitlementsRes, gymsRes, feedRes, benchmarksRes, competitionsRes] = await Promise.all([
+      const [subscription, entitlementsRes, gymsRes, feedRes, benchmarksRes, competitionsRes, leaderboardProbe] = await Promise.all([
         apiRequest('/billing/status'),
         apiRequest('/billing/entitlements'),
         apiRequest('/gyms/me'),
         apiRequest(`/workouts/feed?sportType=${encodeURIComponent(selectedSportType)}`),
         apiRequest('/benchmarks?limit=30&sort=year_desc'),
-        apiRequest(`/competitions/calendar?sportType=${encodeURIComponent(selectedSportType)}`),
+        requestOptional(`/competitions/calendar?sportType=${encodeURIComponent(selectedSportType)}`, { competitions: [] }),
+        requestOptional(`/leaderboards/benchmarks/${encodeURIComponent(forms.leaderboardSlug || 'fran')}?limit=1&sportType=${encodeURIComponent(selectedSportType)}`, null),
       ]);
 
       const gyms = gymsRes?.gyms || [];
@@ -172,6 +188,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
         subscription,
         entitlements: entitlementsRes?.entitlements || [],
         gymAccess: entitlementsRes?.gymAccess || [],
+        features: {
+          competitions: !!competitionsRes,
+          leaderboards: !!leaderboardProbe,
+        },
         gyms,
         feed: feedRes?.workouts || [],
         competitions: competitionsRes?.competitions || [],
@@ -489,6 +509,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   async function handleCreateCompetition(event) {
     event.preventDefault();
     if (!dashboard.selectedGymId) return;
+    if (!dashboard.features?.competitions) {
+      setError('Competições não estão disponíveis nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -514,6 +538,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   async function handleCreateEvent(event) {
     event.preventDefault();
+    if (!dashboard.features?.competitions) {
+      setError('Eventos de competição não estão disponíveis nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -537,6 +565,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   async function handleLoadLeaderboard() {
     if (!forms.leaderboardSlug) return;
+    if (!dashboard.features?.leaderboards) {
+      setError('Rankings não estão disponíveis nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -560,6 +592,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   async function handleSubmitResult(event) {
     event.preventDefault();
     if (!forms.resultBenchmarkSlug || !forms.resultScore) return;
+    if (!dashboard.features?.leaderboards) {
+      setError('Registro de resultados ainda não está disponível nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -586,6 +622,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   async function handleLoadCompetitionLeaderboard() {
     if (!forms.competitionLeaderboardId) return;
+    if (!dashboard.features?.competitions || !dashboard.features?.leaderboards) {
+      setError('Rankings de competição não estão disponíveis nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -608,6 +648,10 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   async function handleLoadEventLeaderboard() {
     if (!forms.eventLeaderboardId) return;
+    if (!dashboard.features?.competitions || !dashboard.features?.leaderboards) {
+      setError('Rankings de evento não estão disponíveis nesta versão do backend.');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -657,8 +701,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     ['operation', 'Operação'],
     ['programming', 'Programação'],
     ['library', 'Biblioteca'],
-    ['competition', 'Competições'],
-    ['leaderboards', 'Rankings'],
+    ...(dashboard.features?.competitions ? [['competition', 'Competições']] : []),
+    ...(dashboard.features?.leaderboards ? [['leaderboards', 'Rankings']] : []),
   ];
   const isOverviewSection = activeSection === 'overview';
   const isOperationSection = activeSection === 'operation';
@@ -901,7 +945,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
   return React.createElement('div', { className: 'portal-shell' },
     React.createElement('aside', { className: 'sidebar' },
-      React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
+      React.createElement('div', { className: 'eyebrow' }, 'Ryxen Coach'),
       React.createElement('h1', { className: 'sidebar-title' }, 'Coach Portal'),
       React.createElement('p', { className: 'sidebar-copy' }, 'Operação do box, assinatura, benchmarks, rankings e programação em um workspace mais claro.'),
       React.createElement('div', { className: 'profile-box' },
@@ -1007,6 +1051,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               statCard('Treinos no feed', String(dashboard.feed.length)),
               statCard('Atletas ativos', String(dashboard.insights?.stats?.athletes || 0)),
               statCard('Resultados', String(dashboard.insights?.stats?.results || 0)),
+              statCard('PRs ativos', String(dashboard.insights?.stats?.activePrs || 0)),
+              statCard('Atletas com PR', String(dashboard.insights?.stats?.athletesWithPrs || 0)),
             ]
       ),
       React.createElement('section', { className: 'portal-sectionHeader', id: 'operation', hidden: !isOperationSection },
@@ -1169,15 +1215,45 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                 ),
                 React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Competições'),
-                  React.createElement('span', null, `${dashboard.insights.stats?.competitions || 0} no total • ${dashboard.insights.stats?.upcomingCompetitions || 0} próximas`)
+                  React.createElement(
+                    'span',
+                    null,
+                    dashboard.features?.competitions
+                      ? `${dashboard.insights.stats?.competitions || 0} no total • ${dashboard.insights.stats?.upcomingCompetitions || 0} próximas`
+                      : 'Agenda de competições indisponível nesta versão'
+                  )
                 ),
                 React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Grupos'),
                   React.createElement('span', null, `${dashboard.insights.stats?.groups || 0} grupo(s) ativos`)
                 ),
                 React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'PRs sincronizados'),
+                  React.createElement(
+                    'span',
+                    null,
+                    dashboard.selectedSportType === 'cross'
+                      ? `${dashboard.insights.stats?.activePrs || 0} PR(s) ativos em ${dashboard.insights.stats?.athletesWithPrs || 0} atleta(s)`
+                      : 'Disponível ao visualizar o modo Cross'
+                  )
+                ),
+                React.createElement('div', { className: 'list-item static' },
                   React.createElement('strong', null, 'Benchmarks mais usados'),
                   React.createElement('span', null, (dashboard.insights.topBenchmarks || []).length ? dashboard.insights.topBenchmarks.map((item) => `${item.name} (${item.total})`).join(' • ') : 'Sem volume suficiente ainda')
+                ),
+                React.createElement('div', { className: 'list-item static' },
+                  React.createElement('strong', null, 'Últimos PRs'),
+                  React.createElement(
+                    'span',
+                    null,
+                    dashboard.selectedSportType === 'cross'
+                      ? ((dashboard.insights.recentPrs || []).length
+                        ? dashboard.insights.recentPrs
+                          .map((record) => `${record.athlete_name || record.athlete_email || 'Atleta'} • ${record.exercise} ${formatNumericValue(record.value)} ${record.unit || 'kg'}`)
+                          .join(' • ')
+                        : 'Nenhum PR sincronizado recentemente')
+                      : 'Troque para Cross para revisar PRs'
+                  )
                 )
               )
             : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.')
@@ -1439,7 +1515,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             dashboard.feed.length === 0 ? React.createElement('p', { className: 'muted' }, 'Sem treinos publicados ainda.') : null
           )
         ),
-        React.createElement('div', { className: 'card wide', id: 'competition', hidden: !isCompetitionSection },
+        React.createElement('div', { className: 'card wide', id: 'competition', hidden: !isCompetitionSection || !dashboard.features?.competitions },
           React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline' },
             React.createElement('div', { className: 'eyebrow' }, 'Competições'),
             React.createElement('h3', null, 'Calendário e eventos'),
@@ -1527,7 +1603,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             )
           )
         ),
-        React.createElement('div', { className: 'card wide', id: 'leaderboards', hidden: !isLeaderboardsSection },
+        React.createElement('div', { className: 'card wide', id: 'leaderboards', hidden: !isLeaderboardsSection || !dashboard.features?.leaderboards },
           React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline' },
             React.createElement('div', { className: 'eyebrow' }, 'Rankings'),
             React.createElement('h3', null, 'Leaderboards e resultados'),
@@ -1700,6 +1776,12 @@ function formatDateLabel(dateValue) {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function formatNumericValue(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return String(value || '');
+  return Number.isInteger(numeric) ? String(numeric) : numeric.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
 function sportLabel(value) {
   switch (String(value || 'cross').toLowerCase()) {
     case 'running':
@@ -1713,7 +1795,10 @@ function sportLabel(value) {
 
 async function apiRequest(path, options = {}) {
   const cfg = readRuntimeConfig();
-  const base = cfg.apiBaseUrl || '/api';
+  const base = String(cfg.apiBaseUrl || '').trim();
+  if (!base) {
+    throw new Error('API base URL não configurada');
+  }
   const url = `${base.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
   const token = options.token !== undefined ? options.token : readToken();
 
@@ -1730,10 +1815,27 @@ async function apiRequest(path, options = {}) {
   const data = text ? JSON.parse(text) : null;
 
   if (!response.ok) {
-    throw new Error(data?.error || `Erro API (${response.status})`);
+    const error = new Error(data?.error || `Erro API (${response.status})`);
+    error.status = response.status;
+    throw error;
   }
 
   return data;
+}
+
+async function requestOptional(path, fallback = null, options = {}) {
+  try {
+    return await apiRequest(path, options);
+  } catch (error) {
+    if (isFeatureUnavailableError(error)) {
+      return fallback;
+    }
+    throw error;
+  }
+}
+
+function isFeatureUnavailableError(error) {
+  return [404, 405, 501].includes(Number(error?.status || 0));
 }
 
 function readToken() {
@@ -1879,20 +1981,7 @@ function writeProfile(profile) {
 }
 
 function readRuntimeConfig() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.runtime);
-    const fromStorage = raw ? JSON.parse(raw) : {};
-    return {
-      ...(window.__CROSSAPP_CONFIG__ || {}),
-      ...fromStorage,
-      billing: {
-        ...((window.__CROSSAPP_CONFIG__ || {}).billing || {}),
-        ...(fromStorage.billing || {}),
-      },
-    };
-  } catch {
-    return window.__CROSSAPP_CONFIG__ || { apiBaseUrl: '/api' };
-  }
+  return getRuntimeConfig();
 }
 
 function resolveBillingProvider() {

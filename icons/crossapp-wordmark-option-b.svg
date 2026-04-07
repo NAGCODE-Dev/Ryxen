@@ -20,6 +20,5 @@
     <path d="M0 0L68 112" transform="translate(149 64)" stroke="url(#wordBX)" stroke-width="18" stroke-linecap="square"/>
     <path d="M66 0L0 112" transform="translate(151 64)" stroke="url(#wordBX)" stroke-width="18" stroke-linecap="square"/>
   </g>
-  <text x="305" y="130" fill="#F7FBFF" font-size="70" font-weight="600" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">Cross</text>
-  <text x="540" y="130" fill="#C8D6E5" font-size="70" font-weight="500" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">App</text>
+  <text x="305" y="130" fill="#F7FBFF" font-size="70" font-weight="700" font-family="Manrope, Inter, Sora, Montserrat, Arial, sans-serif" letter-spacing="-2.2">Ryxen</text>
 </svg>

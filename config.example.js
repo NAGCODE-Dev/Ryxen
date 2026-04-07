@@ -1,3 +1,4 @@
+// Keep the legacy global name for backward compatibility with deployed bundles.
 window.__CROSSAPP_CONFIG__ = {
   apiBaseUrl: 'https://your-backend.up.railway.app',
   nativeApiBaseUrl: 'https://your-backend.up.railway.app',
@@ -9,7 +10,7 @@ window.__CROSSAPP_CONFIG__ = {
     sentry: {
       dsn: 'https://examplePublicKey@o0.ingest.sentry.io/0',
       environment: 'production',
-      release: 'crossapp@1.0.0',
+      release: 'ryxen@1.0.0',
     },
   },
   billing: {

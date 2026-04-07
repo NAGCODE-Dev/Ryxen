@@ -39,7 +39,7 @@ test('kiwify webhook contract resolves compra_aprovada payload', () => {
   const payload = normalizeKiwifyPayload({
     event: 'compra_aprovada',
     sale_id: 'sale-pro-001',
-    product_name: 'CrossApp — Coach Pro',
+    product_name: 'Ryxen Coach — Pro',
     customer: { email: 'nagcode.contact@gmail.com' },
     status: 'approved',
   });
@@ -55,7 +55,7 @@ test('kiwify webhook contract resolves assinatura_renovada payload', () => {
   const payload = normalizeKiwifyPayload({
     event: 'assinatura_renovada',
     subscription_id: 'renew-performance-001',
-    product: { name: 'CrossApp — Coach Performance' },
+    product: { name: 'Ryxen Coach — Performance' },
     customer: { email: 'athlete@example.com' },
     status: 'approved',
   });
@@ -71,7 +71,7 @@ test('kiwify webhook contract resolves reembolso as reversal', () => {
   const payload = normalizeKiwifyPayload({
     event: 'reembolso',
     sale_id: 'sale-pro-refund-001',
-    product_name: 'CrossApp — Coach Pro',
+    product_name: 'Ryxen Coach — Pro',
     customer: { email: 'nagcode.contact@gmail.com' },
     status: 'refunded',
   });
@@ -85,7 +85,7 @@ test('kiwify webhook contract resolves chargeback and late events as reversals',
   const chargebackPayload = normalizeKiwifyPayload({
     event: 'chargeback',
     subscription_id: 'chargeback-performance-001',
-    product: { name: 'CrossApp — Coach Performance' },
+    product: { name: 'Ryxen Coach — Performance' },
     customer: { email: 'athlete@example.com' },
     status: 'chargeback',
   });
@@ -93,7 +93,7 @@ test('kiwify webhook contract resolves chargeback and late events as reversals',
   const latePayload = normalizeKiwifyPayload({
     event: 'assinatura_atrasada',
     subscription_id: 'late-starter-001',
-    product: { name: 'CrossApp — Coach Starter' },
+    product: { name: 'Ryxen Coach — Starter' },
     customer: { email: 'athlete@example.com' },
     status: 'past_due',
   });

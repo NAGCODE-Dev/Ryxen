@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">CrossApp</string>
-    <string name="title_activity_main">CrossApp</string>
+    <string name="app_name">Ryxen</string>
+    <string name="title_activity_main">Ryxen</string>
     <string name="package_name">com.nagcode.crossapp</string>
     <string name="custom_url_scheme">com.nagcode.crossapp</string>
 </resources>

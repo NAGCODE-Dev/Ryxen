@@ -24,6 +24,7 @@ import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
 
 const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+// Keep the legacy cookie name to preserve in-flight OAuth handshakes during rollout.
 const GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
 
 async function withUserBootstrap(normalizedEmail, factory) {
@@ -642,6 +643,7 @@ function normalizeNativeAppCallback(value, returnTo) {
 
   try {
     const parsed = new URL(raw);
+    // Keep the legacy crossapp:// callback for backward compatibility with already installed native clients.
     if (parsed.protocol !== 'crossapp:' || parsed.hostname !== 'auth' || parsed.pathname !== '/callback') {
       return '';
     }

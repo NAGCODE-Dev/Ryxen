@@ -1,3 +1,4 @@
+// Keep legacy storage key to preserve usage counters across the rebrand.
 const STORAGE_KEY = 'crossapp-athlete-usage-v1';
 
 const DEFAULT_BENEFITS = {

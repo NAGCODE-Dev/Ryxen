@@ -1,17 +1,20 @@
-# CrossApp Branding Kit
+# Ryxen Branding Kit
 
-Base vetorial oficial da identidade do CrossApp.
+Base vetorial oficial da identidade do Ryxen.
 
 ## Arquivos
 
-- `crossapp-icon.svg`
+- `ryxen-icon.svg`
   - Ícone principal com fundo escuro, para app icon, social cards e peças com container.
-- `crossapp-logo-horizontal.svg`
+- `ryxen-logo-horizontal.svg`
   - Versão horizontal principal para header, landing, splash e material institucional.
-- `crossapp-logo-white.svg`
+- `ryxen-logo-white.svg`
   - Versão monocromática branca para fundos escuros ou fotografia.
-- `crossapp-logo-black.svg`
+- `ryxen-logo-black.svg`
   - Versão monocromática escura para fundos claros.
+
+Observação:
+- os nomes de arquivo ainda usam `crossapp-*` para evitar quebrar paths públicos já publicados no app, PWA e assets exportados durante a transição para Ryxen.
 
 ## Paleta
 
@@ -27,13 +30,12 @@ Base vetorial oficial da identidade do CrossApp.
 - principal: `Manrope`
 - fallback aceitável: `Inter`, `Sora`, `Montserrat`
 - composição do nome:
-  - `Cross` em peso `600`
-  - `App` em peso `500`
+  - `Ryxen` em peso `700`
 
 ## Uso rápido
 
-- produto/app: prefira `crossapp-icon.svg`
-- navegação pública e branding horizontal: prefira `crossapp-logo-horizontal.svg`
+- produto/app: prefira `ryxen-icon.svg`
+- navegação pública e branding horizontal: prefira `ryxen-logo-horizontal.svg`
 - aplicações sem cor: use a versão branca ou preta
 
 ## Exports recomendados

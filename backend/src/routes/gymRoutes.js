@@ -2,64 +2,14 @@ import express from 'express';
 
 import { pool } from '../db.js';
 import { authRequired } from '../auth.js';
-import { getAccessContextForGym, getAccessContextForUser, getActiveSubscriptionForUser, getMembershipForUser, getUserMemberships } from '../access.js';
+import { getAccessContextForGym, getAccessContextForUser, getActiveSubscriptionForUser, getMembershipForUser } from '../access.js';
 import { selectEffectiveAthleteBenefits } from '../accessPolicy.js';
+import { loadGymInsights, loadVisibleWorkoutFeed } from '../queries/coachDashboardQueries.js';
+import { createAthleteGroup, createWorkoutForAudience, inviteGymMembership } from '../services/gymWriteServices.js';
+import { normalizeSportType } from '../utils/sportType.js';
 
 export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }) {
   const router = express.Router();
-
-  function normalizeSportType(value) {
-    const raw = String(value || 'cross').trim().toLowerCase();
-    return ['cross', 'running', 'strength'].includes(raw) ? raw : 'cross';
-  }
-
-  async function resolveWorkoutAudience(gymId, audienceMode, targetMembershipIds, targetGroupIds) {
-    if (audienceMode === 'all') {
-      const members = await pool.query(
-        `SELECT id
-         FROM gym_memberships
-         WHERE gym_id = $1 AND status = 'active' AND role = 'athlete'`,
-        [gymId],
-      );
-      return { rows: members.rows };
-    }
-
-    if (audienceMode === 'selected') {
-      if (!targetMembershipIds.length) {
-        return { error: 'Selecione pelo menos um atleta' };
-      }
-      const members = await pool.query(
-        `SELECT id
-         FROM gym_memberships
-         WHERE gym_id = $1
-           AND status = 'active'
-           AND role = 'athlete'
-           AND id = ANY($2::int[])`,
-        [gymId, targetMembershipIds],
-      );
-      return { rows: members.rows };
-    }
-
-    if (audienceMode === 'groups') {
-      if (!targetGroupIds.length) {
-        return { error: 'Selecione pelo menos um grupo' };
-      }
-      const members = await pool.query(
-        `SELECT DISTINCT gm.id
-         FROM athlete_group_memberships agm
-         JOIN athlete_groups ag ON ag.id = agm.group_id
-         JOIN gym_memberships gm ON gm.id = agm.gym_membership_id
-         WHERE ag.gym_id = $1
-           AND ag.id = ANY($2::int[])
-           AND gm.status = 'active'
-           AND gm.role = 'athlete'`,
-        [gymId, targetGroupIds],
-      );
-      return { rows: members.rows };
-    }
-
-    return { error: 'audienceMode inválido' };
-  }
 
   router.get('/access/context', authRequired, async (req, res) => {
     const [gyms, personalSubscription] = await Promise.all([
@@ -85,18 +35,25 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(400).json({ error: 'name e slug são obrigatórios' });
     }
 
-    const inserted = await pool.query(
-      `INSERT INTO gyms (name, slug, owner_user_id) VALUES ($1,$2,$3) RETURNING *`,
-      [name, slug, req.user.userId],
-    );
-    const gym = inserted.rows[0];
+    try {
+      const inserted = await pool.query(
+        `INSERT INTO gyms (name, slug, owner_user_id) VALUES ($1,$2,$3) RETURNING *`,
+        [name, slug, req.user.userId],
+      );
+      const gym = inserted.rows[0];
 
-    await pool.query(
-      `INSERT INTO gym_memberships (gym_id, user_id, role, status) VALUES ($1,$2,'owner','active')`,
-      [gym.id, req.user.userId],
-    );
+      await pool.query(
+        `INSERT INTO gym_memberships (gym_id, user_id, role, status) VALUES ($1,$2,'owner','active')`,
+        [gym.id, req.user.userId],
+      );
 
-    return res.json({ gym });
+      return res.json({ gym });
+    } catch (error) {
+      if (error?.code === '23505' && String(error?.constraint || '').includes('gyms_slug_key')) {
+        return res.status(409).json({ error: 'Slug do gym já existe' });
+      }
+      return res.status(500).json({ error: 'Erro ao criar gym' });
+    }
   });
 
   router.get('/gyms/me', authRequired, async (req, res) => {
@@ -131,21 +88,13 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(membership.code).json({ error: membership.error });
     }
 
-    const foundUser = await pool.query(`SELECT id, email FROM users WHERE email = $1`, [email]);
-    const found = foundUser.rows[0] || null;
-
     try {
-      const inserted = await pool.query(
-        `INSERT INTO gym_memberships (gym_id, user_id, pending_email, role, status)
-         VALUES ($1,$2,$3,$4,$5)
-         RETURNING *`,
-        [gymId, found?.id || null, found ? null : email, role, found ? 'active' : 'invited'],
-      );
-      return res.json({ membership: inserted.rows[0] });
-    } catch (error) {
-      if (String(error?.message || '').includes('idx_gym_membership_user_unique')) {
-        return res.status(409).json({ error: 'Usuário já pertence a este gym' });
+      const created = await inviteGymMembership({ gymId, email, role });
+      if (created.error) {
+        return res.status(created.code || 400).json({ error: created.error });
       }
+      return res.json(created);
+    } catch (error) {
       return res.status(500).json({ error: 'Erro ao adicionar membro' });
     }
   });
@@ -251,45 +200,18 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(manager.code).json({ error: manager.error });
     }
 
-    const client = await pool.connect();
     try {
-      await client.query('BEGIN');
-      const inserted = await client.query(
-        `INSERT INTO athlete_groups (gym_id, name, description, sport_type, created_by_user_id)
-         VALUES ($1,$2,$3,$4,$5)
-         RETURNING *`,
-        [gymId, name, description || null, sportType, req.user.userId],
-      );
-      const group = inserted.rows[0];
-
-      if (memberIds.length) {
-        const validMembers = await client.query(
-          `SELECT id
-           FROM gym_memberships
-           WHERE gym_id = $1
-             AND status = 'active'
-             AND role = 'athlete'
-             AND id = ANY($2::int[])`,
-          [gymId, memberIds],
-        );
-        const validIds = validMembers.rows.map((row) => row.id);
-        if (validIds.length) {
-          await client.query(
-            `INSERT INTO athlete_group_memberships (group_id, gym_membership_id)
-             SELECT $1, UNNEST($2::int[])
-             ON CONFLICT DO NOTHING`,
-            [group.id, validIds],
-          );
-        }
-      }
-
-      await client.query('COMMIT');
-      return res.json({ group });
+      const created = await createAthleteGroup({
+        gymId,
+        sportType,
+        name,
+        description,
+        memberIds,
+        userId: req.user.userId,
+      });
+      return res.json(created);
     } catch (error) {
-      await client.query('ROLLBACK');
       return res.status(500).json({ error: 'Erro ao criar grupo' });
-    } finally {
-      client.release();
     }
   });
 
@@ -325,74 +247,32 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(402).json({ error: 'Assinatura do coach inativa. Renove para publicar treinos.' });
     }
 
-    const audience = await resolveWorkoutAudience(gymId, audienceMode, targetMembershipIds, targetGroupIds);
-    if (audience.error) {
-      return res.status(400).json({ error: audience.error });
-    }
-
-    const targetRows = audience.rows || [];
-    if ((audienceMode === 'selected' || audienceMode === 'groups') && !targetRows.length) {
-      return res.status(400).json({ error: 'Nenhum atleta ativo encontrado para esta audiência' });
-    }
-
-    const inserted = await pool.query(
-      `INSERT INTO workouts (gym_id, created_by_user_id, title, description, scheduled_date, payload, sport_type)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
-       RETURNING *`,
-      [gymId, req.user.userId, title, description || null, scheduledDate, payload, sportType],
-    );
-    const workout = inserted.rows[0];
-
-    if (targetRows.length) {
-      const ids = targetRows.map((member) => member.id);
-      await pool.query(
-        `INSERT INTO workout_assignments (workout_id, gym_membership_id)
-         SELECT $1, UNNEST($2::int[])
-         ON CONFLICT DO NOTHING`,
-        [workout.id, ids],
-      );
-    }
-
-    return res.json({
-      workout,
-      assigned: targetRows.length,
-      audience: {
-        sportType,
-        mode: audienceMode,
-        membershipIds: audienceMode === 'selected' ? targetMembershipIds : [],
-        groupIds: audienceMode === 'groups' ? targetGroupIds : [],
-      },
+    const created = await createWorkoutForAudience({
+      gymId,
+      userId: req.user.userId,
+      title,
+      description,
+      scheduledDate,
+      payload,
+      sportType,
+      audienceMode,
+      targetMembershipIds,
+      targetGroupIds,
     });
+    if (created.error) {
+      return res.status(created.code || 400).json({ error: created.error });
+    }
+    return res.json(created);
   });
 
   router.get('/workouts/feed', authRequired, async (req, res) => {
     const sportType = normalizeSportType(req.query?.sportType);
-    const memberships = await getUserMemberships(req.user.userId);
-    if (!memberships.length) {
-      return res.json({ workouts: [] });
-    }
-
-    const gymIds = memberships.map((m) => m.gym_id);
-    const membershipIds = memberships.map((m) => m.id);
-    const rows = await pool.query(
-      `SELECT DISTINCT w.*, g.name AS gym_name
-       FROM workouts w
-       JOIN gyms g ON g.id = w.gym_id
-       LEFT JOIN workout_assignments wa ON wa.workout_id = w.id
-       WHERE w.gym_id = ANY($1::int[])
-         AND w.sport_type = $3
-         AND w.scheduled_date >= CURRENT_DATE - INTERVAL '1 day'
-         AND (wa.gym_membership_id IS NULL OR wa.gym_membership_id = ANY($2::int[]))
-       ORDER BY w.scheduled_date DESC, w.created_at DESC
-       LIMIT 100`,
-      [gymIds, membershipIds, sportType],
-    );
-
-    const accessContexts = await Promise.all(rows.rows.map((workout) => getAccessContextForGym(workout.gym_id)));
-    const visible = rows.rows.filter((workout, index) => accessContexts[index]?.gymAccess?.canAthletesUseApp);
-    const enriched = await Promise.all(visible.map(enrichWorkoutWithBenchmark));
-
-    return res.json({ workouts: enriched });
+    const workouts = await loadVisibleWorkoutFeed({
+      userId: req.user.userId,
+      sportType,
+      enrichWorkoutWithBenchmark,
+    });
+    return res.json({ workouts });
   });
 
   router.get('/gyms/:gymId/insights', authRequired, async (req, res) => {
@@ -407,79 +287,12 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
       return res.status(manager.code).json({ error: manager.error });
     }
 
-    const [membersRes, workoutsRes, resultsRes, topBenchmarksRes, groupsRes] = await Promise.all([
-      pool.query(
-        `SELECT role, COUNT(*)::int AS total
-         FROM gym_memberships
-         WHERE gym_id = $1 AND status IN ('active', 'invited')
-         GROUP BY role`,
-        [gymId],
-      ),
-      pool.query(
-        `SELECT
-          COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE scheduled_date >= CURRENT_DATE AND scheduled_date <= CURRENT_DATE + INTERVAL '7 days')::int AS next_7_days
-         FROM workouts
-         WHERE gym_id = $1
-           AND sport_type = $2`,
-        [gymId, sportType],
-      ),
-      pool.query(`SELECT COUNT(*)::int AS total FROM benchmark_results WHERE gym_id = $1`, [gymId]),
-      pool.query(
-        `SELECT
-          br.benchmark_slug AS slug,
-          b.name,
-          COUNT(*)::int AS total
-         FROM benchmark_results br
-         JOIN benchmark_library b ON b.slug = br.benchmark_slug
-         WHERE br.gym_id = $1
-         GROUP BY br.benchmark_slug, b.name
-         ORDER BY total DESC, b.name ASC
-         LIMIT 5`,
-        [gymId],
-      ),
-      pool.query(`SELECT COUNT(*)::int AS total FROM athlete_groups WHERE gym_id = $1 AND sport_type = $2`, [gymId, sportType]),
-    ]);
-
-    const roleTotals = membersRes.rows.reduce((acc, row) => {
-      acc[row.role] = Number(row.total || 0);
-      return acc;
-    }, {});
-
-    const recentResults = await pool.query(
-      `SELECT
-        br.id,
-        br.benchmark_slug,
-        br.score_display,
-        br.created_at,
-        br.notes,
-        b.name AS benchmark_name,
-        u.name AS athlete_name,
-        u.email AS athlete_email
-       FROM benchmark_results br
-       JOIN benchmark_library b ON b.slug = br.benchmark_slug
-       JOIN users u ON u.id = br.user_id
-       WHERE br.gym_id = $1
-       ORDER BY br.created_at DESC
-       LIMIT 8`,
-      [gymId],
-    );
-
-    return res.json({
+    const insights = await loadGymInsights({
       gymId,
-      access: manager.access?.gymAccess || null,
-      stats: {
-        athletes: roleTotals.athlete || 0,
-        coaches: (roleTotals.owner || 0) + (roleTotals.coach || 0),
-        workouts: Number(workoutsRes.rows[0]?.total || 0),
-        workoutsNext7Days: Number(workoutsRes.rows[0]?.next_7_days || 0),
-        results: Number(resultsRes.rows[0]?.total || 0),
-        groups: Number(groupsRes.rows[0]?.total || 0),
-        sportType,
-      },
-      recentResults: recentResults.rows,
-      topBenchmarks: topBenchmarksRes.rows,
+      sportType,
+      access: manager.access,
     });
+    return res.json(insights);
   });
 
   return router;

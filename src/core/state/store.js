@@ -50,12 +50,16 @@ export function getState() {
   return structuredClone(state);
 }
 
+export function getStateSnapshot() {
+  return state;
+}
+
 /**
  * Atualiza estado (parcial merge)
  * @param {Object} updates - Atualizações parciais
  */
 export function setState(updates) {
-  const oldState = structuredClone(state);
+  const oldState = state;
   
   // Merge profundo
   state = deepMerge(state, updates);
@@ -129,9 +133,11 @@ export function subscribe(callback) {
  * @param {Object} oldState - Estado anterior
  */
 function notifySubscribers(newState, oldState) {
+  const safeNewState = structuredClone(newState);
+  const safeOldState = structuredClone(oldState);
   subscribers.forEach(callback => {
     try {
-      callback(structuredClone(newState), structuredClone(oldState));
+      callback(safeNewState, safeOldState);
     } catch (error) {
       console.error('Erro em subscriber:', error);
     }

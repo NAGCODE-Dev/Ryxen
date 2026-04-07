@@ -6,7 +6,7 @@ import path from 'node:path';
 import { extractTextFromSpreadsheetFile, isSpreadsheetFile } from '../src/adapters/spreadsheet/spreadsheetReader.js';
 import { parseTextIntoWeeks } from '../src/app/workoutHelpers.js';
 
-const fixturesDir = path.resolve('/home/nagc/Downloads/CrossApp/__tests__/fixtures/imports');
+const fixturesDir = path.resolve(process.cwd(), '__tests__/fixtures/imports');
 
 const CASES = [
   { name: 'treino-exemplo.xlsx', type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },

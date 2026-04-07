@@ -28,6 +28,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
+                    <!-- Keep legacy deep-link scheme for backward compatibility with already installed clients. -->
                     android:scheme="crossapp"
                     android:host="auth"
                     android:path="/callback" />

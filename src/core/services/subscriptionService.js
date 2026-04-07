@@ -2,6 +2,7 @@ import { apiRequest } from './apiClient.js';
 import { hasStoredSession } from './authService.js';
 import { getRuntimeConfig } from '../../config/runtime.js';
 
+// Keep legacy storage key for backward compatibility with pending checkout resumes.
 const CHECKOUT_INTENT_KEY = 'crossapp-pending-checkout-v1';
 
 /**

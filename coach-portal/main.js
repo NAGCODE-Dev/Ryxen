@@ -2,6 +2,8 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { inject } from '@vercel/analytics';
 import { injectSpeedInsights } from '@vercel/speed-insights';
+import { getRuntimeConfig } from '../packages/shared-web/runtime.js';
+import { applyAuthRedirectFromUrl, buildGoogleRedirectUrl } from '../packages/shared-web/auth.js';
 import '../coach/styles.css';
 
 const CoachWorkspace = React.lazy(() => import('./workspace.js'));
@@ -92,7 +94,7 @@ function App() {
     return React.createElement('div', { className: 'portal-shell auth-shell' },
       React.createElement('div', { className: 'auth-layout' },
         React.createElement('section', { className: 'auth-card' },
-          React.createElement('div', { className: 'eyebrow' }, 'CrossApp Coach'),
+          React.createElement('div', { className: 'eyebrow' }, 'Ryxen Coach'),
           React.createElement('h1', null, 'Coach Portal'),
           React.createElement('p', { className: 'muted' }, 'Entre para publicar treinos, organizar atletas e acompanhar o box sem depender de planilha solta.'),
           error ? React.createElement('div', { className: 'notice error' }, error) : null,
@@ -152,7 +154,7 @@ function App() {
       fallback: React.createElement('div', { className: 'portal-shell auth-shell' },
         React.createElement('div', { className: 'auth-layout auth-layout-loading' },
           React.createElement('div', { className: 'auth-card' },
-            React.createElement('div', { className: 'eyebrow' }, 'CrossApp'),
+            React.createElement('div', { className: 'eyebrow' }, 'Ryxen'),
             React.createElement('h1', null, 'Coach Portal'),
             React.createElement('p', { className: 'muted' }, 'Carregando workspace...')
           )
@@ -165,7 +167,10 @@ function App() {
 
 async function apiRequest(path, options = {}) {
   const cfg = readRuntimeConfig();
-  const base = cfg.apiBaseUrl || '/api';
+  const base = String(cfg.apiBaseUrl || '').trim();
+  if (!base) {
+    throw new Error('API base URL não configurada');
+  }
   const url = `${base.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
   const token = options.token !== undefined ? options.token : readToken();
 
@@ -217,48 +222,6 @@ function applyAuthRedirectFromLocation() {
   return applyAuthRedirectFromUrl(window.location.href, { cleanupCurrentLocation: true });
 }
 
-function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = false } = {}) {
-  try {
-    const url = new URL(urlString, window.location.href);
-    const hashParams = new URLSearchParams((url.hash || '').replace(/^#/, ''));
-    const searchParams = new URLSearchParams(url.search || '');
-    const token = String(hashParams.get('authToken') || searchParams.get('authToken') || '').trim();
-    const encodedUser = String(hashParams.get('authUser') || searchParams.get('authUser') || '').trim();
-    const authError = String(hashParams.get('authError') || searchParams.get('authError') || '').trim();
-
-    if (!token && !encodedUser && !authError) {
-      return { success: false, handled: false };
-    }
-
-    let user = null;
-    if (encodedUser) {
-      user = parseBase64UrlJson(encodedUser);
-    }
-
-    if (token) writeToken(token);
-    if (user) writeProfile(user);
-
-    if (cleanupCurrentLocation) {
-      url.hash = '';
-      url.searchParams.delete('authToken');
-      url.searchParams.delete('authUser');
-      url.searchParams.delete('authError');
-      url.searchParams.delete('returnTo');
-      window.history.replaceState({}, '', url.toString());
-    }
-
-    return {
-      success: !authError,
-      handled: true,
-      token,
-      user,
-      error: authError || '',
-    };
-  } catch {
-    return { success: false, handled: false };
-  }
-}
-
 function authFeatureCard(title, copy) {
   return React.createElement('div', { className: 'auth-feature' },
     React.createElement('strong', null, title),
@@ -267,46 +230,7 @@ function authFeatureCard(title, copy) {
 }
 
 function readRuntimeConfig() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEYS.runtime);
-    const fromStorage = raw ? JSON.parse(raw) : {};
-    return {
-      ...(window.__CROSSAPP_CONFIG__ || {}),
-      ...fromStorage,
-      billing: {
-        ...((window.__CROSSAPP_CONFIG__ || {}).billing || {}),
-        ...(fromStorage.billing || {}),
-      },
-    };
-  } catch {
-    return window.__CROSSAPP_CONFIG__ || { apiBaseUrl: '/api' };
-  }
-}
-
-function buildGoogleRedirectUrl() {
-  const cfg = readRuntimeConfig();
-  const apiBaseUrl = String(cfg.apiBaseUrl || '').trim();
-  if (!apiBaseUrl) {
-    throw new Error('API base URL não configurada');
-  }
-
-  const origin = String(window.location?.origin || '').trim();
-  const normalizedBase = apiBaseUrl.endsWith('/') ? apiBaseUrl : `${apiBaseUrl}/`;
-  const base = /^[a-z][a-z\d+\-.]*:/i.test(normalizedBase)
-    ? normalizedBase
-    : new URL(normalizedBase, origin || window.location.href).toString();
-
-  return new URL('auth/google/start', base);
-}
-
-function parseBase64UrlJson(value) {
-  try {
-    const normalized = String(value).replace(/-/g, '+').replace(/_/g, '/');
-    const padded = normalized + '='.repeat((4 - (normalized.length % 4 || 4)) % 4);
-    return JSON.parse(window.atob(padded));
-  } catch {
-    return null;
-  }
+  return getRuntimeConfig();
 }
 
 function normalizeReturnTo(value, fallback = DEFAULT_COACH_RETURN_TO) {

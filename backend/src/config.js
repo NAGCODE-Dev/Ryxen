@@ -1,4 +1,8 @@
-import 'dotenv/config';
+try {
+  await import('dotenv/config');
+} catch {
+  // Frontend-only installs can run backend config tests without backend deps present.
+}
 
 function parseList(value) {
   return String(value || '')

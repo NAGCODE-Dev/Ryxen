@@ -1,129 +1,55 @@
-import { getStoredProfile, refreshSession, signIn, signOut } from '/src/core/services/authService.js';
-import { getAthleteDashboard, getStrengthHistory, getWorkoutFeed, logStrengthSession } from '/src/core/services/gymService.js';
+import { getStrengthHistory, logStrengthSession } from '/packages/shared-web/athlete-services.js';
+import { startAthleteModalityApp } from '/packages/shared-web/modality-shell.js';
 
 const root = document.getElementById('strength-root');
 let strengthViewState = { period: 'all' };
 let strengthModel = null;
 
 if (root) {
-  boot();
-}
-
-async function boot() {
-  renderLoading();
-
-  const profile = getStoredProfile();
-  let dashboard = null;
-  let feed = [];
-  let strengthHistory = null;
-  let sessionOk = !!profile;
-
-  if (profile) {
-    try {
-      await refreshSession();
-      [dashboard, strengthHistory, feed] = await Promise.all([
-        getAthleteDashboard({ sportType: 'strength' }),
-        getStrengthHistory(),
-        getWorkoutFeed({ sportType: 'strength' }).then((response) => response?.workouts || []),
-      ]);
-    } catch {
-      sessionOk = false;
-    }
-  }
-
-  strengthModel = {
-    profile: sessionOk ? getStoredProfile() : null,
-    dashboard: dashboard || null,
-    feed,
-    strengthHistory: strengthHistory || null,
-  };
-
-  renderApp(strengthModel);
-  bindEvents();
-}
-
-function bindEvents() {
-  root.onclick = async (event) => {
-    const prefillPayload = event.target.closest('[data-strength-prefill]')?.getAttribute('data-strength-prefill');
-    if (prefillPayload) {
-      hydrateStrengthLogForm(prefillPayload);
-      return;
-    }
-
-    const action = event.target.closest('[data-strength-action]')?.getAttribute('data-strength-action');
-    if (!action) return;
-
-    if (action === 'logout') {
-      await signOut();
-      await boot();
-      return;
-    }
-
-    if (action === 'refresh') {
-      await boot();
-    }
-  };
-
-  root.onchange = (event) => {
-    const period = event.target.closest('[data-strength-period]')?.value;
-    if (!period) return;
-    strengthViewState.period = period;
-    if (strengthModel) renderApp(strengthModel);
-  };
-
-  root.onsubmit = async (event) => {
-    if (!(event.target instanceof HTMLFormElement)) return;
-
-    if (event.target.id === 'strength-loginForm') {
-      event.preventDefault();
-
-      const email = String(event.target.querySelector('[name="email"]')?.value || '').trim();
-      const password = String(event.target.querySelector('[name="password"]')?.value || '').trim();
-      if (!email || !password) return;
-
-      setStatus('Entrando...');
-      try {
-        await signIn({ email, password });
-        await boot();
-      } catch (error) {
-        setStatus(error?.message || 'Falha ao entrar', true);
-      }
-      return;
-    }
-
-    if (event.target.id === 'strength-logForm') {
-      event.preventDefault();
-
-      const payload = {
-        workoutId: getFormValue(event.target, 'workoutId'),
-        completionState: getFormValue(event.target, 'completionState'),
-        sourceLabel: getFormValue(event.target, 'sourceLabel'),
-        exercise: getFormValue(event.target, 'exercise'),
-        setsCount: getOptionalNumber(event.target, 'setsCount'),
-        repsText: getFormValue(event.target, 'repsText'),
-        loadValue: getOptionalNumber(event.target, 'loadValue'),
-        loadText: getFormValue(event.target, 'loadText'),
-        rir: getOptionalNumber(event.target, 'rir'),
-        notes: getFormValue(event.target, 'notes'),
-      };
-
-      setStatus('Registrando sessão...');
-      try {
-        await logStrengthSession(payload);
-        await boot();
-        setStatus('Sessão de força registrada.');
-      } catch (error) {
-        setStatus(error?.message || 'Falha ao registrar sessão', true);
-      }
-    }
-  };
+  startAthleteModalityApp({
+    root,
+    sportType: 'strength',
+    loadHistory: getStrengthHistory,
+    logSession: logStrengthSession,
+    renderLoading,
+    renderApp,
+    setStatus,
+    hydratePrefill: hydrateStrengthLogForm,
+    buildLogPayload: (form) => ({
+      workoutId: getFormValue(form, 'workoutId'),
+      completionState: getFormValue(form, 'completionState'),
+      sourceLabel: getFormValue(form, 'sourceLabel'),
+      exercise: getFormValue(form, 'exercise'),
+      setsCount: getOptionalNumber(form, 'setsCount'),
+      repsText: getFormValue(form, 'repsText'),
+      loadValue: getOptionalNumber(form, 'loadValue'),
+      loadText: getFormValue(form, 'loadText'),
+      rir: getOptionalNumber(form, 'rir'),
+      notes: getFormValue(form, 'notes'),
+    }),
+    getModel: () => strengthModel,
+    setModel: (nextModel) => {
+      strengthModel = nextModel;
+    },
+    getViewState: () => strengthViewState,
+    setViewState: (nextViewState) => {
+      strengthViewState = nextViewState;
+    },
+    prefillAttribute: 'data-strength-prefill',
+    actionAttribute: 'data-strength-action',
+    periodAttribute: 'data-strength-period',
+    loginFormId: 'strength-loginForm',
+    logFormId: 'strength-logForm',
+    logSuccessMessage: 'Sessão de força registrada.',
+    historyKey: 'strengthHistory',
+  });
 }
 
 function renderLoading() {
   root.innerHTML = `
     <main class="hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Strength</div>
+        <div class="hub-kicker">Ryxen Strength</div>
         <h1>Carregando seu contexto de força.</h1>
         <p class="hub-lead">Buscando sessão, feed do coach e histórico da modalidade.</p>
       </section>
@@ -144,7 +70,7 @@ function renderApp({ profile, dashboard, feed, strengthHistory }) {
   root.innerHTML = `
     <main class="hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Strength</div>
+        <div class="hub-kicker">Ryxen Strength</div>
         <h1>Força e musculação com feed do coach e histórico por modalidade.</h1>
         <p class="hub-lead">Aqui você recebe sessões de força, registra exercícios concluídos e acompanha sua progressão sem misturar com Cross ou Running.</p>
         <div class="hub-actions">

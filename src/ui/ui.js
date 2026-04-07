@@ -1,72 +1,93 @@
-import { renderAppShell, renderAll } from './render.js';
+import { renderAppShell, renderHeaderAccount, renderMainContent, renderBottomNav, renderModals } from './render.js';
 import { setupActions } from './actions.js';
 import { bindAppEvents } from './events.js';
 import { getAppBridge } from '../app/bridge.js';
+import { prepareAthleteLayoutRoot, ensureAthleteToast, setLayoutHtml, setLayoutText } from '../../apps/athlete/layoutShell.js';
+import { buildAthleteUiForRender, normalizeAthleteUiState } from '../../apps/athlete/uiState.js';
 
 export async function mountUI({ root }) {
   if (!root) throw new Error('mountUI: root é obrigatório');
 
-  ensureStylesheet('./src/ui/styles.css');
-  ensureBg();
-
-  root.innerHTML = renderAppShell();
-
-  const { toast } = ensureToast();
+  const refs = prepareAthleteLayoutRoot(root);
+  const { toast } = ensureAthleteToast();
 
   const { createStorage } = await import('../adapters/storage/storageFactory.js');
   const uiStorage = createStorage('ui-state', 5000);
 
   // Estado de UI (não depende do core)
-  let uiState = normalizeUiState((await uiStorage.get('state')) || {});
+  let uiState = normalizeAthleteUiState((await uiStorage.get('state')) || {});
   let uiBusy = false;
   let uiBusyMessage = '';
   let uiSyncTimeout = null;
   let measurementSyncTimeout = null;
+  let uiPersistTimeout = null;
   let lastMeasurementSyncHash = getMeasurementSyncHash(uiState?.athleteOverview?.measurements);
   await uiStorage.set('state', uiState);
 
   const remoteUiState = await restoreUiStateFromAccount();
   if (remoteUiState) {
-    uiState = normalizeUiState({ ...uiState, ...remoteUiState });
+    uiState = normalizeAthleteUiState({ ...uiState, ...remoteUiState });
     await uiStorage.set('state', uiState);
+  }
+
+  function scheduleUiStatePersist(nextState) {
+    clearTimeout(uiPersistTimeout);
+    uiPersistTimeout = window.setTimeout(() => {
+      void uiStorage.set('state', nextState);
+    }, 80);
   }
 
   const getUiState = () => uiState;
 
   const setImportStatus = (nextStatus) => {
-    uiState = normalizeUiState({
+    uiState = normalizeAthleteUiState({
       ...uiState,
       importStatus: nextStatus && typeof nextStatus === 'object'
         ? { ...uiState.importStatus, ...nextStatus }
         : null,
     });
-    void uiStorage.set('state', uiState);
+    scheduleUiStatePersist(uiState);
   };
 
   const setUiState = async (next) => {
     const previous = uiState;
-    uiState = normalizeUiState({ ...uiState, ...(next || {}) });
-    await uiStorage.set('state', uiState);
+    uiState = normalizeAthleteUiState({ ...uiState, ...(next || {}) });
+    scheduleUiStatePersist(uiState);
     scheduleUiStateSync(previous, uiState);
     scheduleMeasurementSync(previous, uiState);
   };
 
   const patchUiState = async (fn) => {
-    const current = normalizeUiState((await uiStorage.get('state')) || uiState);
-    const updated = normalizeUiState((fn && fn(current)) || current);
+    const current = uiState;
+    const updated = normalizeAthleteUiState((fn && fn(current)) || current);
     uiState = updated;
-    await uiStorage.set('state', updated);
+    scheduleUiStatePersist(updated);
     scheduleUiStateSync(current, updated);
     scheduleMeasurementSync(current, updated);
   };
 
+  function buildUiSnapshotSignature(value) {
+    const currentPage = value?.currentPage || 'today';
+    const settings = value?.settings || {};
+    const wod = value?.wod || {};
+    const coachGymId = value?.coachPortal?.selectedGymId || null;
+    const wodKeys = Object.keys(wod).sort();
+    return [
+      currentPage,
+      coachGymId,
+      settings.showLbsConversion ? 1 : 0,
+      settings.showEmojis ? 1 : 0,
+      settings.showObjectivesInWods ? 1 : 0,
+      wodKeys.length,
+      ...wodKeys.map((key) => {
+        const entry = wod[key] || {};
+        return `${key}:${entry.activeLineId || ''}:${Object.keys(entry.done || {}).length}`;
+      }),
+    ].join('|');
+  }
+
   function scheduleUiStateSync(previous, next) {
-    if (
-      previous?.currentPage === next?.currentPage
-      && JSON.stringify(previous?.settings || {}) === JSON.stringify(next?.settings || {})
-      && JSON.stringify(previous?.wod || {}) === JSON.stringify(next?.wod || {})
-      && previous?.coachPortal?.selectedGymId === next?.coachPortal?.selectedGymId
-    ) {
+    if (buildUiSnapshotSignature(previous) === buildUiSnapshotSignature(next)) {
       return;
     }
 
@@ -139,32 +160,111 @@ export async function mountUI({ root }) {
     }
   };
 
-  const refs = getRefs(root);
   const pushEventLine = createEventLog(refs.events);
+  const objectIds = new WeakMap();
+  let nextObjectId = 1;
+  let lastRendered = {
+    headerSignature: '',
+    headerHtml: '',
+    mainSignature: '',
+    mainHtml: '',
+    bottomSignature: '',
+    bottomHtml: '',
+    modalSignature: '',
+    modalHtml: '',
+  };
 
   let renderQueued = false;
   let renderInflight = null;
   let lastRenderAt = 0;
 
+  const getObjectIdentity = (value) => {
+    if (!value || (typeof value !== 'object' && typeof value !== 'function')) {
+      return String(value ?? '');
+    }
+    let id = objectIds.get(value);
+    if (!id) {
+      id = nextObjectId++;
+      objectIds.set(value, id);
+    }
+    return `#${id}`;
+  };
+
+  const buildHeaderSignature = (state) => getObjectIdentity(state?.__ui?.auth?.profile || null);
+  const buildBottomSignature = (state) => String(state?.__ui?.currentPage || 'today');
+  const buildModalSignature = (state) => [
+    state?.__ui?.modal || '',
+    state?.__ui?.authMode || '',
+    getObjectIdentity(state?.__ui?.passwordReset || null),
+    getObjectIdentity(state?.__ui?.signupVerification || null),
+    getObjectIdentity(state?.__ui?.importStatus || null),
+    getObjectIdentity(state?.__ui?.admin || null),
+    getObjectIdentity(state?.__ui?.athleteOverview || null),
+    getObjectIdentity(state?.__ui?.coachPortal || null),
+    getObjectIdentity(state?.__ui?.auth?.profile || null),
+    state?.__ui?.isBusy ? '1' : '0',
+  ].join('|');
+  const buildMainSignature = (state) => [
+    state?.__ui?.currentPage || 'today',
+    state?.activeWeekNumber ?? '',
+    state?.currentDay ?? '',
+    getObjectIdentity(state?.weeks || null),
+    getObjectIdentity(state?.workout || null),
+    getObjectIdentity(state?.workoutOfDay || null),
+    getObjectIdentity(state?.workoutContext || null),
+    getObjectIdentity(state?.preferences || null),
+    getObjectIdentity(state?.prs || null),
+    getObjectIdentity(state?.__ui?.settings || null),
+    getObjectIdentity(state?.__ui?.athleteOverview || null),
+    getObjectIdentity(state?.__ui?.coachPortal || null),
+    getObjectIdentity(state?.__ui?.auth?.profile || null),
+    state?.__ui?.isBusy ? '1' : '0',
+  ].join('|');
+
   const performRender = async () => {
     const state = safeGetState();
 
     // Injeta estado de UI para o render (sem tocar no core)
-    state.__ui = buildUiForRender(state, uiState, uiBusy);
+    state.__ui = buildAthleteUiForRender({
+      state,
+      uiState,
+      uiBusy,
+      profile: safeGetProfile(),
+    });
 
     document.body.dataset.page = state.__ui.currentPage || 'today';
+    const headerSignature = buildHeaderSignature(state);
+    if (headerSignature !== lastRendered.headerSignature) {
+      lastRendered.headerSignature = headerSignature;
+      lastRendered.headerHtml = renderHeaderAccount(state);
+      setLayoutHtml(refs.headerAccount, lastRendered.headerHtml);
+    }
 
-    const view = renderAll(state);
+    const mainSignature = buildMainSignature(state);
+    if (mainSignature !== lastRendered.mainSignature) {
+      lastRendered.mainSignature = mainSignature;
+      lastRendered.mainHtml = renderMainContent(state);
+      setLayoutHtml(refs.main, lastRendered.mainHtml);
+    }
 
-    setHTML(refs.headerAccount, view.headerAccountHtml);
-    setHTML(refs.main, view.mainHtml);
-    setHTML(refs.bottomNav, view.bottomNavHtml);
-    setHTML(refs.modals, view.modalsHtml);
+    const bottomSignature = buildBottomSignature(state);
+    if (bottomSignature !== lastRendered.bottomSignature) {
+      lastRendered.bottomSignature = bottomSignature;
+      lastRendered.bottomHtml = renderBottomNav(state);
+      setLayoutHtml(refs.bottomNav, lastRendered.bottomHtml);
+    }
+
+    const modalSignature = buildModalSignature(state);
+    if (modalSignature !== lastRendered.modalSignature) {
+      lastRendered.modalSignature = modalSignature;
+      lastRendered.modalHtml = renderModals(state);
+      setLayoutHtml(refs.modals, lastRendered.modalHtml);
+    }
 
     // Contador de PR (se existir no shell)
     if (refs.prsCount) {
       const count = Object.keys(state?.prs || {}).length;
-      setText(refs.prsCount, `${count} PRs`);
+      setLayoutText(refs.prsCount, `${count} PRs`);
     }
   };
 
@@ -229,176 +329,10 @@ export async function mountUI({ root }) {
   };
 }
 
-function normalizeUiState(s) {
-  const next = { ...(s || {}) };
-
-  next.currentPage = ['today', 'history', 'account'].includes(next.currentPage) ? next.currentPage : 'today';
-  next.modal = next.modal || null; // 'prs' | 'settings' | null
-
-  next.wod = next.wod && typeof next.wod === 'object' ? next.wod : {};
-
-  // Preferências simples (Config)
-  next.settings = next.settings && typeof next.settings === 'object' ? next.settings : {};
-  if (typeof next.settings.showLbsConversion !== 'boolean') next.settings.showLbsConversion = true;
-  if (typeof next.settings.showEmojis !== 'boolean') next.settings.showEmojis = true;
-  if (typeof next.settings.showObjectivesInWods !== 'boolean') next.settings.showObjectivesInWods = true;
-  next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
-  next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
-  next.signupVerification = next.signupVerification && typeof next.signupVerification === 'object' ? next.signupVerification : {};
-  next.importStatus = next.importStatus && typeof next.importStatus === 'object'
-    ? next.importStatus
-    : { active: false, tone: 'idle', title: '', message: '', fileName: '', step: 'idle' };
-  if (typeof next.importStatus.step !== 'string') next.importStatus.step = 'idle';
-  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
-  next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
-    ? next.athleteOverview
-    : {
-        detailLevel: 'none',
-        stats: null,
-        recentResults: [],
-        recentWorkouts: [],
-        benchmarkHistory: [],
-        prHistory: [],
-        prCurrent: {},
-        measurements: [],
-        runningHistory: [],
-        strengthHistory: [],
-        gymAccess: [],
-        personalSubscription: null,
-        athleteBenefits: null,
-        blocks: {
-          summary: { status: 'idle', error: '' },
-          results: { status: 'idle', error: '' },
-          workouts: { status: 'idle', error: '' },
-        },
-      };
-  next.coachPortal = next.coachPortal && typeof next.coachPortal === 'object'
-    ? next.coachPortal
-    : {
-        subscription: null,
-        entitlements: [],
-        gymAccess: [],
-        gyms: [],
-        selectedGymId: null,
-        status: 'idle',
-        error: '',
-      };
-  if (typeof next.athleteOverview.detailLevel !== 'string') next.athleteOverview.detailLevel = 'none';
-  if (!Array.isArray(next.athleteOverview.recentResults)) next.athleteOverview.recentResults = [];
-  if (!Array.isArray(next.athleteOverview.recentWorkouts)) next.athleteOverview.recentWorkouts = [];
-  if (!Array.isArray(next.athleteOverview.benchmarkHistory)) next.athleteOverview.benchmarkHistory = [];
-  if (!Array.isArray(next.athleteOverview.prHistory)) next.athleteOverview.prHistory = [];
-  if (!next.athleteOverview.prCurrent || typeof next.athleteOverview.prCurrent !== 'object') next.athleteOverview.prCurrent = {};
-  if (!Array.isArray(next.athleteOverview.measurements)) next.athleteOverview.measurements = [];
-  if (!Array.isArray(next.athleteOverview.runningHistory)) next.athleteOverview.runningHistory = [];
-  if (!Array.isArray(next.athleteOverview.strengthHistory)) next.athleteOverview.strengthHistory = [];
-  if (!Array.isArray(next.athleteOverview.gymAccess)) next.athleteOverview.gymAccess = [];
-  if (!next.athleteOverview.personalSubscription || typeof next.athleteOverview.personalSubscription !== 'object') next.athleteOverview.personalSubscription = null;
-  if (!next.athleteOverview.athleteBenefits || typeof next.athleteOverview.athleteBenefits !== 'object') next.athleteOverview.athleteBenefits = null;
-  next.athleteOverview.blocks = next.athleteOverview.blocks && typeof next.athleteOverview.blocks === 'object'
-    ? next.athleteOverview.blocks
-    : {};
-  for (const key of ['summary', 'results', 'workouts']) {
-    const current = next.athleteOverview.blocks[key];
-    next.athleteOverview.blocks[key] = current && typeof current === 'object'
-      ? { status: typeof current.status === 'string' ? current.status : 'idle', error: String(current.error || '') }
-      : { status: 'idle', error: '' };
-  }
-  if (!Array.isArray(next.coachPortal.gyms)) next.coachPortal.gyms = [];
-  if (!Array.isArray(next.coachPortal.gymAccess)) next.coachPortal.gymAccess = [];
-  if (!Array.isArray(next.coachPortal.entitlements)) next.coachPortal.entitlements = [];
-  if (typeof next.coachPortal.selectedGymId !== 'number') next.coachPortal.selectedGymId = next.coachPortal.selectedGymId || null;
-  if (typeof next.coachPortal.status !== 'string') next.coachPortal.status = 'idle';
-  if (typeof next.coachPortal.error !== 'string') next.coachPortal.error = '';
-
-  Object.keys(next.wod).forEach((key) => {
-    const entry = next.wod[key];
-    if (!entry || typeof entry !== 'object') {
-      delete next.wod[key];
-      return;
-    }
-    next.wod[key] = {
-      activeLineId: typeof entry.activeLineId === 'string' ? entry.activeLineId : null,
-      done: entry.done && typeof entry.done === 'object' ? entry.done : {},
-    };
-  });
-
-  return next;
-}
-
-function buildUiForRender(state, uiState, uiBusy = false) {
-  const key = workoutKey(state);
-  const wod = uiState.wod[key] || { activeLineId: null, done: {} };
-
-  const lineIds = computeLineIdsFromState(state);
-  const doneCount = lineIds.reduce((acc, id) => acc + (wod.done?.[id] ? 1 : 0), 0);
-
-  return {
-    modal: uiState.modal,
-    currentPage: uiState.currentPage,
-    isBusy: uiBusy,
-    settings: uiState.settings,
-    authMode: uiState.authMode,
-    auth: {
-      profile: safeGetProfile(),
-    },
-    passwordReset: uiState.passwordReset,
-    signupVerification: uiState.signupVerification,
-    importStatus: uiState.importStatus,
-    admin: uiState.admin,
-    athleteOverview: uiState.athleteOverview,
-    coachPortal: uiState.coachPortal,
-
-    wodKey: key,
-    activeLineId: wod.activeLineId,
-    done: wod.done || {},
-    progress: { doneCount, totalCount: lineIds.length },
-  };
-}
-
-function computeLineIdsFromState(state) {
-  const blocks = state?.workoutOfDay?.blocks || state?.workout?.blocks || [];
-  const ids = [];
-  blocks.forEach((block, b) => {
-    const lines = block?.lines || [];
-    lines.forEach((_, i) => ids.push(`b${b}-l${i}`));
-  });
-  return ids;
-}
-
-function workoutKey(state) {
-  const week = state?.activeWeekNumber ?? '0';
-  const day = state?.currentDay ?? 'Hoje';
-  return `${week}:${String(day).toLowerCase()}`;
-}
-
-function getRefs(root) {
-  const q = (sel) => root.querySelector(sel);
-  return {
-    headerAccount: q('#ui-headerAccount'),
-    main: q('#ui-main'),
-    bottomNav: q('#ui-bottomNav'),
-    modals: q('#ui-modals'),
-    prsCount: q('#ui-prsCount'),
-  };
-}
-
-function setText(el, value) {
-  if (!el) return;
-  const next = String(value ?? '');
-  if (el.textContent === next) return;
-  el.textContent = next;
-}
-
-function setHTML(el, html) {
-  if (!el) return;
-  const next = String(html ?? '');
-  if (el.innerHTML === next) return;
-  el.innerHTML = next;
-}
 
 function safeGetState() {
   try {
+    if (getAppBridge()?.getStateSnapshot) return getAppBridge().getStateSnapshot();
     return getAppBridge()?.getState ? getAppBridge().getState() : {};
   } catch {
     return {};
@@ -412,44 +346,6 @@ function safeGetProfile() {
   } catch {
     return null;
   }
-}
-
-function ensureStylesheet(href) {
-  const id = 'ui-styles';
-  if (document.getElementById(id)) return;
-
-  const link = document.createElement('link');
-  link.id = id;
-  link.rel = 'stylesheet';
-  link.href = href;
-  document.head.appendChild(link);
-}
-
-function ensureBg() {
-  document.documentElement.classList.add('ui-bg');
-  document.body.classList.add('ui-bg');
-}
-
-function ensureToast() {
-  let el = document.getElementById('ui-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'ui-toast';
-    el.className = 'ui-toast';
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-live', 'polite');
-    document.body.appendChild(el);
-  }
-
-  let timeout = null;
-  const toast = (message) => {
-    el.textContent = String(message ?? '');
-    el.classList.add('ui-toastShow');
-    clearTimeout(timeout);
-    timeout = setTimeout(() => el.classList.remove('ui-toastShow'), 2200);
-  };
-
-  return { el, toast };
 }
 
 function createEventLog(containerEl) {
@@ -472,9 +368,16 @@ function escapeHtml(str) {
 }
 
 function getMeasurementSyncHash(entries = []) {
-  try {
-    return JSON.stringify(Array.isArray(entries) ? entries : []);
-  } catch {
-    return '[]';
-  }
+  if (!Array.isArray(entries) || !entries.length) return '[]';
+  return entries
+    .map((entry) => [
+      entry?.id || '',
+      entry?.type || '',
+      entry?.label || '',
+      entry?.unit || '',
+      entry?.value || '',
+      entry?.recorded_at || '',
+      entry?.created_at || '',
+    ].join(':'))
+    .join('|');
 }

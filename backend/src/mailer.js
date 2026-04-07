@@ -541,9 +541,9 @@ function buildEmailContent(job) {
   if (job.kind === 'password_reset') {
     const code = String(payload.code || '').trim();
     return {
-      subject: 'CrossApp - redefinicao de senha',
+      subject: 'Ryxen - redefinicao de senha',
       text: [
-        'Seu codigo de redefinicao de senha do CrossApp:',
+        'Seu codigo de redefinicao de senha do Ryxen:',
         '',
         `Codigo: ${code}`,
         '',
@@ -556,9 +556,9 @@ function buildEmailContent(job) {
   if (job.kind === 'email_verification') {
     const code = String(payload.code || '').trim();
     return {
-      subject: 'CrossApp - verificacao de email',
+      subject: 'Ryxen - verificacao de email',
       text: [
-        'Seu codigo de verificacao do CrossApp:',
+        'Seu codigo de verificacao do Ryxen:',
         '',
         `Codigo: ${code}`,
         '',
@@ -576,11 +576,11 @@ function buildEmailContent(job) {
     const deleteAfter = formatEmailDate(payload.deleteAfter);
     const supportEmail = String(payload.supportEmail || SUPPORT_EMAIL).trim();
     return {
-      subject: 'CrossApp - solicitacao de exclusao de conta',
+      subject: 'Ryxen - solicitacao de exclusao de conta',
       text: [
         userName ? `Olá, ${userName}.` : 'Olá.',
         '',
-        'Uma solicitação administrativa de exclusão da sua conta foi registrada no CrossApp.',
+        'Uma solicitação administrativa de exclusão da sua conta foi registrada no Ryxen.',
         'Se você quiser prosseguir com a exclusão imediatamente, use o link abaixo:',
         confirmUrl || '(link indisponível)',
         '',
@@ -594,7 +594,7 @@ function buildEmailContent(job) {
   }
 
   return {
-    subject: 'CrossApp',
+    subject: 'Ryxen',
     text: String(payload.text || '').trim(),
   };
 }

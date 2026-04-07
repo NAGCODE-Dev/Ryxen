@@ -1,130 +1,56 @@
-import { getStoredProfile, refreshSession, signIn, signOut } from '/src/core/services/authService.js';
-import { getAthleteDashboard, getRunningHistory, getWorkoutFeed, logRunningSession } from '/src/core/services/gymService.js';
+import { getRunningHistory, logRunningSession } from '/packages/shared-web/athlete-services.js';
+import { startAthleteModalityApp } from '/packages/shared-web/modality-shell.js';
 
 const root = document.getElementById('running-root');
 let runningViewState = { period: 'all' };
 let runningModel = null;
 
 if (root) {
-  boot();
-}
-
-async function boot() {
-  renderLoading();
-
-  const profile = getStoredProfile();
-  let dashboard = null;
-  let feed = [];
-  let runningHistory = null;
-  let sessionOk = !!profile;
-
-  if (profile) {
-    try {
-      await refreshSession();
-      [dashboard, runningHistory, feed] = await Promise.all([
-        getAthleteDashboard({ sportType: 'running' }),
-        getRunningHistory(),
-        getWorkoutFeed({ sportType: 'running' }).then((response) => response?.workouts || []),
-      ]);
-    } catch {
-      sessionOk = false;
-    }
-  }
-
-  runningModel = {
-    profile: sessionOk ? getStoredProfile() : null,
-    dashboard: dashboard || null,
-    feed,
-    runningHistory: runningHistory || null,
-  };
-
-  renderApp(runningModel);
-  bindEvents();
-}
-
-function bindEvents() {
-  root.onclick = async (event) => {
-    const prefillPayload = event.target.closest('[data-running-prefill]')?.getAttribute('data-running-prefill');
-    if (prefillPayload) {
-      hydrateRunningLogForm(prefillPayload);
-      return;
-    }
-
-    const action = event.target.closest('[data-running-action]')?.getAttribute('data-running-action');
-    if (!action) return;
-
-    if (action === 'logout') {
-      await signOut();
-      await boot();
-      return;
-    }
-
-    if (action === 'refresh') {
-      await boot();
-    }
-  };
-
-  root.onchange = (event) => {
-    const period = event.target.closest('[data-running-period]')?.value;
-    if (!period) return;
-    runningViewState.period = period;
-    if (runningModel) renderApp(runningModel);
-  };
-
-  root.onsubmit = async (event) => {
-    if (!(event.target instanceof HTMLFormElement)) return;
-
-    if (event.target.id === 'running-loginForm') {
-      event.preventDefault();
-
-      const email = String(event.target.querySelector('[name="email"]')?.value || '').trim();
-      const password = String(event.target.querySelector('[name="password"]')?.value || '').trim();
-      if (!email || !password) return;
-
-      setStatus('Entrando...');
-      try {
-        await signIn({ email, password });
-        await boot();
-      } catch (error) {
-        setStatus(error?.message || 'Falha ao entrar', true);
-      }
-      return;
-    }
-
-    if (event.target.id === 'running-logForm') {
-      event.preventDefault();
-
-      const payload = {
-        workoutId: getFormValue(event.target, 'workoutId'),
-        completionState: getFormValue(event.target, 'completionState'),
-        sourceLabel: getFormValue(event.target, 'sourceLabel'),
-        title: getFormValue(event.target, 'title'),
-        sessionType: getFormValue(event.target, 'sessionType'),
-        distanceKm: getOptionalNumber(event.target, 'distanceKm'),
-        durationMin: getOptionalNumber(event.target, 'durationMin'),
-        avgPace: getFormValue(event.target, 'avgPace'),
-        targetPace: getFormValue(event.target, 'targetPace'),
-        zone: getFormValue(event.target, 'zone'),
-        notes: getFormValue(event.target, 'notes'),
-      };
-
-      setStatus('Registrando sessão...');
-      try {
-        await logRunningSession(payload);
-        await boot();
-        setStatus('Sessão de corrida registrada.');
-      } catch (error) {
-        setStatus(error?.message || 'Falha ao registrar sessão', true);
-      }
-    }
-  };
+  startAthleteModalityApp({
+    root,
+    sportType: 'running',
+    loadHistory: getRunningHistory,
+    logSession: logRunningSession,
+    renderLoading,
+    renderApp,
+    setStatus,
+    hydratePrefill: hydrateRunningLogForm,
+    buildLogPayload: (form) => ({
+      workoutId: getFormValue(form, 'workoutId'),
+      completionState: getFormValue(form, 'completionState'),
+      sourceLabel: getFormValue(form, 'sourceLabel'),
+      title: getFormValue(form, 'title'),
+      sessionType: getFormValue(form, 'sessionType'),
+      distanceKm: getOptionalNumber(form, 'distanceKm'),
+      durationMin: getOptionalNumber(form, 'durationMin'),
+      avgPace: getFormValue(form, 'avgPace'),
+      targetPace: getFormValue(form, 'targetPace'),
+      zone: getFormValue(form, 'zone'),
+      notes: getFormValue(form, 'notes'),
+    }),
+    getModel: () => runningModel,
+    setModel: (nextModel) => {
+      runningModel = nextModel;
+    },
+    getViewState: () => runningViewState,
+    setViewState: (nextViewState) => {
+      runningViewState = nextViewState;
+    },
+    prefillAttribute: 'data-running-prefill',
+    actionAttribute: 'data-running-action',
+    periodAttribute: 'data-running-period',
+    loginFormId: 'running-loginForm',
+    logFormId: 'running-logForm',
+    logSuccessMessage: 'Sessão de corrida registrada.',
+    historyKey: 'runningHistory',
+  });
 }
 
 function renderLoading() {
   root.innerHTML = `
     <main class="hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Running</div>
+        <div class="hub-kicker">Ryxen Running</div>
         <h1>Carregando seu contexto de corrida.</h1>
         <p class="hub-lead">Buscando sessão, feed do coach e histórico da modalidade.</p>
       </section>
@@ -146,7 +72,7 @@ function renderApp({ profile, dashboard, feed, runningHistory }) {
   root.innerHTML = `
     <main class="hub-shell">
       <section class="hub-hero">
-        <div class="hub-kicker">CrossApp Running</div>
+        <div class="hub-kicker">Ryxen Running</div>
         <h1>Corrida com feed do coach, agenda e histórico por modalidade.</h1>
         <p class="hub-lead">Aqui você recebe treinos de corrida, registra sessões concluídas e acompanha o volume da modalidade sem misturar com Cross ou Strength.</p>
         <div class="hub-actions">

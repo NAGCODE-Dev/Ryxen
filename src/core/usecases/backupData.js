@@ -20,11 +20,12 @@ export function exportAppBackup(state, metadata = {}) {
   }
 
   const payload = {
+    // Preserve backup type for backward compatibility with previously exported files.
     type: 'crossapp-backup',
     version: BACKUP_VERSION,
     exportedAt: new Date().toISOString(),
     metadata: {
-      app: 'CrossApp',
+      app: 'Ryxen',
       ...metadata,
     },
     data: {
@@ -42,7 +43,7 @@ export function exportAppBackup(state, metadata = {}) {
     success: true,
     data: payload,
     json,
-    filename: `crossapp-backup-${new Date().toISOString().slice(0, 10)}.json`,
+    filename: `ryxen-backup-${new Date().toISOString().slice(0, 10)}.json`,
   };
 }
 
@@ -82,7 +83,7 @@ export function importAppBackup(jsonString) {
   if (parsed.type !== 'crossapp-backup') {
     return {
       success: false,
-      error: 'Arquivo não é um backup do CrossApp',
+      error: 'Arquivo não é um backup do Ryxen',
       data: null,
     };
   }

@@ -1,4 +1,4 @@
-name: CrossApp CI
+name: Ryxen CI
 
 on:
   push:

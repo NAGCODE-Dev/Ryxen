@@ -1,5 +1,5 @@
 {
-  "name": "crossapp",
+  "name": "ryxen",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -20,10 +20,17 @@
     "generate:import-fixtures": "node scripts/generate-import-fixtures.mjs",
     "report:import-support": "node scripts/report-import-format-support.mjs",
     "test": "node --test __tests__/*.test.mjs",
+    "test:e2e": "playwright test --project=chromium",
     "smoke:auth": "node scripts/smoke-auth.mjs",
     "seed:coach-trial": "node scripts/seed-coach-trial.mjs",
     "smoke:coach-trial": "node scripts/smoke-coach-trial.mjs",
-    "seed:admin-playground": "node backend/scripts/seed-admin-playground.mjs"
+    "validate:stack": "bash scripts/validate-stack.sh",
+    "seed:admin-playground": "node backend/scripts/seed-admin-playground.mjs",
+    "docker:up": "bash scripts/docker-up.sh",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f --tail=200",
+    "docker:ps": "docker compose ps",
+    "deploy:prod": "vercel --prod"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
@@ -43,6 +50,7 @@
     "@types/node": "^25.5.2",
     "eslint": "^9.24.0",
     "globals": "^16.0.0",
+    "playwright": "^1.59.1",
     "vite": "^5.4.14"
   }
 }

@@ -12,7 +12,7 @@ if (!DATABASE_URL) {
 
 const ADMIN_EMAIL = String(process.env.CROSSAPP_ADMIN_EMAIL || 'nagcode.contact@gmail.com').trim().toLowerCase();
 const ADMIN_NAME = String(process.env.CROSSAPP_ADMIN_NAME || 'Nikolas Ayres').trim();
-const DEFAULT_PASSWORD = String(process.env.CROSSAPP_SEED_PASSWORD || 'CrossAppSeed123').trim();
+const DEFAULT_PASSWORD = String(process.env.CROSSAPP_SEED_PASSWORD || 'RyxenSeed123').trim();
 const GYM_COUNT = Math.max(1, Number(process.env.CROSSAPP_SEED_GYMS || 2));
 const ATHLETES_PER_GYM = Math.max(3, Number(process.env.CROSSAPP_SEED_ATHLETES_PER_GYM || 6));
 const COACHES_PER_GYM = Math.max(1, Number(process.env.CROSSAPP_SEED_COACHES_PER_GYM || 1));
@@ -51,8 +51,8 @@ async function main() {
     const today = new Date();
 
     for (let gymIndex = 1; gymIndex <= GYM_COUNT; gymIndex += 1) {
-      const gymName = `CrossApp Lab ${gymIndex}`;
-      const gymSlug = `crossapp-lab-${gymIndex}`;
+      const gymName = `Ryxen Lab ${gymIndex}`;
+      const gymSlug = `ryxen-lab-${gymIndex}`;
       const gym = await ensureGym(client, {
         ownerUserId: admin.id,
         gymName,
@@ -73,7 +73,7 @@ async function main() {
       const athleteMemberships = [];
 
       for (let coachIndex = 1; coachIndex <= COACHES_PER_GYM; coachIndex += 1) {
-        const coachEmail = `coach${gymIndex}.${coachIndex}@crossapp.local`;
+        const coachEmail = `coach${gymIndex}.${coachIndex}@ryxen.local`;
         const coach = await ensureUser(client, {
           email: coachEmail,
           name: `Coach ${gymIndex}.${coachIndex}`,
@@ -85,7 +85,7 @@ async function main() {
       }
 
       for (let athleteIndex = 1; athleteIndex <= ATHLETES_PER_GYM; athleteIndex += 1) {
-        const athleteEmail = `athlete${gymIndex}.${athleteIndex}@crossapp.local`;
+        const athleteEmail = `athlete${gymIndex}.${athleteIndex}@ryxen.local`;
         const athlete = await ensureUser(client, {
           email: athleteEmail,
           name: `Athlete ${gymIndex}.${athleteIndex}`,

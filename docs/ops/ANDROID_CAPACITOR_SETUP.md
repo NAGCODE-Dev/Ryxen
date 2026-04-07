@@ -32,3 +32,4 @@ com.nagcode.crossapp
 ```
 
 Se quiser publicar depois, troque para o identificador final antes de subir para a Play Store.
+Esse identificador continua legado por compatibilidade com o app Android já sincronizado. Se quiser publicar uma versão nova do Ryxen na Play Store, planeje a troca com migração explícita de package id.

@@ -1,6 +1,9 @@
-# CrossApp
+# Ryxen
 
 PWA para importar programação de treino, calcular cargas, manter PRs e operar offline com conta autenticada.
+
+Nota de compatibilidade:
+- variáveis `CROSSAPP_*`, chaves `crossapp-*`, nomes de banco/containers e alguns assets públicos continuam com prefixo legado para preservar installs já publicados, cache da PWA e integrações existentes durante a transição para `Ryxen`.
 
 ## Stack
 
@@ -34,9 +37,17 @@ PWA para importar programação de treino, calcular cargas, manter PRs e operar 
 
 ```text
 .
+├── apps/
+│   ├── athlete/
+│   ├── hub/
+│   ├── running/
+│   └── strength/
 ├── backend/
 │   └── src/
+├── coach-portal/
 ├── docs/
+├── packages/
+│   └── shared-web/
 ├── src/
 │   ├── adapters/
 │   ├── config/
@@ -50,6 +61,18 @@ PWA para importar programação de treino, calcular cargas, manter PRs e operar 
 ├── sw.js
 └── index.html
 ```
+
+## Direção de arquitetura
+
+- `apps/` concentra os entrypoints por superfície de produto
+- `packages/shared-web/` concentra contratos compartilhados de frontend
+- `coach-portal/` continua separado como portal operacional
+- `backend/` continua como API e núcleo de políticas/acesso
+
+Documento de alvo arquitetural:
+
+- `docs/ARCHITECTURE_TARGET.md`
+- `docs/REFACTOR_BACKLOG.md`
 
 ## Rodar local
 
@@ -69,6 +92,28 @@ Notas para desenvolvimento local com Docker:
 - O `docker-compose.yml` habilita `EXPOSE_RESET_CODE=true` por padrão para destravar fluxo de auth local com email de desenvolvimento.
 - Para simular produção localmente, rode `EXPOSE_RESET_CODE=false docker compose up -d`.
 - Nunca publique ambiente compartilhado ou produção com `EXPOSE_RESET_CODE=true`.
+
+Fluxo recomendado no projeto:
+
+```bash
+npm run docker:up
+```
+
+Comandos úteis:
+
+```bash
+npm run docker:ps
+npm run docker:logs
+npm run docker:down
+```
+
+Notas rápidas do fluxo Docker:
+
+- `npm run docker:up` faz um preflight simples e falha cedo se o daemon do Docker não estiver ativo.
+- O Compose já injeta as variáveis principais do backend, então `backend/.env` não é obrigatório para subir o stack.
+- Se quiser um arquivo de referência para ambiente Docker, use `backend/.env.docker.example`.
+- O backend no Docker usa o hostname `db`, não `localhost`.
+- Se alguma porta já estiver ocupada na sua máquina, troque via variáveis de ambiente ou use `.env.docker.example` como referência. Exemplo: `CROSSAPP_DB_PORT=5433 npm run docker:up`.
 
 ### Sem Docker
 
@@ -230,8 +275,8 @@ Rankings disponíveis:
 Portal separado em framework:
 
 - URL: `/coach/`
-- frontend: [coach/index.html](/home/nagc/Downloads/CrossApp/coach/index.html)
-- runtime: [coach/main.js](/home/nagc/Downloads/CrossApp/coach/main.js)
+- frontend: `coach/index.html`
+- runtime: `coach/main.js`
 
 ## Documentação complementar
 

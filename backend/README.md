@@ -1,4 +1,4 @@
-# CrossApp Backend
+# Ryxen Backend
 
 Backend Node + Postgres para:
 - autenticação
@@ -36,6 +36,7 @@ npm run start
 Com Docker, nenhuma configuração manual é necessária. O frontend usa `/api` por padrão e o nginx faz proxy para o backend.
 
 Se você quiser apontar para outro backend, ajuste o `config.js` ou as variáveis de build do frontend (`CROSSAPP_API_BASE_URL`).
+O prefixo `CROSSAPP_` permanece nas envs do frontend por compatibilidade com builds e automações já existentes.
 
 ## Teste rápido de assinatura (modo mock)
 

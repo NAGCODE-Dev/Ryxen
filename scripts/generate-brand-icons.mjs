@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 
 const root = process.cwd();
-const svgPath = path.join(root, 'icons', 'crossapp-mark.svg');
+const svgPath = path.join(root, 'icons', 'ryxen-mark.svg');
 const svgMarkup = await fs.readFile(svgPath, 'utf8');
 
 const pngOutputs = [

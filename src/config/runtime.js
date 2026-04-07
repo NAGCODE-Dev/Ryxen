@@ -3,11 +3,16 @@
  * Uses localStorage override + optional window.__CROSSAPP_CONFIG__.
  */
 
+// Preserve the CrossApp-prefixed key to keep existing installs and PWAs compatible.
 const STORAGE_KEY = 'crossapp-runtime-config';
 
 const defaults = {
   apiBaseUrl: '/api',
   nativeApiBaseUrl: '',
+  native: {
+    target: 'device',
+    emulatorApiBaseUrl: 'http://10.0.2.2:8787',
+  },
   telemetryEnabled: true,
   auth: {
     googleClientId: '',
@@ -22,7 +27,7 @@ const defaults = {
   app: {
     sport: 'cross',
     appName: 'Cross',
-    appLabel: 'CrossApp Cross',
+    appLabel: 'Ryxen Cross',
     hubUrl: '/index.html',
     rollout: {
       coreSports: ['cross'],
@@ -127,7 +132,14 @@ function resolveApiBaseUrl(config) {
   if (isNativePlatform()) {
     if (nativeApiBaseUrl) return nativeApiBaseUrl;
     if (isAbsoluteUrl(rawApiBaseUrl)) return rawApiBaseUrl;
-    if (rawApiBaseUrl === '/api') return 'http://10.0.2.2:8787';
+    if (rawApiBaseUrl === '/api') {
+      const nativeTarget = String(config?.native?.target || '').trim().toLowerCase();
+      const emulatorApiBaseUrl = String(config?.native?.emulatorApiBaseUrl || '').trim();
+      if (nativeTarget === 'emulator' && isAbsoluteUrl(emulatorApiBaseUrl)) {
+        return emulatorApiBaseUrl;
+      }
+      return '';
+    }
   }
 
   return rawApiBaseUrl;

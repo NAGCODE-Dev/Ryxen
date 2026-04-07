@@ -16,6 +16,8 @@ const filesToCopy = [
 ];
 
 const dirsToCopy = [
+  'apps',
+  'packages',
   'src',
   'icons',
   'sports',
@@ -26,6 +28,13 @@ const fileConfig = await loadFileConfig();
 const runtimeConfig = deepMerge(fileConfig, {
   apiBaseUrl: process.env.CROSSAPP_API_BASE_URL || '/api',
   nativeApiBaseUrl: process.env.CROSSAPP_NATIVE_API_BASE_URL || fileConfig?.nativeApiBaseUrl || process.env.CROSSAPP_API_BASE_URL || '',
+  native: {
+    target: process.env.CROSSAPP_NATIVE_TARGET || fileConfig?.native?.target || 'device',
+    emulatorApiBaseUrl:
+      process.env.CROSSAPP_NATIVE_EMULATOR_API_BASE_URL
+      || fileConfig?.native?.emulatorApiBaseUrl
+      || 'http://10.0.2.2:8787',
+  },
   telemetryEnabled: process.env.CROSSAPP_TELEMETRY_ENABLED !== 'false',
   auth: {
     googleClientId: process.env.CROSSAPP_GOOGLE_CLIENT_ID || fileConfig?.auth?.googleClientId || '',
@@ -113,15 +122,27 @@ function isObject(value) {
 function reportNativeApiResolution(config) {
   const apiBaseUrl = String(config?.apiBaseUrl || '').trim();
   const nativeApiBaseUrl = String(config?.nativeApiBaseUrl || '').trim();
-  const fallsBackToEmulator = apiBaseUrl === '/api' && !nativeApiBaseUrl;
+  const nativeTarget = String(config?.native?.target || '').trim().toLowerCase();
+  const emulatorApiBaseUrl = String(config?.native?.emulatorApiBaseUrl || '').trim();
 
-  if (!fallsBackToEmulator) return;
+  if (apiBaseUrl !== '/api' || nativeApiBaseUrl) return;
+
+  if (nativeTarget === 'emulator' && emulatorApiBaseUrl) {
+    console.warn(
+      [
+        '[build-static] aviso: build nativa configurada para emulador.',
+        `"/api" vai usar ${emulatorApiBaseUrl}.`,
+        'Para device real, defina CROSSAPP_NATIVE_API_BASE_URL com uma URL absoluta.',
+      ].join(' '),
+    );
+    return;
+  }
 
   console.warn(
     [
       '[build-static] aviso: build nativa sem backend absoluto configurado.',
-      'No Android, "/api" cai em http://10.0.2.2:8787 por padrão.',
-      'Se o APK precisa falar com o backend real, defina CROSSAPP_NATIVE_API_BASE_URL ou CROSSAPP_API_BASE_URL com URL absoluta.',
+      'Em device real, "/api" não será resolvido automaticamente.',
+      'Defina CROSSAPP_NATIVE_API_BASE_URL para produção/device ou CROSSAPP_NATIVE_TARGET=emulator para testes locais no Android emulator.',
     ].join(' '),
   );
 }

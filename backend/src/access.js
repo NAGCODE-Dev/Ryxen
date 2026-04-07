@@ -56,52 +56,106 @@ export async function getActiveSubscriptionForUser(userId) {
   };
 }
 
-export async function getAccessContextForGym(gymId) {
-  const gym = await getGymById(gymId);
-  if (!gym) return null;
+function buildDefaultOwnerSubscription() {
+  return {
+    plan_id: 'free',
+    status: 'inactive',
+    provider: 'mock',
+    renew_at: null,
+    updated_at: null,
+    isActive: false,
+    isExpired: true,
+    isGracePeriod: false,
+    graceUntil: null,
+    accessTier: 'blocked',
+    daysRemaining: 0,
+  };
+}
 
-  const ownerSubscription = await getActiveSubscriptionForUser(gym.owner_user_id);
-
+function buildGymAccessContext(gym, ownerSubscription) {
+  const resolvedOwnerSubscription = ownerSubscription || buildDefaultOwnerSubscription();
   return {
     gym,
-    ownerSubscription: ownerSubscription || {
-      plan_id: 'free',
-      status: 'inactive',
-      provider: 'mock',
-      renew_at: null,
-      updated_at: null,
-      isActive: false,
-      isExpired: true,
-      isGracePeriod: false,
-      graceUntil: null,
-      accessTier: 'blocked',
-      daysRemaining: 0,
-    },
+    ownerSubscription: resolvedOwnerSubscription,
     gymAccess: {
-      canCoachManage: ownerSubscription?.accessTier === 'active',
+      canCoachManage: resolvedOwnerSubscription.accessTier === 'active',
       canAthletesUseApp: true,
-      warning: resolveGymWarning(ownerSubscription),
+      warning: resolveGymWarning(resolvedOwnerSubscription),
     },
     athleteBenefits: getAthleteBenefitProfile({
-      ownerSubscription,
+      ownerSubscription: resolvedOwnerSubscription,
       canAthletesUseApp: true,
     }),
   };
 }
 
+export async function getAccessContextsForGymIds(gymIds = []) {
+  const uniqueGymIds = Array.from(new Set(
+    (Array.isArray(gymIds) ? gymIds : [])
+      .map((value) => Number(value))
+      .filter((value) => Number.isFinite(value)),
+  ));
+  if (!uniqueGymIds.length) return new Map();
+
+  const gymsRes = await pool.query(
+    `SELECT id, name, slug, owner_user_id
+     FROM gyms
+     WHERE id = ANY($1::int[])`,
+    [uniqueGymIds],
+  );
+  if (!gymsRes.rows.length) return new Map();
+
+  const ownerUserIds = Array.from(new Set(
+    gymsRes.rows
+      .map((gym) => Number(gym.owner_user_id))
+      .filter((value) => Number.isFinite(value)),
+  ));
+  const subscriptionsByOwnerId = new Map();
+
+  if (ownerUserIds.length) {
+    const subsRes = await pool.query(
+      `SELECT DISTINCT ON (user_id)
+         user_id,
+         id,
+         plan_id,
+         status,
+         provider,
+         renew_at,
+         updated_at
+       FROM subscriptions
+       WHERE user_id = ANY($1::int[])
+       ORDER BY user_id, updated_at DESC`,
+      [ownerUserIds],
+    );
+
+    for (const row of subsRes.rows) {
+      subscriptionsByOwnerId.set(row.user_id, {
+        ...row,
+        ...getSubscriptionAccessState(row),
+      });
+    }
+  }
+
+  return new Map(
+    gymsRes.rows.map((gym) => [
+      gym.id,
+      buildGymAccessContext(gym, subscriptionsByOwnerId.get(gym.owner_user_id) || null),
+    ]),
+  );
+}
+
+export async function getAccessContextForGym(gymId) {
+  const contexts = await getAccessContextsForGymIds([gymId]);
+  return contexts.get(Number(gymId)) || null;
+}
+
 export async function getAccessContextForUser(userId) {
   const memberships = await getUserMemberships(userId);
-  const contexts = await Promise.all(
-    memberships.map(async (membership) => {
-      const access = await getAccessContextForGym(membership.gym_id);
-      return {
-        membership,
-        access,
-      };
-    }),
-  );
-
-  return contexts;
+  const accessByGymId = await getAccessContextsForGymIds(memberships.map((membership) => membership.gym_id));
+  return memberships.map((membership) => ({
+    membership,
+    access: accessByGymId.get(membership.gym_id) || null,
+  }));
 }
 
 export function canManageGym(role) {

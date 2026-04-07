@@ -9,11 +9,10 @@ import {
   KIWIFY_PRODUCT_STARTER_ID,
   KIWIFY_WEBHOOK_TOKEN,
 } from '../config.js';
-import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
-import { getAccessContextForUser, getSubscriptionAccessState } from '../access.js';
-import { buildEntitlements } from '../accessPolicy.js';
+import { normalizeEmail } from '../devAccess.js';
 import { authRequired } from '../auth.js';
 import { getKiwifySaleById, isKiwifyNativeApiConfigured } from '../kiwifyApi.js';
+import { getBillingStatusSnapshot, getEntitlementsSnapshot, resolveFallbackBillingPlanId } from '../queries/billingQueries.js';
 import {
   extractKiwifyCustomerEmail as extractWebhookCustomerEmail,
   getKiwifyBillingAction as getWebhookBillingAction,
@@ -28,7 +27,6 @@ import {
 } from '../kiwifyWebhook.js';
 import {
   grantSubscriptionToUser,
-  normalizeSubscriptionPlanId,
   queueBillingClaim,
   queueBillingReversalClaim,
 } from '../utils/subscriptionBilling.js';
@@ -38,23 +36,8 @@ export function createBillingRouter() {
   const router = express.Router();
 
   router.get('/status', authRequired, async (req, res) => {
-    const row = await pool.query(
-      `SELECT plan_id, status, provider, renew_at, updated_at FROM subscriptions WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 1`,
-      [req.user.userId],
-    );
-    const latest = row.rows[0] || null;
-    const accessState = getSubscriptionAccessState(latest);
-    return res.json({
-      plan: latest?.plan_id || 'free',
-      status: latest?.status || 'inactive',
-      provider: latest?.provider || 'mock',
-      renewAt: latest?.renew_at || null,
-      updatedAt: latest?.updated_at || null,
-      accessTier: accessState.accessTier,
-      isGracePeriod: accessState.isGracePeriod,
-      graceUntil: accessState.graceUntil,
-      daysRemaining: accessState.daysRemaining,
-    });
+    const status = await getBillingStatusSnapshot(req.user.userId);
+    return res.json(status);
   });
 
   router.post('/checkout', authRequired, async (req, res) => {
@@ -104,7 +87,7 @@ export function createBillingRouter() {
     const sources = [payload, verifiedSale].filter(Boolean);
     const email = extractWebhookCustomerEmail(...sources);
     const resolvedPlanId = resolveWebhookPlanId(...sources);
-    const planId = resolvedPlanId || await resolveFallbackKiwifyPlanId({ email });
+    const planId = resolvedPlanId || await resolveFallbackBillingPlanId({ email });
     const externalRef = extractWebhookExternalRef(eventType, ...sources);
 
     if (!email || !planId || !externalRef) {
@@ -171,48 +154,11 @@ export function createBillingRouter() {
   });
 
   router.get('/entitlements', authRequired, async (req, res) => {
-    const row = await pool.query(
-      `SELECT plan_id, status, provider, renew_at, updated_at FROM subscriptions WHERE user_id=$1 ORDER BY updated_at DESC LIMIT 1`,
-      [req.user.userId],
-    );
-    const sub = row.rows[0];
-    const gymContexts = await getAccessContextForUser(req.user.userId);
-    const entitlements = buildEntitlements({ subscription: sub, gymContexts });
-    if (
-      isDeveloperEmail(req.user.email)
-      && sub?.status === 'active'
-      && sub?.provider === 'mock'
-      && ['starter', 'pro', 'coach', 'performance'].includes(String(sub?.plan_id || '').trim().toLowerCase())
-    ) {
-      entitlements.push('coach_portal');
-    }
-    const accessState = getSubscriptionAccessState(sub);
-
-    return res.json({
-      entitlements: Array.from(new Set(entitlements)),
-      subscription: {
-        plan: sub?.plan_id || 'free',
-        status: sub?.status || 'inactive',
-        provider: sub?.provider || 'mock',
-        renewAt: sub?.renew_at || null,
-        updatedAt: sub?.updated_at || null,
-        accessTier: accessState.accessTier,
-        isGracePeriod: accessState.isGracePeriod,
-        graceUntil: accessState.graceUntil,
-        daysRemaining: accessState.daysRemaining,
-      },
-      gymAccess: gymContexts.map((ctx) => ({
-        gymId: ctx.membership.gym_id,
-        gymName: ctx.membership.gym_name,
-        role: ctx.membership.role,
-        status: ctx.membership.status,
-        canCoachManage: ctx.access?.gymAccess?.canCoachManage || false,
-        canAthletesUseApp: ctx.access?.gymAccess?.canAthletesUseApp || false,
-        warning: ctx.access?.gymAccess?.warning || null,
-        accessTier: ctx.access?.ownerSubscription?.accessTier || 'blocked',
-        daysRemaining: ctx.access?.ownerSubscription?.daysRemaining || 0,
-      })),
+    const snapshot = await getEntitlementsSnapshot({
+      userId: req.user.userId,
+      email: req.user.email,
     });
+    return res.json(snapshot);
   });
 
   router.post('/mock/activate', authRequired, async (req, res) => {
@@ -399,35 +345,6 @@ function resolveKiwifyPlanId() {
   }
 
   return normalizeSubscriptionPlanId(productNames[0] || '');
-}
-
-async function resolveFallbackKiwifyPlanId({ email }) {
-  const normalizedEmail = normalizeEmail(email);
-  if (!normalizedEmail) return '';
-
-  const latestSubscriptionRes = await pool.query(
-    `SELECT s.plan_id
-     FROM subscriptions s
-     JOIN users u ON u.id = s.user_id
-     WHERE u.email = $1
-     ORDER BY COALESCE(s.renew_at, NOW()) DESC, s.updated_at DESC
-     LIMIT 1`,
-    [normalizedEmail],
-  );
-
-  const latestSubscriptionPlan = normalizeSubscriptionPlanId(latestSubscriptionRes.rows[0]?.plan_id || '');
-  if (latestSubscriptionPlan) return latestSubscriptionPlan;
-
-  const latestClaimRes = await pool.query(
-    `SELECT plan_id
-     FROM billing_claims
-     WHERE email = $1
-     ORDER BY updated_at DESC, created_at DESC
-     LIMIT 1`,
-    [normalizedEmail],
-  );
-
-  return normalizeSubscriptionPlanId(latestClaimRes.rows[0]?.plan_id || '');
 }
 
 async function tryVerifyKiwifySale(payload) {

@@ -3,24 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>CrossApp Coach Portal</title>
-  <meta name="theme-color" content="#111827">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css">
+  <title>Ryxen Coach</title>
+  <meta name="theme-color" content="#071427">
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background: #071427;
+      color: #f8fafc;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at top, rgba(59, 130, 246, 0.22), transparent 40%),
+        linear-gradient(180deg, #071427 0%, #020817 100%);
+      padding: 24px;
+    }
+    main {
+      width: min(520px, 100%);
+      background: rgba(7, 20, 39, 0.86);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 24px 80px rgba(2, 6, 23, 0.4);
+      backdrop-filter: blur(14px);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+    }
+    p {
+      margin: 0 0 16px;
+      line-height: 1.6;
+      color: #cbd5e1;
+    }
+    a {
+      color: #93c5fd;
+    }
+  </style>
 </head>
 <body>
-  <div id="coach-root"></div>
-  <script type="module" src="../config.js"></script>
-  <script type="importmap">
-    {
-      "imports": {
-        "@vercel/analytics": "https://esm.sh/@vercel/analytics@2.0.1",
-        "@vercel/speed-insights": "https://esm.sh/@vercel/speed-insights@2.0.0"
+  <main>
+    <h1>Coach Portal</h1>
+    <p id="coach-build-status">Preparando o build local do portal...</p>
+    <p>Se esta tela não redirecionar sozinha, rode <code>npm run build</code> e abra novamente <code>/coach/</code>.</p>
+  </main>
+  <script type="module">
+    const statusEl = document.getElementById('coach-build-status');
+    const buildUrl = new URL('../dist/coach/index.html', window.location.href);
+    buildUrl.search = window.location.search;
+    buildUrl.hash = window.location.hash;
+
+    try {
+      const response = await fetch(buildUrl, { method: 'HEAD', cache: 'no-store' });
+      if (response.ok) {
+        window.location.replace(buildUrl.toString());
+      } else if (statusEl) {
+        statusEl.textContent = 'Build do portal não encontrado ainda.';
+      }
+    } catch {
+      if (statusEl) {
+        statusEl.textContent = 'Não foi possível localizar o build local do portal.';
       }
     }
   </script>
-  <script type="module" src="./main.js"></script>
 </body>
 </html>

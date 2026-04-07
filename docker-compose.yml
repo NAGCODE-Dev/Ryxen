@@ -1,13 +1,14 @@
 services:
   db:
     image: postgres:16
+    # Container and database identifiers stay on the legacy name to avoid breaking existing local volumes and URLs.
     container_name: crossapp-postgres
     environment:
       POSTGRES_USER: crossapp
       POSTGRES_PASSWORD: crossapp
       POSTGRES_DB: crossapp
     ports:
-      - "5432:5432"
+      - "${CROSSAPP_DB_PORT:-5432}:5432"
     volumes:
       - crossapp_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,6 +20,7 @@ services:
 
   backend:
     image: node:20-alpine
+    # Container identifiers stay on the legacy name to avoid breaking existing local scripts and compose expectations.
     container_name: crossapp-backend
     working_dir: /app/backend
     volumes:
@@ -38,7 +40,7 @@ services:
       SMTP_SECURE: "false"
       SMTP_FROM: nagcode.contact@gmail.com
     ports:
-      - "8787:8787"
+      - "${CROSSAPP_BACKEND_PORT:-8787}:8787"
     restart: unless-stopped
     depends_on:
       db:
@@ -50,14 +52,14 @@ services:
     image: axllent/mailpit:latest
     container_name: crossapp-mailpit
     ports:
-      - "8025:8025"
+      - "${CROSSAPP_MAILPIT_PORT:-8025}:8025"
     restart: unless-stopped
 
   frontend:
     image: nginx:alpine
     container_name: crossapp-frontend
     ports:
-      - "8000:8000"
+      - "${CROSSAPP_FRONTEND_PORT:-8000}:8000"
     volumes:
       - ./:/usr/share/nginx/html:ro
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro

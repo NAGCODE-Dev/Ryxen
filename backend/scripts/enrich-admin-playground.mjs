@@ -59,7 +59,10 @@ async function main() {
       FROM users u
       JOIN gym_memberships gm ON gm.user_id = u.id
       JOIN gyms g ON g.id = gm.gym_id
-      WHERE u.email LIKE 'athlete%.%@crossapp.local'
+      WHERE (
+        u.email LIKE 'athlete%.%@crossapp.local'
+        OR u.email LIKE 'athlete%.%@ryxen.local'
+      )
         AND gm.role = 'athlete'
         AND gm.status = 'active'
       ORDER BY u.email ASC

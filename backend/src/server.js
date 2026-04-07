@@ -14,6 +14,7 @@ import { createAuthRouter } from './routes/authRoutes.js';
 import { createBillingRouter } from './routes/billingRoutes.js';
 import { createTelemetryRouter } from './routes/telemetryRoutes.js';
 import { createBenchmarkRouter } from './routes/benchmarkRoutes.js';
+import { createLeaderboardRouter } from './routes/leaderboardRoutes.js';
 import { createGymRouter } from './routes/gymRoutes.js';
 import { createAthleteRouter } from './routes/athleteRoutes.js';
 import { createAdminOpsRouter } from './routes/adminOpsRoutes.js';
@@ -46,6 +47,7 @@ app.use('/auth', createAuthRouter({ authRateLimit: AUTH_RATE_LIMIT, resetRateLim
 app.use('/billing', createBillingRouter());
 app.use('/telemetry', createTelemetryRouter({ telemetryRateLimit: TELEMETRY_RATE_LIMIT }));
 app.use('/benchmarks', createBenchmarkRouter({ resolveBenchmarkOrder }));
+app.use(createLeaderboardRouter());
 app.use(createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }));
 app.use(createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSeries }));
 app.use(createAdminOpsRouter());
@@ -53,7 +55,7 @@ app.use(createAdminOpsRouter());
 app.get('/', (_req, res) => {
   res.json({
     ok: true,
-    service: 'crossapp-backend',
+    service: 'ryxen-backend',
     status: 'online',
     health: '/health',
   });
@@ -63,7 +65,7 @@ app.get('/health', async (_req, res) => {
   await pool.query('SELECT 1');
   res.json({
     ok: true,
-    service: 'crossapp-backend',
+    service: 'ryxen-backend',
     uptimeSeconds: Math.round(process.uptime()),
     now: new Date().toISOString(),
   });

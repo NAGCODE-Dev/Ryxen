@@ -1,4 +1,4 @@
-# CrossApp - Sell Ready Checklist
+# Ryxen - Sell Ready Checklist
 
 ## 1. Produto (valor real)
 - Resolver dor principal com clareza: "economizar tempo no treino" + "calcular carga com segurança".

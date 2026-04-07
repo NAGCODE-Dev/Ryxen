@@ -1,0 +1,164 @@
+# Ryxen Refactor Backlog
+
+## Objetivo
+
+Sair de uma base web única com fronteiras implícitas e chegar em uma plataforma com superfícies claras:
+
+- athlete app
+- coach portal
+- hub público
+- backend por casos de uso
+- shared contracts reutilizáveis
+
+## Status geral
+
+- `done`
+  - entrypoints públicos separados em `apps/`
+  - `packages/shared-web/` criado para runtime/auth/api client
+  - coach portal migrado para shared runtime/auth
+  - runtime nativo endurecido para device real vs emulator
+  - coach portal buildado localmente, sem `esm.sh`
+  - service worker atualizado para app instalado
+  - `validate:stack` criado
+  - `running` e `strength` agora usam shell compartilhado de bootstrap/auth/feed
+- `in_progress`
+  - extração gradual de shared frontend além de auth/runtime
+  - redução do acoplamento do app do atleta ao `src/` legado
+  - separar backend por query services / write services
+  - separar `apps/athlete` como shell próprio e deixar `src/main.js` como compat layer
+- `pending`
+  - mover atleta principal para árvore de componentes mais previsível
+  - testar offline/PWA de forma explícita
+
+## Fase 1. Fronteiras do frontend
+
+- `done` Criar `apps/hub`, `apps/athlete`, `apps/running`, `apps/strength`
+- `done` Criar `packages/shared-web/runtime.js`
+- `done` Criar `packages/shared-web/auth.js`
+- `done` Criar `packages/shared-web/api-client.js`
+- `done` Direcionar `index.html` e `sports/*` para `apps/`
+- `done` Atualizar build estático para copiar `apps/` e `packages/`
+- `done` Atualizar service worker para cachear novas fronteiras
+
+## Fase 2. Shared athlete surfaces
+
+- `done` Criar `packages/shared-web/athlete-services.js`
+- `done` Criar `packages/shared-web/modality-shell.js`
+- `done` Migrar `sports/running/main.js` para o shell compartilhado
+- `done` Migrar `sports/strength/main.js` para o shell compartilhado
+- `pending` Extrair componentes utilitários comuns de `running` e `strength`
+- `pending` Mover `running` e `strength` para `apps/athlete/sports/*`
+- `pending` Criar shared layout do atleta para modalidades derivadas
+
+## Fase 3. Athlete app principal
+
+- `done` Separar `src/main.js` em shell do atleta vs bridge legado
+- `in_progress` Tirar `src/ui/ui.js` do papel de orquestrador global
+- `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
+- `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
+- `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
+- `in_progress` Tirar `src/ui/render.js` do papel de dono das modais secundárias do atleta
+- `in_progress` Tirar `src/ui/render.js` do papel de dono dos helpers visuais compartilhados do atleta
+- `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do ambiente/observabilidade/diagnóstico
+- `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do pipeline de inicialização do atleta
+- `done` Extrair domínios centrais do núcleo legado do atleta:
+  - `src/app/workoutDomain.js`
+  - `src/app/accountSyncDomain.js`
+  - `src/app/authDomain.js`
+  - `src/app/importExportDomain.js`
+  - `src/app/coachFeedDomain.js`
+  - `src/app/localSessionDomain.js`
+  - `src/app/athleteInteractionDomain.js`
+- `in_progress` Revisar `src/app.js` para ficar como composição + init + bridge
+  - `done` remover imports mortos e wrappers redundantes
+  - `done` extrair `coach/billing access` para `src/app/coachPortalDomain.js`
+  - `done` extrair `history/measurements/workouts overview` para `src/app/athleteOverviewDomain.js`
+  - `done` extrair `billing actions` para `apps/athlete/actions/billingActions.js`
+  - `done` extrair fachada de hidratação para `apps/athlete/services/athleteHydration.js`
+  - `pending` extrair wiring restante de medidas da UI
+- `in_progress` Cobrir domínios novos com testes unitários dedicados
+  - `done` `athleteOverviewDomain`
+  - `done` `checkoutFlow`
+- `pending` Extrair domínio do atleta restante:
+  - wiring de medidas na UI
+  - orquestração final de account/history fora de `src/ui/actions.js`
+  - consolidar estados vazios compartilhados entre UI e testes
+- `pending` Converter render manual/string para componentes por fatias
+- `pending` Definir camada offline-first explícita:
+  - snapshot local
+  - fila de sync
+  - reidratação
+  - fallback visual por estado de rede
+
+## Fase 4. Coach portal
+
+- `done` Coach consumindo shared auth/runtime
+- `pending` Extrair `coach api client` próprio
+- `pending` Separar módulos do portal:
+  - gyms
+  - memberships
+  - groups
+  - workouts
+  - benchmarks
+  - leaderboards
+  - billing
+- `pending` Introduzir cache local mínimo para rascunho/estado operacional
+- `pending` Cobrir coach com smoke/E2E além do login básico
+
+## Fase 5. Backend por casos de uso
+
+- `done` Criar query services dedicados:
+  - `backend/src/queries/athleteDashboardQueries.js`
+  - `backend/src/queries/coachDashboardQueries.js`
+- `done` Criar query services dedicados:
+  - `backend/src/queries/billingQueries.js`
+  - `backend/src/queries/leaderboardQueries.js`
+- `pending` Criar write services dedicados:
+  - workouts publish
+  - memberships
+  - groups
+  - athlete logs
+  - subscriptions
+- `in_progress` Reduzir acoplamento entre rotas e regras de acesso
+- `pending` Consolidar contratos de resposta por superfície
+- `in_progress` Reduzir recomputação no frontend com endpoints mais específicos
+- `done` Expor `GET /leaderboards/benchmarks/:slug` consumido pelo coach portal
+- `done` Expor `POST /benchmarks/:slug/results` para registro de resultado autenticado
+
+## Fase 6. Mobile/PWA/APK
+
+- `done` Runtime nativo explícito
+- `done` Service worker melhorado para app instalado
+- `pending` Estratégia separada para:
+  - PWA no browser
+  - Android emulator
+  - Android real
+  - iOS real
+- `pending` Testes de cenários offline
+- `pending` Medição de cold start e hydration em device
+- `pending` rever fontes externas e dependências de rede remota restantes
+
+## Fase 7. Observabilidade e testes
+
+- `done` `validate:stack`
+- `in_progress` Cobrir domínios novos do atleta com testes unitários dedicados
+  - `done` `athleteInteractionDomain`
+  - `done` `authDomain`
+  - `done` `workoutDomain`
+  - `done` `accountSyncDomain`
+  - `done` `coachFeedDomain`
+  - `done` `importExportDomain`
+  - `done` ampliar casos de borda para sync offline, imports inválidos e fallback do feed do coach
+  - `pending` ampliar falhas remotas e conflitos de merge
+- `pending` adicionar `smoke:coach-trial` ao pipeline de stack
+- `pending` E2E de atleta autenticado
+- `pending` E2E de coach autenticado
+- `pending` testes de offline/PWA
+- `pending` métricas de render por superfície
+- `pending` métricas de request por módulo de produto
+
+## Próximos melhores blocos de execução
+
+1. Retomar a extração dos domínios restantes do atleta: medidas, histórico e conta/billing.
+2. Ampliar falhas remotas e conflitos de merge em `accountSyncDomain`, `importExportDomain` e `coachFeedDomain`.
+3. Adicionar `smoke:coach-trial` ao pipeline de stack para validar o ambiente completo com mais realismo.

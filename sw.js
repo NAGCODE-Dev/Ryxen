@@ -1,19 +1,29 @@
 /**
  * Service Worker
- * Versão: 3.4.0
+ * Versão: 3.5.0
  */
 
-const CACHE_NAME = 'crossapp-v3-4';
+// Cache version bumped on rebrand so installed PWAs refresh brand assets cleanly.
+const CACHE_NAME = 'ryxen-v4-0';
 const CORE_ASSETS = [
   './',
   './index.html',
+  './coach/index.html',
   './sports/cross/index.html',
   './sports/running/index.html',
   './sports/strength/index.html',
   './manifest.json',
+  './config.js',
+  './apps/hub/main.js',
+  './apps/athlete/main.js',
+  './apps/running/main.js',
+  './apps/strength/main.js',
   './privacy.html',
   './terms.html',
   './support.html',
+  './packages/shared-web/runtime.js',
+  './packages/shared-web/auth.js',
+  './packages/shared-web/api-client.js',
   './src/hub/main.js',
   './src/hub/styles.css',
   './sports/running/main.js',
@@ -22,17 +32,16 @@ const CORE_ASSETS = [
   './src/core/services/apiClient.js',
   './src/core/services/authService.js',
   './src/core/services/subscriptionService.js',
-  './src/core/services/syncService.js',
   './src/core/services/telemetryService.js',
   './src/core/usecases/backupData.js',
   './src/adapters/media/ocrReader.js',
   './src/adapters/media/videoTextReader.js',
   './src/libs/pdf.mjs',
   './src/libs/pdf.worker.mjs',
-  './branding/exports/crossapp-icon-32.png',
-  './branding/exports/crossapp-icon-180.png',
-  './branding/exports/crossapp-icon-192.png',
-  './branding/exports/crossapp-icon-512.png',
+  './branding/exports/ryxen-icon-32.png',
+  './branding/exports/ryxen-icon-180.png',
+  './branding/exports/ryxen-icon-192.png',
+  './branding/exports/ryxen-icon-512.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -51,43 +60,63 @@ self.addEventListener('activate', (event) => {
         .filter((cacheName) => cacheName !== CACHE_NAME)
         .map((cacheName) => caches.delete(cacheName)),
     );
+    if (self.registration?.navigationPreload?.enable) {
+      await self.registration.navigationPreload.enable();
+    }
     await self.clients.claim();
   })());
 });
 
 self.addEventListener('fetch', (event) => {
-  const { request } = event;
+  const responsePromise = resolveFetchResponse(event.request, event);
+  if (responsePromise) {
+    event.respondWith(responsePromise);
+  }
+});
+
+function resolveNavigationFallback(pathname = '/') {
+  if (pathname.startsWith('/coach')) return './coach/index.html';
+  if (pathname.startsWith('/sports/running')) return './sports/running/index.html';
+  if (pathname.startsWith('/sports/strength')) return './sports/strength/index.html';
+  if (pathname.startsWith('/sports/cross')) return './sports/cross/index.html';
+  return './index.html';
+}
+
+function resolveFetchResponse(request, event) {
   const url = new URL(request.url);
 
-  if (request.method !== 'GET') return;
-  if (url.origin !== self.location.origin) return;
+  if (!isCacheableRequest(request, url)) return null;
 
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(networkOnly(request));
-    return;
+  if (isApiRequest(url)) {
+    return networkOnly(request);
   }
 
-  // Navegação: network-first com fallback para shell
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request, './index.html'));
-    return;
+    return networkFirst(request, {
+      fallbackUrl: resolveNavigationFallback(url.pathname),
+      preloadResponsePromise: event?.preloadResponse,
+      prefersHtml: true,
+    });
   }
 
-  // Módulos/scripts devem priorizar rede para evitar mismatch entre imports ESM.
   if (isScriptLikeAsset(request)) {
-    event.respondWith(networkFirst(request));
-    return;
+    return staleWhileRevalidate(request);
   }
 
-  // Estáticos restantes: stale-while-revalidate
   if (isStaticAsset(request)) {
-    event.respondWith(staleWhileRevalidate(request));
-    return;
+    return staleWhileRevalidate(request);
   }
 
-  // API/JSON/outros: network-first com fallback cache
-  event.respondWith(networkFirst(request));
-});
+  return networkFirst(request);
+}
+
+function isApiRequest(url) {
+  return url.pathname.startsWith('/api/');
+}
+
+function isCacheableRequest(request, url) {
+  return request.method === 'GET' && url.origin === self.location.origin;
+}
 
 self.addEventListener('message', (event) => {
   if (!event.data) return;
@@ -134,12 +163,20 @@ async function staleWhileRevalidate(request) {
     })
     .catch(() => null);
 
-  return cached || networkPromise || offlineResponse();
+  return cached || networkPromise || offlineResponse({ request });
 }
 
-async function networkFirst(request, fallbackUrl) {
+async function networkFirst(request, options = {}) {
+  const { fallbackUrl = '', preloadResponsePromise = null, prefersHtml = false } = options;
   const cache = await caches.open(CACHE_NAME);
   try {
+    if (preloadResponsePromise) {
+      const preloadResponse = await preloadResponsePromise;
+      if (isCacheable(preloadResponse)) {
+        cache.put(request, preloadResponse.clone());
+        return preloadResponse;
+      }
+    }
     const response = await fetch(request);
     if (isCacheable(response)) {
       cache.put(request, response.clone());
@@ -152,7 +189,7 @@ async function networkFirst(request, fallbackUrl) {
     }
 
     const cached = await cache.match(request);
-    return cached || offlineResponse();
+    return cached || offlineResponse({ request, prefersHtml });
   }
 }
 
@@ -160,7 +197,7 @@ async function networkOnly(request) {
   try {
     return await fetch(request);
   } catch {
-    return offlineResponse('Sem conexão com a API.');
+    return offlineResponse({ request, message: 'Sem conexão com a API.' });
   }
 }
 
@@ -168,10 +205,42 @@ function isCacheable(response) {
   return response && response.status === 200 && (response.type === 'basic' || response.type === 'cors');
 }
 
-function offlineResponse(message = 'Offline - conteúdo indisponível.') {
+function offlineResponse({ request = null, message = 'Offline - conteúdo indisponível.', prefersHtml = false } = {}) {
+  const accept = String(request?.headers?.get?.('accept') || '').toLowerCase();
+  const wantsJson = accept.includes('application/json');
+  const wantsHtml = prefersHtml || accept.includes('text/html');
+
+  if (wantsJson) {
+    return new Response(JSON.stringify({ error: message, offline: true }), {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    });
+  }
+
+  if (wantsHtml) {
+    return new Response(
+      `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Ryxen Offline</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#071427;color:#f8fafc;font-family:system-ui,sans-serif}main{max-width:440px;background:rgba(7,20,39,.88);border:1px solid rgba(148,163,184,.16);border-radius:24px;padding:28px;box-shadow:0 24px 80px rgba(2,6,23,.35)}h1{margin:0 0 12px;font-size:1.9rem}p{margin:0 0 14px;line-height:1.6;color:#cbd5e1}</style></head><body><main><h1>Sem conexão</h1><p>${escapeHtml(message)}</p><p>Abra novamente quando a internet voltar. O app continua disponível com o conteúdo já salvo em cache.</p></main></body></html>`,
+      {
+        status: 503,
+        statusText: 'Service Unavailable',
+        headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      },
+    );
+  }
+
   return new Response(message, {
     status: 503,
     statusText: 'Service Unavailable',
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   });
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 }

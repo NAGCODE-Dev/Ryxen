@@ -55,6 +55,7 @@ export async function apiRequest(path, options = {}) {
 
 export function setAuthToken(token) {
   try {
+    // Keep legacy auth token key so users stay signed in after the rebrand.
     localStorage.setItem('crossapp-auth-token', token || '');
   } catch {
     // no-op

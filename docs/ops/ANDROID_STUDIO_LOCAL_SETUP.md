@@ -1,5 +1,8 @@
 # Android Studio Local Setup
 
+Nota:
+- o branding do produto é `Ryxen`, mas o callback `crossapp://` e as envs `CROSSAPP_*` continuam legados por compatibilidade com o app nativo atual.
+
 Guia objetivo para rodar o app Android no emulador com comportamento o mais próximo possível do PWA.
 
 ## 1. Backend local

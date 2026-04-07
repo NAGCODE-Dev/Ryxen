@@ -1,5 +1,8 @@
 # Deploy recomendado sem custo inicial
 
+Nota:
+- as variáveis `CROSSAPP_*` abaixo continuam com prefixo legado para preservar compatibilidade com o pipeline atual de build.
+
 Arquitetura recomendada para validar o produto sem custo imediato:
 
 1. Frontend atleta + Coach Portal: `Vercel`
