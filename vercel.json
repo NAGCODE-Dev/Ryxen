@@ -1,5 +1,6 @@
 {
   "outputDirectory": "dist",
+  "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
   "headers": [
     {
       "source": "/sw.js",
