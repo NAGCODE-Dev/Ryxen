@@ -19,6 +19,7 @@ const dirsToCopy = [
   'apps',
   'packages',
   'src',
+  'branding',
   'icons',
   'sports',
 ];

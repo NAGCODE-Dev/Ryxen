@@ -1,27 +1,27 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="markBg" x1="84" y1="78" x2="428" y2="434" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#0B1B31"/>
+    <linearGradient id="ryxenTile" x1="68" y1="58" x2="444" y2="456" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0F223D"/>
       <stop offset="1" stop-color="#071427"/>
     </linearGradient>
-    <linearGradient id="markC" x1="118" y1="104" x2="344" y2="402" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#59D1FF"/>
+    <linearGradient id="ryxenBlue" x1="132" y1="118" x2="340" y2="342" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7BE1FF"/>
       <stop offset="1" stop-color="#2F8FFF"/>
     </linearGradient>
-    <linearGradient id="markX" x1="244" y1="144" x2="362" y2="336" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFBE55"/>
-      <stop offset="1" stop-color="#FF8A2A"/>
+    <linearGradient id="ryxenOrange" x1="250" y1="286" x2="376" y2="408" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFC56B"/>
+      <stop offset="1" stop-color="#FF8230"/>
     </linearGradient>
-    <filter id="markShadow" x="42" y="42" width="428" height="428" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#02060C" flood-opacity="0.22"/>
+    <filter id="ryxenShadow" x="30" y="30" width="452" height="452" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="16" stdDeviation="14" flood-color="#02060C" flood-opacity="0.24"/>
     </filter>
   </defs>
-  <rect x="36" y="36" width="440" height="440" rx="124" fill="#040C17"/>
-  <g filter="url(#markShadow)">
-    <rect x="60" y="60" width="392" height="392" rx="106" fill="url(#markBg)"/>
-    <rect x="60.75" y="60.75" width="390.5" height="390.5" rx="105.25" stroke="#FFFFFF" stroke-opacity="0.05"/>
-    <path d="M334 148C304 126 267 116 226 116C145 116 106 174 106 256C106 338 145 396 226 396C267 396 304 386 334 364" stroke="url(#markC)" stroke-width="32" stroke-linecap="round"/>
-    <path d="M242 146L352 330" stroke="url(#markX)" stroke-width="26" stroke-linecap="square"/>
-    <path d="M348 146L238 330" stroke="url(#markX)" stroke-width="26" stroke-linecap="square"/>
+  <rect x="36" y="36" width="440" height="440" rx="132" fill="#040C17"/>
+  <g filter="url(#ryxenShadow)">
+    <rect x="60" y="60" width="392" height="392" rx="112" fill="url(#ryxenTile)"/>
+    <rect x="61" y="61" width="390" height="390" rx="111" stroke="#FFFFFF" stroke-opacity="0.06" stroke-width="2"/>
+    <path d="M156 120V392" stroke="url(#ryxenBlue)" stroke-width="52" stroke-linecap="round"/>
+    <path d="M156 146H258C313 146 356 182 356 232C356 281 313 318 258 318H156" stroke="url(#ryxenBlue)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M248 292L368 392" stroke="url(#ryxenOrange)" stroke-width="48" stroke-linecap="round"/>
   </g>
 </svg>

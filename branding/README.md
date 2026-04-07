@@ -13,9 +13,6 @@ Base vetorial oficial da identidade do Ryxen.
 - `ryxen-logo-black.svg`
   - Versão monocromática escura para fundos claros.
 
-Observação:
-- os nomes de arquivo ainda usam `crossapp-*` para evitar quebrar paths públicos já publicados no app, PWA e assets exportados durante a transição para Ryxen.
-
 ## Paleta
 
 - fundo principal: `#071427`

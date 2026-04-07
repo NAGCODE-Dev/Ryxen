@@ -87,7 +87,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
       <section class="hub-hero">
         <div class="hub-heroGrid">
           <div class="hub-heroMain">
-            <img class="hub-wordmark" src="/icons/ryxen-wordmark.svg" alt="Ryxen">
+            <img class="hub-wordmark" src="/branding/ryxen-logo-horizontal.svg" alt="Ryxen">
             <div class="hub-kicker">Ryxen para atleta e coach</div>
             <h1>Importe treino, acompanhe evolução e centralize a rotina do box no mesmo ecossistema.</h1>
             <p class="hub-lead">

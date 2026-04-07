@@ -1,15 +1,15 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="symbolC" x1="118" y1="104" x2="344" y2="402" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#59D1FF"/>
+    <linearGradient id="symbolBlue" x1="132" y1="118" x2="340" y2="342" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7BE1FF"/>
       <stop offset="1" stop-color="#2F8FFF"/>
     </linearGradient>
-    <linearGradient id="symbolX" x1="244" y1="144" x2="362" y2="336" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFBE55"/>
-      <stop offset="1" stop-color="#FF8A2A"/>
+    <linearGradient id="symbolOrange" x1="250" y1="286" x2="376" y2="408" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFC56B"/>
+      <stop offset="1" stop-color="#FF8230"/>
     </linearGradient>
   </defs>
-  <path d="M334 148C304 126 267 116 226 116C145 116 106 174 106 256C106 338 145 396 226 396C267 396 304 386 334 364" stroke="url(#symbolC)" stroke-width="32" stroke-linecap="round"/>
-  <path d="M242 146L352 330" stroke="url(#symbolX)" stroke-width="26" stroke-linecap="square"/>
-  <path d="M348 146L238 330" stroke="url(#symbolX)" stroke-width="26" stroke-linecap="square"/>
+  <path d="M156 120V392" stroke="url(#symbolBlue)" stroke-width="52" stroke-linecap="round"/>
+  <path d="M156 146H258C313 146 356 182 356 232C356 281 313 318 258 318H156" stroke="url(#symbolBlue)" stroke-width="52" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M248 292L368 392" stroke="url(#symbolOrange)" stroke-width="48" stroke-linecap="round"/>
 </svg>

@@ -359,125 +359,118 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     const action = el.dataset.action;
 
     try {
-      switch (action) {
-        default: {
-          const handledByAthleteModal = await handleAthleteModalAction(action, {
-            element: el,
-            toast,
-            getUiState,
-            applyUiState,
-            applyUiPatch,
-            isImportBusy,
-          });
-          if (handledByAthleteModal) return;
+      if (action === 'exercise:help') {
+        const label = String(el.dataset.exercise || '').trim();
+        const directUrl = String(el.dataset.url || '').trim();
+        const fallbackUrl = label
+          ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${label} exercise tutorial`)}` 
+          : '';
+        const url = directUrl || fallbackUrl;
+        if (!url) throw new Error('Vídeo de execução indisponível para este movimento');
 
-          const handledByAthleteAuth = await handleAthleteAuthAction(action, {
-            element: el,
-            root,
-            getUiState,
-            applyUiState,
-            applyUiPatch,
-            getAppBridge,
-            invalidateHydrationCache,
-            shouldHydratePage,
-            hydratePage,
-            maybeResumePendingCheckout: resumePendingCheckout,
-            isDeveloperEmail,
-          });
-          if (handledByAthleteAuth) return;
-
-          const handledByAthleteBilling = await handleAthleteBillingAction(action, {
-            element: el,
-            getUiState,
-            applyUiPatch,
-            finalizeUiChange,
-            hydratePage,
-            invalidateHydrationCache,
-            getAppBridge,
-            normalizeCheckoutPlan,
-            hasCheckoutAuth,
-            queueCheckoutIntent,
-            isDeveloperProfile,
-          });
-          if (handledByAthleteBilling) return;
-
-          const handledByAthletePage = await handleAthleteAccountHistoryAction(action, {
-            element: el,
-            root,
-            getUiState,
-            applyUiState,
-            applyUiPatch,
-            finalizeUiChange,
-            hydratePage,
-            shouldHydratePage,
-            invalidateHydrationCache,
-            getAppBridge,
-            maybeResumePendingCheckout: resumePendingCheckout,
-            emptyCoachPortal: createEmptyCoachPortalState,
-            emptyAthleteOverview: createEmptyAthleteOverviewState,
-          });
-          if (handledByAthletePage) return;
-
-          const handledByAthleteToday = await handleAthleteTodayAction(action, {
-            element: el,
-            root,
-            toast,
-            getUiState,
-            applyUiState,
-            applyUiPatch,
-            finalizeUiChange,
-            renderUi,
-            setUiState,
-            getAppBridge,
-            readAppState,
-            isImportBusy,
-            idleImportStatus,
-            guardAthleteImport,
-            prepareImportFileForClientUse,
-            pickJsonFile,
-            pickPdfFile,
-            pickUniversalFile,
-            explainImportFailure,
-            formatBytes,
-            IMPORT_HARD_MAX_BYTES,
-            IMAGE_COMPRESS_THRESHOLD_BYTES,
-            IMAGE_TARGET_MAX_BYTES,
-            IMAGE_MAX_DIMENSION,
-            workoutKeyFromAppState,
-            getActiveLineIdFromUi,
-            getLineIdsFromDOM,
-            pickNextId,
-            pickPrevId,
-            scrollToLine,
-            syncAthletePrIfAuthenticated,
-            invalidateHydrationCache,
-            hydrateAthleteSummary,
-            hydrateAthleteResultsBlock,
-            startRestTimer,
-            consumeAthleteImport,
-          });
-          if (handledByAthleteToday) return;
+        const popup = window.open(url, '_blank', 'noopener,noreferrer');
+        if (!popup) {
+          window.location.href = url;
         }
-
-        case 'exercise:help': {
-          const label = String(el.dataset.exercise || '').trim();
-          const directUrl = String(el.dataset.url || '').trim();
-          const fallbackUrl = label
-            ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${label} exercise tutorial`)}` 
-            : '';
-          const url = directUrl || fallbackUrl;
-          if (!url) throw new Error('Vídeo de execução indisponível para este movimento');
-
-          const popup = window.open(url, '_blank', 'noopener,noreferrer');
-          if (!popup) {
-            window.location.href = url;
-          }
-          return;
-        }
-
-        default:
-          return;
+        return;
       }
+
+      const handledByAthleteModal = await handleAthleteModalAction(action, {
+        element: el,
+        toast,
+        getUiState,
+        applyUiState,
+        applyUiPatch,
+        isImportBusy,
+      });
+      if (handledByAthleteModal) return;
+
+      const handledByAthleteAuth = await handleAthleteAuthAction(action, {
+        element: el,
+        root,
+        getUiState,
+        applyUiState,
+        applyUiPatch,
+        getAppBridge,
+        invalidateHydrationCache,
+        shouldHydratePage,
+        hydratePage,
+        maybeResumePendingCheckout: resumePendingCheckout,
+        isDeveloperEmail,
+      });
+      if (handledByAthleteAuth) return;
+
+      const handledByAthleteBilling = await handleAthleteBillingAction(action, {
+        element: el,
+        getUiState,
+        applyUiPatch,
+        finalizeUiChange,
+        hydratePage,
+        invalidateHydrationCache,
+        getAppBridge,
+        normalizeCheckoutPlan,
+        hasCheckoutAuth,
+        queueCheckoutIntent,
+        isDeveloperProfile,
+      });
+      if (handledByAthleteBilling) return;
+
+      const handledByAthletePage = await handleAthleteAccountHistoryAction(action, {
+        element: el,
+        root,
+        getUiState,
+        applyUiState,
+        applyUiPatch,
+        finalizeUiChange,
+        hydratePage,
+        shouldHydratePage,
+        invalidateHydrationCache,
+        getAppBridge,
+        maybeResumePendingCheckout: resumePendingCheckout,
+        emptyCoachPortal: createEmptyCoachPortalState,
+        emptyAthleteOverview: createEmptyAthleteOverviewState,
+      });
+      if (handledByAthletePage) return;
+
+      const handledByAthleteToday = await handleAthleteTodayAction(action, {
+        element: el,
+        root,
+        toast,
+        getUiState,
+        applyUiState,
+        applyUiPatch,
+        finalizeUiChange,
+        renderUi,
+        setUiState,
+        getAppBridge,
+        readAppState,
+        isImportBusy,
+        idleImportStatus,
+        guardAthleteImport,
+        prepareImportFileForClientUse,
+        pickJsonFile,
+        pickPdfFile,
+        pickUniversalFile,
+        explainImportFailure,
+        formatBytes,
+        IMPORT_HARD_MAX_BYTES,
+        IMAGE_COMPRESS_THRESHOLD_BYTES,
+        IMAGE_TARGET_MAX_BYTES,
+        IMAGE_MAX_DIMENSION,
+        workoutKeyFromAppState,
+        getActiveLineIdFromUi,
+        getLineIdsFromDOM,
+        pickNextId,
+        pickPrevId,
+        scrollToLine,
+        syncAthletePrIfAuthenticated,
+        invalidateHydrationCache,
+        hydrateAthleteSummary,
+        hydrateAthleteResultsBlock,
+        startRestTimer,
+        consumeAthleteImport,
+      });
+      if (handledByAthleteToday) return;
     } catch (err) {
       toast(err?.message || 'Erro');
       console.error(err);
