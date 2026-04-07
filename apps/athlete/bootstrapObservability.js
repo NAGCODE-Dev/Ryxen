@@ -11,7 +11,20 @@ export function setupErrorMonitoring() {
 
 export function setupVercelObservability() {
   if (window.__CROSSAPP_VERCEL_OBSERVABILITY__ || !navigator.onLine) return;
+  window.__RYXEN_VERCEL_OBSERVABILITY__ = true;
   window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
+  injectVercelScript('/_vercel/insights/script.js');
+  injectVercelScript('/_vercel/speed-insights/script.js');
+}
+
+function injectVercelScript(src) {
+  if (!src) return;
+  if (document.querySelector(`script[src="${src}"]`)) return;
+  const script = document.createElement('script');
+  script.src = src;
+  script.defer = true;
+  script.dataset.ryxenObservability = 'true';
+  document.head.appendChild(script);
 }
 
 export function setupGlobalTelemetryHandlers() {

@@ -12,6 +12,7 @@ const LEGACY_ENTRY_TARGET_KEY = 'crossapp-entry-target';
 boot();
 
 function boot() {
+  setupVercelObservability();
   initAuxiliaryBrowserLayer();
   initNativeBackHandling();
 
@@ -42,6 +43,24 @@ function boot() {
   root.innerHTML = renderHub({ sports, availableSports, lastSport: selectedSport, lastSportUrl, coachUrl });
   bindEvents(root, sports);
   markHubAsSeen();
+}
+
+function setupVercelObservability() {
+  if (window.__RYXEN_VERCEL_OBSERVABILITY__ || window.__CROSSAPP_VERCEL_OBSERVABILITY__) return;
+  window.__RYXEN_VERCEL_OBSERVABILITY__ = true;
+  window.__CROSSAPP_VERCEL_OBSERVABILITY__ = true;
+  injectVercelScript('/_vercel/insights/script.js');
+  injectVercelScript('/_vercel/speed-insights/script.js');
+}
+
+function injectVercelScript(src) {
+  if (!src) return;
+  if (document.querySelector(`script[src="${src}"]`)) return;
+  const script = document.createElement('script');
+  script.src = src;
+  script.defer = true;
+  script.dataset.ryxenObservability = 'true';
+  document.head.appendChild(script);
 }
 
 function bindEvents(root, sports) {
