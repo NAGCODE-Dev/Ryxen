@@ -41,7 +41,7 @@
     "@sentry/browser": "^8.33.1",
     "@vercel/analytics": "^2.0.1",
     "@vercel/speed-insights": "^2.0.0",
-    "react": "^18.3.1",
+    "react": "^19.2.4",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
