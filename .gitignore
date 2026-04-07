@@ -1,6 +1,5 @@
 # Dependências (se adicionar futuramente)
 node_modules/
-package-lock.json
 
 # Editor
 .vscode/
