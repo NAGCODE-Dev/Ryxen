@@ -122,6 +122,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair guest auth, reset de senha e painel admin de `apps/athlete/modals/authModalSections.js` para módulos dedicados
   - `done` extrair biblioteca/inferência de execução de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutExerciseHelp.js`
   - `done` extrair linhas especiais de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutSpecialLines.js`
+  - `done` extrair linha padrão de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutStandardLine.js`
 - `pending` Definir camada offline-first explícita:
   - snapshot local
   - fila de sync
