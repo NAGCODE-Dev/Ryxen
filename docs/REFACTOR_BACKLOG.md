@@ -90,6 +90,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair handlers de importação e app bus de `apps/athlete/features/events/bindings.js` para módulos dedicados
   - `done` extrair fluxos de importação e PRs de `apps/athlete/actions/todayActions.js` para módulos dedicados
   - `done` extrair navegação do WOD e `handleAthleteTodayChange` de `apps/athlete/actions/todayActions.js` para `apps/athlete/actions/todayUiActions.js`
+  - `done` extrair importação de arquivo e transferências de treino/backup de `apps/athlete/actions/todayImportActions.js` para módulos dedicados
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais secundárias do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono dos helpers visuais compartilhados do atleta
 - `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do ambiente/observabilidade/diagnóstico
