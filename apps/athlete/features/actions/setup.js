@@ -49,13 +49,13 @@ import {
 import {
   normalizeCheckoutPlan,
 } from '../account/services.js';
-import { createGoogleSignInHelpers } from '../account/googleSignIn.js';
 import {
   routeAthleteClickAction,
 } from './setupHelpers.js';
 import { createAthleteClickContext } from './setupClickContext.js';
 import { queueAthleteCheckoutBootstrap } from './setupBootstrap.js';
 import { createAthleteSetupFlowBindings } from './setupFlowBindings.js';
+import { createAthleteGoogleBindings } from './setupGoogleBindings.js';
 import { createAthleteImportBindings } from './setupImportBindings.js';
 import {
   registerAthleteAuthKeyListeners,
@@ -102,10 +102,9 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     emptyCoachPortal: createEmptyCoachPortalState,
     emptyAthleteOverview: createEmptyAthleteOverviewState,
   });
-  ({ ensureGoogleSignInUi } = createGoogleSignInHelpers({
+  ({ ensureGoogleSignInUi } = createAthleteGoogleBindings({
     root,
     getUiState,
-    getAppBridge,
     applyUiState,
     toast,
     invalidateHydrationCache,

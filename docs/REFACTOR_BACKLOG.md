@@ -73,6 +73,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` separar helpers de UI e bootstrap de `apps/athlete/features/actions/setupHelpers.js` para módulos dedicados
   - `done` extrair hidratação e retomada de checkout de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupFlowBindings.js`
   - `done` extrair guard/check de importação de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupImportBindings.js`
+  - `done` extrair a configuração do Google Sign-In de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupGoogleBindings.js`
   - `done` extrair roteamento de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` separar sub-roteadores de click de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/clickRoutes.js`
   - `done` extrair registro de listeners de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
