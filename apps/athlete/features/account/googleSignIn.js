@@ -1,3 +1,6 @@
+import { createGoogleCredentialHandler } from './googleSignInFlow.js';
+import { createGoogleScriptLoader, isNativeAppRuntime } from './googleSignInInfra.js';
+
 export function createGoogleSignInHelpers({
   root,
   getUiState,
@@ -9,49 +12,18 @@ export function createGoogleSignInHelpers({
   hydratePage,
   resumePendingCheckout,
 }) {
-  let googleScriptPromise = null;
   let googleInitializedClientId = '';
-
-  function isNativeAppRuntime() {
-    try {
-      if (window.Capacitor?.isNativePlatform?.()) return true;
-      const protocol = String(window.location?.protocol || '').toLowerCase();
-      return protocol === 'capacitor:' || protocol === 'file:' || (protocol === 'https:' && window.location?.hostname === 'localhost');
-    } catch {
-      return false;
-    }
-  }
-
-  async function loadGoogleScript() {
-    if (!navigator.onLine) {
-      throw new Error('Google Sign-In indisponível offline');
-    }
-    if (window.google?.accounts?.id) return window.google;
-    if (googleScriptPromise) return googleScriptPromise;
-
-    googleScriptPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-google-gsi="1"]');
-      if (existing) {
-        const checkReady = () => {
-          if (window.google?.accounts?.id) resolve(window.google);
-          else window.setTimeout(checkReady, 80);
-        };
-        checkReady();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.dataset.googleGsi = '1';
-      script.onload = () => resolve(window.google);
-      script.onerror = () => reject(new Error('Não foi possível carregar o Google Sign-In'));
-      document.head.appendChild(script);
-    });
-
-    return googleScriptPromise;
-  }
+  const loadGoogleScript = createGoogleScriptLoader();
+  const handleGoogleCredentialResponse = createGoogleCredentialHandler({
+    getAppBridge,
+    invalidateHydrationCache,
+    applyUiState,
+    getUiState,
+    shouldHydratePage,
+    hydratePage,
+    resumePendingCheckout,
+    toast,
+  });
 
   async function ensureGoogleSignInUi() {
     const ui = getUiState?.() || {};
@@ -102,29 +74,7 @@ export function createGoogleSignInHelpers({
     if (googleInitializedClientId !== clientId) {
       googleApi.accounts.id.initialize({
         client_id: clientId,
-        callback: async (response) => {
-          try {
-            const result = await getAppBridge()?.signInWithGoogle?.({ credential: response.credential });
-            if (!result?.token && !result?.user) {
-              throw new Error('Falha ao autenticar com Google');
-            }
-
-            const signedProfile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
-            invalidateHydrationCache();
-            await applyUiState(
-              { modal: null, authMode: 'signin' },
-              { toastMessage: 'Login com Google efetuado' },
-            );
-            const currentPage = getUiState?.()?.currentPage || 'today';
-            if (shouldHydratePage(currentPage)) {
-              hydratePage(signedProfile, currentPage, null);
-            }
-            if (await resumePendingCheckout()) return;
-          } catch (error) {
-            toast(error?.message || 'Erro ao entrar com Google');
-            console.error(error);
-          }
-        },
+        callback: handleGoogleCredentialResponse,
         auto_select: false,
         cancel_on_tap_outside: true,
         itp_support: true,
