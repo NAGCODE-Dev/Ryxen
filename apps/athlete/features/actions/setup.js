@@ -58,11 +58,7 @@ import { createAthleteSetupFlowBindings } from './setupFlowBindings.js';
 import { createAthleteGoogleBindings } from './setupGoogleBindings.js';
 import { createAthleteImportBindings } from './setupImportBindings.js';
 import {
-  registerAthleteAuthKeyListeners,
-  registerAthleteChangeListeners,
-  registerAthleteClickListeners,
-  registerAthleteInputListeners,
-  registerAthleteModalListeners,
+  registerAthleteSetupListeners,
 } from './setupListeners.js';
 import { createAthleteUiActions } from './setupUiHelpers.js';
 
@@ -112,17 +108,6 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     hydratePage,
     resumePendingCheckout,
   }));
-
-  registerAthleteInputListeners({
-    root,
-    filterAthletePrs,
-  });
-
-  registerAthleteAuthKeyListeners({
-    root,
-    getUiState,
-    handleAthleteAuthEnterKey,
-  });
 
   const clickContext = createAthleteClickContext({
     root,
@@ -176,34 +161,25 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     consumeAthleteImport,
   });
 
-  registerAthleteClickListeners({
+  registerAthleteSetupListeners({
     root,
     toast,
+    getUiState,
+    filterAthletePrs,
+    handleAthleteAuthEnterKey,
     clickContext,
     routeAthleteClickAction,
-  });
-
-  registerAthleteChangeListeners({
-    root,
-    toast,
     applyUiPatch,
     finalizeUiChange,
     handleAthleteTodayChange,
+    isImportBusy,
+    handleAthleteModalOverlayClick,
+    handleAthleteModalEscapeKey,
   });
 
   queueAthleteCheckoutBootstrap({
     applyUiPatch,
     getEnsureGoogleSignInUi: () => ensureGoogleSignInUi,
     maybeResumePendingCheckout: resumePendingCheckout,
-  });
-
-  registerAthleteModalListeners({
-    root,
-    toast,
-    getUiState,
-    applyUiPatch,
-    isImportBusy,
-    handleAthleteModalOverlayClick,
-    handleAthleteModalEscapeKey,
   });
 }
