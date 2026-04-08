@@ -68,6 +68,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair helpers de bridge/UI e bootstrap de checkout de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` extrair roteamento de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` extrair registro de listeners de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
+  - `done` separar registro de listeners de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/setupListeners.js`
   - `done` extrair fluxos de reset de senha de `apps/athlete/features/account/authActions.js` para `apps/athlete/features/account/authResetActions.js`
   - `done` extrair switch/signup/login de `apps/athlete/features/account/authActions.js` para `apps/athlete/features/account/authFlowActions.js`
   - `done` extrair ações admin de `apps/athlete/features/account/pageActions.js` para `apps/athlete/features/account/adminActions.js`

@@ -70,12 +70,14 @@ import { createGoogleSignInHelpers } from '../account/googleSignIn.js';
 import {
   createAthleteUiActions,
   queueAthleteCheckoutBootstrap,
+  routeAthleteClickAction,
+} from './setupHelpers.js';
+import {
   registerAthleteAuthKeyListeners,
   registerAthleteChangeListeners,
   registerAthleteInputListeners,
   registerAthleteModalListeners,
-  routeAthleteClickAction,
-} from './setupHelpers.js';
+} from './setupListeners.js';
 
 export function setupAthleteActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
