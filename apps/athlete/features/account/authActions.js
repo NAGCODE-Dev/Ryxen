@@ -1,14 +1,7 @@
-function emptyPasswordResetState(overrides = {}) {
-  return {
-    open: false,
-    email: '',
-    code: '',
-    previewCode: '',
-    previewUrl: '',
-    supportEmail: '',
-    ...overrides,
-  };
-}
+import {
+  createEmptyPasswordResetState,
+  handleAthletePasswordResetAction,
+} from './authResetActions.js';
 
 export async function handleAthleteAuthAction(action, context) {
   const {
@@ -25,6 +18,12 @@ export async function handleAthleteAuthAction(action, context) {
     isDeveloperEmail,
   } = context;
 
+  const handledByReset = await handleAthletePasswordResetAction(action, {
+    ...context,
+    isDeveloperEmail,
+  });
+  if (handledByReset) return true;
+
   switch (action) {
     case 'auth:switch': {
       const mode = element.dataset.mode === 'signup' ? 'signup' : 'signin';
@@ -32,7 +31,7 @@ export async function handleAthleteAuthAction(action, context) {
         (state) => ({
           ...state,
           authMode: mode,
-          passwordReset: emptyPasswordResetState(),
+          passwordReset: createEmptyPasswordResetState(),
           signupVerification: mode === 'signup'
             ? (state.signupVerification || {})
             : {},
@@ -118,96 +117,6 @@ export async function handleAthleteAuthAction(action, context) {
         hydratePage(profile, currentPage, null);
       }
       if (await maybeResumePendingCheckout()) return true;
-      return true;
-    }
-
-    case 'auth:reset-toggle': {
-      await applyUiPatch(
-        (state) => ({
-          ...state,
-          passwordReset: {
-            ...(state.passwordReset || {}),
-            open: !(state.passwordReset?.open),
-            step: state.passwordReset?.open ? 'request' : (state.passwordReset?.step || 'request'),
-          },
-        }),
-        { ensureGoogle: true },
-      );
-      if (!(getUiState?.()?.passwordReset?.open)) return true;
-      root.querySelector('#reset-email')?.focus();
-      return true;
-    }
-
-    case 'auth:reset-request': {
-      const currentReset = getUiState?.()?.passwordReset || {};
-      const cooldownUntil = Number(currentReset?.cooldownUntil || 0);
-      const remainingMs = cooldownUntil - Date.now();
-      if (remainingMs > 0) {
-        throw new Error(`Aguarde ${Math.ceil(remainingMs / 1000)}s para gerar outro código`);
-      }
-
-      const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
-      if (!email) throw new Error('Informe o email da conta');
-
-      const result = await getAppBridge().requestPasswordReset({ email });
-      const showDeveloperPreview = isDeveloperEmail(email);
-      const requestedAt = Date.now();
-      await applyUiPatch(
-        (state) => ({
-          ...state,
-          passwordReset: {
-            ...(state.passwordReset || {}),
-            open: true,
-            step: 'confirm',
-            email,
-            code: '',
-            requestedAt: new Date(requestedAt).toISOString(),
-            deliveryStatus: result?.deliveryStatus || 'sent',
-            message: showDeveloperPreview && result?.previewCode
-              ? 'Código gerado em preview.'
-              : 'Código enviado para seu email. Use o mais recente.',
-            cooldownUntil: requestedAt + 30_000,
-            previewCode: showDeveloperPreview ? (result?.previewCode || '') : '',
-            previewUrl: showDeveloperPreview ? (result?.delivery?.previewUrl || '') : '',
-            supportEmail: result?.supportEmail || '',
-          },
-        }),
-        {
-          toastMessage: showDeveloperPreview && result?.previewCode ? 'Código gerado' : 'Código enviado para seu email',
-          ensureGoogle: true,
-          focusSelector: '#reset-code',
-        },
-      );
-      return true;
-    }
-
-    case 'auth:reset-confirm': {
-      const email = String(root.querySelector('#reset-email')?.value || '').trim().toLowerCase();
-      const code = String(root.querySelector('#reset-code')?.value || '').trim();
-      const newPassword = String(root.querySelector('#reset-newPassword')?.value || '');
-
-      if (!email || !code || !newPassword) {
-        throw new Error('Preencha email, código e nova senha');
-      }
-
-      const result = await getAppBridge().confirmPasswordReset({ email, code, newPassword });
-      if (!result?.success) throw new Error(result?.error || 'Falha ao redefinir senha');
-
-      await applyUiPatch(
-        (state) => ({
-          ...state,
-          authMode: 'signin',
-          passwordReset: emptyPasswordResetState({
-            step: 'request',
-            email,
-            message: 'Senha atualizada. Entre com a nova senha.',
-            requestedAt: '',
-            cooldownUntil: 0,
-            deliveryStatus: '',
-          }),
-        }),
-        { toastMessage: 'Senha atualizada', ensureGoogle: true, focusSelector: '#auth-email' },
-      );
       return true;
     }
 
