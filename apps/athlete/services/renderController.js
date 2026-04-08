@@ -4,7 +4,7 @@ import {
 import {
   safeGetAthleteAppState,
   safeGetAthleteProfile,
-} from './uiController.js';
+} from './uiControllerHelpers.js';
 
 export function createAthleteRenderController({
   refs,
