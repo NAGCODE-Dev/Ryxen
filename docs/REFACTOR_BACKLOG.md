@@ -110,6 +110,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair overview, session card e workout header de `apps/athlete/features/today/page.js` para `apps/athlete/features/today/sections.js`
   - `done` extrair folds de visitante/acesso/portal/atividade de `apps/athlete/features/account/page.js` para `apps/athlete/features/account/sections.js`
   - `done` extrair hero, summary e coach access do modal autenticado para `apps/athlete/modals/authAccountSections.js`
+  - `done` extrair guest auth, reset de senha e painel admin de `apps/athlete/modals/authModalSections.js` para módulos dedicados
 - `pending` Definir camada offline-first explícita:
   - snapshot local
   - fila de sync
