@@ -135,6 +135,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair hero, summary e coach access do modal autenticado para `apps/athlete/modals/authAccountSections.js`
   - `done` extrair guest auth, reset de senha e painel admin de `apps/athlete/modals/authModalSections.js` para módulos dedicados
   - `done` separar as views autenticada e guest de `apps/athlete/modals/authModalSections.js` para módulos dedicados
+  - `done` extrair intro e empty state de `apps/athlete/features/today/page.js` para `apps/athlete/features/today/chrome.js`
   - `done` extrair biblioteca/inferência de execução de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutExerciseHelp.js`
   - `done` extrair linhas especiais de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutSpecialLines.js`
   - `done` extrair linha padrão de `apps/athlete/renderers/workoutBlock.js` para `apps/athlete/renderers/workoutStandardLine.js`
