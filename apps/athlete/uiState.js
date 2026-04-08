@@ -35,6 +35,13 @@ export function createEmptyCoachPortalState() {
   };
 }
 
+export function createEmptyAdminState() {
+  return {
+    overview: null,
+    query: '',
+  };
+}
+
 export function normalizeAthleteUiState(state) {
   const next = { ...(state || {}) };
 
@@ -55,7 +62,8 @@ export function normalizeAthleteUiState(state) {
     ? next.importStatus
     : { active: false, tone: 'idle', title: '', message: '', fileName: '', step: 'idle' };
   if (typeof next.importStatus.step !== 'string') next.importStatus.step = 'idle';
-  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : { overview: null };
+  next.admin = next.admin && typeof next.admin === 'object' ? next.admin : createEmptyAdminState();
+  if (typeof next.admin.query !== 'string') next.admin.query = '';
   next.athleteOverview = next.athleteOverview && typeof next.athleteOverview === 'object'
     ? next.athleteOverview
     : createEmptyAthleteOverviewState();

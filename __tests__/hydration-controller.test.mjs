@@ -2,41 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { createHydrationController } from '../src/app/hydration.js';
-
-function emptyCoachPortal() {
-  return {
-    subscription: null,
-    entitlements: [],
-    gymAccess: [],
-    gyms: [],
-    selectedGymId: null,
-    status: 'idle',
-    error: '',
-  };
-}
-
-function emptyAthleteOverview() {
-  return {
-    detailLevel: 'none',
-    stats: null,
-    recentResults: [],
-    recentWorkouts: [],
-    benchmarkHistory: [],
-    prHistory: [],
-    prCurrent: {},
-    measurements: [],
-    runningHistory: [],
-    strengthHistory: [],
-    gymAccess: [],
-    personalSubscription: null,
-    athleteBenefits: null,
-    blocks: {
-      summary: { status: 'idle', error: '' },
-      results: { status: 'idle', error: '' },
-      workouts: { status: 'idle', error: '' },
-    },
-  };
-}
+import {
+  createEmptyAthleteOverviewState as emptyAthleteOverview,
+  createEmptyCoachPortalState as emptyCoachPortal,
+} from '../apps/athlete/state/uiState.js';
 
 function createControllerFixture() {
   let uiState = {

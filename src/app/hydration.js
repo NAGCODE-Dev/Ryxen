@@ -1,5 +1,6 @@
 import { createCoachPortalDomain } from './coachPortalDomain.js';
 import { createAthleteOverviewDomain } from './athleteOverviewDomain.js';
+import { createEmptyAdminState } from '../../apps/athlete/uiState.js';
 
 export function createHydrationController({
   getUiState,
@@ -88,7 +89,7 @@ export function createHydrationController({
   }
 
   async function loadAdminSnapshot() {
-    return { overview: null, query: '' };
+    return createEmptyAdminState();
   }
 
   async function hydrateCoachBlock(profile, selectedGymId = null, { force = false } = {}) {

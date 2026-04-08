@@ -41,6 +41,15 @@ export function createImportExportDomain({
   applyPreferredWorkout,
   reprocessActiveWeek,
 }) {
+  async function safeSyncImportedPlan(weeks, metadata) {
+    try {
+      return await syncImportedPlanToAccount(weeks, metadata);
+    } catch (error) {
+      console.warn('Falha ao sincronizar plano importado com a conta:', error?.message || error);
+      return { success: false, queued: true, error };
+    }
+  }
+
   async function handleImportPRsFromCSV(csvString, merge = true) {
     const parseResult = importPRsFromCSV(csvString);
 
@@ -166,7 +175,7 @@ export function createImportExportDomain({
       setState({ weeks });
 
       await selectActiveWeek(weeks[0].weekNumber);
-      await syncImportedPlanToAccount(weeks, result.data.metadata);
+      await safeSyncImportedPlan(weeks, result.data.metadata);
 
       emit('pdf:uploaded', {
         fileName: file.name,
@@ -299,7 +308,7 @@ export function createImportExportDomain({
       setState({ weeks });
       const weekResult = await selectActiveWeek(weeks[0].weekNumber);
       if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
-      await syncImportedPlanToAccount(weeks, saveResult.data.metadata);
+      await safeSyncImportedPlan(weeks, saveResult.data.metadata);
 
       emit('media:uploaded', {
         fileName: file.name,
@@ -438,7 +447,7 @@ export function createImportExportDomain({
     if (weeks.length > 0) {
       const preferredWeek = backup?.activeWeekNumber || weeks[0].weekNumber;
       await selectActiveWeek(preferredWeek);
-      await syncImportedPlanToAccount(weeks, {
+      await safeSyncImportedPlan(weeks, {
         uploadedAt: new Date().toISOString(),
         fileName: options.fileName || 'backup-importado',
         fileSize: 0,

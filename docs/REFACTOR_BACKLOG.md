@@ -55,8 +55,16 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
 - `done` Separar `src/main.js` em shell do atleta vs bridge legado
 - `in_progress` Tirar `src/ui/ui.js` do papel de orquestrador global
 - `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
+- `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
+  - `done` extrair fluxo de Google Sign-In para `apps/athlete/features/account/googleSignIn.js`
+  - `done` extrair guard/check de importação para `apps/athlete/features/import/guards.js`
+  - `done` extrair handler `exercise:help` para `apps/athlete/features/actions/router.js`
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
+- `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
+  - `done` mover implementação para `apps/athlete/features/render/shell.js` e manter `src/ui/render.js` como compat layer
 - `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
+- `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
+  - `done` mover binding de eventos de importação para `apps/athlete/features/events/bindings.js` com wrapper legado
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais secundárias do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono dos helpers visuais compartilhados do atleta
 - `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do ambiente/observabilidade/diagnóstico
@@ -73,16 +81,16 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` remover imports mortos e wrappers redundantes
   - `done` extrair `coach/billing access` para `src/app/coachPortalDomain.js`
   - `done` extrair `history/measurements/workouts overview` para `src/app/athleteOverviewDomain.js`
-  - `done` extrair `billing actions` para `apps/athlete/actions/billingActions.js`
+  - `done` consolidar `billing actions` em `apps/athlete/features/billing/actions.js` (mantendo compat re-export)
   - `done` extrair fachada de hidratação para `apps/athlete/services/athleteHydration.js`
-  - `pending` extrair wiring restante de medidas da UI
+  - `done` extrair wiring restante de medidas da UI para `apps/athlete/features/measurements/services.js`
 - `in_progress` Cobrir domínios novos com testes unitários dedicados
   - `done` `athleteOverviewDomain`
   - `done` `checkoutFlow`
 - `pending` Extrair domínio do atleta restante:
-  - wiring de medidas na UI
-  - orquestração final de account/history fora de `src/ui/actions.js`
-  - consolidar estados vazios compartilhados entre UI e testes
+  - `done` wiring de medidas na UI (`apps/athlete/features/measurements/services.js`)
+  - `done` orquestração final de account/history consolidada em `apps/athlete/features/account/*` (com compat re-export)
+  - `done` consolidar estados vazios compartilhados entre UI e testes (`apps/athlete/uiState.js`)
 - `pending` Converter render manual/string para componentes por fatias
 - `pending` Definir camada offline-first explícita:
   - snapshot local
@@ -159,8 +167,8 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` `coachFeedDomain`
   - `done` `importExportDomain`
   - `done` ampliar casos de borda para sync offline, imports inválidos e fallback do feed do coach
-  - `pending` ampliar falhas remotas e conflitos de merge
-- `pending` adicionar `smoke:coach-trial` ao pipeline de stack
+  - `done` ampliar falhas remotas/conflitos de sync em `accountSyncDomain`, `importExportDomain` e `coachFeedDomain`
+- `done` adicionar `smoke:coach-trial` ao pipeline de stack (`scripts/validate-stack.sh`)
 - `pending` E2E de atleta autenticado
 - `pending` E2E de coach autenticado
 - `pending` testes de offline/PWA
@@ -170,5 +178,5 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
 ## Próximos melhores blocos de execução
 
 1. Retomar a extração dos domínios restantes do atleta: medidas, histórico e conta/billing.
-2. Ampliar falhas remotas e conflitos de merge em `accountSyncDomain`, `importExportDomain` e `coachFeedDomain`.
-3. Adicionar `smoke:coach-trial` ao pipeline de stack para validar o ambiente completo com mais realismo.
+2. Validar os novos cenários de falha remota em pipeline (`validate:stack`) e em execução local de smoke.
+3. Seguir extraindo fatias remanescentes para reduzir `src/ui/actions.js` e `src/ui/render.js` ao papel de compat layer.

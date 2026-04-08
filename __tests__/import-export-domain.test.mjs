@@ -179,3 +179,49 @@ test('handleImportBackup sem arquivo retorna erro amigável e não altera estado
   assert.deepEqual(state, initialState);
   assert.deepEqual(emitted, []);
 });
+
+test('handleUniversalImport mantém sucesso local mesmo com falha de sync remoto', async () => {
+  const parsedWeeks = [
+    {
+      weekNumber: 4,
+      workouts: [{ day: 'Segunda', sections: [{ type: 'warmup', lines: ['row 8 min'] }] }],
+    },
+  ];
+  const selected = [];
+  const { domain } = createDomain({
+    saveParsedWeeks: async () => ({
+      success: true,
+      data: {
+        parsedWeeks,
+        metadata: { uploadedAt: '2026-04-08T10:00:00.000Z' },
+      },
+    }),
+    selectActiveWeek: async (weekNumber) => {
+      selected.push(weekNumber);
+      return { success: true };
+    },
+    syncImportedPlanToAccount: async () => {
+      throw new Error('remote timeout');
+    },
+  });
+
+  const file = {
+    name: 'week-4.json',
+    type: 'application/json',
+    size: 120,
+    async text() {
+      return JSON.stringify({
+        version: '1.0.0',
+        weekNumber: 4,
+        day: 'Segunda',
+        sections: [{ type: 'warmup', lines: ['row 8 min'] }],
+      });
+    },
+  };
+
+  const result = await domain.handleUniversalImport(file);
+
+  assert.equal(result.success, true);
+  assert.equal(result.source, 'structured-json');
+  assert.deepEqual(selected, [4]);
+});
