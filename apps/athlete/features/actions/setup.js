@@ -1,10 +1,5 @@
 import { isDeveloperEmail, isDeveloperProfile } from '../../../../src/core/utils/devAccess.js';
-import {
-  canConsumeAthleteImport,
-  consumeAthleteImport,
-  getAthleteImportUsage,
-  normalizeAthleteBenefits,
-} from '../../../../src/core/services/athleteBenefitUsage.js';
+import { consumeAthleteImport } from '../../../../src/core/services/athleteBenefitUsage.js';
 import { getAppBridge } from '../../../../src/app/bridge.js';
 import {
   handleAthleteAccountHistoryAction,
@@ -37,10 +32,6 @@ import {
   prepareImportFileForClientUse,
 } from '../import/services.js';
 import {
-  createAthleteImportGuard,
-  createImportBusyChecker,
-} from '../import/guards.js';
-import {
   cssEscape,
   getActiveLineIdFromUi,
   getLineIdsFromDOM,
@@ -65,6 +56,7 @@ import {
 import { createAthleteClickContext } from './setupClickContext.js';
 import { queueAthleteCheckoutBootstrap } from './setupBootstrap.js';
 import { createAthleteSetupFlowBindings } from './setupFlowBindings.js';
+import { createAthleteImportBindings } from './setupImportBindings.js';
 import {
   registerAthleteAuthKeyListeners,
   registerAthleteChangeListeners,
@@ -92,13 +84,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     getEnsureGoogleSignInUi: () => ensureGoogleSignInUi,
   });
 
-  const guardAthleteImport = createAthleteImportGuard({
-    getAppBridge,
-    normalizeAthleteBenefits,
-    getAthleteImportUsage,
-    canConsumeAthleteImport,
-  });
-  const isImportBusy = createImportBusyChecker(getUiState);
+  const { guardAthleteImport, isImportBusy } = createAthleteImportBindings({ getUiState });
 
   const {
     shouldHydratePage,
