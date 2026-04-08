@@ -288,3 +288,53 @@ test('flushPendingSyncOutbox envia snapshots pendentes quando a rede volta e lim
   assert.deepEqual(calls.measurements, [[{ type: 'weight', value: 82 }]]);
   assert.deepEqual(JSON.parse(localStorage.getItem(SYNC_OUTBOX_KEY)), []);
 });
+
+test('flushPendingSyncOutbox mantém fila quando sync remoto falha', async () => {
+  const SYNC_OUTBOX_KEY = 'sync-outbox';
+  const localStorage = createLocalStorageMock({
+    [SYNC_OUTBOX_KEY]: JSON.stringify([
+      { kind: 'pr_snapshot', payload: { squat: 155 } },
+      { kind: 'measurement_snapshot', payload: [{ type: 'weight', value: 82 }] },
+    ]),
+  });
+
+  const domain = createAccountSyncDomain({
+    getState: () => ({ preferences: {} }),
+    setState: () => {},
+    windowObject: { localStorage, addEventListener: () => {} },
+    navigatorObject: { onLine: true },
+    prefsStorage: createMemoryStorage(),
+    activeWeekStorage: createMemoryStorage(),
+    pdfStorage: createMemoryStorage(),
+    pdfMetaStorage: createMemoryStorage(),
+    dayOverrideStorage: createMemoryStorage(),
+    PDF_KEY: 'pdf',
+    METADATA_KEY: 'meta',
+    APP_STATE_SYNC_KEY: 'app-state-sync',
+    SYNC_OUTBOX_KEY,
+    handleGetProfile: () => ({ data: { id: 'athlete-1' } }),
+    handleGetAppStateSnapshot: async () => ({}),
+    handleSaveAppStateSnapshot: async () => ({}),
+    handleGetImportedPlanSnapshot: async () => ({}),
+    handleSaveImportedPlanSnapshot: async () => ({}),
+    remoteHandleSyncAthleteMeasurementsSnapshot: async () => ({ success: true }),
+    remoteHandleSyncAthletePrSnapshot: async () => {
+      throw new Error('timeout');
+    },
+    loadParsedWeeks: async () => ({ success: false }),
+    selectActiveWeek: async () => ({}),
+    setCustomDay: async () => ({}),
+    resetToAutoDay: async () => ({}),
+    logDebug: () => {},
+  });
+
+  const result = await domain.flushPendingSyncOutbox();
+
+  assert.equal(result.success, false);
+  assert.equal(result.queued, true);
+  assert.equal(Array.isArray(result.failures), true);
+  assert.equal(result.failures[0]?.kind, 'pr_snapshot');
+  const outbox = JSON.parse(localStorage.getItem(SYNC_OUTBOX_KEY));
+  assert.equal(outbox.length, 1);
+  assert.equal(outbox[0].kind, 'pr_snapshot');
+});

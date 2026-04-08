@@ -27,39 +27,46 @@ export function createCoachFeedDomain({
   }
 
   async function syncCoachWorkoutFeed(workouts = []) {
-    const normalized = normalizeCoachWorkoutFeed(workouts, Date.now());
-    const existing = await getCoachWorkoutCache();
-    const byId = new Map();
+    try {
+      const normalized = normalizeCoachWorkoutFeed(workouts, Date.now());
+      const existing = await getCoachWorkoutCache();
+      const byId = new Map();
 
-    existing.forEach((item) => {
-      const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
-      byId.set(key, item);
-    });
+      existing.forEach((item) => {
+        const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
+        byId.set(key, item);
+      });
 
-    normalized.forEach((item) => {
-      const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
-      const current = byId.get(key);
-      byId.set(key, current ? {
-        ...item,
-        receivedAt: current.receivedAt,
-        expiresAt: current.expiresAt,
-      } : item);
-    });
+      normalized.forEach((item) => {
+        const key = item?.id || `${item?.gymId || 'gym'}:${item?.scheduledDate || 'date'}:${item?.title || 'title'}`;
+        const current = byId.get(key);
+        byId.set(key, current ? {
+          ...item,
+          receivedAt: current.receivedAt,
+          expiresAt: current.expiresAt,
+        } : item);
+      });
 
-    const merged = pruneCoachWorkoutFeed(Array.from(byId.values()));
-    await coachWorkoutStorage.set(COACH_FEED_KEY, {
-      updatedAt: new Date().toISOString(),
-      workouts: merged,
-    });
+      const merged = pruneCoachWorkoutFeed(Array.from(byId.values()));
+      await coachWorkoutStorage.set(COACH_FEED_KEY, {
+        updatedAt: new Date().toISOString(),
+        workouts: merged,
+      });
 
-    await applyPreferredWorkout();
+      await applyPreferredWorkout();
 
-    return {
-      success: true,
-      data: {
-        count: merged.length,
-      },
-    };
+      return {
+        success: true,
+        data: {
+          count: merged.length,
+        },
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error?.message || 'Falha ao sincronizar feed do coach',
+      };
+    }
   }
 
   async function clearCoachWorkoutFeed() {

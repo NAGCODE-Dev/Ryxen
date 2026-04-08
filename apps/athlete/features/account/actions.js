@@ -1,6 +1,6 @@
-export { handleAthleteAccountHistoryAction } from '../../actions/accountHistoryActions.js';
-export { handleAthleteBillingAction } from '../../actions/billingActions.js';
+export { handleAthleteAccountHistoryAction } from './pageActions.js';
+export { handleAthleteBillingAction } from '../billing/actions.js';
 export {
   handleAthleteAuthAction,
   handleAthleteAuthEnterKey,
-} from '../../actions/authActions.js';
+} from './authActions.js';

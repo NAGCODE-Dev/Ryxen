@@ -281,14 +281,28 @@ export function createAccountSyncDomain({
       return { success: false, skipped: true };
     }
 
+    const failures = [];
+
     if (prSnapshot) {
-      await remoteHandleSyncAthletePrSnapshot(prSnapshot.payload || {});
-      dequeueSyncOutboxItem('pr_snapshot');
+      try {
+        await remoteHandleSyncAthletePrSnapshot(prSnapshot.payload || {});
+        dequeueSyncOutboxItem('pr_snapshot');
+      } catch (error) {
+        failures.push({ kind: 'pr_snapshot', error });
+      }
     }
 
     if (measurementSnapshot) {
-      await remoteHandleSyncAthleteMeasurementsSnapshot(Array.isArray(measurementSnapshot.payload) ? measurementSnapshot.payload : []);
-      dequeueSyncOutboxItem('measurement_snapshot');
+      try {
+        await remoteHandleSyncAthleteMeasurementsSnapshot(Array.isArray(measurementSnapshot.payload) ? measurementSnapshot.payload : []);
+        dequeueSyncOutboxItem('measurement_snapshot');
+      } catch (error) {
+        failures.push({ kind: 'measurement_snapshot', error });
+      }
+    }
+
+    if (failures.length) {
+      return { success: false, queued: true, failures };
     }
 
     return { success: true };

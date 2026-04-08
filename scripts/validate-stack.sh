@@ -49,6 +49,9 @@ wait_for_url "${FRONTEND_BASE_URL}/health" "frontend health"
 echo "[validate:stack] rodando smoke do backend..."
 RYXEN_API_BASE_URL="${API_BASE_URL}" npm run smoke:auth
 
+echo "[validate:stack] rodando smoke de coach trial..."
+RYXEN_API_BASE_URL="${API_BASE_URL}" npm run smoke:coach-trial
+
 echo "[validate:stack] rodando e2e contra o frontend Docker..."
 PLAYWRIGHT_BASE_URL="${FRONTEND_BASE_URL}" npm run test:e2e
 

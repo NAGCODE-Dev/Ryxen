@@ -4,6 +4,10 @@ import { bindAppEvents } from './events.js';
 import { getAppBridge } from '../app/bridge.js';
 import { prepareAthleteLayoutRoot, ensureAthleteToast, setLayoutHtml, setLayoutText } from '../../apps/athlete/layoutShell.js';
 import { buildAthleteUiForRender, normalizeAthleteUiState } from '../../apps/athlete/state/uiState.js';
+import {
+  createMeasurementSyncScheduler,
+  getMeasurementSyncHash,
+} from '../../apps/athlete/features/measurements/services.js';
 
 export async function mountUI({ root }) {
   if (!root) throw new Error('mountUI: root é obrigatório');
@@ -19,9 +23,11 @@ export async function mountUI({ root }) {
   let uiBusy = false;
   let uiBusyMessage = '';
   let uiSyncTimeout = null;
-  let measurementSyncTimeout = null;
   let uiPersistTimeout = null;
-  let lastMeasurementSyncHash = getMeasurementSyncHash(uiState?.athleteOverview?.measurements);
+  const measurementSync = createMeasurementSyncScheduler({
+    getAppBridge,
+    initialHash: getMeasurementSyncHash(uiState?.athleteOverview?.measurements),
+  });
   await uiStorage.set('state', uiState);
 
   const remoteUiState = await restoreUiStateFromAccount();
@@ -54,7 +60,7 @@ export async function mountUI({ root }) {
     uiState = normalizeAthleteUiState({ ...uiState, ...(next || {}) });
     scheduleUiStatePersist(uiState);
     scheduleUiStateSync(previous, uiState);
-    scheduleMeasurementSync(previous, uiState);
+    measurementSync.schedule(previous, uiState);
   };
 
   const patchUiState = async (fn) => {
@@ -63,7 +69,7 @@ export async function mountUI({ root }) {
     uiState = updated;
     scheduleUiStatePersist(updated);
     scheduleUiStateSync(current, updated);
-    scheduleMeasurementSync(current, updated);
+    measurementSync.schedule(current, updated);
   };
 
   function buildUiSnapshotSignature(value) {
@@ -103,26 +109,6 @@ export async function mountUI({ root }) {
           },
         },
       });
-    }, 300);
-  }
-
-  function scheduleMeasurementSync(previous, next) {
-    const previousHash = getMeasurementSyncHash(previous?.athleteOverview?.measurements);
-    const nextHash = getMeasurementSyncHash(next?.athleteOverview?.measurements);
-    if (previousHash === nextHash || nextHash === lastMeasurementSyncHash) {
-      return;
-    }
-
-    clearTimeout(measurementSyncTimeout);
-    measurementSyncTimeout = window.setTimeout(async () => {
-      try {
-        const result = await getAppBridge()?.syncAthleteMeasurementsSnapshot?.(next?.athleteOverview?.measurements || []);
-        if (result?.success || result?.queued) {
-          lastMeasurementSyncHash = nextHash;
-        }
-      } catch {
-        // no-op
-      }
     }, 300);
   }
 
@@ -324,6 +310,7 @@ export async function mountUI({ root }) {
   return {
     rerender,
     destroy() {
+      measurementSync.clear();
       try { destroyEvents?.(); } catch (e) { console.warn('destroyEvents falhou', e); }
     },
   };
@@ -367,17 +354,3 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function getMeasurementSyncHash(entries = []) {
-  if (!Array.isArray(entries) || !entries.length) return '[]';
-  return entries
-    .map((entry) => [
-      entry?.id || '',
-      entry?.type || '',
-      entry?.label || '',
-      entry?.unit || '',
-      entry?.value || '',
-      entry?.recorded_at || '',
-      entry?.created_at || '',
-    ].join(':'))
-    .join('|');
-}

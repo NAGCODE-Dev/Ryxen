@@ -27,6 +27,8 @@ import {
   handleAthleteTodayAction,
   handleAthleteTodayChange,
 } from '../../apps/athlete/features/today/actions.js';
+import { filterAthletePrs } from '../../apps/athlete/features/prs/services.js';
+import { handleExerciseHelpAction } from '../../apps/athlete/features/actions/router.js';
 import {
   explainImportFailure,
   formatBytes,
@@ -41,6 +43,10 @@ import {
   prepareImportFileForClientUse,
 } from '../../apps/athlete/features/import/services.js';
 import {
+  createAthleteImportGuard,
+  createImportBusyChecker,
+} from '../../apps/athlete/features/import/guards.js';
+import {
   cssEscape,
   getActiveLineIdFromUi,
   getLineIdsFromDOM,
@@ -51,6 +57,7 @@ import {
   workoutKeyFromAppState,
 } from '../../apps/athlete/features/today/services.js';
 import {
+  createEmptyAdminState,
   createEmptyAthleteOverviewState,
   createEmptyCoachPortalState,
 } from '../../apps/athlete/state/uiState.js';
@@ -60,12 +67,11 @@ import {
   normalizeCheckoutPlan,
 } from '../../apps/athlete/features/account/services.js';
 import { createAthleteHydrationBindings } from '../../apps/athlete/features/account/services.js';
+import { measureUiAsync } from '../../apps/athlete/features/account/metrics.js';
+import { createGoogleSignInHelpers } from '../../apps/athlete/features/account/googleSignIn.js';
 
 export function setupActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
-
-  let googleScriptPromise = null;
-  let googleInitializedClientId = '';
 
   const readAppState = () => {
     try {
@@ -103,209 +109,19 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     await finalizeUiChange(options);
   }
 
-  function resolveAthleteBenefits(uiState, accessContext = null) {
-    const overviewBenefits = uiState?.athleteOverview?.athleteBenefits || null;
-    const accessBenefits = accessContext?.data?.athleteBenefits || accessContext?.athleteBenefits || null;
-    return normalizeAthleteBenefits(overviewBenefits || accessBenefits || null);
-  }
-
-  function isNativeAppRuntime() {
-    try {
-      if (window.Capacitor?.isNativePlatform?.()) return true;
-      const protocol = String(window.location?.protocol || '').toLowerCase();
-      return protocol === 'capacitor:' || protocol === 'file:' || (protocol === 'https:' && window.location?.hostname === 'localhost');
-    } catch {
-      return false;
-    }
-  }
-
-  async function loadGoogleScript() {
-    if (!navigator.onLine) {
-      throw new Error('Google Sign-In indisponível offline');
-    }
-    if (window.google?.accounts?.id) return window.google;
-    if (googleScriptPromise) return googleScriptPromise;
-
-    googleScriptPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-google-gsi="1"]');
-      if (existing) {
-        const checkReady = () => {
-          if (window.google?.accounts?.id) resolve(window.google);
-          else window.setTimeout(checkReady, 80);
-        };
-        checkReady();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.defer = true;
-      script.dataset.googleGsi = '1';
-      script.onload = () => resolve(window.google);
-      script.onerror = () => reject(new Error('Não foi possível carregar o Google Sign-In'));
-      document.head.appendChild(script);
-    });
-
-    return googleScriptPromise;
-  }
-
-  async function ensureGoogleSignInUi() {
-    const ui = getUiState?.() || {};
-    if (ui.modal !== 'auth') return;
-
-    const shell = root.querySelector('#google-signin-shell');
-    const buttonEl = root.querySelector('#google-signin-button');
-    if (!shell || !buttonEl) return;
-
-    const profile = getAppBridge()?.getProfile?.()?.data || null;
-    if (profile?.email) {
-      shell.style.display = 'none';
-      return;
-    }
-
-    const runtime = getAppBridge()?.getRuntimeConfig?.()?.data || {};
-    const clientId = String(runtime?.auth?.googleClientId || '').trim();
-    if (!clientId) {
-      shell.style.display = 'none';
-      shell.innerHTML = '';
-      return;
-    }
-    if (!navigator.onLine) {
-      shell.style.display = 'none';
-      shell.innerHTML = '';
-      return;
-    }
-    if (isNativeAppRuntime()) {
-      shell.style.display = '';
-      shell.innerHTML = `
-        <button class="btn-secondary auth-googleNativeButton auth-googleCta" data-action="auth:google-redirect" type="button">
-          <span class="auth-googleMark" aria-hidden="true">G</span>
-          <span>Continuar com Google</span>
-        </button>
-      `;
-      return;
-    }
-
-    const googleApi = await loadGoogleScript();
-    if (!googleApi?.accounts?.id) {
-      shell.style.display = 'none';
-      shell.innerHTML = '';
-      return;
-    }
-
-    shell.style.display = '';
-    buttonEl.innerHTML = '';
-    if (googleInitializedClientId !== clientId) {
-      googleApi.accounts.id.initialize({
-        client_id: clientId,
-        callback: async (response) => {
-          try {
-            const result = await getAppBridge()?.signInWithGoogle?.({ credential: response.credential });
-            if (!result?.token && !result?.user) {
-              throw new Error('Falha ao autenticar com Google');
-            }
-
-            const signedProfile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
-            invalidateHydrationCache();
-            await applyUiState(
-              { modal: null, authMode: 'signin' },
-              { toastMessage: 'Login com Google efetuado' },
-            );
-            const currentPage = getUiState?.()?.currentPage || 'today';
-            if (shouldHydratePage(currentPage)) {
-              hydratePage(signedProfile, currentPage, null);
-            }
-            if (await resumePendingCheckout()) return;
-          } catch (error) {
-            toast(error?.message || 'Erro ao entrar com Google');
-            console.error(error);
-          }
-        },
-        auto_select: false,
-        cancel_on_tap_outside: true,
-        itp_support: true,
-      });
-      googleInitializedClientId = clientId;
-    }
-    googleApi.accounts.id.renderButton(buttonEl, {
-      theme: 'outline',
-      size: 'large',
-      type: 'standard',
-      shape: 'pill',
-      text: ui.authMode === 'signup' ? 'signup_with' : 'signin_with',
-      logo_alignment: 'left',
-      width: Math.max(220, Math.min(buttonEl.clientWidth || 320, 360)),
-      locale: 'pt-BR',
-    });
-  }
-
-  async function guardAthleteImport(kind, uiState) {
-    const profile = getAppBridge()?.getProfile?.()?.data || null;
-    const accessContext = profile?.email ? await getAppBridge()?.getAccessContext?.() : null;
-    const benefits = resolveAthleteBenefits(uiState, accessContext);
-    const usage = getAthleteImportUsage(benefits, kind);
-
-    if (!canConsumeAthleteImport(benefits, kind)) {
-      throw new Error(
-        usage.limit === null
-          ? 'Seu plano atual não permite mais importações neste período'
-          : `Limite mensal atingido: ${usage.used}/${usage.limit} importações entre PDF e mídia. Seu nível atual é ${benefits.label}.`,
-      );
-    }
-
-    return { benefits, usage };
-  }
-
-  function recordPerfMetric(name, durationMs, meta = {}) {
-    try {
-      const current = window.__RYXEN_UI_METRICS__ || window.__CROSSAPP_UI_METRICS__ || { recent: [], summary: {} };
-      const recent = [...(current.recent || []), { name, durationMs, at: new Date().toISOString(), ...meta }].slice(-30);
-      const previous = current.summary?.[name] || { count: 0, maxMs: 0, avgMs: 0, lastMs: 0 };
-      const count = previous.count + 1;
-      const summary = {
-        ...(current.summary || {}),
-        [name]: {
-          count,
-          maxMs: Math.max(previous.maxMs || 0, durationMs),
-          avgMs: Number((((previous.avgMs || 0) * previous.count + durationMs) / count).toFixed(1)),
-          lastMs: durationMs,
-          ...meta,
-        },
-      };
-      const nextMetrics = { recent, summary };
-      window.__RYXEN_UI_METRICS__ = nextMetrics;
-      window.__CROSSAPP_UI_METRICS__ = nextMetrics;
-      if (durationMs >= 1500) {
-        console.warn('[ui:slow]', name, `${durationMs}ms`, meta);
-      }
-    } catch {
-      // no-op
-    }
-  }
-
-  function getImportStatusState() {
-    return getUiState?.()?.importStatus || {};
-  }
-
-  function isImportBusy() {
-    return !!getImportStatusState()?.active;
-  }
-
-  async function measureAsync(name, fn, meta = {}) {
-    const startedAt = performance.now();
-    try {
-      return await fn();
-    } finally {
-      recordPerfMetric(name, Number((performance.now() - startedAt).toFixed(1)), meta);
-    }
-  }
+  const guardAthleteImport = createAthleteImportGuard({
+    getAppBridge,
+    normalizeAthleteBenefits,
+    getAthleteImportUsage,
+    canConsumeAthleteImport,
+  });
+  const isImportBusy = createImportBusyChecker(getUiState);
 
   const hydration = createAthleteHydrationBindings({
     getUiState,
     patchUiState,
     rerender: renderUi,
-    measureAsync,
+    measureAsync: measureUiAsync,
     emptyCoachPortal: createEmptyCoachPortalState,
     emptyAthleteOverview: createEmptyAthleteOverviewState,
     getAppBridge,
@@ -325,12 +141,23 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
     toast,
     queueCheckoutIntent,
   });
+  const { ensureGoogleSignInUi } = createGoogleSignInHelpers({
+    root,
+    getUiState,
+    getAppBridge,
+    applyUiState,
+    toast,
+    invalidateHydrationCache,
+    shouldHydratePage,
+    hydratePage,
+    resumePendingCheckout,
+  });
 
   // Busca de PRs (filtra em tempo real)
   root.addEventListener('input', (e) => {
     const t = e.target;
     if (!t || t.id !== 'ui-prsSearch') return;
-    filterPrs(root, t.value);
+    filterAthletePrs(root, t.value);
   });
 
   root.addEventListener('keydown', async (e) => {
@@ -339,25 +166,6 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
       getUiState,
     });
   });
-
-  function filterPrs(root, query) {
-    const q = String(query || '').trim().toUpperCase();
-    const table = root.querySelector('#ui-prsTable');
-    if (!table) return;
-
-    const items = Array.from(table.querySelectorAll('.pr-item'));
-    let visible = 0;
-
-    for (const item of items) {
-      const ex = String(item.getAttribute('data-exercise') || '').toUpperCase();
-      const show = !q || ex.includes(q);
-      item.style.display = show ? '' : 'none';
-      if (show) visible++;
-    }
-
-    const countEl = root.querySelector('#ui-prsCount');
-    if (countEl) countEl.textContent = `${visible} PRs`;
-  }
 
   // Clicks (delegação)
   root.addEventListener('click', async (e) => {
@@ -368,18 +176,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
 
     try {
       if (action === 'exercise:help') {
-        const label = String(el.dataset.exercise || '').trim();
-        const directUrl = String(el.dataset.url || '').trim();
-        const fallbackUrl = label
-          ? `https://www.youtube.com/results?search_query=${encodeURIComponent(`${label} exercise tutorial`)}` 
-          : '';
-        const url = directUrl || fallbackUrl;
-        if (!url) throw new Error('Vídeo de execução indisponível para este movimento');
-
-        const popup = window.open(url, '_blank', 'noopener,noreferrer');
-        if (!popup) {
-          window.location.href = url;
-        }
+        handleExerciseHelpAction(el);
         return;
       }
 
@@ -437,6 +234,7 @@ export function setupActions({ root, toast, rerender, getUiState, setUiState, pa
         maybeResumePendingCheckout: resumePendingCheckout,
         emptyCoachPortal: createEmptyCoachPortalState,
         emptyAthleteOverview: createEmptyAthleteOverviewState,
+        emptyAdmin: createEmptyAdminState,
       });
       if (handledByAthletePage) return;
 

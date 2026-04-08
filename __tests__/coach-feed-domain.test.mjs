@@ -118,3 +118,30 @@ test('clearCoachWorkoutFeed não força fallback quando treino atual não veio d
   assert.equal(await storage.get('coach-feed'), undefined);
   assert.deepEqual(calls, []);
 });
+
+test('syncCoachWorkoutFeed retorna erro amigável quando persistência falha', async () => {
+  const domain = createCoachFeedDomain({
+    getState: () => ({ currentDay: 'Segunda', workoutMeta: { source: 'manual' } }),
+    coachWorkoutStorage: {
+      async get() {
+        return { workouts: [] };
+      },
+      async set() {
+        throw new Error('db unavailable');
+      },
+      async remove() {},
+    },
+    COACH_FEED_KEY: 'coach-feed',
+    pruneCoachWorkoutFeed: (items) => items,
+    normalizeCoachWorkoutFeed: (items) => items,
+    resolveCoachWorkoutForDay: () => null,
+    applyPreferredWorkout: async () => {},
+  });
+
+  const result = await domain.syncCoachWorkoutFeed([
+    { gymId: 'gym-1', scheduledDate: '2026-04-06', title: 'WOD', payload: { blocks: [] } },
+  ]);
+
+  assert.equal(result.success, false);
+  assert.match(result.error, /db unavailable/);
+});
