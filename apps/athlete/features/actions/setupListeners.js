@@ -1,4 +1,5 @@
 import { getAppBridge } from '../../../../src/app/bridge.js';
+import { registerAthleteClickListeners } from './setupClickListener.js';
 
 export function registerAthleteInputListeners({ root, filterAthletePrs }) {
   root.addEventListener('input', (event) => {
@@ -27,31 +28,6 @@ export function registerAthleteAuthKeyListeners({ root, getUiState, handleAthlet
       root,
       getUiState,
     });
-  });
-}
-
-export function registerAthleteClickListeners({
-  root,
-  toast,
-  clickContext,
-  routeAthleteClickAction,
-}) {
-  root.addEventListener('click', async (event) => {
-    const element = event.target.closest('[data-action]');
-    if (!element) return;
-
-    const action = element.dataset.action;
-
-    try {
-      const handled = await routeAthleteClickAction(action, {
-        element,
-        ...clickContext,
-      });
-      if (handled) return;
-    } catch (err) {
-      toast(err?.message || 'Erro');
-      console.error(err);
-    }
   });
 }
 

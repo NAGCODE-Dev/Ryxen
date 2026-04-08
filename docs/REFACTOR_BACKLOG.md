@@ -81,6 +81,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` separar registro de listeners de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/setupListeners.js`
   - `done` mover o listener de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupListeners.js`
   - `done` consolidar o wiring dos listeners de `apps/athlete/features/actions/setup.js` em `apps/athlete/features/actions/setupListeners.js`
+  - `done` extrair o handler do click delegado de `apps/athlete/features/actions/setupListeners.js` para `apps/athlete/features/actions/setupClickListener.js`
   - `done` extrair a montagem do contexto de click de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` mover a montagem do contexto de click de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/setupClickContext.js`
   - `done` extrair fluxos de reset de senha de `apps/athlete/features/account/authActions.js` para `apps/athlete/features/account/authResetActions.js`
