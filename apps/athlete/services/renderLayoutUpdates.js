@@ -1,4 +1,5 @@
 import { updateAthleteRenderCounters } from './renderCounters.js';
+import { ATHLETE_RENDER_SURFACES } from './renderSurfaceConfig.js';
 import { applyAthleteRenderSurface } from './renderSurfaceUpdates.js';
 
 export function applyAthleteRenderLayout({
@@ -16,52 +17,29 @@ export function applyAthleteRenderLayout({
   setLayoutHtml,
   setLayoutText,
 }) {
-  applyAthleteRenderSurface({
-    state,
-    refs,
-    refKey: 'headerAccount',
-    signatureKey: 'headerSignature',
-    htmlKey: 'headerHtml',
-    buildSignature: buildHeaderSignature,
-    renderContent: renderHeaderAccount,
-    lastRendered,
-    setLayoutHtml,
-  });
+  const dependencies = {
+    buildHeaderSignature,
+    buildMainSignature,
+    buildBottomSignature,
+    buildModalSignature,
+    renderHeaderAccount,
+    renderMainContent,
+    renderBottomNav,
+    renderModals,
+  };
 
-  applyAthleteRenderSurface({
-    state,
-    refs,
-    refKey: 'main',
-    signatureKey: 'mainSignature',
-    htmlKey: 'mainHtml',
-    buildSignature: buildMainSignature,
-    renderContent: renderMainContent,
-    lastRendered,
-    setLayoutHtml,
-  });
-
-  applyAthleteRenderSurface({
-    state,
-    refs,
-    refKey: 'bottomNav',
-    signatureKey: 'bottomSignature',
-    htmlKey: 'bottomHtml',
-    buildSignature: buildBottomSignature,
-    renderContent: renderBottomNav,
-    lastRendered,
-    setLayoutHtml,
-  });
-
-  applyAthleteRenderSurface({
-    state,
-    refs,
-    refKey: 'modals',
-    signatureKey: 'modalSignature',
-    htmlKey: 'modalHtml',
-    buildSignature: buildModalSignature,
-    renderContent: renderModals,
-    lastRendered,
-    setLayoutHtml,
+  ATHLETE_RENDER_SURFACES.forEach((surface) => {
+    applyAthleteRenderSurface({
+      state,
+      refs,
+      refKey: surface.refKey,
+      signatureKey: surface.signatureKey,
+      htmlKey: surface.htmlKey,
+      buildSignature: dependencies[surface.buildSignatureKey],
+      renderContent: dependencies[surface.renderContentKey],
+      lastRendered,
+      setLayoutHtml,
+    });
   });
 
   updateAthleteRenderCounters({

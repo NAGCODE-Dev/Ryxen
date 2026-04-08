@@ -67,6 +67,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair a aplicação de layout do render pipeline para `apps/athlete/services/renderLayoutUpdates.js`
   - `done` extrair a montagem do estado renderizável para `apps/athlete/services/renderViewState.js`
   - `done` separar atualização por superfície e contadores auxiliares de `apps/athlete/services/renderLayoutUpdates.js` em módulos dedicados
+  - `done` consolidar a configuração das superfícies do render em `apps/athlete/services/renderSurfaceConfig.js`
 - `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
 - `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
   - `done` extrair fluxo de Google Sign-In para `apps/athlete/features/account/googleSignIn.js`
