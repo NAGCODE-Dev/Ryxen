@@ -70,7 +70,7 @@ import { createGoogleSignInHelpers } from '../account/googleSignIn.js';
 import {
   routeAthleteClickAction,
 } from './setupHelpers.js';
-import { createAthleteClickContext } from './setupHelpers.js';
+import { createAthleteClickContext } from './setupClickContext.js';
 import { queueAthleteCheckoutBootstrap } from './setupBootstrap.js';
 import {
   registerAthleteAuthKeyListeners,
