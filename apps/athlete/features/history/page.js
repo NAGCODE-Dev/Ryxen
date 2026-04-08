@@ -1,3 +1,8 @@
+import {
+  renderBenchmarkHistorySection,
+  renderPrHistorySection,
+} from './sections.js';
+
 export function renderAthleteHistoryPage(state, helpers) {
   const {
     renderPageHero,
@@ -65,19 +70,16 @@ export function renderAthleteHistoryPage(state, helpers) {
         subtitle: 'Tendência das marcas que você já registrou.',
         content: `
         <div class="trend-grid">
-          ${isBusy || isDetailLoading ? renderTrendSkeletons(4) : isDetailError ? '<p class="account-hint">Não foi possível carregar benchmarks agora.</p>' : benchmarkHistory.length ? benchmarkHistory.map((item) => `
-            <div class="trend-card">
-              <div class="trend-cardHead">
-                <strong>${escapeHtml(item.name || item.slug || 'Benchmark')}</strong>
-                <span>${escapeHtml(item.latestLabel || 'Sem marca')}</span>
-              </div>
-              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), item.scoreType === 'for_time')}
-              <div class="trend-meta">
-                <span>${item.improvement === null ? 'Sem histórico suficiente' : `${item.improvement > 0 ? '+' : ''}${formatTrendValue(item.improvement, item.scoreType)}`}</span>
-                <span>${item.points.length} registro(s)</span>
-              </div>
-            </div>
-          `).join('') : '<p class="account-hint">Finalize benchmarks ou registre seus resultados para começar o histórico.</p>'}
+          ${renderBenchmarkHistorySection({
+            benchmarkHistory,
+            isBusy,
+            isDetailLoading,
+            isDetailError,
+            renderTrendSkeletons,
+            renderSparkline,
+            formatTrendValue,
+            escapeHtml,
+          })}
         </div>
         `,
       })}
@@ -87,19 +89,16 @@ export function renderAthleteHistoryPage(state, helpers) {
         subtitle: 'Suas cargas de referência em leitura direta.',
         content: `
         <div class="trend-grid">
-          ${isBusy || isDetailLoading ? renderTrendSkeletons(3) : isDetailError ? '<p class="account-hint">Não foi possível carregar PRs agora.</p>' : prHistory.length ? prHistory.map((item) => `
-            <div class="trend-card">
-              <div class="trend-cardHead">
-                <strong>${escapeHtml(item.exercise)}</strong>
-                <span>${escapeHtml(String(item.latestValue ?? '—'))} ${escapeHtml(item.unit || 'kg')}</span>
-              </div>
-              ${renderSparkline(item.points.map((point) => Number(point.value || 0)), false)}
-              <div class="trend-meta">
-                <span>${item.delta === null ? 'Sem histórico suficiente' : `${item.delta > 0 ? '+' : ''}${formatNumber(item.delta)} ${escapeHtml(item.unit || 'kg')}`}</span>
-                <span>${item.points.length} atualização(ões)</span>
-              </div>
-            </div>
-          `).join('') : '<p class="account-hint">Cadastre seus PRs para o app calcular cargas e mostrar progresso real.</p>'}
+          ${renderPrHistorySection({
+            prHistory,
+            isBusy,
+            isDetailLoading,
+            isDetailError,
+            renderTrendSkeletons,
+            renderSparkline,
+            formatNumber,
+            escapeHtml,
+          })}
         </div>
         `,
       })}
