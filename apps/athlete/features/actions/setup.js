@@ -71,10 +71,26 @@ import {
   createAthleteUiActions,
   queueAthleteCheckoutBootstrap,
   readAthleteAppState,
+  routeAthleteClickAction,
 } from './setupHelpers.js';
 
 export function setupAthleteActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
+  let ensureGoogleSignInUi = async () => {};
+
+  const {
+    renderUi,
+    finalizeUiChange,
+    applyUiState,
+    applyUiPatch,
+  } = createAthleteUiActions({
+    root,
+    toast,
+    rerender,
+    setUiState,
+    patchUiState,
+    getEnsureGoogleSignInUi: () => ensureGoogleSignInUi,
+  });
 
   const guardAthleteImport = createAthleteImportGuard({
     getAppBridge,
@@ -108,7 +124,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     toast,
     queueCheckoutIntent,
   });
-  const { ensureGoogleSignInUi } = createGoogleSignInHelpers({
+  ({ ensureGoogleSignInUi } = createGoogleSignInHelpers({
     root,
     getUiState,
     getAppBridge,
@@ -118,20 +134,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     shouldHydratePage,
     hydratePage,
     resumePendingCheckout,
-  });
-  const {
-    renderUi,
-    finalizeUiChange,
-    applyUiState,
-    applyUiPatch,
-  } = createAthleteUiActions({
-    root,
-    toast,
-    rerender,
-    setUiState,
-    patchUiState,
-    ensureGoogleSignInUi,
-  });
+  }));
 
   // Busca de PRs (filtra em tempo real)
   root.addEventListener('input', (e) => {
@@ -155,70 +158,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     const action = el.dataset.action;
 
     try {
-      if (action === 'exercise:help') {
-        handleExerciseHelpAction(el);
-        return;
-      }
-
-      const handledByAthleteModal = await handleAthleteModalAction(action, {
-        element: el,
-        toast,
-        getUiState,
-        applyUiState,
-        applyUiPatch,
-        isImportBusy,
-      });
-      if (handledByAthleteModal) return;
-
-      const handledByAthleteAuth = await handleAthleteAuthAction(action, {
-        element: el,
-        root,
-        getUiState,
-        applyUiState,
-        applyUiPatch,
-        getAppBridge,
-        invalidateHydrationCache,
-        shouldHydratePage,
-        hydratePage,
-        maybeResumePendingCheckout: resumePendingCheckout,
-        isDeveloperEmail,
-      });
-      if (handledByAthleteAuth) return;
-
-      const handledByAthleteBilling = await handleAthleteBillingAction(action, {
-        element: el,
-        getUiState,
-        applyUiPatch,
-        finalizeUiChange,
-        hydratePage,
-        invalidateHydrationCache,
-        getAppBridge,
-        normalizeCheckoutPlan,
-        hasCheckoutAuth,
-        queueCheckoutIntent,
-        isDeveloperProfile,
-      });
-      if (handledByAthleteBilling) return;
-
-      const handledByAthletePage = await handleAthleteAccountHistoryAction(action, {
-        element: el,
-        root,
-        getUiState,
-        applyUiState,
-        applyUiPatch,
-        finalizeUiChange,
-        hydratePage,
-        shouldHydratePage,
-        invalidateHydrationCache,
-        getAppBridge,
-        maybeResumePendingCheckout: resumePendingCheckout,
-        emptyCoachPortal: createEmptyCoachPortalState,
-        emptyAthleteOverview: createEmptyAthleteOverviewState,
-        emptyAdmin: createEmptyAdminState,
-      });
-      if (handledByAthletePage) return;
-
-      const handledByAthleteToday = await handleAthleteTodayAction(action, {
+      const handled = await routeAthleteClickAction(action, {
         element: el,
         root,
         toast,
@@ -228,11 +168,28 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
         finalizeUiChange,
         renderUi,
         setUiState,
-        getAppBridge,
-        readAppState: readAthleteAppState,
+        invalidateHydrationCache,
+        shouldHydratePage,
+        hydratePage,
+        hydrateAthleteSummary,
+        hydrateAthleteResultsBlock,
+        syncAthletePrIfAuthenticated,
+        resumePendingCheckout,
         isImportBusy,
-        idleImportStatus,
         guardAthleteImport,
+        emptyCoachPortal: createEmptyCoachPortalState,
+        emptyAthleteOverview: createEmptyAthleteOverviewState,
+        emptyAdmin: createEmptyAdminState,
+        handleExerciseHelpAction,
+        handleAthleteModalAction,
+        handleAthleteAuthAction,
+        handleAthleteBillingAction,
+        handleAthleteAccountHistoryAction,
+        handleAthleteTodayAction,
+        isDeveloperEmail,
+        isDeveloperProfile,
+        normalizeCheckoutPlan,
+        idleImportStatus,
         prepareImportFileForClientUse,
         pickJsonFile,
         pickPdfFile,
@@ -249,15 +206,11 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
         pickNextId,
         pickPrevId,
         scrollToLine,
-        syncAthletePrIfAuthenticated,
-        invalidateHydrationCache,
-        hydrateAthleteSummary,
-        hydrateAthleteResultsBlock,
         cssEscape,
         startRestTimer,
         consumeAthleteImport,
       });
-      if (handledByAthleteToday) return;
+      if (handled) return;
     } catch (err) {
       toast(err?.message || 'Erro');
       console.error(err);
@@ -277,7 +230,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
 
   queueAthleteCheckoutBootstrap({
     applyUiPatch,
-    ensureGoogleSignInUi,
+    getEnsureGoogleSignInUi: () => ensureGoogleSignInUi,
     maybeResumePendingCheckout: resumePendingCheckout,
   });
 

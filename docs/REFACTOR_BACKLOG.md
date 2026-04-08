@@ -64,6 +64,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair handler `exercise:help` para `apps/athlete/features/actions/router.js`
   - `done` mover setup/orquestração principal de ações para `apps/athlete/features/actions/setup.js` e manter `src/ui/actions.js` como compat layer
   - `done` extrair helpers de bridge/UI e bootstrap de checkout de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
+  - `done` extrair roteamento de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
   - `done` mover implementação para `apps/athlete/features/render/shell.js` e manter `src/ui/render.js` como compat layer
