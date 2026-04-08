@@ -56,7 +56,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
 ## Fase 3. Athlete app principal
 
 - `done` Separar `src/main.js` em shell do atleta vs bridge legado
-- `in_progress` Tirar `src/ui/ui.js` do papel de orquestrador global
+- `done` Tirar `src/ui/ui.js` do papel de orquestrador global
   - `done` mover persistência/sync do estado de UI e event log para `apps/athlete/services/uiController.js`
   - `done` mover fila de render, signatures e cache de HTML para `apps/athlete/services/renderController.js`
   - `done` mover montagem principal da UI para `apps/athlete/mountUi.js` e manter `src/ui/ui.js` como compat layer
@@ -68,8 +68,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair a montagem do estado renderizável para `apps/athlete/services/renderViewState.js`
   - `done` separar atualização por superfície e contadores auxiliares de `apps/athlete/services/renderLayoutUpdates.js` em módulos dedicados
   - `done` consolidar a configuração das superfícies do render em `apps/athlete/services/renderSurfaceConfig.js`
-- `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
-- `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
+- `done` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
   - `done` extrair fluxo de Google Sign-In para `apps/athlete/features/account/googleSignIn.js`
   - `done` extrair guard/check de importação para `apps/athlete/features/import/guards.js`
   - `done` extrair handler `exercise:help` para `apps/athlete/features/actions/router.js`
@@ -97,14 +96,12 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair navegação/refresh/signout de `apps/athlete/features/account/pageActions.js` para `apps/athlete/features/account/pageSessionActions.js`
   - `done` separar infraestrutura e callback do Google Sign-In de `apps/athlete/features/account/googleSignIn.js` para módulos dedicados
   - `done` extrair pickers e compressão de imagem de `apps/athlete/services/importFiles.js` para módulos dedicados
-- `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
-- `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
+- `done` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
   - `done` mover implementação para `apps/athlete/features/render/shell.js` e manter `src/ui/render.js` como compat layer
   - `done` fazer `apps/athlete/mountUi.js` consumir render direto de `apps/athlete/features/render/shell.js`
   - `done` fazer `apps/athlete/layoutShell.js` consumir `renderAppShell` direto de `apps/athlete/features/render/shell.js`
   - `done` fazer testes de apresentação consumirem `apps/athlete/features/render/shell.js` direto
-- `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
-- `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
+- `done` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
   - `done` mover binding de eventos de importação para `apps/athlete/features/events/bindings.js` com wrapper legado
   - `done` fazer `apps/athlete/mountUi.js` consumir eventos direto de `apps/athlete/features/events/bindings.js`
   - `done` extrair handlers de importação e app bus de `apps/athlete/features/events/bindings.js` para módulos dedicados
@@ -141,7 +138,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` consolidar estados vazios compartilhados entre UI e testes (`apps/athlete/uiState.js`)
   - `done` separar estados vazios e cache de line ids de `apps/athlete/uiState.js` para módulos dedicados
   - `done` separar a normalização de subestados de `apps/athlete/uiState.js` para `apps/athlete/uiStateNormalize.js`
-- `pending` Converter render manual/string para componentes por fatias
+- `in_progress` Converter render manual/string para componentes por fatias
   - `done` extrair shell visual (`chrome.js`) e roteamento de modais (`modals.js`) a partir de `apps/athlete/features/render/shell.js`
   - `done` extrair roteamento de páginas (`pages.js`) a partir de `apps/athlete/features/render/shell.js`
   - `done` extrair seções de benchmarks e PRs de `apps/athlete/features/history/page.js` para `apps/athlete/features/history/sections.js`
