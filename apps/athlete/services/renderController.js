@@ -10,6 +10,7 @@ import {
   createRenderSignatures,
   createRenderStateCache,
 } from './renderControllerHelpers.js';
+import { createRenderScheduler } from './renderScheduler.js';
 
 export function createAthleteRenderController({
   refs,
@@ -30,10 +31,6 @@ export function createAthleteRenderController({
     buildModalSignature,
     buildMainSignature,
   } = createRenderSignatures({ getObjectIdentity });
-
-  let renderQueued = false;
-  let renderInflight = null;
-  let lastRenderAt = 0;
 
   const performRender = async () => {
     const state = safeGetAthleteAppState();
@@ -80,38 +77,5 @@ export function createAthleteRenderController({
       setLayoutText(refs.prsCount, `${count} PRs`);
     }
   };
-
-  const rerender = () => {
-    if (renderInflight) return renderInflight;
-
-    renderInflight = new Promise((resolve, reject) => {
-      const flush = () => {
-        renderQueued = false;
-        Promise.resolve()
-          .then(() => performRender())
-          .then(() => {
-            lastRenderAt = Date.now();
-            resolve();
-          })
-          .catch(reject)
-          .finally(() => {
-            renderInflight = null;
-          });
-      };
-
-      if (renderQueued || Date.now() - lastRenderAt < 12) {
-        renderQueued = true;
-        window.requestAnimationFrame(flush);
-        return;
-      }
-
-      flush();
-    });
-
-    return renderInflight;
-  };
-
-  return {
-    rerender,
-  };
+  return createRenderScheduler({ performRender });
 }
