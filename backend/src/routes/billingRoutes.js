@@ -9,7 +9,7 @@ import {
   KIWIFY_PRODUCT_STARTER_ID,
   KIWIFY_WEBHOOK_TOKEN,
 } from '../config.js';
-import { normalizeEmail } from '../devAccess.js';
+import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
 import { authRequired } from '../auth.js';
 import { getKiwifySaleById, isKiwifyNativeApiConfigured } from '../kiwifyApi.js';
 import { getBillingStatusSnapshot, getEntitlementsSnapshot, resolveFallbackBillingPlanId } from '../queries/billingQueries.js';
@@ -27,6 +27,7 @@ import {
 } from '../kiwifyWebhook.js';
 import {
   grantSubscriptionToUser,
+  normalizeSubscriptionPlanId,
   queueBillingClaim,
   queueBillingReversalClaim,
 } from '../utils/subscriptionBilling.js';

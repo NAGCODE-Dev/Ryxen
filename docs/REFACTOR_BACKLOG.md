@@ -54,17 +54,25 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
 
 - `done` Separar `src/main.js` em shell do atleta vs bridge legado
 - `in_progress` Tirar `src/ui/ui.js` do papel de orquestrador global
+  - `done` mover persistência/sync do estado de UI e event log para `apps/athlete/services/uiController.js`
+  - `done` mover fila de render, signatures e cache de HTML para `apps/athlete/services/renderController.js`
+  - `done` mover montagem principal da UI para `apps/athlete/mountUi.js` e manter `src/ui/ui.js` como compat layer
 - `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
 - `in_progress` Tirar `src/ui/actions.js` do papel de roteador absoluto do atleta
   - `done` extrair fluxo de Google Sign-In para `apps/athlete/features/account/googleSignIn.js`
   - `done` extrair guard/check de importação para `apps/athlete/features/import/guards.js`
   - `done` extrair handler `exercise:help` para `apps/athlete/features/actions/router.js`
+  - `done` mover setup/orquestração principal de ações para `apps/athlete/features/actions/setup.js` e manter `src/ui/actions.js` como compat layer
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
   - `done` mover implementação para `apps/athlete/features/render/shell.js` e manter `src/ui/render.js` como compat layer
+  - `done` fazer `apps/athlete/mountUi.js` consumir render direto de `apps/athlete/features/render/shell.js`
+  - `done` fazer `apps/athlete/layoutShell.js` consumir `renderAppShell` direto de `apps/athlete/features/render/shell.js`
+  - `done` fazer testes de apresentação consumirem `apps/athlete/features/render/shell.js` direto
 - `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
 - `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
   - `done` mover binding de eventos de importação para `apps/athlete/features/events/bindings.js` com wrapper legado
+  - `done` fazer `apps/athlete/mountUi.js` consumir eventos direto de `apps/athlete/features/events/bindings.js`
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais secundárias do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono dos helpers visuais compartilhados do atleta
 - `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do ambiente/observabilidade/diagnóstico
@@ -92,6 +100,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` orquestração final de account/history consolidada em `apps/athlete/features/account/*` (com compat re-export)
   - `done` consolidar estados vazios compartilhados entre UI e testes (`apps/athlete/uiState.js`)
 - `pending` Converter render manual/string para componentes por fatias
+  - `done` extrair shell visual (`chrome.js`) e roteamento de modais (`modals.js`) a partir de `apps/athlete/features/render/shell.js`
 - `pending` Definir camada offline-first explícita:
   - snapshot local
   - fila de sync

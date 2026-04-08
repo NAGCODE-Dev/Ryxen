@@ -1,4 +1,4 @@
-import { renderAppShell } from '../../src/ui/render.js';
+import { renderAppShell } from './features/render/shell.js';
 
 export function prepareAthleteLayoutRoot(root) {
   ensureAthleteStylesheet('./src/ui/tailwind.generated.css');

@@ -113,6 +113,6 @@ async function mountAthleteUi() {
     await wait(0);
   }
 
-  const { mountUI } = await import('../../src/ui/ui.js');
+  const { mountUI } = await import('./mountUi.js');
   mountUI({ root });
 }

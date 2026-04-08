@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { renderAll, renderImportModal } from '../src/ui/render.js';
+import { renderAll, renderImportModal } from '../apps/athlete/features/render/shell.js';
 
 test('modal de importação expõe as opções realmente suportadas na apresentação', () => {
   const html = renderImportModal();
