@@ -5,11 +5,6 @@ import {
   getAthleteImportUsage,
   normalizeAthleteBenefits,
 } from '../../../../src/core/services/athleteBenefitUsage.js';
-import {
-  consumeCheckoutIntent,
-  hasCheckoutAuth,
-  queueCheckoutIntent,
-} from '../../../../src/core/services/subscriptionService.js';
 import { getAppBridge } from '../../../../src/app/bridge.js';
 import {
   handleAthleteAccountHistoryAction,
@@ -61,17 +56,15 @@ import {
   createEmptyCoachPortalState,
 } from '../../state/uiState.js';
 import {
-  maybeResumePendingCheckout,
   normalizeCheckoutPlan,
 } from '../account/services.js';
-import { createAthleteHydrationBindings } from '../account/services.js';
-import { measureUiAsync } from '../account/metrics.js';
 import { createGoogleSignInHelpers } from '../account/googleSignIn.js';
 import {
   routeAthleteClickAction,
 } from './setupHelpers.js';
 import { createAthleteClickContext } from './setupClickContext.js';
 import { queueAthleteCheckoutBootstrap } from './setupBootstrap.js';
+import { createAthleteSetupFlowBindings } from './setupFlowBindings.js';
 import {
   registerAthleteAuthKeyListeners,
   registerAthleteChangeListeners,
@@ -107,15 +100,6 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
   });
   const isImportBusy = createImportBusyChecker(getUiState);
 
-  const hydration = createAthleteHydrationBindings({
-    getUiState,
-    patchUiState,
-    rerender: renderUi,
-    measureAsync: measureUiAsync,
-    emptyCoachPortal: createEmptyCoachPortalState,
-    emptyAthleteOverview: createEmptyAthleteOverviewState,
-    getAppBridge,
-  });
   const {
     shouldHydratePage,
     invalidateHydrationCache,
@@ -123,13 +107,14 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     hydrateAthleteSummary,
     hydrateAthleteResultsBlock,
     syncAthletePrIfAuthenticated,
-  } = hydration;
-  const resumePendingCheckout = () => maybeResumePendingCheckout({
-    consumeCheckoutIntent,
-    hasCheckoutAuth,
-    getAppBridge,
+    resumePendingCheckout,
+  } = createAthleteSetupFlowBindings({
+    getUiState,
+    patchUiState,
     toast,
-    queueCheckoutIntent,
+    renderUi,
+    emptyCoachPortal: createEmptyCoachPortalState,
+    emptyAthleteOverview: createEmptyAthleteOverviewState,
   });
   ({ ensureGoogleSignInUi } = createGoogleSignInHelpers({
     root,
