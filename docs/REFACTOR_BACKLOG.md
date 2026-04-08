@@ -132,6 +132,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` orquestração final de account/history consolidada em `apps/athlete/features/account/*` (com compat re-export)
   - `done` consolidar estados vazios compartilhados entre UI e testes (`apps/athlete/uiState.js`)
   - `done` separar estados vazios e cache de line ids de `apps/athlete/uiState.js` para módulos dedicados
+  - `done` separar a normalização de subestados de `apps/athlete/uiState.js` para `apps/athlete/uiStateNormalize.js`
 - `pending` Converter render manual/string para componentes por fatias
   - `done` extrair shell visual (`chrome.js`) e roteamento de modais (`modals.js`) a partir de `apps/athlete/features/render/shell.js`
   - `done` extrair roteamento de páginas (`pages.js`) a partir de `apps/athlete/features/render/shell.js`
