@@ -8,7 +8,6 @@ import {
 import {
   consumeCheckoutIntent,
   hasCheckoutAuth,
-  peekCheckoutIntent,
   queueCheckoutIntent,
 } from '../../../../src/core/services/subscriptionService.js';
 import { getAppBridge } from '../../../../src/app/bridge.js';
@@ -62,52 +61,20 @@ import {
   createEmptyCoachPortalState,
 } from '../../state/uiState.js';
 import {
-  maybePrimeCheckoutIntentFromUrl,
   maybeResumePendingCheckout,
   normalizeCheckoutPlan,
 } from '../account/services.js';
 import { createAthleteHydrationBindings } from '../account/services.js';
 import { measureUiAsync } from '../account/metrics.js';
 import { createGoogleSignInHelpers } from '../account/googleSignIn.js';
+import {
+  createAthleteUiActions,
+  queueAthleteCheckoutBootstrap,
+  readAthleteAppState,
+} from './setupHelpers.js';
 
 export function setupAthleteActions({ root, toast, rerender, getUiState, setUiState, patchUiState }) {
   if (!root) throw new Error('setupActions: root é obrigatório');
-
-  const readAppState = () => {
-    try {
-      if (getAppBridge()?.getStateSnapshot) return getAppBridge().getStateSnapshot();
-      if (getAppBridge()?.getState) return getAppBridge().getState();
-      return {};
-    } catch {
-      return {};
-    }
-  };
-
-  const renderUi = async () => {
-    if (typeof rerender === 'function') await rerender();
-  };
-
-  async function finalizeUiChange({
-    render = true,
-    toastMessage = '',
-    ensureGoogle = false,
-    focusSelector = '',
-  } = {}) {
-    if (toastMessage) toast(toastMessage);
-    if (render) await renderUi();
-    if (ensureGoogle) await ensureGoogleSignInUi();
-    if (focusSelector) root.querySelector(focusSelector)?.focus();
-  }
-
-  async function applyUiState(next, options = {}) {
-    await setUiState(next);
-    await finalizeUiChange(options);
-  }
-
-  async function applyUiPatch(updater, options = {}) {
-    await patchUiState(updater);
-    await finalizeUiChange(options);
-  }
 
   const guardAthleteImport = createAthleteImportGuard({
     getAppBridge,
@@ -151,6 +118,19 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     shouldHydratePage,
     hydratePage,
     resumePendingCheckout,
+  });
+  const {
+    renderUi,
+    finalizeUiChange,
+    applyUiState,
+    applyUiPatch,
+  } = createAthleteUiActions({
+    root,
+    toast,
+    rerender,
+    setUiState,
+    patchUiState,
+    ensureGoogleSignInUi,
   });
 
   // Busca de PRs (filtra em tempo real)
@@ -249,7 +229,7 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
         renderUi,
         setUiState,
         getAppBridge,
-        readAppState,
+        readAppState: readAthleteAppState,
         isImportBusy,
         idleImportStatus,
         guardAthleteImport,
@@ -295,23 +275,10 @@ export function setupAthleteActions({ root, toast, rerender, getUiState, setUiSt
     });
   });
 
-  queueMicrotask(async () => {
-    try {
-      await maybePrimeCheckoutIntentFromUrl({
-        getAppBridge,
-        hasCheckoutAuth,
-        queueCheckoutIntent,
-        normalizeCheckoutPlan,
-        maybeResumePendingCheckout: resumePendingCheckout,
-        applyUiPatch,
-      });
-      await ensureGoogleSignInUi();
-      if (peekCheckoutIntent() && hasCheckoutAuth() && getAppBridge()?.getProfile?.()?.data?.email) {
-        await resumePendingCheckout();
-      }
-    } catch (error) {
-      console.warn('Falha ao preparar checkout pendente:', error?.message || error);
-    }
+  queueAthleteCheckoutBootstrap({
+    applyUiPatch,
+    ensureGoogleSignInUi,
+    maybeResumePendingCheckout: resumePendingCheckout,
   });
 
   // Clique fora do modal fecha
