@@ -1,3 +1,6 @@
+import { updateAthleteRenderCounters } from './renderCounters.js';
+import { applyAthleteRenderSurface } from './renderSurfaceUpdates.js';
+
 export function applyAthleteRenderLayout({
   state,
   refs,
@@ -13,36 +16,57 @@ export function applyAthleteRenderLayout({
   setLayoutHtml,
   setLayoutText,
 }) {
-  const headerSignature = buildHeaderSignature(state);
-  if (headerSignature !== lastRendered.headerSignature) {
-    lastRendered.headerSignature = headerSignature;
-    lastRendered.headerHtml = renderHeaderAccount(state);
-    setLayoutHtml(refs.headerAccount, lastRendered.headerHtml);
-  }
+  applyAthleteRenderSurface({
+    state,
+    refs,
+    refKey: 'headerAccount',
+    signatureKey: 'headerSignature',
+    htmlKey: 'headerHtml',
+    buildSignature: buildHeaderSignature,
+    renderContent: renderHeaderAccount,
+    lastRendered,
+    setLayoutHtml,
+  });
 
-  const mainSignature = buildMainSignature(state);
-  if (mainSignature !== lastRendered.mainSignature) {
-    lastRendered.mainSignature = mainSignature;
-    lastRendered.mainHtml = renderMainContent(state);
-    setLayoutHtml(refs.main, lastRendered.mainHtml);
-  }
+  applyAthleteRenderSurface({
+    state,
+    refs,
+    refKey: 'main',
+    signatureKey: 'mainSignature',
+    htmlKey: 'mainHtml',
+    buildSignature: buildMainSignature,
+    renderContent: renderMainContent,
+    lastRendered,
+    setLayoutHtml,
+  });
 
-  const bottomSignature = buildBottomSignature(state);
-  if (bottomSignature !== lastRendered.bottomSignature) {
-    lastRendered.bottomSignature = bottomSignature;
-    lastRendered.bottomHtml = renderBottomNav(state);
-    setLayoutHtml(refs.bottomNav, lastRendered.bottomHtml);
-  }
+  applyAthleteRenderSurface({
+    state,
+    refs,
+    refKey: 'bottomNav',
+    signatureKey: 'bottomSignature',
+    htmlKey: 'bottomHtml',
+    buildSignature: buildBottomSignature,
+    renderContent: renderBottomNav,
+    lastRendered,
+    setLayoutHtml,
+  });
 
-  const modalSignature = buildModalSignature(state);
-  if (modalSignature !== lastRendered.modalSignature) {
-    lastRendered.modalSignature = modalSignature;
-    lastRendered.modalHtml = renderModals(state);
-    setLayoutHtml(refs.modals, lastRendered.modalHtml);
-  }
+  applyAthleteRenderSurface({
+    state,
+    refs,
+    refKey: 'modals',
+    signatureKey: 'modalSignature',
+    htmlKey: 'modalHtml',
+    buildSignature: buildModalSignature,
+    renderContent: renderModals,
+    lastRendered,
+    setLayoutHtml,
+  });
 
-  if (refs.prsCount) {
-    const count = Object.keys(state?.prs || {}).length;
-    setLayoutText(refs.prsCount, `${count} PRs`);
-  }
+  updateAthleteRenderCounters({
+    state,
+    refs,
+    setLayoutText,
+  });
 }
