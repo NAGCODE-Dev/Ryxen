@@ -72,6 +72,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` extrair switch/signup/login de `apps/athlete/features/account/authActions.js` para `apps/athlete/features/account/authFlowActions.js`
   - `done` extrair ações admin de `apps/athlete/features/account/pageActions.js` para `apps/athlete/features/account/adminActions.js`
   - `done` extrair navegação/refresh/signout de `apps/athlete/features/account/pageActions.js` para `apps/athlete/features/account/pageSessionActions.js`
+  - `done` extrair pickers e compressão de imagem de `apps/athlete/services/importFiles.js` para módulos dedicados
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais/autenticação do atleta
   - `done` mover implementação para `apps/athlete/features/render/shell.js` e manter `src/ui/render.js` como compat layer
