@@ -101,6 +101,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` consolidar estados vazios compartilhados entre UI e testes (`apps/athlete/uiState.js`)
 - `pending` Converter render manual/string para componentes por fatias
   - `done` extrair shell visual (`chrome.js`) e roteamento de modais (`modals.js`) a partir de `apps/athlete/features/render/shell.js`
+  - `done` extrair roteamento de páginas (`pages.js`) a partir de `apps/athlete/features/render/shell.js`
 - `pending` Definir camada offline-first explícita:
   - snapshot local
   - fila de sync

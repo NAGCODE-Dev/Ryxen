@@ -1,6 +1,3 @@
-import { renderAthleteTodayPage } from '../today/page.js';
-import { renderAthleteHistoryPage } from '../history/page.js';
-import { renderAthleteAccountPage } from '../account/page.js';
 import {
   createAthleteRenderHelpers,
   describeAthleteBenefitSource,
@@ -16,6 +13,7 @@ import {
   renderAthleteHeaderAccount,
 } from './chrome.js';
 import { renderAthleteModals } from './modals.js';
+import { renderAthleteMainContent } from './pages.js';
 
 export function renderAppShell() {
   return renderAthleteAppShell({ escapeHtml, getAppLabel });
@@ -44,11 +42,9 @@ export function renderHeaderAccount(state) {
 }
 
 export function renderMainContent(state) {
-  const currentPage = state?.__ui?.currentPage || 'today';
-  const pageHelpers = createAthletePageHelpers();
-  if (currentPage === 'history') return renderAthleteHistoryPage(state, pageHelpers);
-  if (currentPage === 'account') return renderAthleteAccountPage(state, pageHelpers);
-  return renderAthleteTodayPage(state, pageHelpers);
+  return renderAthleteMainContent(state, {
+    createPageHelpers: createAthletePageHelpers,
+  });
 }
 
 export function renderBottomNav(state) {
