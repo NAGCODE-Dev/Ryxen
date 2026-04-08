@@ -67,6 +67,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
   - `done` mover setup/orquestração principal de ações para `apps/athlete/features/actions/setup.js` e manter `src/ui/actions.js` como compat layer
   - `done` extrair helpers de bridge/UI e bootstrap de checkout de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` extrair roteamento de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
+  - `done` separar sub-roteadores de click de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/clickRoutes.js`
   - `done` extrair registro de listeners de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupHelpers.js`
   - `done` separar registro de listeners de `apps/athlete/features/actions/setupHelpers.js` para `apps/athlete/features/actions/setupListeners.js`
   - `done` mover o listener de click delegado de `apps/athlete/features/actions/setup.js` para `apps/athlete/features/actions/setupListeners.js`

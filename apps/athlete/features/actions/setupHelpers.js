@@ -8,6 +8,13 @@ import {
   maybePrimeCheckoutIntentFromUrl,
   normalizeCheckoutPlan,
 } from '../account/services.js';
+import {
+  routeAthleteAuthClick,
+  routeAthleteBillingClick,
+  routeAthleteModalClick,
+  routeAthletePageClick,
+  routeAthleteTodayClick,
+} from './clickRoutes.js';
 
 export function readAthleteAppState() {
   try {
@@ -116,101 +123,20 @@ export async function routeAthleteClickAction(action, context) {
     return true;
   }
 
-  const handledByAthleteModal = await context.handleAthleteModalAction(action, {
-    element,
-    toast,
-    getUiState,
-    applyUiState,
-    applyUiPatch,
-    isImportBusy,
-  });
+  const handledByAthleteModal = await routeAthleteModalClick(action, context);
   if (handledByAthleteModal) return true;
 
-  const handledByAthleteAuth = await context.handleAthleteAuthAction(action, {
-    element,
-    root,
-    getUiState,
-    applyUiState,
-    applyUiPatch,
-    getAppBridge,
-    invalidateHydrationCache,
-    shouldHydratePage,
-    hydratePage,
-    maybeResumePendingCheckout: resumePendingCheckout,
-    isDeveloperEmail: context.isDeveloperEmail,
-  });
+  const handledByAthleteAuth = await routeAthleteAuthClick(action, context);
   if (handledByAthleteAuth) return true;
 
-  const handledByAthleteBilling = await context.handleAthleteBillingAction(action, {
-    element,
-    getUiState,
-    applyUiPatch,
-    finalizeUiChange,
-    hydratePage,
-    invalidateHydrationCache,
-    getAppBridge,
-    normalizeCheckoutPlan: context.normalizeCheckoutPlan,
-    hasCheckoutAuth,
-    queueCheckoutIntent,
-    isDeveloperProfile: context.isDeveloperProfile,
-  });
+  const handledByAthleteBilling = await routeAthleteBillingClick(action, context);
   if (handledByAthleteBilling) return true;
 
-  const handledByAthletePage = await context.handleAthleteAccountHistoryAction(action, {
-    element,
-    root,
-    getUiState,
-    applyUiState,
-    applyUiPatch,
-    finalizeUiChange,
-    hydratePage,
-    shouldHydratePage,
-    invalidateHydrationCache,
-    getAppBridge,
-    maybeResumePendingCheckout: resumePendingCheckout,
-    emptyCoachPortal,
-    emptyAthleteOverview,
-    emptyAdmin,
-  });
+  const handledByAthletePage = await routeAthletePageClick(action, context);
   if (handledByAthletePage) return true;
 
-  return context.handleAthleteTodayAction(action, {
-    element,
-    root,
-    toast,
-    getUiState,
-    applyUiState,
-    applyUiPatch,
-    finalizeUiChange,
-    renderUi,
-    setUiState,
-    getAppBridge,
+  return routeAthleteTodayClick(action, {
+    ...context,
     readAppState: readAthleteAppState,
-    isImportBusy,
-    idleImportStatus: context.idleImportStatus,
-    guardAthleteImport,
-    prepareImportFileForClientUse: context.prepareImportFileForClientUse,
-    pickJsonFile: context.pickJsonFile,
-    pickPdfFile: context.pickPdfFile,
-    pickUniversalFile: context.pickUniversalFile,
-    explainImportFailure: context.explainImportFailure,
-    formatBytes: context.formatBytes,
-    IMPORT_HARD_MAX_BYTES: context.IMPORT_HARD_MAX_BYTES,
-    IMAGE_COMPRESS_THRESHOLD_BYTES: context.IMAGE_COMPRESS_THRESHOLD_BYTES,
-    IMAGE_TARGET_MAX_BYTES: context.IMAGE_TARGET_MAX_BYTES,
-    IMAGE_MAX_DIMENSION: context.IMAGE_MAX_DIMENSION,
-    workoutKeyFromAppState: context.workoutKeyFromAppState,
-    getActiveLineIdFromUi: context.getActiveLineIdFromUi,
-    getLineIdsFromDOM: context.getLineIdsFromDOM,
-    pickNextId: context.pickNextId,
-    pickPrevId: context.pickPrevId,
-    scrollToLine: context.scrollToLine,
-    syncAthletePrIfAuthenticated,
-    invalidateHydrationCache,
-    hydrateAthleteSummary,
-    hydrateAthleteResultsBlock,
-    cssEscape: context.cssEscape,
-    startRestTimer: context.startRestTimer,
-    consumeAthleteImport: context.consumeAthleteImport,
   });
 }
