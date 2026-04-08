@@ -73,6 +73,7 @@ Sair de uma base web única com fronteiras implícitas e chegar em uma plataform
 - `in_progress` Tirar `src/ui/render.js` e `src/ui/actions.js` do papel de dono do WOD/importação do atleta
   - `done` mover binding de eventos de importação para `apps/athlete/features/events/bindings.js` com wrapper legado
   - `done` fazer `apps/athlete/mountUi.js` consumir eventos direto de `apps/athlete/features/events/bindings.js`
+  - `done` extrair handlers de importação e app bus de `apps/athlete/features/events/bindings.js` para módulos dedicados
 - `in_progress` Tirar `src/ui/render.js` do papel de dono das modais secundárias do atleta
 - `in_progress` Tirar `src/ui/render.js` do papel de dono dos helpers visuais compartilhados do atleta
 - `in_progress` Tirar `apps/athlete/bootstrap.js` do papel de dono do ambiente/observabilidade/diagnóstico
