@@ -1,3 +1,4 @@
+import { summarizeWorkoutBlock } from '../workoutMetadataSummary.js';
 import { renderWorkoutSpecialLine } from './workoutSpecialLines.js';
 import { renderWorkoutStandardLine } from './workoutStandardLine.js';
 import { getWorkoutTimerConfig } from './workoutTimerConfig.js';
@@ -9,7 +10,10 @@ export function renderWorkoutBlock(block, blockIndex, ui, helpers = {}) {
   const title = String(block?.title || '').trim();
   const period = String(block?.period || '').trim();
   const typeLabel = formatBlockTypeLabel(block?.type);
-  const showHeader = !!(title || period || typeLabel || timerConfig);
+  const blockSummary = summarizeWorkoutBlock(block);
+  const headerMeta = [...new Set([timerConfig?.detail, ...blockSummary.summary].filter(Boolean))];
+  const showHeader = !!(title || period || typeLabel || headerMeta.length || blockSummary.details.length || blockSummary.normalizedNames.length);
+
   return `
     <div class="workout-block">
       ${showHeader ? `
@@ -20,7 +24,17 @@ export function renderWorkoutBlock(block, blockIndex, ui, helpers = {}) {
               ${typeLabel ? `<span class="workout-blockTag">${escapeHtml(typeLabel)}</span>` : ''}
             </div>
             ${title ? `<strong class="workout-blockTitle">${escapeHtml(title)}</strong>` : ''}
-            ${timerConfig ? `<span class="workout-blockMeta">${escapeHtml(timerConfig.detail)}</span>` : ''}
+            ${headerMeta.length ? `<span class="workout-blockMeta">${escapeHtml(headerMeta.join(' · '))}</span>` : ''}
+            ${blockSummary.details.length ? `
+              <div class="workout-blockSummaryList">
+                ${blockSummary.details.map((detail) => `<span class="workout-blockSummaryItem">${escapeHtml(detail)}</span>`).join('')}
+              </div>
+            ` : ''}
+            ${blockSummary.normalizedNames.length ? `
+              <div class="workout-blockNames">
+                ${blockSummary.normalizedNames.map((name) => `<span class="workout-blockName">${escapeHtml(name)}</span>`).join('')}
+              </div>
+            ` : ''}
           </div>
           ${timerConfig ? renderWorkoutTimerActions(timerConfig) : ''}
         </div>

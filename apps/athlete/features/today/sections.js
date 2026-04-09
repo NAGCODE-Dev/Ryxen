@@ -1,3 +1,5 @@
+import { summarizeWorkoutForDisplay } from '../../workoutMetadataSummary.js';
+
 export function renderTodayWorkoutHeader({
   showSourceToggle = false,
   activeSource = 'uploaded',
@@ -47,6 +49,7 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
   const lines = (workout?.blocks || []).reduce((sum, block) => sum + (block?.lines?.length || 0), 0);
   const blocks = workout?.blocks?.length || 0;
   const currentDay = formatDay(state?.currentDay || workout?.day || '');
+  const metadata = summarizeWorkoutForDisplay(workout);
 
   if (!workout && !weeks) return '';
 
@@ -69,6 +72,12 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
         <span class="today-overviewMeta">${activeSource === 'coach' ? 'Coach' : 'Planilha'}</span>
       </div>
       <strong class="today-overviewTitle">${warningsCount ? `${warningsCount} aviso(s) na sessão` : `${blocks} bloco(s) e ${lines} linha(s)`}</strong>
+      ${metadata.periods.length || metadata.blockTypes.length ? `
+        <div class="today-metaChips">
+          ${metadata.periods.map((period) => `<span class="today-metaChip">${escapeHtml(period)}</span>`).join('')}
+          ${metadata.blockTypes.map((type) => `<span class="today-metaChip">${escapeHtml(type)}</span>`).join('')}
+        </div>
+      ` : ''}
       ${currentDay ? `<span class="today-overviewFoot">${escapeHtml(currentDay)}</span>` : ''}
     </div>
   `;
@@ -78,27 +87,25 @@ export function renderTodaySessionCard(state, workout, { escapeHtml }) {
   const activeSource = state?.workoutContext?.activeSource || 'uploaded';
   const warningsCount = workout?.warnings?.length || 0;
   const blocks = workout?.blocks?.length || 0;
-  const firstUsefulLine = (workout?.blocks || [])
-    .flatMap((block) => block?.lines || [])
-    .map((line) => typeof line === 'string' ? line : (line?.raw || line?.text || ''))
-    .map((line) => String(line || '').trim())
-    .find((line) => line && !line.startsWith('*') && !line.includes('@gmail') && !line.includes('@hotmail')) || '';
+  const metadata = summarizeWorkoutForDisplay(workout);
 
   return `
     <section class="today-sessionCard">
       <div class="today-sessionHead">
         <div>
           <div class="section-kicker">Sessão</div>
-          <h2 class="today-sessionTitle">${escapeHtml(firstUsefulLine || 'Treino pronto')}</h2>
+          <h2 class="today-sessionTitle">${escapeHtml(metadata.primaryTitle || 'Treino pronto')}</h2>
         </div>
         <div class="today-sessionPill ${warningsCount ? 'isWarn' : 'isGood'}">${warningsCount ? `${warningsCount} aviso(s)` : 'Pronto'}</div>
       </div>
       <div class="today-sessionMeta">
         <span>${escapeHtml(activeSource === 'coach' ? 'Vindo do coach' : 'Vindo da sua planilha')}</span>
         <span>${blocks} bloco(s)</span>
+        ${metadata.periods.map((period) => `<span>${escapeHtml(period)}</span>`).join('')}
       </div>
       <div class="today-sessionStrip">
         <span class="today-sessionStripItem">${warningsCount ? 'Ajuste os avisos antes de começar' : 'Sessão pronta para executar'}</span>
+        ${metadata.highlights.map((item) => `<span class="today-sessionStripItem">${escapeHtml(item)}</span>`).join('')}
       </div>
     </section>
   `;

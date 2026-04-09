@@ -1,7 +1,11 @@
+import { summarizeWorkoutForDisplay } from '../../workoutMetadataSummary.js';
+
 export function renderAthleteImportModal(state = {}, helpers = {}) {
   const { escapeHtml } = helpers;
   const importStatus = state?.__ui?.importStatus || {};
-  const hasCurrentWorkout = !!(state?.workout?.blocks?.length || state?.workoutOfDay?.blocks?.length);
+  const currentWorkout = state?.workout?.blocks?.length ? state.workout : state?.workoutOfDay;
+  const hasCurrentWorkout = !!currentWorkout?.blocks?.length;
+  const metadata = summarizeWorkoutForDisplay(currentWorkout);
   const importSteps = [
     { key: 'selected', label: 'Selecionado' },
     { key: 'read', label: 'Lendo' },
@@ -38,6 +42,28 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
                 `).join('')}
               </div>
               <p>${escapeHtml(importStatus.message || 'Preparando importação...')}</p>
+            </div>
+          ` : ''}
+          ${hasCurrentWorkout ? `
+            <div class="import-previewCard">
+              <div class="import-previewHead">
+                <strong>Treino atual</strong>
+                ${currentWorkout?.day ? `<span>${escapeHtml(currentWorkout.day)}</span>` : ''}
+              </div>
+              <div class="import-previewBody">
+                <strong class="import-previewTitle">${escapeHtml(metadata.primaryTitle || 'Treino carregado')}</strong>
+                ${metadata.periods.length || metadata.blockTypes.length ? `
+                  <div class="today-metaChips">
+                    ${metadata.periods.map((period) => `<span class="today-metaChip">${escapeHtml(period)}</span>`).join('')}
+                    ${metadata.blockTypes.map((type) => `<span class="today-metaChip">${escapeHtml(type)}</span>`).join('')}
+                  </div>
+                ` : ''}
+                ${metadata.highlights.length ? `
+                  <div class="import-previewList">
+                    ${metadata.highlights.map((item) => `<span class="import-previewItem">${escapeHtml(item)}</span>`).join('')}
+                  </div>
+                ` : ''}
+              </div>
             </div>
           ` : ''}
           <div class="coach-grid">

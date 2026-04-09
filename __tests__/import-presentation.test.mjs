@@ -13,13 +13,30 @@ test('modal de importação expõe as opções realmente suportadas na apresenta
 });
 
 test('modal de importação oferece exportar quando já existe treino atual', () => {
-  const html = renderImportModal({
-    workout: {
-      blocks: [{ lines: ['BACK SQUAT'] }],
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement() {
+      return {
+        _text: '',
+        set textContent(value) { this._text = String(value ?? ''); },
+        get innerHTML() { return this._text; },
+      };
     },
-  });
+  };
 
-  assert.match(html, /Exportar treino atual/i);
+  try {
+    const html = renderImportModal({
+      workout: {
+        day: 'Quarta',
+        blocks: [{ lines: ['BACK SQUAT'] }],
+      },
+    });
+
+    assert.match(html, /Exportar treino atual/i);
+    assert.match(html, /Treino atual/i);
+  } finally {
+    globalThis.document = previousDocument;
+  }
 });
 
 test('modal de importação trava ações enquanto arquivo está sendo processado', () => {
@@ -76,7 +93,20 @@ test('página Hoje apresenta treino importado de forma direta', () => {
         day: 'Segunda',
         title: 'Segunda',
         blocks: [
-          { type: 'DEFAULT', lines: ['BACK SQUAT', '5x5 @ 80%', { raw: '-> 80kg', calculated: '80kg' }] },
+          {
+            type: 'WOD',
+            period: 'manhã',
+            parsed: {
+              format: 'amrap',
+              timeCapMinutes: 12,
+              goal: 'Acima de 5 rounds',
+              items: [
+                { type: 'movement', name: 'wall ball', canonicalName: 'wall ball' },
+                { type: 'movement', name: 'double unders', canonicalName: 'double unders' },
+              ],
+            },
+            lines: ['BACK SQUAT', '5x5 @ 80%', { raw: '-> 80kg', calculated: '80kg' }],
+          },
         ],
       },
       __ui: {
@@ -92,6 +122,11 @@ test('página Hoje apresenta treino importado de forma direta', () => {
     assert.match(html, /Semana .* Segunda/i);
     assert.match(html, /BACK SQUAT/i);
     assert.match(html, /5x5 @ 80%/i);
+    assert.match(html, /manhã/i);
+    assert.match(html, /AMRAP 12min/i);
+    assert.match(html, /Objetivo: Acima de 5 rounds/i);
+    assert.match(html, /wall ball/i);
+    assert.match(html, /double unders/i);
     assert.match(html, /Automático/i);
     assert.match(html, /Copiar treino/i);
     assert.doesNotMatch(html, /Modo treino/i);

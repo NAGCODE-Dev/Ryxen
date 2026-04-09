@@ -222,6 +222,31 @@
   line-height: 1.4;
 }
 
+.today-metaChips,
+.workout-blockSummaryList,
+.workout-blockNames,
+.import-previewList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.today-metaChip,
+.workout-blockSummaryItem,
+.workout-blockName,
+.import-previewItem {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text-secondary);
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
 .today-sessionStrip {
   display: flex;
   flex-wrap: wrap;
@@ -355,6 +380,16 @@
   font-size: 0.86rem;
 }
 
+.workout-blockSummaryItem {
+  min-height: 30px;
+  background: color-mix(in srgb, var(--bg-soft) 80%, transparent);
+}
+
+.workout-blockName {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface-2) 90%);
+}
+
 .workout-blockActions {
   display: flex;
   flex-wrap: wrap;
@@ -390,6 +425,38 @@
   margin-top: 6px;
   border-radius: 999px;
   background: rgba(226, 232, 240, 0.5);
+}
+
+.import-previewCard {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.02)), var(--bg-surface);
+}
+
+.import-previewHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.import-previewHead span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.import-previewBody {
+  display: grid;
+  gap: 8px;
+}
+
+.import-previewTitle {
+  font-size: 0.96rem;
+  line-height: 1.2;
 }
 
 .workout-line:last-child {
