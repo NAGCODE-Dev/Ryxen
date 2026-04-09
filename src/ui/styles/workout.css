@@ -507,6 +507,131 @@
   color: var(--text-primary);
 }
 
+.btn-timer-secondary {
+  background: transparent;
+}
+
+.rest-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.timer-modal {
+  position: fixed;
+  z-index: 1200;
+  display: grid;
+  pointer-events: none;
+}
+
+.timer-modal.is-popup {
+  right: 16px;
+  bottom: 96px;
+  width: min(92vw, 360px);
+}
+
+.timer-modal.is-fullscreen {
+  inset: 0;
+  place-items: center;
+  padding: 20px;
+  background: rgba(7, 20, 39, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.timer-content {
+  pointer-events: auto;
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg-surface-2) 92%, white 8%);
+  box-shadow: var(--shadow-ryxen-md);
+}
+
+.timer-modal.is-fullscreen .timer-content {
+  max-width: 560px;
+  padding: 28px;
+}
+
+.timer-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.timer-kicker {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+.btn-timer-close,
+.btn-timer-primary,
+.btn-timer-mode {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.btn-timer-primary {
+  background: var(--accent);
+  border-color: transparent;
+  color: white;
+}
+
+.btn-timer-mode.is-active {
+  background: color-mix(in srgb, var(--accent) 22%, var(--bg-soft));
+  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+}
+
+.timer-time {
+  font-size: clamp(2.4rem, 9vw, 4.8rem);
+  line-height: 1;
+  font-weight: 800;
+  text-align: center;
+}
+
+.timer-progress {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+}
+
+.timer-progressBar {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--energy));
+  transition: width 0.3s ease;
+}
+
+.timer-meta {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.timer-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.timer-actions-modes {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .empty-state {
   display: grid;
   gap: 12px;

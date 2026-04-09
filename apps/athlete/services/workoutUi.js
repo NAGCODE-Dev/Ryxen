@@ -1,5 +1,7 @@
 import { getAppBridge } from '../../../src/app/bridge.js';
 
+let activeRestTimer = null;
+
 export function workoutKeyFromAppState() {
   const bridge = getAppBridge?.();
   const state = bridge?.getStateSnapshot ? bridge.getStateSnapshot() : (bridge?.getState?.() || {});
@@ -43,39 +45,141 @@ export function scrollToLine(root, lineId) {
   element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-export function startRestTimer(totalSeconds, toast) {
-  let remaining = totalSeconds;
+export function startRestTimer(totalSeconds, toast, options = {}) {
+  const initialSeconds = Math.max(1, Number(totalSeconds) || 0);
+  const initialMode = options.mode === 'fullscreen' ? 'fullscreen' : 'popup';
+
+  if (activeRestTimer?.destroy) {
+    activeRestTimer.destroy(false);
+    activeRestTimer = null;
+  }
+
+  let remaining = initialSeconds;
+  let paused = false;
+  let intervalId = null;
 
   const modal = document.createElement('div');
-  modal.className = 'timer-modal';
+  modal.className = `timer-modal ${initialMode === 'fullscreen' ? 'is-fullscreen' : 'is-popup'}`;
   modal.innerHTML = `
     <div class="timer-content">
-      <div class="timer-time" id="timer-time">${formatTime(remaining)}</div>
-      <button class="btn-timer-cancel" id="timer-cancel">Cancelar</button>
+      <div class="timer-topbar">
+        <div class="timer-kicker">Timer de descanso</div>
+        <button class="btn-timer-close" type="button" data-timer-close>Fechar</button>
+      </div>
+      <div class="timer-time" data-timer-time>${formatTime(remaining)}</div>
+      <div class="timer-progress">
+        <div class="timer-progressBar" data-timer-progress></div>
+      </div>
+      <div class="timer-meta" data-timer-meta>${Math.ceil(remaining / 60)} min restantes</div>
+      <div class="timer-actions">
+        <button class="btn-timer-secondary" type="button" data-timer-minus>−30s</button>
+        <button class="btn-timer-primary" type="button" data-timer-toggle>${paused ? 'Retomar' : 'Pausar'}</button>
+        <button class="btn-timer-secondary" type="button" data-timer-plus>+30s</button>
+      </div>
+      <div class="timer-actions timer-actions-modes">
+        <button class="btn-timer-mode ${initialMode === 'popup' ? 'is-active' : ''}" type="button" data-timer-mode="popup">Popup</button>
+        <button class="btn-timer-mode ${initialMode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela cheia</button>
+      </div>
     </div>
   `;
 
   document.body.appendChild(modal);
 
-  const display = document.getElementById('timer-time');
-  const cancel = document.getElementById('timer-cancel');
+  const display = modal.querySelector('[data-timer-time]');
+  const progress = modal.querySelector('[data-timer-progress]');
+  const meta = modal.querySelector('[data-timer-meta]');
+  const toggleButton = modal.querySelector('[data-timer-toggle]');
+  const modeButtons = Array.from(modal.querySelectorAll('[data-timer-mode]'));
 
-  const interval = setInterval(() => {
-    remaining--;
-    display.textContent = formatTime(remaining);
+  const updateModeButtons = (mode) => {
+    modeButtons.forEach((button) => {
+      button.classList.toggle('is-active', button.dataset.timerMode === mode);
+    });
+  };
+
+  const updateDisplay = () => {
+    if (display) display.textContent = formatTime(remaining);
+    if (meta) meta.textContent = paused
+      ? `Pausado em ${formatTime(remaining)}`
+      : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')} restantes`;
+    if (progress) {
+      const ratio = Math.max(0, Math.min(1, remaining / initialSeconds));
+      progress.style.width = `${ratio * 100}%`;
+    }
+    if (toggleButton) toggleButton.textContent = paused ? 'Retomar' : 'Pausar';
+  };
+
+  const applyMode = async (mode) => {
+    const nextMode = mode === 'fullscreen' ? 'fullscreen' : 'popup';
+    modal.classList.toggle('is-fullscreen', nextMode === 'fullscreen');
+    modal.classList.toggle('is-popup', nextMode === 'popup');
+    updateModeButtons(nextMode);
+
+    if (nextMode === 'fullscreen' && modal.requestFullscreen) {
+      try { await modal.requestFullscreen(); } catch {}
+    }
+
+    if (nextMode === 'popup' && document.fullscreenElement) {
+      try { await document.exitFullscreen(); } catch {}
+    }
+  };
+
+  const tick = () => {
+    if (paused) return;
+    remaining -= 1;
+    updateDisplay();
 
     if (remaining <= 0) {
-      clearInterval(interval);
-      document.body.removeChild(modal);
-      toast('✅ Descanso finalizado!');
+      destroy(true);
+      toast('Descanso finalizado');
     }
-  }, 1000);
-
-  cancel.onclick = () => {
-    clearInterval(interval);
-    document.body.removeChild(modal);
-    toast('⏹️ Timer cancelado');
   };
+
+  const startInterval = () => {
+    intervalId = window.setInterval(tick, 1000);
+  };
+
+  function destroy(showToast = true) {
+    if (intervalId) {
+      window.clearInterval(intervalId);
+      intervalId = null;
+    }
+    if (document.fullscreenElement === modal) {
+      document.exitFullscreen().catch(() => {});
+    }
+    modal.remove();
+    if (activeRestTimer?.modal === modal) activeRestTimer = null;
+    if (!showToast) return;
+  }
+
+  modal.querySelector('[data-timer-close]')?.addEventListener('click', () => {
+    destroy(false);
+    toast('Timer fechado');
+  });
+
+  modal.querySelector('[data-timer-toggle]')?.addEventListener('click', () => {
+    paused = !paused;
+    updateDisplay();
+  });
+
+  modal.querySelector('[data-timer-minus]')?.addEventListener('click', () => {
+    remaining = Math.max(5, remaining - 30);
+    updateDisplay();
+  });
+
+  modal.querySelector('[data-timer-plus]')?.addEventListener('click', () => {
+    remaining += 30;
+    updateDisplay();
+  });
+
+  modeButtons.forEach((button) => {
+    button.addEventListener('click', () => applyMode(button.dataset.timerMode));
+  });
+
+  activeRestTimer = { modal, destroy, applyMode };
+  updateDisplay();
+  startInterval();
+  applyMode(initialMode);
 }
 
 export function cssEscape(value) {

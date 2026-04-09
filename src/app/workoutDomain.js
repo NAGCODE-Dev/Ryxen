@@ -91,15 +91,24 @@ export function createWorkoutDomain({
             }
             if (result?.isExerciseHeader) {
               return {
+                ...(typeof line === 'object' && line !== null ? line : {}),
                 raw: result.originalLine || line,
                 isHeader: true,
                 exercise: result.exercise,
               };
             }
             if (result?.isRest) {
+              const sourceText = String(result.originalLine || line || '');
+              const minuteMatch = sourceText.match(/(\d+)\s*['`´]/);
+              const secondMatch = sourceText.match(/(\d+)\s*s\b/i);
               return {
+                ...(typeof line === 'object' && line !== null ? line : {}),
                 raw: result.originalLine || line,
                 isRest: true,
+                durationMinutes: minuteMatch ? Number(minuteMatch[1]) : null,
+                durationSeconds: minuteMatch
+                  ? Number(minuteMatch[1]) * 60
+                  : (secondMatch ? Number(secondMatch[1]) : null),
               };
             }
             return line;

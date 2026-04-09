@@ -81,7 +81,7 @@ export async function handleAthleteWodNavigation(action, context) {
     case 'timer:start': {
       const seconds = Number(element.dataset.seconds);
       if (!seconds || seconds <= 0) return true;
-      startRestTimer(seconds, toast);
+      startRestTimer(seconds, toast, { mode: element.dataset.timerMode || 'popup' });
       return true;
     }
 
