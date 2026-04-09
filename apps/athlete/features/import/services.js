@@ -1,8 +1,13 @@
 export {
-  compressImportedImage,
-  formatImportError,
+  explainImportFailure,
+  formatBytes,
   idleImportStatus,
+  IMAGE_COMPRESS_THRESHOLD_BYTES,
+  IMAGE_MAX_DIMENSION,
+  IMAGE_TARGET_MAX_BYTES,
+  IMPORT_HARD_MAX_BYTES,
   pickJsonFile,
   pickPdfFile,
-  pickSpreadsheetFile,
+  pickUniversalFile,
+  prepareImportFileForClientUse,
 } from '../../services/importFiles.js';
