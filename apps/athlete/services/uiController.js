@@ -6,8 +6,11 @@ import {
 import { normalizeAthleteUiState } from '../state/uiState.js';
 import {
   buildUiSnapshotSignature,
+  createAthleteEventLog,
   restoreUiStateFromAccount,
 } from './uiControllerHelpers.js';
+
+export { createAthleteEventLog };
 
 export async function createAthleteUiStateController({ createStorage }) {
   const uiStorage = createStorage('ui-state', 5000);
