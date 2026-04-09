@@ -4,6 +4,7 @@ import {
   renderPasswordResetBox,
   renderSignupVerificationBox,
 } from './authGuestSections.js';
+import { getTrustedDeviceUiState, renderTrustedDeviceStatus } from '../features/account/trustedDeviceUi.js';
 
 export function renderGuestAuthView({
   isSignup,
@@ -13,6 +14,7 @@ export function renderGuestAuthView({
   escapeHtml,
 }) {
   const rememberedEmail = signupVerification.email || reset.email || '';
+  const trustedDeviceUi = getTrustedDeviceUiState(rememberedEmail);
 
   return `
     <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
@@ -35,11 +37,11 @@ export function renderGuestAuthView({
           <form class="auth-form" id="ui-authForm">
             <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" autocomplete="name" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
             <input class="add-input" id="auth-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Seu email" value="${escapeHtml(rememberedEmail)}" />
-            <input class="add-input" id="auth-password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="Sua senha" />
-            ${!isSignup ? '<p class="account-hint auth-inlineStatus">Neste dispositivo confiavel, voce pode entrar so com o email.</p>' : ''}
+            <input class="add-input" id="auth-password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="${escapeHtml(isSignup ? 'Sua senha' : trustedDeviceUi.passwordPlaceholder)}" />
+            ${!isSignup ? renderTrustedDeviceStatus({ email: rememberedEmail, escapeHtml }) : ''}
             ${isSignup ? renderSignupVerificationBox({ signupVerification, escapeHtml }) : ''}
             <button class="btn-primary auth-submitButton" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
-              ${isSignup ? 'Criar conta com código' : 'Entrar'}
+              ${isSignup ? 'Criar conta com código' : escapeHtml(trustedDeviceUi.submitLabel)}
             </button>
             ${!isSignup && reset?.message && !reset?.open ? `
               <p class="account-hint auth-inlineStatus">${escapeHtml(reset.message)}</p>

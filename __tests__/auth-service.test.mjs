@@ -205,3 +205,44 @@ test('signInWithTrustedDevice usa grant salvo no mesmo aparelho', async (t) => {
   assert.equal(requestBody.trustedToken, 'grant-abc');
   assert.equal(mod.hasTrustedDeviceGrant('nagcode.contact@gmail.com'), true);
 });
+
+test('getTrustedDeviceUiState ajusta a UX conforme o grant do aparelho', async (t) => {
+  const storage = createStorageMock();
+  storage.setItem('ryxen-trusted-device-id', 'device-123');
+  storage.setItem('ryxen-trusted-device-map', JSON.stringify({
+    'nagcode.contact@gmail.com': {
+      trustedToken: 'grant-abc',
+      deviceId: 'device-123',
+      expiresAt: '2099-01-01T00:00:00.000Z',
+    },
+  }));
+
+  globalThis.localStorage = storage;
+  globalThis.window = {
+    location: {
+      href: 'https://crossapp.com/sports/cross/index.html',
+      origin: 'https://crossapp.com',
+      pathname: '/sports/cross/index.html',
+      search: '',
+      protocol: 'https:',
+      hostname: 'crossapp.com',
+    },
+    navigator: { userAgent: 'UnitTestBrowser/1.0' },
+    localStorage: storage,
+    __RYXEN_CONFIG__: {
+      apiBaseUrl: '/api',
+    },
+  };
+
+  t.after(() => {
+    globalThis.window = originalWindow;
+    globalThis.localStorage = originalLocalStorage;
+  });
+
+  const { getTrustedDeviceUiState } = await import(`../apps/athlete/features/account/trustedDeviceUi.js?test=${Date.now()}4`);
+
+  assert.equal(getTrustedDeviceUiState('').submitLabel, 'Entrar');
+  assert.equal(getTrustedDeviceUiState('other@example.com').hintTitle, 'Primeiro acesso neste aparelho');
+  assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').isTrusted, true);
+  assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').submitLabel, 'Entrar neste aparelho');
+});

@@ -183,6 +183,39 @@
   margin: 2px 0 0;
 }
 
+.auth-trustedStatus {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.015)),
+    rgba(15, 23, 33, 0.94);
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.auth-trustedStatus.isTrusted {
+  border-color: rgba(74, 222, 128, 0.22);
+  background:
+    linear-gradient(180deg, rgba(34, 197, 94, 0.09), rgba(34, 197, 94, 0.045)),
+    rgba(11, 18, 24, 0.96);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+}
+
+.auth-trustedTitle {
+  font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.auth-trustedStatus .auth-inlineStatus {
+  margin: 0;
+}
+
+.auth-form.isTrustedDeviceReady .auth-submitButton {
+  box-shadow: 0 16px 34px rgba(34, 197, 94, 0.18);
+}
+
 .import-stepper {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
