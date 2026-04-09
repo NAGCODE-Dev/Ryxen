@@ -655,9 +655,9 @@
   .today-overviewBadge,
   .today-overviewMeta,
   .today-sessionPill {
-    min-height: 24px;
+    min-height: 28px;
     padding: 0 8px;
-    font-size: 0.64rem;
+    font-size: 0.66rem;
   }
 
   .today-sessionMeta,
@@ -676,9 +676,9 @@
   .workout-blockSummaryItem,
   .workout-blockName,
   .today-sessionStripItem {
-    min-height: 22px;
+    min-height: 28px;
     padding: 0 8px;
-    font-size: 0.62rem;
+    font-size: 0.64rem;
   }
 
   .workout-rest,
@@ -710,9 +710,9 @@
   }
 
   .workout-blockTag {
-    min-height: 22px;
+    min-height: 28px;
     padding: 0 8px;
-    font-size: 0.6rem;
+    font-size: 0.62rem;
   }
 
   .exercise-text,
@@ -723,14 +723,14 @@
   }
 
   .exercise-helpBtn {
-    min-height: 26px;
+    min-height: 28px;
     padding: 0 8px;
     font-size: 0.64rem;
   }
 
   .rest-badge,
   .note-badge {
-    min-height: 22px;
+    min-height: 28px;
     padding: 0 8px;
     font-size: 0.62rem;
   }
@@ -746,7 +746,7 @@
   }
 
   .btn-timer {
-    min-height: 30px;
+    min-height: 40px;
     padding: 0 9px;
     font-size: 0.68rem;
     white-space: nowrap;
@@ -785,7 +785,7 @@
   .btn-timer-close,
   .btn-timer-primary,
   .btn-timer-mode {
-    min-height: 32px;
+    min-height: 40px;
     padding: 0 10px;
     font-size: 0.7rem;
   }
@@ -826,9 +826,9 @@
   .today-sessionStripItem,
   .workout-blockSummaryItem,
   .workout-blockName {
-    min-height: 20px;
+    min-height: 28px;
     padding: 0 7px;
-    font-size: 0.58rem;
+    font-size: 0.62rem;
   }
 
   .workout-block,
@@ -852,13 +852,13 @@
   }
 
   .workout-blockTag {
-    min-height: 20px;
+    min-height: 28px;
     padding: 0 7px;
-    font-size: 0.56rem;
+    font-size: 0.6rem;
   }
 
   .workout-blockTitle {
-    font-size: 0.78rem;
+    font-size: 0.84rem;
   }
 
   .workout-blockMeta {
@@ -881,22 +881,22 @@
   .exercise-text,
   .rest-text,
   .note-text {
-    font-size: 0.76rem;
+    font-size: 0.78rem;
     line-height: 1.3;
   }
 
   .exercise-helpBtn,
   .btn-timer {
-    min-height: 24px;
+    min-height: 40px;
     padding: 0 8px;
     font-size: 0.62rem;
   }
 
   .rest-badge,
   .note-badge {
-    min-height: 20px;
+    min-height: 28px;
     padding: 0 7px;
-    font-size: 0.58rem;
+    font-size: 0.6rem;
   }
 
   .load-calc {
@@ -952,7 +952,7 @@
   .btn-timer-close,
   .btn-timer-primary,
   .btn-timer-mode {
-    min-height: 28px;
+    min-height: 40px;
     padding: 0 8px;
     font-size: 0.64rem;
   }
@@ -979,7 +979,7 @@
   .today-overviewTitle,
   .today-sessionTitle,
   .workout-blockTitle {
-    font-size: 0.74rem;
+    font-size: 0.84rem;
   }
 
   .today-sessionMeta,
@@ -998,9 +998,9 @@
   .workout-blockTag,
   .rest-badge,
   .note-badge {
-    min-height: 19px;
+    min-height: 26px;
     padding: 0 6px;
-    font-size: 0.54rem;
+    font-size: 0.6rem;
   }
 
   .workout-line {
@@ -1013,7 +1013,7 @@
   .exercise-text,
   .rest-text,
   .note-text {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
   }
 
   .exercise-helpBtn,
@@ -1021,9 +1021,9 @@
   .btn-timer-close,
   .btn-timer-primary,
   .btn-timer-mode {
-    min-height: 23px;
+    min-height: 40px;
     padding: 0 7px;
-    font-size: 0.58rem;
+    font-size: 0.62rem;
   }
 
   .timer-content {

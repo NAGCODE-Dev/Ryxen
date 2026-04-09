@@ -14,16 +14,16 @@
   }
 
   .page-heroTitle {
-    font-size: 1.18rem;
+    font-size: 1.2rem;
   }
 
   body[data-page="history"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
-    font-size: 1.04rem;
+    font-size: 1.06rem;
   }
 
   .page-heroSubtitle {
-    font-size: 0.73rem;
+    font-size: 0.78rem;
     line-height: 1.4;
   }
 
@@ -32,13 +32,13 @@
   }
 
   body[data-page="today"] .page-heroTitle {
-    font-size: 1.14rem;
+    font-size: 1.16rem;
     line-height: 1.08;
   }
 
   body[data-page="today"] .page-heroSubtitle {
     max-width: 42ch;
-    font-size: 0.74rem;
+    font-size: 0.78rem;
     line-height: 1.42;
   }
 
@@ -55,7 +55,7 @@
 
   body[data-page="history"] .page-heroSubtitle,
   body[data-page="account"] .page-heroSubtitle {
-    font-size: 0.73rem;
+    font-size: 0.76rem;
     line-height: 1.38;
   }
 
@@ -119,7 +119,7 @@
   }
 
   .nav-btn {
-    min-height: 35px;
+    min-height: 38px;
     border-radius: 12px;
   }
 
@@ -128,7 +128,7 @@
   }
 
   .nav-label {
-    font-size: 0.54rem;
+    font-size: 0.62rem;
     letter-spacing: 0.02em;
   }
 
@@ -254,7 +254,7 @@
 
   .header-account-btn {
     max-width: 122px;
-    min-height: 30px;
+    min-height: 32px;
     font-size: 0.66rem;
   }
 
@@ -263,13 +263,13 @@
   }
 
   .page-heroTitle {
-    font-size: 1.1rem;
+    font-size: 1.14rem;
     line-height: 1.1;
   }
 
   body[data-page="history"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
-    font-size: 0.98rem;
+    font-size: 1.02rem;
   }
 
   body[data-page="history"] .page-heroActions,
@@ -284,7 +284,7 @@
   .add-input,
   .search-input,
   .pr-input {
-    min-height: 38px;
+    min-height: 40px;
   }
 
   .week-chip,
@@ -384,12 +384,12 @@
   .coach-listCompact .coach-listItem span,
   .summary-detail,
   .account-hint {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     line-height: 1.38;
   }
 
   .nav-label {
-    font-size: 0.56rem;
+    font-size: 0.62rem;
   }
 
   .site-footer {
@@ -426,7 +426,7 @@
 
   .header-account-btn {
     max-width: 110px;
-    min-height: 28px;
+    min-height: 30px;
     padding-inline: 8px;
     font-size: 0.62rem;
   }
@@ -445,27 +445,27 @@
 
   .page-heroTitle,
   body[data-page="today"] .page-heroTitle {
-    font-size: 1rem;
+    font-size: 1.08rem;
     line-height: 1.06;
   }
 
   body[data-page="history"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
-    font-size: 0.9rem;
+    font-size: 0.98rem;
   }
 
   .page-heroSubtitle,
   body[data-page="today"] .page-heroSubtitle,
   body[data-page="history"] .page-heroSubtitle,
   body[data-page="account"] .page-heroSubtitle {
-    font-size: 0.68rem;
+    font-size: 0.74rem;
     line-height: 1.36;
   }
 
   .page-heroActions .btn-primary,
   .page-heroActions .btn-secondary,
   .page-heroActions .day-select {
-    min-height: 34px;
+    min-height: 40px;
     font-size: 0.72rem;
   }
 
@@ -480,12 +480,12 @@
   }
 
   .nav-btn {
-    min-height: 33px;
+    min-height: 36px;
     border-radius: 10px;
   }
 
   .nav-label {
-    font-size: 0.5rem;
+    font-size: 0.62rem;
     letter-spacing: 0.02em;
   }
 
@@ -526,7 +526,7 @@
   .coach-listCompact .coach-listItem span,
   .summary-detail,
   .account-hint {
-    font-size: 0.64rem;
+    font-size: 0.7rem;
     line-height: 1.32;
   }
 
