@@ -207,7 +207,7 @@
 
 .today-overviewTitle,
 .today-sessionTitle {
-  font-size: 1rem;
+  font-size: 1.08rem;
   line-height: 1.2;
   letter-spacing: -0.03em;
 }
@@ -217,12 +217,12 @@
   flex-wrap: wrap;
   gap: 6px;
   color: var(--text-secondary);
-  font-size: 0.73rem;
+  font-size: 0.77rem;
 }
 
 .today-overviewFoot {
   color: var(--text-muted);
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   line-height: 1.5;
 }
 
@@ -247,7 +247,7 @@
   background: var(--bg-soft);
   border: 1px solid var(--line);
   color: var(--text-secondary);
-  font-size: 0.68rem;
+  font-size: 0.71rem;
   font-weight: 700;
 }
 
@@ -266,7 +266,7 @@
   background: var(--bg-soft);
   border: 1px solid var(--line);
   color: var(--text-secondary);
-  font-size: 0.66rem;
+  font-size: 0.69rem;
   font-weight: 700;
 }
 
@@ -374,14 +374,14 @@
 }
 
 .workout-blockTitle {
-  font-size: 1rem;
+  font-size: 1.06rem;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 
 .workout-blockMeta {
   color: var(--text-secondary);
-  font-size: 0.79rem;
+  font-size: 0.82rem;
   line-height: 1.5;
 }
 
@@ -578,7 +578,7 @@
 .exercise-text,
 .rest-content,
 .workout-note {
-  font-size: 0.86rem;
+  font-size: 0.9rem;
   line-height: 1.48;
 }
 
@@ -643,7 +643,7 @@
 
   .today-overviewTitle,
   .today-sessionTitle {
-    font-size: 0.86rem;
+    font-size: 0.92rem;
     line-height: 1.12;
   }
 
@@ -657,12 +657,12 @@
   .today-sessionPill {
     min-height: 28px;
     padding: 0 8px;
-    font-size: 0.66rem;
+    font-size: 0.68rem;
   }
 
   .today-sessionMeta,
   .today-overviewFoot {
-    font-size: 0.67rem;
+    font-size: 0.71rem;
   }
 
   .today-metaChips,
@@ -678,7 +678,7 @@
   .today-sessionStripItem {
     min-height: 28px;
     padding: 0 8px;
-    font-size: 0.64rem;
+    font-size: 0.67rem;
   }
 
   .workout-rest,
@@ -701,38 +701,38 @@
   }
 
   .workout-blockTitle {
-    font-size: 0.84rem;
+    font-size: 0.9rem;
     line-height: 1.14;
   }
 
   .workout-blockMeta {
-    font-size: 0.7rem;
+    font-size: 0.74rem;
   }
 
   .workout-blockTag {
     min-height: 28px;
     padding: 0 8px;
-    font-size: 0.62rem;
+    font-size: 0.65rem;
   }
 
   .exercise-text,
   .rest-text,
   .note-text {
-    font-size: 0.8rem;
+    font-size: 0.83rem;
     line-height: 1.34;
   }
 
   .exercise-helpBtn {
     min-height: 28px;
     padding: 0 8px;
-    font-size: 0.64rem;
+    font-size: 0.66rem;
   }
 
   .rest-badge,
   .note-badge {
     min-height: 28px;
     padding: 0 8px;
-    font-size: 0.62rem;
+    font-size: 0.64rem;
   }
 
   .load-calc {
@@ -814,12 +814,12 @@
 
   .today-overviewTitle,
   .today-sessionTitle {
-    font-size: 0.8rem;
+    font-size: 0.86rem;
   }
 
   .today-sessionMeta,
   .today-overviewFoot {
-    font-size: 0.64rem;
+    font-size: 0.68rem;
   }
 
   .today-metaChip,
@@ -828,7 +828,7 @@
   .workout-blockName {
     min-height: 28px;
     padding: 0 7px;
-    font-size: 0.62rem;
+    font-size: 0.65rem;
   }
 
   .workout-block,
@@ -858,11 +858,11 @@
   }
 
   .workout-blockTitle {
-    font-size: 0.84rem;
+    font-size: 0.88rem;
   }
 
   .workout-blockMeta {
-    font-size: 0.66rem;
+    font-size: 0.7rem;
   }
 
   .workout-line {
@@ -881,7 +881,7 @@
   .exercise-text,
   .rest-text,
   .note-text {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
     line-height: 1.3;
   }
 
@@ -979,7 +979,7 @@
   .today-overviewTitle,
   .today-sessionTitle,
   .workout-blockTitle {
-    font-size: 0.84rem;
+    font-size: 0.86rem;
   }
 
   .today-sessionMeta,
@@ -988,7 +988,7 @@
   .timer-meta,
   .timer-summary,
   .timer-phase {
-    font-size: 0.62rem;
+    font-size: 0.66rem;
   }
 
   .today-metaChip,
@@ -1000,7 +1000,7 @@
   .note-badge {
     min-height: 26px;
     padding: 0 6px;
-    font-size: 0.6rem;
+    font-size: 0.63rem;
   }
 
   .workout-line {
@@ -1013,7 +1013,7 @@
   .exercise-text,
   .rest-text,
   .note-text {
-    font-size: 0.78rem;
+    font-size: 0.8rem;
   }
 
   .exercise-helpBtn,
@@ -1501,7 +1501,7 @@
 .admin-statValue {
   display: block;
   margin-top: 6px;
-  font-size: 1.08rem;
+  font-size: 1.12rem;
   font-weight: 800;
   line-height: 1.05;
 }
@@ -1514,7 +1514,7 @@
 
 .summary-tileCompact .summary-value {
   margin-top: 0;
-  font-size: 0.98rem;
+  font-size: 1.02rem;
   line-height: 1.15;
   white-space: nowrap;
   overflow: hidden;
@@ -1523,7 +1523,7 @@
 
 .summary-detail {
   color: var(--text-secondary);
-  font-size: 0.76rem;
+  font-size: 0.79rem;
   line-height: 1.4;
 }
 
@@ -1650,7 +1650,7 @@
 }
 
 .trend-card strong {
-  font-size: 0.93rem;
+  font-size: 0.98rem;
   letter-spacing: -0.02em;
 }
 
