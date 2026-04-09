@@ -1,6 +1,8 @@
 # Ryxen
 
-PWA para importar programação de treino, calcular cargas, manter PRs e operar offline com conta autenticada.
+Ryxen é uma plataforma de performance para atleta e coach, com experiências separadas para treino, evolução e gestão do box.
+
+O atleta acompanha sua rotina com clareza. O coach publica, organiza e opera em um portal próprio. Tudo no mesmo ecossistema, com foco em uso real, progressão e estrutura.
 
 Nota de compatibilidade:
 - variáveis `CROSSAPP_*`, chaves `crossapp-*`, nomes de banco/containers e alguns assets públicos continuam com prefixo legado para preservar installs já publicados, cache da PWA e integrações existentes durante a transição para `Ryxen`.

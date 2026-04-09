@@ -243,17 +243,17 @@ async function generateOgImage(browser) {
             <div>
               <div class="eyebrow">Ryxen</div>
               <img class="wordmark" src="${wordmarkData}" alt="Ryxen">
-              <h1>Performance para atleta e coach.</h1>
-              <p>Treino claro para quem executa. Portal próprio para quem opera. Uma base premium para crescer sem ruído.</p>
+              <h1>Cada lado entra no lugar certo.</h1>
+              <p>Treino, evolução e gestão em experiências próprias, claras e prontas para o uso real.</p>
               <div class="signals">
                 <span>Treino do dia</span>
-                <span>Ryxen Coach</span>
-                <span>Fluxos separados</span>
+                <span>Portal dedicado</span>
+                <span>Evolução contínua</span>
               </div>
             </div>
             <div class="caption">
               <span>ryxen-app.vercel.app</span>
-              <span>Cross no núcleo. Expansão modular.</span>
+              <span>Cross no núcleo. Expansão com clareza.</span>
             </div>
           </div>
           <div class="shots">
