@@ -6,6 +6,7 @@ const PROFILE_KEY = 'ryxen-user-profile';
 const LEGACY_PROFILE_KEY = 'crossapp-user-profile';
 const TRUSTED_DEVICE_ID_KEY = 'ryxen-trusted-device-id';
 const TRUSTED_DEVICE_MAP_KEY = 'ryxen-trusted-device-map';
+const LAST_AUTH_EMAIL_KEY = 'ryxen-last-auth-email';
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
@@ -91,6 +92,30 @@ export function hasTrustedDeviceGrant(email) {
   return !!getTrustedDeviceGrant(email);
 }
 
+export function getLastAuthEmail() {
+  try {
+    const remembered = String(localStorage.getItem(LAST_AUTH_EMAIL_KEY) || '').trim().toLowerCase();
+    if (remembered) return remembered;
+
+    const currentDeviceId = getOrCreateTrustedDeviceId();
+    const trustedEntries = Object.entries(getTrustedDeviceMap());
+    const fallbackEmail = trustedEntries.find(([, grant]) => (
+      grant
+      && typeof grant === 'object'
+      && String(grant.deviceId || '') === currentDeviceId
+      && (!grant.expiresAt || new Date(grant.expiresAt).getTime() > Date.now())
+    ))?.[0] || '';
+
+    if (fallbackEmail) {
+      localStorage.setItem(LAST_AUTH_EMAIL_KEY, fallbackEmail);
+    }
+
+    return fallbackEmail;
+  } catch {
+    return '';
+  }
+}
+
 export async function signOut() {
   try {
     await apiRequest('/auth/signout', { method: 'POST' });
@@ -142,6 +167,7 @@ export function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = f
     if (token) setAuthToken(token);
     if (user) {
       saveStoredProfile(user);
+      saveLastAuthEmail(user.email);
       setErrorMonitorUser(user);
     }
 
@@ -171,6 +197,7 @@ function handleAuthResponse(res) {
   if (res?.token) setAuthToken(res.token);
   if (res?.user) {
     saveStoredProfile(res.user);
+    saveLastAuthEmail(res.user.email);
     setErrorMonitorUser(res.user);
   }
   if (res?.trustedDevice && res?.user?.email) {
@@ -192,6 +219,16 @@ function clearStoredProfile() {
   try {
     localStorage.removeItem(PROFILE_KEY);
     localStorage.removeItem(LEGACY_PROFILE_KEY);
+  } catch {
+    // no-op
+  }
+}
+
+function saveLastAuthEmail(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return;
+  try {
+    localStorage.setItem(LAST_AUTH_EMAIL_KEY, normalizedEmail);
   } catch {
     // no-op
   }

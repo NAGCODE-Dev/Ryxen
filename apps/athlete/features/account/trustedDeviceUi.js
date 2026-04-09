@@ -1,23 +1,30 @@
-import { hasTrustedDeviceGrant } from '../../../../src/core/services/authService.js';
+import { getLastAuthEmail, hasTrustedDeviceGrant } from '../../../../src/core/services/authService.js';
 
 export function getTrustedDeviceUiState(email) {
-  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const rememberedEmail = getLastAuthEmail();
+  const normalizedEmail = String(email || '').trim().toLowerCase() || rememberedEmail;
   const isTrusted = !!normalizedEmail && hasTrustedDeviceGrant(normalizedEmail);
 
   if (isTrusted) {
     return {
       isTrusted: true,
+      resolvedEmail: normalizedEmail,
       submitLabel: 'Entrar com senha',
       trustedSubmitLabel: 'Entrar sem senha neste aparelho',
       passwordPlaceholder: 'Senha (opcional neste aparelho)',
-      hintTitle: 'Aparelho reconhecido',
-      hintBody: 'Voce pode entrar so com o email agora. Se preferir, a senha continua funcionando normalmente.',
+      hintTitle: normalizedEmail === rememberedEmail && !email
+        ? 'Continuar neste aparelho'
+        : 'Aparelho reconhecido',
+      hintBody: normalizedEmail === rememberedEmail && !email
+        ? `Reconhecemos ${normalizedEmail} neste aparelho. Voce pode entrar sem senha agora.`
+        : 'Voce pode entrar so com o email agora. Se preferir, a senha continua funcionando normalmente.',
     };
   }
 
   if (normalizedEmail) {
     return {
       isTrusted: false,
+      resolvedEmail: normalizedEmail,
       submitLabel: 'Entrar',
       trustedSubmitLabel: 'Entrar sem senha neste aparelho',
       passwordPlaceholder: 'Sua senha',
@@ -28,6 +35,7 @@ export function getTrustedDeviceUiState(email) {
 
   return {
     isTrusted: false,
+    resolvedEmail: '',
     submitLabel: 'Entrar',
     trustedSubmitLabel: 'Entrar sem senha neste aparelho',
     passwordPlaceholder: 'Sua senha',
@@ -61,6 +69,10 @@ export function syncTrustedDeviceAuthUi(root) {
   if (!(emailInput instanceof HTMLInputElement) || !(passwordInput instanceof HTMLInputElement)) return;
 
   const ui = getTrustedDeviceUiState(emailInput.value);
+
+  if (!String(emailInput.value || '').trim() && ui.resolvedEmail) {
+    emailInput.value = ui.resolvedEmail;
+  }
 
   passwordInput.placeholder = ui.passwordPlaceholder;
   form?.classList.toggle('isTrustedDeviceReady', ui.isTrusted);

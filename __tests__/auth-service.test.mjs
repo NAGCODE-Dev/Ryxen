@@ -141,6 +141,7 @@ test('signIn salva grant de dispositivo confiavel quando backend devolve trusted
   assert.equal(body.email, 'nagcode.contact@gmail.com');
   assert.equal(typeof body.deviceId, 'string');
   assert.equal(mod.hasTrustedDeviceGrant('nagcode.contact@gmail.com'), true);
+  assert.equal(mod.getLastAuthEmail(), 'nagcode.contact@gmail.com');
 });
 
 test('signInWithTrustedDevice usa grant salvo no mesmo aparelho', async (t) => {
@@ -241,7 +242,9 @@ test('getTrustedDeviceUiState ajusta a UX conforme o grant do aparelho', async (
 
   const { getTrustedDeviceUiState } = await import(`../apps/athlete/features/account/trustedDeviceUi.js?test=${Date.now()}4`);
 
-  assert.equal(getTrustedDeviceUiState('').submitLabel, 'Entrar');
+  assert.equal(getTrustedDeviceUiState('').isTrusted, true);
+  assert.equal(getTrustedDeviceUiState('').resolvedEmail, 'nagcode.contact@gmail.com');
+  assert.equal(getTrustedDeviceUiState('').hintTitle, 'Continuar neste aparelho');
   assert.equal(getTrustedDeviceUiState('other@example.com').hintTitle, 'Primeiro acesso neste aparelho');
   assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').isTrusted, true);
   assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').submitLabel, 'Entrar com senha');

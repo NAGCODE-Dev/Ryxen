@@ -15,6 +15,7 @@ export function renderGuestAuthView({
 }) {
   const rememberedEmail = signupVerification.email || reset.email || '';
   const trustedDeviceUi = getTrustedDeviceUiState(rememberedEmail);
+  const initialEmail = rememberedEmail || trustedDeviceUi.resolvedEmail || '';
 
   return `
     <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
@@ -36,9 +37,9 @@ export function renderGuestAuthView({
 
           <form class="auth-form" id="ui-authForm">
             <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" autocomplete="name" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
-            <input class="add-input" id="auth-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Seu email" value="${escapeHtml(rememberedEmail)}" />
+            <input class="add-input" id="auth-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Seu email" value="${escapeHtml(initialEmail)}" />
             <input class="add-input" id="auth-password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="${escapeHtml(isSignup ? 'Sua senha' : trustedDeviceUi.passwordPlaceholder)}" />
-            ${!isSignup ? renderTrustedDeviceStatus({ email: rememberedEmail, escapeHtml }) : ''}
+            ${!isSignup ? renderTrustedDeviceStatus({ email: initialEmail, escapeHtml }) : ''}
             ${isSignup ? renderSignupVerificationBox({ signupVerification, escapeHtml }) : ''}
             <button class="btn-primary auth-submitButton" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
               ${isSignup ? 'Criar conta com código' : escapeHtml(trustedDeviceUi.submitLabel)}
