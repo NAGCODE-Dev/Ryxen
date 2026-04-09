@@ -19,20 +19,27 @@ import {
 } from './bootstrapObservability.js';
 
 export async function runAthleteBootstrapFlow() {
-  initPreBootstrapLayers();
+  try {
+    initPreBootstrapLayers();
 
-  const nativeAuthRedirect = await setupNativeAuthRedirects();
-  if (nativeAuthRedirect?.handled) return;
+    const nativeAuthRedirect = await setupNativeAuthRedirects();
+    if (nativeAuthRedirect?.handled) return;
 
-  initPostNativeLayers();
-  const authRedirect = applyAuthRedirectFromLocation();
-  const initResult = await initApplication();
-  if (!initResult.success) return;
+    initPostNativeLayers();
+    const authRedirect = applyAuthRedirectFromLocation();
+    const initResult = await initApplication();
+    if (!initResult.success) return;
 
-  finalizeInit(authRedirect);
-  if (maybeRenderDeveloperDebug()) return;
+    finalizeInit(authRedirect);
+    if (maybeRenderDeveloperDebug()) return;
 
-  await mountAthleteUi();
+    await mountAthleteUi();
+  } catch (error) {
+    const message = error?.message || 'Falha ao carregar o app.';
+    reportBootstrapFailure(message);
+    console.error('Falha no bootstrap do app:', error);
+    renderError(message);
+  }
 }
 
 function initPreBootstrapLayers() {
@@ -49,7 +56,11 @@ function initPostNativeLayers() {
 }
 
 async function initApplication() {
-  const result = await init();
+  const result = await withBootstrapTimeout(
+    init(),
+    12000,
+    'A inicialização demorou demais. Tente recarregar o app.',
+  );
   if (!result?.success) {
     reportBootstrapFailure(result?.error || 'init_failed');
     renderError(result?.error || 'Erro desconhecido');
@@ -104,8 +115,7 @@ function redirectAfterNativeAuth(result) {
 async function mountAthleteUi() {
   const root = document.getElementById('app');
   if (!root) {
-    console.error('Elemento #app não encontrado.');
-    return;
+    throw new Error('Elemento #app não encontrado.');
   }
 
   if (!getAppBridge()?.getState) {
@@ -114,5 +124,23 @@ async function mountAthleteUi() {
   }
 
   const { mountUI } = await import('./mountUi.js');
-  mountUI({ root });
+  await withBootstrapTimeout(
+    mountUI({ root }),
+    8000,
+    'A interface demorou demais para montar. Tente recarregar o app.',
+  );
+}
+
+function withBootstrapTimeout(promise, timeoutMs, message) {
+  let timeoutId = null;
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = window.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    if (timeoutId !== null) window.clearTimeout(timeoutId);
+  });
 }

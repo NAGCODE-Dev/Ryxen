@@ -51,6 +51,7 @@ input.click();
 export function renderError(errorMessage) {
   const root = document.getElementById('app');
   if (!root) return;
+  document.body.classList.remove('ui-busy');
 
   root.innerHTML = `
     <div style="padding: 2rem; font-family: system-ui; max-width: 720px; margin: 0 auto; text-align: center;">
