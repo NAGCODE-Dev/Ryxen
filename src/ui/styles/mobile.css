@@ -1,11 +1,11 @@
 @media (max-width: 640px) {
   .app-header {
-    padding-top: calc(var(--safe-top) + 10px);
-    padding-bottom: 9px;
+    padding-top: calc(var(--safe-top) + 8px);
+    padding-bottom: 7px;
   }
 
   .app-main {
-    padding: 14px 12px calc(var(--safe-bottom) + 20px);
+    padding: 12px 10px calc(var(--safe-bottom) + 18px);
   }
 
   .page-hero {
@@ -104,32 +104,32 @@
 
   .quick-actionMeta,
   .bottom-toolsHint {
-    font-size: 0.72rem;
+    font-size: 0.68rem;
   }
 
   .bottom-nav {
-    top: calc(var(--safe-top) + 50px);
-    padding: 4px 12px 6px;
+    top: calc(var(--safe-top) + 46px);
+    padding: 3px 10px 5px;
   }
 
   .bottom-navItems {
     gap: 4px;
-    padding: 4px;
-    border-radius: 14px;
+    padding: 3px;
+    border-radius: 12px;
   }
 
   .nav-btn {
-    min-height: 38px;
-    border-radius: 10px;
+    min-height: 34px;
+    border-radius: 9px;
   }
 
   .nav-icon {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
   }
 
   .nav-label {
-    font-size: 0.58rem;
-    letter-spacing: 0.11em;
+    font-size: 0.54rem;
+    letter-spacing: 0.08em;
   }
 
   .pr-item,
@@ -191,7 +191,7 @@
   }
 
   body[data-page="today"] .workout-container {
-    gap: 10px;
+    gap: 8px;
   }
 
   body[data-page="today"] .page-actions-inline {
@@ -212,6 +212,15 @@
     padding: 0;
   }
 
+  .page-foldSummaryRow,
+  .page-foldBody {
+    padding-inline: 12px;
+  }
+
+  .page-foldBody {
+    padding-bottom: 12px;
+  }
+
   .admin-userControls {
     justify-items: start;
   }
@@ -221,17 +230,17 @@
   }
 
   .app-main {
-    padding: 16px 12px calc(var(--safe-bottom) + 24px);
+    padding: 12px 10px calc(var(--safe-bottom) + 18px);
   }
 }
 
 @media (max-width: 420px) {
   :root {
-    --nav-height: 68px;
+    --nav-height: 64px;
   }
 
   .app-header {
-    padding-inline: 12px;
+    padding-inline: 10px;
   }
 
   .header-topline {
@@ -239,14 +248,14 @@
   }
 
   .header-badge {
-    font-size: 0.64rem;
-    padding-inline: 8px;
+    font-size: 0.6rem;
+    padding-inline: 7px;
   }
 
   .header-account-btn {
-    max-width: 132px;
-    min-height: 34px;
-    font-size: 0.72rem;
+    max-width: 122px;
+    min-height: 30px;
+    font-size: 0.66rem;
   }
 
   .page-heroEyebrow {
@@ -275,14 +284,14 @@
   .add-input,
   .search-input,
   .pr-input {
-    min-height: 42px;
+    min-height: 38px;
   }
 
   .week-chip,
   .week-chip-empty {
-    min-height: 34px;
-    padding-inline: 12px;
-    font-size: 0.74rem;
+    min-height: 30px;
+    padding-inline: 10px;
+    font-size: 0.68rem;
   }
 
   .workout-block,
@@ -302,7 +311,7 @@
   .pr-item,
   .admin-userRow,
   .workout-header {
-    padding: 13px;
+    padding: 10px;
   }
 
   body[data-page="today"] .today-overviewCard,
@@ -349,11 +358,11 @@
   }
 
   .quick-action {
-    flex-basis: 128px;
+    flex-basis: 118px;
   }
 
   .quick-actionLabel {
-    font-size: 0.82rem;
+    font-size: 0.76rem;
   }
 
   .quick-actionMeta,
@@ -364,29 +373,29 @@
 
   .page-foldSummaryRow,
   .page-foldBody {
-    padding-inline: 14px;
+    padding-inline: 11px;
   }
 
   .page-foldTitle {
-    font-size: 0.94rem;
+    font-size: 0.88rem;
   }
 
   .page-foldSubtitle,
   .coach-listCompact .coach-listItem span,
   .summary-detail,
   .account-hint {
-    font-size: 0.74rem;
-    line-height: 1.45;
+    font-size: 0.68rem;
+    line-height: 1.38;
   }
 
   .nav-label {
-    font-size: 0.62rem;
+    font-size: 0.56rem;
   }
 
   .site-footer {
     gap: 10px;
-    padding: 14px 12px calc(var(--safe-bottom) + 16px);
-    font-size: 0.72rem;
+    padding: 12px 10px calc(var(--safe-bottom) + 14px);
+    font-size: 0.66rem;
     opacity: 0.72;
   }
 }
@@ -405,16 +414,16 @@
   }
 
   body[data-native-app="true"] .app-header {
-    padding-inline: 12px;
-    padding-bottom: 6px;
+    padding-inline: 10px;
+    padding-bottom: 5px;
     background: linear-gradient(180deg, rgba(8, 13, 20, 0.96), rgba(8, 13, 20, 0.78));
     border-bottom: 0;
     backdrop-filter: blur(18px);
   }
 
   body[data-native-app="true"] .header-badge {
-    min-height: 30px;
-    padding: 0 10px;
+    min-height: 28px;
+    padding: 0 8px;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.05);
     border-color: rgba(255, 255, 255, 0.06);
@@ -423,9 +432,9 @@
   }
 
   body[data-native-app="true"] .header-account-btn {
-    min-height: 36px;
-    padding-inline: 12px;
-    border-radius: 14px;
+    min-height: 32px;
+    padding-inline: 10px;
+    border-radius: 12px;
     background: rgba(17, 24, 39, 0.88);
     border-color: rgba(255, 255, 255, 0.06);
     box-shadow: none;
@@ -438,7 +447,7 @@
     left: 0;
     right: 0;
     z-index: 45;
-    padding: 10px 12px calc(var(--safe-bottom) + 10px);
+    padding: 8px 10px calc(var(--safe-bottom) + 8px);
     background:
       linear-gradient(180deg, rgba(8, 13, 20, 0), rgba(8, 13, 20, 0.86) 24%, rgba(8, 13, 20, 0.98));
     border-bottom: 0;
@@ -447,8 +456,8 @@
   body[data-native-app="true"] .bottom-navItems {
     width: 100%;
     gap: 6px;
-    padding: 6px;
-    border-radius: 22px;
+    padding: 5px;
+    border-radius: 18px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     background: rgba(15, 23, 34, 0.94);
     backdrop-filter: blur(22px);
@@ -456,9 +465,9 @@
   }
 
   body[data-native-app="true"] .nav-btn {
-    min-height: 48px;
+    min-height: 42px;
     gap: 0;
-    border-radius: 16px;
+    border-radius: 14px;
   }
 
   body[data-native-app="true"] .nav-icon {
@@ -466,7 +475,7 @@
   }
 
   body[data-native-app="true"] .nav-label {
-    font-size: 0.7rem;
+    font-size: 0.64rem;
     letter-spacing: 0;
     text-transform: none;
     font-weight: 700;
@@ -480,7 +489,7 @@
 
   body[data-native-app="true"] .app-main {
     padding-top: 12px;
-    padding-bottom: calc(var(--safe-bottom) + 96px);
+    padding-bottom: calc(var(--safe-bottom) + 84px);
   }
 
   body[data-native-app="true"] .page-hero {
@@ -527,7 +536,7 @@
   body[data-native-app="true"] .trend-card,
   body[data-native-app="true"] .coach-selectionPanel,
   body[data-native-app="true"] .coach-audienceBlock {
-    border-radius: 20px;
+    border-radius: 17px;
     border-color: rgba(255, 255, 255, 0.05);
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01)),
@@ -539,7 +548,7 @@
   body[data-native-app="true"] .page-foldBody,
   body[data-native-app="true"] .account-foldSummary,
   body[data-native-app="true"] .account-foldBody {
-    padding-inline: 14px;
+    padding-inline: 12px;
   }
 
   body[data-native-app="true"] .summary-label,
@@ -553,8 +562,8 @@
   body[data-native-app="true"] .page-actions-inline .btn-secondary,
   body[data-native-app="true"] .page-actions .btn-primary,
   body[data-native-app="true"] .page-actions .btn-secondary {
-    min-height: 46px;
-    border-radius: 14px;
+    min-height: 40px;
+    border-radius: 12px;
   }
 
   body[data-native-app="true"] .page-heroActions .btn-secondary,
@@ -564,7 +573,7 @@
   }
 
   body[data-native-app="true"] .quick-action {
-    border-radius: 18px;
+    border-radius: 16px;
     background:
       linear-gradient(180deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01)),
       rgba(15, 23, 33, 0.92);

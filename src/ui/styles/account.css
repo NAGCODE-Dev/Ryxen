@@ -116,11 +116,11 @@
   @media (max-width: 640px) {
     .account-hero {
       grid-template-columns: 1fr;
-      gap: 10px;
+      gap: 8px;
     }
 
     .account-foldSummary {
-      @apply flex-col items-start px-3.5 py-[13px];
+      @apply flex-col items-start px-3 py-3;
     }
 
     .account-foldMeta {
@@ -132,15 +132,24 @@
     }
 
     .account-foldBody {
-      @apply px-3.5 pb-3.5;
+      @apply gap-2 px-3 pb-3;
     }
 
     .account-name {
-      @apply text-base;
+      @apply text-[0.95rem];
     }
 
     .account-email {
-      @apply text-[0.84rem];
+      @apply text-[0.76rem];
+    }
+
+    .account-foldSummary strong,
+    .account-sectionHead strong {
+      font-size: 0.88rem;
+    }
+
+    .account-foldMeta {
+      font-size: 0.7rem;
     }
   }
 }
