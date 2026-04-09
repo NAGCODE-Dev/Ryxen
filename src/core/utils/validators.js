@@ -146,6 +146,14 @@ export function isValidTheme(theme) {
   return theme === 'dark' || theme === 'light';
 }
 
+export function isValidAccentTone(accentTone) {
+  return ['blue', 'sage', 'sand', 'rose'].includes(accentTone);
+}
+
+export function isValidInterfaceDensity(interfaceDensity) {
+  return interfaceDensity === 'comfortable' || interfaceDensity === 'compact';
+}
+
 /**
  * Valida preferences object
  * @param {Object} prefs - Preferências
@@ -158,7 +166,12 @@ export function isValidPreferences(prefs) {
     'showLbsConversion',
     'showEmojis',
     'showGoals',
-    'theme'
+    'theme',
+    'accentTone',
+    'interfaceDensity',
+    'reduceMotion',
+    'autoConvertLbs',
+    'workoutPriority',
   ];
   
   return Object.keys(prefs).every(key => validKeys.includes(key));

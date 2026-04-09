@@ -44,6 +44,7 @@ export async function createAthleteUiStateController({ createStorage }) {
       getAppBridge()?.saveAppStateSnapshot?.({
         ui: {
           currentPage: next?.currentPage || 'today',
+          accountView: next?.accountView || 'overview',
           settings: next?.settings || {},
           wod: next?.wod || {},
           coachPortal: {

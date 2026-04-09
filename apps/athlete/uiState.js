@@ -23,6 +23,7 @@ export function normalizeAthleteUiState(state) {
   const next = { ...(state || {}) };
 
   next.currentPage = ['today', 'history', 'account'].includes(next.currentPage) ? next.currentPage : 'today';
+  next.accountView = ['overview', 'preferences', 'data'].includes(next.accountView) ? next.accountView : 'overview';
   next.modal = next.modal || null;
 
   next.authMode = next.authMode === 'signup' ? 'signup' : 'signin';
@@ -47,6 +48,7 @@ export function buildAthleteUiForRender({ state, uiState, uiBusy, profile }) {
   return {
     modal: uiState.modal,
     currentPage: uiState.currentPage,
+    accountView: uiState.accountView,
     isBusy: uiBusy,
     settings: uiState.settings,
     authMode: uiState.authMode,

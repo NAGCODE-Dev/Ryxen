@@ -156,6 +156,10 @@
     gap: 8px;
   }
 
+  .account-viewTabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .modal-overlay {
     padding: 0;
     align-items: flex-end;
@@ -215,6 +219,25 @@
   body[data-page="history"] .account-hint,
   body[data-page="account"] .account-hint {
     line-height: 1.38;
+  }
+
+  body[data-interface-density="compact"] .bottom-navItems {
+    padding: 3px;
+  }
+
+  body[data-interface-density="compact"] .nav-btn {
+    min-height: 36px;
+  }
+
+  body[data-interface-density="compact"] .summary-tile,
+  body[data-interface-density="compact"] .workout-block,
+  body[data-interface-density="compact"] .today-overviewCard,
+  body[data-interface-density="compact"] .today-sessionCard,
+  body[data-interface-density="compact"] .page-fold,
+  body[data-interface-density="compact"] .account-settingsCard,
+  body[data-interface-density="compact"] .account-dataCard,
+  body[data-interface-density="compact"] .account-viewTab {
+    border-radius: 12px;
   }
 
   .page-foldSummary {
@@ -398,6 +421,13 @@
     line-height: 1.05;
   }
 
+  .account-viewTabs,
+  .account-choiceGrid,
+  .account-toneGrid,
+  .account-dataGrid {
+    grid-template-columns: 1fr;
+  }
+
   .coach-listCompact .coach-listItem strong,
   .coach-cardTitle {
     font-size: 0.9rem;
@@ -414,6 +444,19 @@
 
   .nav-label {
     font-size: 0.62rem;
+  }
+
+  .account-viewTab strong {
+    font-size: 0.82rem;
+  }
+
+  .account-viewTab span,
+  .account-choiceFace small,
+  .account-toneFace small,
+  .account-switchCopy small,
+  .account-dataCard small {
+    font-size: 0.74rem;
+    line-height: 1.36;
   }
 
   .site-footer {
@@ -518,6 +561,13 @@
   .account-summaryGrid,
   .trend-grid,
   .admin-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .account-viewTabs,
+  .account-choiceGrid,
+  .account-toneGrid,
+  .account-dataGrid {
     grid-template-columns: 1fr;
   }
 

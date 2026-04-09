@@ -6,4 +6,6 @@ export {
   renderAccountAccessSection,
   renderAccountActivitySection,
   renderAccountCoachPortalSection,
+  renderAccountDataSections,
+  renderAccountPreferencesSections,
 } from './memberSections.js';

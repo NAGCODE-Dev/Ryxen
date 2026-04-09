@@ -77,6 +77,199 @@
     @apply gap-2;
   }
 
+  .account-viewTabs {
+    @apply grid grid-cols-3 gap-2;
+  }
+
+  .account-viewTab {
+    @apply grid gap-1 rounded-[18px] border border-white/10 px-3.5 py-3 text-left transition;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.014)),
+      color-mix(in srgb, var(--bg-surface) 90%, var(--bg-surface-2) 10%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .account-viewTab strong {
+    @apply text-[0.88rem] font-bold leading-[1.16] text-ryxen-text;
+  }
+
+  .account-viewTab span {
+    @apply text-[0.72rem] leading-[1.38] text-ryxen-text-soft;
+  }
+
+  .account-viewTab.isActive {
+    border-color: color-mix(in srgb, var(--accent) 24%, var(--line));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)),
+      color-mix(in srgb, var(--bg-surface) 88%, var(--bg-surface-2) 12%);
+    box-shadow: var(--shadow-md);
+  }
+
+  .account-settingsGrid {
+    @apply grid gap-3;
+  }
+
+  .account-settingsCard,
+  .account-dataCard {
+    @apply grid gap-3 rounded-[22px] border border-white/10 px-4 py-4;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.012)),
+      color-mix(in srgb, var(--bg-surface) 90%, var(--bg-surface-2) 10%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .account-settingsHead strong,
+  .account-dataCard strong {
+    @apply block text-[0.96rem] leading-[1.2] text-ryxen-text;
+  }
+
+  .account-settingsHead span,
+  .account-dataCard small,
+  .account-settingsFootnote {
+    @apply text-[0.78rem] leading-[1.48] text-ryxen-text-soft;
+  }
+
+  .account-choiceGrid {
+    @apply grid grid-cols-2 gap-2.5;
+  }
+
+  .account-toneGrid {
+    @apply grid grid-cols-4 gap-2.5;
+  }
+
+  .account-choiceCard {
+    @apply relative block;
+  }
+
+  .account-choiceInput {
+    @apply pointer-events-none absolute opacity-0;
+  }
+
+  .account-choiceFace,
+  .account-toneFace {
+    @apply grid rounded-[18px] border border-white/10 px-3.5 py-3;
+    min-height: 92px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)),
+      color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .account-toneFace {
+    @apply content-start justify-items-start gap-2;
+    min-height: 104px;
+  }
+
+  .account-choiceFace strong,
+  .account-toneFace strong {
+    @apply text-[0.84rem] leading-[1.18] text-ryxen-text;
+  }
+
+  .account-choiceFace small,
+  .account-toneFace small {
+    @apply text-[0.72rem] leading-[1.42] text-ryxen-text-soft;
+  }
+
+  .account-choiceEyebrow,
+  .account-dataEyebrow {
+    @apply text-[0.66rem] font-semibold uppercase tracking-[0.08em] text-ryxen-text-muted;
+  }
+
+  .account-choiceInput:checked + .account-choiceFace,
+  .account-choiceInput:checked + .account-toneFace {
+    border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)),
+      color-mix(in srgb, var(--bg-surface) 88%, var(--bg-surface-2) 12%);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  .account-toneSwatch {
+    @apply block h-8 w-8 rounded-full;
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.24),
+      0 8px 18px rgba(4, 8, 16, 0.14);
+  }
+
+  .account-toneSwatch-blue {
+    background: linear-gradient(135deg, #d9e8ff 0%, #7ea7f0 100%);
+  }
+
+  .account-toneSwatch-sage {
+    background: linear-gradient(135deg, #e2f1e6 0%, #88b59d 100%);
+  }
+
+  .account-toneSwatch-sand {
+    background: linear-gradient(135deg, #f4e7d8 0%, #c9a279 100%);
+  }
+
+  .account-toneSwatch-rose {
+    background: linear-gradient(135deg, #f8e3ea 0%, #c990a7 100%);
+  }
+
+  .account-switchStack {
+    @apply grid gap-2.5;
+  }
+
+  .account-switchRow {
+    @apply grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-[18px] border border-white/10 px-3.5 py-3;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)),
+      color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
+  }
+
+  .account-switchCopy strong {
+    @apply block text-[0.84rem] leading-[1.2] text-ryxen-text;
+  }
+
+  .account-switchCopy small {
+    @apply mt-1 block text-[0.72rem] leading-[1.42] text-ryxen-text-soft;
+  }
+
+  .account-switchSlot {
+    @apply relative block h-7 w-12;
+  }
+
+  .account-switchInput {
+    @apply absolute inset-0 m-0 cursor-pointer opacity-0;
+  }
+
+  .account-switchControl {
+    @apply absolute inset-0 rounded-full border border-white/10;
+    background: rgba(255, 255, 255, 0.08);
+    transition: background 160ms ease, border-color 160ms ease;
+  }
+
+  .account-switchControl::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 6px 14px rgba(4, 8, 16, 0.18);
+    transition: transform 160ms ease;
+  }
+
+  .account-switchInput:checked + .account-switchControl {
+    background: color-mix(in srgb, var(--accent) 46%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+
+  .account-switchInput:checked + .account-switchControl::after {
+    transform: translateX(20px);
+  }
+
+  .account-dataGrid {
+    @apply grid grid-cols-2 gap-2.5;
+  }
+
+  .account-dataCard {
+    @apply px-3.5 py-3.5;
+  }
+
   .page-stack-account .coach-listCompact {
     @apply gap-1.5;
   }
@@ -119,6 +312,11 @@
       @apply flex flex-col;
     }
 
+    .account-toneGrid,
+    .account-dataGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .coach-listCompact .coach-listItem {
       grid-template-columns: 1fr;
     }
@@ -142,6 +340,13 @@
       grid-template-columns: 1fr;
     }
 
+    .account-viewTabs,
+    .account-choiceGrid,
+    .account-toneGrid,
+    .account-dataGrid {
+      grid-template-columns: 1fr;
+    }
+
     .account-foldBody {
       @apply gap-2.5 px-3.5 pb-3.5;
     }
@@ -161,6 +366,15 @@
 
     .account-foldMeta {
       font-size: 0.74rem;
+    }
+
+    .account-settingsCard,
+    .account-dataCard {
+      @apply rounded-[18px] px-3.5 py-3.5;
+    }
+
+    .account-viewTab {
+      @apply rounded-[16px] px-3 py-2.5;
     }
   }
 }

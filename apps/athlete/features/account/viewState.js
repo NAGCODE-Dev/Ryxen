@@ -27,6 +27,10 @@ export function buildAthleteAccountPageState(state, helpers) {
   const athleteResults = state?.__ui?.athleteOverview?.recentResults || [];
   const athleteWorkouts = state?.__ui?.athleteOverview?.recentWorkouts || [];
   const athleteOverview = state?.__ui?.athleteOverview || {};
+  const preferences = state?.preferences || {};
+  const accountView = ['overview', 'preferences', 'data'].includes(state?.__ui?.accountView)
+    ? state.__ui.accountView
+    : 'overview';
   const isSummaryLoading = coachPortal?.status === 'loading' || athleteBlocks?.summary?.status === 'loading';
   const isWorkoutsLoading = athleteBlocks?.workouts?.status === 'loading';
   const isResultsLoading = athleteBlocks?.results?.status === 'loading';
@@ -54,6 +58,8 @@ export function buildAthleteAccountPageState(state, helpers) {
     athleteBenefitSource,
     athleteResults,
     athleteWorkouts,
+    preferences,
+    accountView,
     isSummaryLoading,
     isWorkoutsLoading,
     isResultsLoading,

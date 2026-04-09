@@ -118,6 +118,9 @@ export function createAuthDomain({
         showGoals: true,
         workoutPriority: 'uploaded',
         theme: 'dark',
+        accentTone: 'blue',
+        interfaceDensity: 'comfortable',
+        reduceMotion: false,
       },
       ui: {
         ...getState().ui,

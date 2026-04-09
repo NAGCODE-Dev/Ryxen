@@ -111,6 +111,9 @@ export function createAccountSyncDomain({
           showGoals: state.preferences?.showGoals !== false,
           workoutPriority: String(state.preferences?.workoutPriority || 'uploaded'),
           theme: String(state.preferences?.theme || 'dark'),
+          accentTone: String(state.preferences?.accentTone || 'blue'),
+          interfaceDensity: String(state.preferences?.interfaceDensity || 'comfortable'),
+          reduceMotion: state.preferences?.reduceMotion === true,
         },
       },
       ...(normalizedPartial.ui && typeof normalizedPartial.ui === 'object'

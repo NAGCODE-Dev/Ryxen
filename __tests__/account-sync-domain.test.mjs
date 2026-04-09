@@ -40,6 +40,9 @@ test('saveRemoteAppStateSnapshot persiste envelope local e sincroniza snapshot r
     currentDay: 'Quarta',
     preferences: {
       theme: 'light',
+      accentTone: 'sage',
+      interfaceDensity: 'compact',
+      reduceMotion: true,
       workoutPriority: 'coach',
       showGoals: true,
       showEmojis: true,
@@ -107,6 +110,9 @@ test('saveRemoteAppStateSnapshot persiste envelope local e sincroniza snapshot r
   assert.equal(persisted.updatedAt, '2026-04-06T12:00:00.000Z');
   assert.equal(persisted.snapshot.core.activeWeekNumber, 3);
   assert.equal(persisted.snapshot.core.preferences.theme, 'light');
+  assert.equal(persisted.snapshot.core.preferences.accentTone, 'sage');
+  assert.equal(persisted.snapshot.core.preferences.interfaceDensity, 'compact');
+  assert.equal(persisted.snapshot.core.preferences.reduceMotion, true);
   assert.equal(persisted.snapshot.core.preferences.serverFlag, true);
 });
 

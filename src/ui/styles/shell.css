@@ -3,9 +3,7 @@
     @apply sticky top-0 z-40 px-4 pb-3 pt-3 backdrop-blur-[22px];
     padding-top: calc(var(--safe-top) + 12px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    background:
-      linear-gradient(180deg, rgba(17, 21, 29, 0.92), rgba(17, 21, 29, 0.76)),
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.03), transparent 72%);
+    background: var(--app-header-bg);
   }
 
   .header-content {
@@ -31,15 +29,11 @@
 
   .header-account-btn {
     @apply relative inline-flex min-h-[40px] max-w-[240px] items-center justify-center overflow-hidden text-ellipsis whitespace-nowrap rounded-full border border-white/10 px-4 text-[0.78rem] font-semibold text-ryxen-text;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.025)),
-      rgba(19, 24, 32, 0.88);
+    background: var(--app-account-button-bg);
   }
 
   .header-account-btn.isActive {
-    background:
-      linear-gradient(180deg, rgba(138, 180, 255, 0.14), rgba(138, 180, 255, 0.06)),
-      rgba(19, 24, 32, 0.92);
+    background: var(--app-account-button-active-bg);
   }
 
   .header-accountBadge {
@@ -53,7 +47,8 @@
   .search-input,
   .add-input,
   .pr-input {
-    @apply min-h-11 rounded-[var(--radius-md)];
+    min-height: var(--control-min-height);
+    border-radius: var(--control-radius);
   }
 
   .day-select,
@@ -61,9 +56,7 @@
   .add-input,
   .pr-input {
     @apply w-full border border-white/10 px-3.5 text-ryxen-text;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.025)),
-      rgba(25, 31, 41, 0.92);
+    background: var(--app-field-bg);
   }
 
   .day-select,
@@ -93,15 +86,13 @@
 
   .btn-secondary {
     @apply border-white/10 text-ryxen-text-soft;
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.022)),
-      rgba(20, 25, 34, 0.92);
+    background: var(--app-secondary-bg);
   }
 
   .btn-primary {
     @apply border-transparent text-[#0e1520];
-    background: linear-gradient(135deg, #eef4ff 0%, #dce9ff 100%);
-    box-shadow: 0 16px 38px rgba(138, 180, 255, 0.16);
+    background: var(--app-primary-bg);
+    box-shadow: var(--app-primary-shadow);
   }
 
   .week-chips,
@@ -118,12 +109,12 @@
   .week-chip,
   .week-chip-empty {
     @apply inline-flex min-h-[38px] shrink-0 items-center justify-center rounded-full border border-white/10 px-3.5 text-[0.76rem] font-semibold text-ryxen-text-soft;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--app-chip-bg);
   }
 
   .week-chip-active {
     @apply border-transparent text-[#0f141a];
-    background: linear-gradient(135deg, #eef4ff 0%, #dce9ff 100%);
+    background: var(--app-chip-active-bg);
   }
 
   .app-main {
@@ -244,9 +235,7 @@
     padding: 14px 15px;
     border-radius: 20px;
     border: 1px solid rgba(148, 163, 184, 0.12);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01)),
-      rgba(18, 23, 29, 0.98);
+    background: var(--app-quick-action-bg);
     box-shadow: var(--shadow-md);
     text-align: left;
   }
@@ -262,10 +251,8 @@
   }
 
   .quick-action-primary {
-    background:
-      linear-gradient(180deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.06)),
-      rgba(18, 23, 29, 0.98);
-    border-color: rgba(59, 130, 246, 0.2);
+    background: var(--app-quick-action-accent-bg);
+    border-color: color-mix(in srgb, var(--accent) 22%, transparent);
   }
 
   .quick-action strong {
@@ -332,7 +319,7 @@
     top: calc(var(--safe-top) + 52px);
     z-index: 35;
     padding: 6px 14px 8px;
-    background: linear-gradient(180deg, rgba(15, 18, 24, 0.72), rgba(15, 18, 24, 0.12));
+    background: var(--app-nav-bg);
     border-bottom: 0;
   }
 
@@ -345,9 +332,7 @@
     padding: 4px;
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-      rgba(18, 23, 31, 0.84);
+    background: var(--app-nav-panel-bg);
     box-shadow: 0 20px 48px rgba(4, 9, 18, 0.2);
     backdrop-filter: blur(20px);
   }
@@ -370,10 +355,8 @@
 
   .nav-btn-active,
   .nav-btn-primary.nav-btn-active {
-    background:
-      linear-gradient(180deg, rgba(138, 180, 255, 0.16), rgba(138, 180, 255, 0.08)),
-      rgba(255, 255, 255, 0.02);
-    box-shadow: inset 0 0 0 1px rgba(183, 210, 255, 0.12);
+    background: var(--app-nav-active-bg);
+    box-shadow: var(--app-nav-active-ring);
     color: var(--text-primary);
   }
 

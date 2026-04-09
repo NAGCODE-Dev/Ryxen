@@ -9,6 +9,11 @@ export function normalizeAthleteSettings(settings) {
   if (typeof next.showLbsConversion !== 'boolean') next.showLbsConversion = true;
   if (typeof next.showEmojis !== 'boolean') next.showEmojis = true;
   if (typeof next.showObjectivesInWods !== 'boolean') next.showObjectivesInWods = true;
+  if (!['dark', 'light'].includes(next.theme)) next.theme = 'dark';
+  if (!['blue', 'sage', 'sand', 'rose'].includes(next.accentTone)) next.accentTone = 'blue';
+  if (!['comfortable', 'compact'].includes(next.interfaceDensity)) next.interfaceDensity = 'comfortable';
+  if (typeof next.reduceMotion !== 'boolean') next.reduceMotion = false;
+  if (!['uploaded', 'coach'].includes(next.workoutPriority)) next.workoutPriority = 'uploaded';
   return next;
 }
 

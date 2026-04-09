@@ -3,6 +3,7 @@ import { getAppBridge } from '../../../../src/app/bridge.js';
 export function registerAthleteChangeListeners({
   root,
   toast,
+  getUiState,
   applyUiPatch,
   finalizeUiChange,
   handleAthleteTodayChange,
@@ -11,10 +12,10 @@ export function registerAthleteChangeListeners({
     await handleAthleteTodayChange(event, {
       root,
       toast,
+      getUiState,
       applyUiPatch,
       finalizeUiChange,
       getAppBridge,
     });
   });
 }
-

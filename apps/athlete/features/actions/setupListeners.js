@@ -40,6 +40,7 @@ export function registerAthleteSetupListeners({
   registerAthleteChangeListeners({
     root,
     toast,
+    getUiState,
     applyUiPatch,
     finalizeUiChange,
     handleAthleteTodayChange,

@@ -2,6 +2,8 @@ import {
   renderAccountAccessSection,
   renderAccountActivitySection,
   renderAccountCoachPortalSection,
+  renderAccountDataSections,
+  renderAccountPreferencesSections,
   renderGuestBenefitsSection,
   renderGuestCoachPortalSection,
 } from './sections.js';
@@ -14,6 +16,22 @@ function renderHeroStat(label, value, detail = '') {
       <strong class="summary-value">${value}</strong>
       ${detail ? `<span class="summary-detail">${detail}</span>` : ''}
     </div>
+  `;
+}
+
+function renderAccountViewButton(view, currentView, label, detail) {
+  const isActive = currentView === view;
+  return `
+    <button
+      class="account-viewTab ${isActive ? 'isActive' : ''}"
+      data-action="account:view:set"
+      data-account-view="${view}"
+      aria-pressed="${isActive ? 'true' : 'false'}"
+      type="button"
+    >
+      <strong>${label}</strong>
+      <span>${detail}</span>
+    </button>
   `;
 }
 
@@ -40,6 +58,8 @@ export function renderAthleteAccountPage(state, helpers) {
     athleteBenefitSource,
     athleteResults,
     athleteWorkouts,
+    preferences,
+    accountView,
     isSummaryLoading,
     isWorkoutsLoading,
     isResultsLoading,
@@ -69,7 +89,11 @@ export function renderAthleteAccountPage(state, helpers) {
       ${renderPageHero({
         eyebrow: 'Conta',
         title: profile.name || 'Sua conta',
-        subtitle: 'Plano, acesso e atividade recente em uma leitura tranquila.',
+        subtitle: accountView === 'preferences'
+          ? 'Aparência, treino e conforto visual do seu jeito.'
+          : accountView === 'data'
+            ? 'Backups, documentos e o básico do que está salvo neste app.'
+            : 'Plano, acesso e atividade recente em uma leitura tranquila.',
         actions: `
           <button class="btn-secondary" data-action="auth:refresh" type="button">Atualizar</button>
           <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
@@ -80,41 +104,62 @@ export function renderAthleteAccountPage(state, helpers) {
             ${renderHeroStat('Resultados', String(Number(athleteStats?.resultsLogged || 0)), 'registros salvos')}
             ${renderHeroStat('Portal', canCoachManage ? 'Liberado' : 'Fechado', canCoachManage ? `${gyms.length} gym(s)` : 'upgrade quando quiser')}
           </div>
+          <div class="account-viewTabs" role="tablist" aria-label="Seções da conta">
+            ${renderAccountViewButton('overview', accountView, 'Visão geral', 'acesso e atividade')}
+            ${renderAccountViewButton('preferences', accountView, 'Preferências', 'aparência e treino')}
+            ${renderAccountViewButton('data', accountView, 'Dados', 'backup e documentos')}
+          </div>
         `,
       })}
 
       ${showSnapshotNotice ? '<p class="account-hint">Mostrando dados salvos anteriormente enquanto a conexão atualiza.</p>' : ''}
 
-      ${renderAccountAccessSection(renderPageFold, {
-        isBusy,
-        coachPortalStatus: coachPortal?.status,
-        isSummaryLoading,
-        profileName: profile.name,
-        profileEmail: profile.email,
-        planName,
-        planStatus,
-        athleteBenefitsLabel: athleteBenefits.label,
-        athleteBenefitSource,
-        resultsLogged: athleteStats?.resultsLogged,
-        importUsage,
-        escapeHtml,
-      })}
+      ${accountView === 'preferences'
+        ? renderAccountPreferencesSections(renderPageFold, {
+          preferences,
+          escapeHtml,
+        })
+        : accountView === 'data'
+          ? renderAccountDataSections(renderPageFold, {
+            profileEmail: profile.email,
+            planName,
+            planStatus,
+            athleteBenefitSource,
+            importUsage,
+            escapeHtml,
+          })
+          : `
+            ${renderAccountAccessSection(renderPageFold, {
+              isBusy,
+              coachPortalStatus: coachPortal?.status,
+              isSummaryLoading,
+              profileName: profile.name,
+              profileEmail: profile.email,
+              planName,
+              planStatus,
+              athleteBenefitsLabel: athleteBenefits.label,
+              athleteBenefitSource,
+              resultsLogged: athleteStats?.resultsLogged,
+              importUsage,
+              escapeHtml,
+            })}
 
-      ${renderAccountCoachPortalSection(renderPageFold, {
-        canCoachManage,
-        gymsCount: gyms.length,
-        renewAt,
-        canUseDeveloperTools,
-        formatDateShort,
-        escapeHtml,
-      })}
+            ${renderAccountCoachPortalSection(renderPageFold, {
+              canCoachManage,
+              gymsCount: gyms.length,
+              renewAt,
+              canUseDeveloperTools,
+              formatDateShort,
+              escapeHtml,
+            })}
 
-      ${renderAccountActivitySection(renderPageFold, {
-        isResultsLoading,
-        isWorkoutsLoading,
-        athleteResultsCount: athleteResults.length,
-        athleteWorkoutsCount: athleteWorkouts.length,
-      })}
+            ${renderAccountActivitySection(renderPageFold, {
+              isResultsLoading,
+              isWorkoutsLoading,
+              athleteResultsCount: athleteResults.length,
+              athleteWorkoutsCount: athleteWorkouts.length,
+            })}
+          `}
     </div>
   `;
 }

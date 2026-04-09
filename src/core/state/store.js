@@ -28,6 +28,9 @@ let state = {
     showGoals: true,
     workoutPriority: 'uploaded',
     theme: 'dark',
+    accentTone: 'blue',
+    interfaceDensity: 'comfortable',
+    reduceMotion: false,
   },
   
   // Estado da UI (volatile)
@@ -94,6 +97,9 @@ export function resetState() {
       showGoals: true,
       workoutPriority: 'uploaded',
       theme: 'dark',
+      accentTone: 'blue',
+      interfaceDensity: 'comfortable',
+      reduceMotion: false,
     },
     ui: {
       activeScreen: 'welcome',

@@ -32,16 +32,23 @@ export function createAthleteEventLog(containerEl) {
 
 export function buildUiSnapshotSignature(value) {
   const currentPage = value?.currentPage || 'today';
+  const accountView = value?.accountView || 'overview';
   const settings = value?.settings || {};
   const wod = value?.wod || {};
   const coachGymId = value?.coachPortal?.selectedGymId || null;
   const wodKeys = Object.keys(wod).sort();
   return [
     currentPage,
+    accountView,
     coachGymId,
     settings.showLbsConversion ? 1 : 0,
     settings.showEmojis ? 1 : 0,
     settings.showObjectivesInWods ? 1 : 0,
+    settings.theme || 'dark',
+    settings.accentTone || 'blue',
+    settings.interfaceDensity || 'comfortable',
+    settings.reduceMotion ? 1 : 0,
+    settings.workoutPriority || 'uploaded',
     wodKeys.length,
     ...wodKeys.map((key) => {
       const entry = wod[key] || {};
@@ -62,6 +69,7 @@ export async function restoreUiStateFromAccount() {
     if (!snapshot?.ui || typeof snapshot.ui !== 'object') return null;
     return {
       currentPage: snapshot.ui.currentPage,
+      accountView: snapshot.ui.accountView,
       settings: snapshot.ui.settings,
       wod: snapshot.ui.wod,
       coachPortal: snapshot.ui.coachPortal,

@@ -19,8 +19,17 @@ export function createAthleteRenderPipeline({
 }) {
   return async function performRender() {
     const state = buildAthleteRenderState({ getUiState, getUiBusy });
+    const preferences = state?.preferences || {};
 
     document.body.dataset.page = state.__ui.currentPage || 'today';
+    document.body.dataset.uiTheme = preferences.theme === 'light' ? 'light' : 'dark';
+    document.body.dataset.accentTone = ['blue', 'sage', 'sand', 'rose'].includes(preferences.accentTone)
+      ? preferences.accentTone
+      : 'blue';
+    document.body.dataset.interfaceDensity = preferences.interfaceDensity === 'compact'
+      ? 'compact'
+      : 'comfortable';
+    document.body.dataset.motion = preferences.reduceMotion ? 'reduced' : 'full';
     applyAthleteRenderLayout({
       state,
       refs,

@@ -37,7 +37,8 @@ export function renderAccountAccessSection(renderPageFold, view) {
       </div>
     </div>
     <div class="page-actions">
-      <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Ajustes</button>
+      <button class="btn-secondary" data-action="account:view:set" data-account-view="preferences" type="button">Preferências</button>
+      <button class="btn-secondary" data-action="account:view:set" data-account-view="data" type="button">Dados</button>
     </div>
     `,
   });
@@ -100,4 +101,330 @@ export function renderAccountActivitySection(renderPageFold, view) {
     </div>
     `,
   });
+}
+
+function renderOptionCard({
+  name,
+  key,
+  value,
+  checked = false,
+  eyebrow = '',
+  title,
+  description,
+}) {
+  return `
+    <label class="account-choiceCard">
+      <input
+        class="account-choiceInput"
+        type="radio"
+        name="${name}"
+        value="${value}"
+        data-preference-key="${key}"
+        ${checked ? 'checked' : ''}
+      />
+      <span class="account-choiceFace">
+        ${eyebrow ? `<span class="account-choiceEyebrow">${eyebrow}</span>` : ''}
+        <strong>${title}</strong>
+        <small>${description}</small>
+      </span>
+    </label>
+  `;
+}
+
+function renderAccentCard({ value, checked = false, label, description, swatchClass }) {
+  return `
+    <label class="account-choiceCard account-choiceCard-tone">
+      <input
+        class="account-choiceInput"
+        type="radio"
+        name="setting-accentTone"
+        value="${value}"
+        data-preference-key="accentTone"
+        ${checked ? 'checked' : ''}
+      />
+      <span class="account-toneFace">
+        <span class="account-toneSwatch ${swatchClass}" aria-hidden="true"></span>
+        <strong>${label}</strong>
+        <small>${description}</small>
+      </span>
+    </label>
+  `;
+}
+
+function renderSwitchRow({
+  id,
+  key,
+  checked = false,
+  title,
+  description,
+}) {
+  return `
+    <label class="account-switchRow" for="${id}">
+      <span class="account-switchCopy">
+        <strong>${title}</strong>
+        <small>${description}</small>
+      </span>
+      <span class="account-switchSlot">
+        <input
+          class="account-switchInput"
+          type="checkbox"
+          id="${id}"
+          data-preference-key="${key}"
+          ${checked ? 'checked' : ''}
+        />
+        <span class="account-switchControl" aria-hidden="true"></span>
+      </span>
+    </label>
+  `;
+}
+
+export function renderAccountPreferencesSections(renderPageFold, view) {
+  const {
+    preferences = {},
+  } = view;
+
+  const showLbsConversion = preferences.showLbsConversion !== false;
+  const showEmojis = preferences.showEmojis !== false;
+  const showGoals = preferences.showGoals !== false;
+  const theme = preferences.theme === 'light' ? 'light' : 'dark';
+  const accentTone = ['blue', 'sage', 'sand', 'rose'].includes(preferences.accentTone)
+    ? preferences.accentTone
+    : 'blue';
+  const interfaceDensity = preferences.interfaceDensity === 'compact' ? 'compact' : 'comfortable';
+  const reduceMotion = preferences.reduceMotion === true;
+  const workoutPriority = preferences.workoutPriority === 'coach' ? 'coach' : 'uploaded';
+
+  return `
+    ${renderPageFold({
+      title: 'Aparência',
+      subtitle: 'Ajuste o clima visual para o jeito que você mais gosta de usar.',
+      content: `
+        <div class="account-settingsGrid">
+          <div class="account-settingsCard">
+            <div class="account-settingsHead">
+              <strong>Base visual</strong>
+              <span>Escolha entre um ambiente escuro e uma leitura mais clara.</span>
+            </div>
+            <div class="account-choiceGrid">
+              ${renderOptionCard({
+                name: 'setting-theme',
+                key: 'theme',
+                value: 'dark',
+                checked: theme === 'dark',
+                eyebrow: 'Escuro',
+                title: 'Noite',
+                description: 'Mais foco, contraste calmo e cara premium.',
+              })}
+              ${renderOptionCard({
+                name: 'setting-theme',
+                key: 'theme',
+                value: 'light',
+                checked: theme === 'light',
+                eyebrow: 'Claro',
+                title: 'Brisa',
+                description: 'Mais leve para leitura longa e ambientes claros.',
+              })}
+            </div>
+          </div>
+
+          <div class="account-settingsCard">
+            <div class="account-settingsHead">
+              <strong>Tom de destaque</strong>
+              <span>Use uma assinatura visual mais fria, orgânica ou quente.</span>
+            </div>
+            <div class="account-toneGrid">
+              ${renderAccentCard({
+                value: 'blue',
+                checked: accentTone === 'blue',
+                label: 'Azul',
+                description: 'Clássico',
+                swatchClass: 'account-toneSwatch-blue',
+              })}
+              ${renderAccentCard({
+                value: 'sage',
+                checked: accentTone === 'sage',
+                label: 'Sage',
+                description: 'Calmo',
+                swatchClass: 'account-toneSwatch-sage',
+              })}
+              ${renderAccentCard({
+                value: 'sand',
+                checked: accentTone === 'sand',
+                label: 'Sand',
+                description: 'Quente',
+                swatchClass: 'account-toneSwatch-sand',
+              })}
+              ${renderAccentCard({
+                value: 'rose',
+                checked: accentTone === 'rose',
+                label: 'Rose',
+                description: 'Suave',
+                swatchClass: 'account-toneSwatch-rose',
+              })}
+            </div>
+          </div>
+
+          <div class="account-settingsCard">
+            <div class="account-settingsHead">
+              <strong>Densidade e movimento</strong>
+              <span>Deixe a interface mais espaçada ou mais econômica.</span>
+            </div>
+            <div class="account-choiceGrid">
+              ${renderOptionCard({
+                name: 'setting-interfaceDensity',
+                key: 'interfaceDensity',
+                value: 'comfortable',
+                checked: interfaceDensity === 'comfortable',
+                eyebrow: 'Equilibrada',
+                title: 'Confortável',
+                description: 'Mais respiro entre blocos e ações.',
+              })}
+              ${renderOptionCard({
+                name: 'setting-interfaceDensity',
+                key: 'interfaceDensity',
+                value: 'compact',
+                checked: interfaceDensity === 'compact',
+                eyebrow: 'Econômica',
+                title: 'Compacta',
+                description: 'Mais conteúdo por dobra, sem perder leitura.',
+              })}
+            </div>
+            <div class="account-switchStack">
+              ${renderSwitchRow({
+                id: 'setting-reduceMotion',
+                key: 'reduceMotion',
+                checked: reduceMotion,
+                title: 'Reduzir movimento',
+                description: 'Diminui transições e animações para uma navegação mais estável.',
+              })}
+            </div>
+          </div>
+        </div>
+      `,
+    })}
+
+    ${renderPageFold({
+      title: 'Treino',
+      subtitle: 'Controle a forma como os blocos e prioridades aparecem para você.',
+      content: `
+        <div class="account-settingsGrid">
+          <div class="account-settingsCard">
+            <div class="account-settingsHead">
+              <strong>Fonte prioritária</strong>
+              <span>Escolha o que aparece primeiro quando coach e planilha convivem.</span>
+            </div>
+            <div class="account-choiceGrid">
+              ${renderOptionCard({
+                name: 'setting-workoutPriority',
+                key: 'workoutPriority',
+                value: 'uploaded',
+                checked: workoutPriority === 'uploaded',
+                eyebrow: 'Planilha',
+                title: 'Meu treino importado',
+                description: 'Ideal quando você vive mais na rotina enviada por arquivo.',
+              })}
+              ${renderOptionCard({
+                name: 'setting-workoutPriority',
+                key: 'workoutPriority',
+                value: 'coach',
+                checked: workoutPriority === 'coach',
+                eyebrow: 'Coach',
+                title: 'Treino do box',
+                description: 'Prioriza o que o coach acabou de publicar para a turma.',
+              })}
+            </div>
+          </div>
+
+          <div class="account-settingsCard">
+            <div class="account-settingsHead">
+              <strong>Leitura do treino</strong>
+              <span>Pequenos detalhes que deixam o dia mais fácil de bater o olho.</span>
+            </div>
+            <div class="account-switchStack">
+              ${renderSwitchRow({
+                id: 'setting-showLbsConversion',
+                key: 'showLbsConversion',
+                checked: showLbsConversion,
+                title: 'Mostrar conversão lbs → kg',
+                description: 'Ajuda a ler cargas importadas em libras sem conta mental.',
+              })}
+              ${renderSwitchRow({
+                id: 'setting-showObjectives',
+                key: 'showObjectivesInWods',
+                checked: showGoals,
+                title: 'Mostrar objetivos do WOD',
+                description: 'Mantém a intenção do treino visível quando o bloco trouxer esse contexto.',
+              })}
+              ${renderSwitchRow({
+                id: 'setting-showEmojis',
+                key: 'showEmojis',
+                checked: showEmojis,
+                title: 'Mostrar emojis',
+                description: 'Preserva sinais rápidos de leitura nas áreas que usam esse apoio visual.',
+              })}
+            </div>
+          </div>
+
+          <p class="account-settingsFootnote">Tudo salva automaticamente. O app aplica as mudanças assim que você toca em cada opção.</p>
+        </div>
+      `,
+    })}
+  `;
+}
+
+export function renderAccountDataSections(renderPageFold, view) {
+  const {
+    profileEmail = '',
+    planName = '',
+    planStatus = '',
+    athleteBenefitSource = '',
+    importUsage = { unlimited: false, remaining: 0 },
+    escapeHtml,
+  } = view;
+
+  return `
+    ${renderPageFold({
+      title: 'Seus dados',
+      subtitle: 'Backup, restauração e o básico do que está salvo hoje.',
+      content: `
+        <div class="account-dataGrid">
+          <article class="account-dataCard">
+            <span class="account-dataEyebrow">Conta conectada</span>
+            <strong>${escapeHtml(profileEmail || 'Sem email')}</strong>
+            <small>${escapeHtml(planName || 'Livre')} • ${escapeHtml(planStatus || 'sem status')}</small>
+          </article>
+          <article class="account-dataCard">
+            <span class="account-dataEyebrow">Origem do acesso</span>
+            <strong>${escapeHtml(athleteBenefitSource || 'Conta local')}</strong>
+            <small>${importUsage.unlimited ? 'Imports livres nesta conta.' : `${Number(importUsage.remaining || 0)} import(s) restante(s).`}</small>
+          </article>
+        </div>
+        <div class="settings-actions settings-actions-grid">
+          <button class="btn-secondary" data-action="backup:export" type="button">Fazer backup</button>
+          <button class="btn-secondary" data-action="backup:import" type="button">Restaurar backup</button>
+        </div>
+      `,
+    })}
+
+    ${renderPageFold({
+      title: 'Documentos e privacidade',
+      subtitle: 'Acesso rápido às páginas mais importantes do produto.',
+      content: `
+        <div class="settings-actions settings-actions-grid">
+          <a class="btn-secondary settings-linkBtn" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacidade</a>
+          <a class="btn-secondary settings-linkBtn" href="/terms.html" target="_blank" rel="noopener noreferrer">Termos</a>
+        </div>
+      `,
+    })}
+
+    ${renderPageFold({
+      title: 'Limpeza local',
+      subtitle: 'Use só quando quiser zerar os dados deste aparelho e começar limpo.',
+      content: `
+        <div class="settings-actions">
+          <button class="btn-secondary btn-dangerSoft" data-action="pdf:clear" type="button">Limpar dados do app</button>
+        </div>
+      `,
+    })}
+  `;
 }
