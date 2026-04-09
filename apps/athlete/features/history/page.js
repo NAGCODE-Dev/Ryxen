@@ -4,6 +4,16 @@ import {
 } from './sections.js';
 import { buildAthleteHistoryPageState } from './viewState.js';
 
+function renderHeroStat(label, value, detail = '') {
+  return `
+    <div class="summary-tile summary-tileCompact summary-tileHero">
+      <span class="summary-label">${label}</span>
+      <strong class="summary-value">${value}</strong>
+      ${detail ? `<span class="summary-detail">${detail}</span>` : ''}
+    </div>
+  `;
+}
+
 export function renderAthleteHistoryPage(state, helpers) {
   const {
     renderPageHero,
@@ -31,18 +41,25 @@ export function renderAthleteHistoryPage(state, helpers) {
       ${renderPageHero({
         eyebrow: 'Histórico',
         title: 'Evolução',
-        subtitle: progressSummary || 'Benchmarks, PRs e resultados em leitura rápida.',
+        subtitle: progressSummary || 'Benchmarks, PRs e resultados com leitura leve e direta.',
         actions: `
           <button class="btn-secondary" data-action="modal:open" data-modal="prs" type="button">PRs</button>
           <button class="btn-secondary" data-action="page:set" data-page="account" type="button">Conta</button>
+        `,
+        footer: `
+          <div class="summary-strip summary-strip-3">
+            ${renderHeroStat('Benchmarks', String(benchmarkHistory.length), benchmarkHistory.length ? 'com histórico' : 'sem marcas ainda')}
+            ${renderHeroStat('PRs', String(prHistory.length), prHistory.length ? 'em acompanhamento' : 'cadastre cargas')}
+            ${renderHeroStat('Resultados', String(resultsLogged || 0), resultsLogged ? 'registrados no app' : 'sem registros ainda')}
+          </div>
         `,
       })}
 
       ${showSnapshotNotice ? '<p class="account-hint">Mostrando dados salvos anteriormente enquanto a conexão atualiza.</p>' : ''}
 
       ${renderPageFold({
-        title: 'Resumo rápido',
-        subtitle: 'Só o que importa para continuar.',
+        title: 'Resumo',
+        subtitle: 'O essencial para continuar.',
         content: `
         <div class="coach-list coach-listCompact">
           <div class="coach-listItem static">
@@ -63,7 +80,7 @@ export function renderAthleteHistoryPage(state, helpers) {
 
       ${renderPageFold({
         title: 'Benchmarks',
-        subtitle: 'Tendência das marcas que você já registrou.',
+        subtitle: 'Tendência das marcas já registradas.',
         content: `
         <div class="trend-grid">
           ${renderBenchmarkHistorySection({
@@ -82,7 +99,7 @@ export function renderAthleteHistoryPage(state, helpers) {
 
       ${renderPageFold({
         title: 'PRs',
-        subtitle: 'Suas cargas de referência em leitura direta.',
+        subtitle: 'Suas cargas de referência, sem ruído.',
         content: `
         <div class="trend-grid">
           ${renderPrHistorySection({

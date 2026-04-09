@@ -76,7 +76,9 @@
 .page-fold {
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: var(--bg-surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012)),
+    color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
@@ -87,6 +89,7 @@
   padding: 0;
   cursor: pointer;
   min-width: 0;
+  background: color-mix(in srgb, var(--bg-soft) 42%, transparent);
 }
 
 .page-foldSummary::-webkit-details-marker {
@@ -103,7 +106,7 @@
   align-items: flex-start;
   gap: 12px;
   min-width: 0;
-  padding: 14px 16px;
+  padding: 15px 16px;
 }
 
 .page-foldHead {
@@ -117,12 +120,13 @@
   font-size: 0.98rem;
   line-height: 1.18;
   font-weight: 800;
+  letter-spacing: -0.035em;
 }
 
 .page-foldSubtitle {
   color: var(--text-secondary);
-  font-size: 0.75rem;
-  line-height: 1.42;
+  font-size: 0.77rem;
+  line-height: 1.48;
 }
 
 .page-foldChevron {
@@ -139,7 +143,7 @@
 
 .page-foldBody {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
   padding: 14px 16px 16px;
   border-top: 1px solid var(--line);
@@ -1335,7 +1339,9 @@
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--line);
-  background: var(--bg-surface-2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    color-mix(in srgb, var(--bg-surface-2) 94%, white 6%);
   min-width: 0;
 }
 
@@ -1347,13 +1353,14 @@
 }
 
 .coach-listCompact .coach-listItem strong {
-  font-size: 0.88rem;
-  line-height: 1.2;
+  font-size: 0.87rem;
+  line-height: 1.24;
+  letter-spacing: -0.015em;
 }
 
 .coach-listCompact .coach-listItem span {
-  font-size: 0.79rem;
-  line-height: 1.48;
+  font-size: 0.78rem;
+  line-height: 1.54;
 }
 
 .pr-item {
@@ -1466,6 +1473,13 @@
 .coach-audienceBlock,
 .coach-selectionPanel {
   padding: 14px;
+}
+
+.summary-tile,
+.trend-card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.01)),
+    color-mix(in srgb, var(--bg-surface-2) 94%, white 6%);
 }
 
 .summary-label,
@@ -1629,6 +1643,27 @@
 .page-stack-history .trend-card,
 .page-stack-account .summary-tile {
   box-shadow: none;
+}
+
+.page-stack-history .trend-card {
+  gap: 12px;
+}
+
+.trend-card strong {
+  font-size: 0.93rem;
+  letter-spacing: -0.02em;
+}
+
+.summary-tileHero .summary-label {
+  font-size: 0.63rem;
+}
+
+.summary-tileHero .summary-value {
+  font-size: 1rem;
+}
+
+.summary-tileHero .summary-detail {
+  font-size: 0.72rem;
 }
 
 .trend-cardHead > *,

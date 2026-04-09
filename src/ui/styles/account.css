@@ -20,11 +20,15 @@
   }
 
   .account-fold {
-    @apply grid gap-0 overflow-hidden rounded-[24px] border border-white/10 bg-ryxen-surface-2;
+    @apply grid gap-0 overflow-hidden rounded-[26px] border border-white/10;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.032), rgba(255, 255, 255, 0.01)),
+      color-mix(in srgb, var(--bg-surface) 90%, var(--bg-surface-2) 10%);
+    box-shadow: var(--shadow-sm);
   }
 
   .account-foldSummary {
-    @apply flex cursor-pointer list-none items-center justify-between gap-3.5 px-4 py-3.5;
+    @apply flex cursor-pointer list-none items-center justify-between gap-3.5 px-4 py-4;
   }
 
   .account-foldSummary::-webkit-details-marker {
@@ -37,11 +41,11 @@
   }
 
   .account-foldMeta {
-    @apply text-right text-[0.76rem] text-ryxen-text-soft;
+    @apply text-right text-[0.74rem] text-ryxen-text-soft;
   }
 
   .account-foldBody {
-    @apply grid gap-2.5 border-t border-white/10 px-4 pb-4 pt-0;
+    @apply grid gap-3 border-t border-white/10 px-4 pb-4 pt-0;
   }
 
   .account-fold.isCompact .account-foldBody {
@@ -78,11 +82,18 @@
   }
 
   .page-stack-account .coach-listCompact .coach-listItem {
-    @apply px-3 py-2.5;
+    @apply px-3.5 py-3;
   }
 
   .page-stack-account .summary-tileCompact {
-    @apply px-3 py-[11px];
+    @apply px-3.5 py-3;
+  }
+
+  .summary-tileHero {
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012)),
+      color-mix(in srgb, var(--bg-surface) 88%, var(--bg-surface-2) 12%);
+    border-color: color-mix(in srgb, var(--line) 88%, transparent);
   }
 
   .admin-toolbar {
@@ -120,7 +131,7 @@
     }
 
     .account-foldSummary {
-      @apply flex-col items-start px-3 py-3;
+      @apply flex-col items-start px-3.5 py-3.5;
     }
 
     .account-foldMeta {
@@ -132,7 +143,7 @@
     }
 
     .account-foldBody {
-      @apply gap-2 px-3 pb-3;
+      @apply gap-2.5 px-3.5 pb-3.5;
     }
 
     .account-name {

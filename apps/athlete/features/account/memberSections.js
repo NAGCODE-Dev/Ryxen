@@ -16,7 +16,7 @@ export function renderAccountAccessSection(renderPageFold, view) {
 
   return renderPageFold({
     title: 'Seu acesso',
-    subtitle: 'O essencial da conta em um só lugar.',
+    subtitle: 'Conta, plano e uso em uma leitura só.',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
@@ -37,7 +37,7 @@ export function renderAccountAccessSection(renderPageFold, view) {
       </div>
     </div>
     <div class="page-actions">
-      <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Configurações</button>
+      <button class="btn-secondary" data-action="modal:open" data-modal="settings" type="button">Ajustes</button>
     </div>
     `,
   });
@@ -55,7 +55,7 @@ export function renderAccountCoachPortalSection(renderPageFold, view) {
 
   return renderPageFold({
     title: 'Coach Portal',
-    subtitle: 'Portal separado do box e próximo passo de acesso.',
+    subtitle: 'Gestão do box, quando fizer sentido ativar.',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
@@ -68,9 +68,9 @@ export function renderAccountCoachPortalSection(renderPageFold, view) {
       </div>
     </div>
     <div class="page-actions">
-      ${!canCoachManage ? '<button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Ver upgrade</button>' : ''}
+      ${!canCoachManage ? '<button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Ver plano</button>' : ''}
       ${canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}
-      ${canCoachManage ? '<a class="btn-secondary" href="/coach/index.html" target="_blank" rel="noopener noreferrer">Abrir Coach Portal</a>' : '<a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer">Ver planos</a>'}
+      ${canCoachManage ? '<a class="btn-secondary" href="/coach/index.html" target="_blank" rel="noopener noreferrer">Abrir portal</a>' : '<a class="btn-secondary" href="/pricing.html" target="_blank" rel="noopener noreferrer">Comparar planos</a>'}
     </div>
     `,
   });
@@ -86,7 +86,7 @@ export function renderAccountActivitySection(renderPageFold, view) {
 
   return renderPageFold({
     title: 'Atividade recente',
-    subtitle: 'O que já apareceu para você dentro do app.',
+    subtitle: 'O que já apareceu no seu fluxo recente.',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
