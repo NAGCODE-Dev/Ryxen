@@ -547,3 +547,67 @@
     font-size: 0.78rem;
   }
 }
+
+@media (max-width: 380px) {
+  .modal-overlay-auth {
+    padding: calc(var(--safe-top) + 8px) 8px calc(var(--safe-bottom) + 8px);
+  }
+
+  .modal-overlay-auth .modal-container-auth {
+    max-height: min(78dvh, 620px);
+    border-radius: 20px;
+  }
+
+  .modal-header {
+    padding: 10px 12px;
+  }
+
+  .modal-title {
+    font-size: 0.9rem;
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+  }
+
+  .modal-body {
+    padding: 10px 12px 14px;
+  }
+
+  .modal-body-auth {
+    gap: 10px;
+  }
+
+  .auth-intro-auth,
+  .auth-signupVerify,
+  .auth-resetBox {
+    padding: 10px;
+  }
+
+  .auth-intro-auth .account-hint {
+    font-size: 0.72rem;
+    line-height: 1.34;
+  }
+
+  .auth-switch .btn-secondary,
+  .auth-googleNativeButton,
+  .auth-submitButton,
+  .auth-trustedSubmitButton,
+  .auth-resetRequestButton,
+  .auth-resetConfirmButton,
+  .add-input {
+    min-height: 40px;
+  }
+
+  .auth-divider {
+    font-size: 0.56rem;
+    letter-spacing: 0.12em;
+  }
+
+  .auth-supportNotice,
+  .auth-trustedStatus {
+    padding: 10px 11px;
+    border-radius: 14px;
+  }
+}

@@ -400,6 +400,158 @@
   }
 }
 
+@media (max-width: 380px) {
+  :root {
+    --nav-height: 60px;
+  }
+
+  .app-header {
+    padding-inline: 8px;
+    padding-top: calc(var(--safe-top) + 6px);
+    padding-bottom: 6px;
+  }
+
+  .header-badge {
+    min-height: 24px;
+    gap: 6px;
+    padding: 0 6px;
+    font-size: 0.54rem;
+    letter-spacing: 0.06em;
+  }
+
+  .header-badgeMark {
+    width: 14px;
+    height: 14px;
+  }
+
+  .header-account-btn {
+    max-width: 110px;
+    min-height: 28px;
+    padding-inline: 8px;
+    font-size: 0.62rem;
+  }
+
+  .app-main {
+    padding: 10px 8px calc(var(--safe-bottom) + 14px);
+  }
+
+  .page-hero {
+    gap: 7px;
+  }
+
+  .page-heroEyebrow {
+    font-size: 0.58rem;
+  }
+
+  .page-heroTitle,
+  body[data-page="today"] .page-heroTitle {
+    font-size: 0.98rem;
+    line-height: 1.02;
+  }
+
+  body[data-page="history"] .page-heroTitle,
+  body[data-page="account"] .page-heroTitle {
+    font-size: 0.9rem;
+  }
+
+  .page-heroSubtitle,
+  body[data-page="today"] .page-heroSubtitle,
+  body[data-page="history"] .page-heroSubtitle,
+  body[data-page="account"] .page-heroSubtitle {
+    font-size: 0.66rem;
+    line-height: 1.3;
+  }
+
+  .page-heroActions .btn-primary,
+  .page-heroActions .btn-secondary,
+  .page-heroActions .day-select {
+    min-height: 34px;
+    font-size: 0.72rem;
+  }
+
+  .bottom-nav {
+    top: calc(var(--safe-top) + 42px);
+    padding: 3px 8px 4px;
+  }
+
+  .bottom-navItems {
+    padding: 3px;
+    border-radius: 11px;
+  }
+
+  .nav-btn {
+    min-height: 32px;
+    border-radius: 8px;
+  }
+
+  .nav-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .workout-block,
+  .today-overviewCard,
+  .today-sessionCard,
+  .empty-state,
+  .summary-tile,
+  .account-section,
+  .account-heroIdentity,
+  .account-planCard,
+  .trend-card,
+  .coach-audienceBlock,
+  .coach-selectionPanel,
+  .coach-listItem,
+  .pr-item,
+  .admin-userRow,
+  .workout-header,
+  .page-fold {
+    border-radius: 14px;
+    padding: 9px;
+  }
+
+  .page-foldSummaryRow,
+  .page-foldBody {
+    padding-inline: 9px;
+  }
+
+  .page-foldBody {
+    padding-bottom: 10px;
+  }
+
+  .page-foldTitle {
+    font-size: 0.82rem;
+  }
+
+  .page-foldSubtitle,
+  .coach-listCompact .coach-listItem span,
+  .summary-detail,
+  .account-hint {
+    font-size: 0.64rem;
+    line-height: 1.32;
+  }
+
+  .quick-action {
+    padding: 10px 11px;
+    border-radius: 14px;
+  }
+
+  .quick-actionLabel {
+    font-size: 0.72rem;
+  }
+
+  .quick-actionMeta,
+  .bottom-toolsHint {
+    font-size: 0.64rem;
+    line-height: 1.3;
+  }
+
+  .site-footer {
+    gap: 8px;
+    padding: 10px 8px calc(var(--safe-bottom) + 12px);
+    font-size: 0.6rem;
+  }
+}
+
 @media (max-width: 640px) {
   body[data-native-app="true"] {
     background:
