@@ -4,6 +4,15 @@
     gap: 12px;
   }
 
+  .publish-shellLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .publish-summaryRail {
+    position: static;
+    top: auto;
+  }
+
   .sidebar {
     position: static;
     min-height: 0;
@@ -133,6 +142,24 @@
     grid-template-columns: 1fr;
   }
 
+  .publish-actionBar {
+    position: sticky;
+    bottom: 10px;
+    z-index: 4;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background:
+      linear-gradient(180deg, rgba(15, 20, 28, 0.96), rgba(10, 14, 20, 0.98)),
+      var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .publish-actionBar .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
   .toolbar {
     flex-direction: column;
   }
@@ -147,8 +174,17 @@
   .publish-previewCard,
   .publish-metaCard,
   .publish-step,
-  .selection-panel {
+  .selection-panel,
+  .publish-collectionItem {
     padding: 14px;
+  }
+
+  .publish-collectionActions {
+    justify-content: stretch;
+  }
+
+  .publish-collectionActions .btn {
+    width: 100%;
   }
 
   .hero h2 {
@@ -187,5 +223,13 @@
   .portal-viewTabs {
     margin-inline: -12px;
     padding-inline: 12px;
+  }
+
+  .publish-formSection,
+  .publish-previewCard,
+  .publish-metaCard,
+  .publish-validationCard,
+  .audience-card {
+    border-radius: 18px;
   }
 }

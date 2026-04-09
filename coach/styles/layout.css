@@ -123,6 +123,59 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.publish-form {
+  gap: 14px;
+}
+
+.publish-shellLayout {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.9fr);
+  align-items: start;
+}
+
+.publish-editorRail,
+.publish-summaryRail {
+  min-width: 0;
+}
+
+.publish-summaryRail {
+  position: sticky;
+  top: 24px;
+}
+
+.publish-formSection {
+  gap: 14px;
+}
+
+.publish-formSectionHead {
+  display: grid;
+  gap: 4px;
+}
+
+.publish-workoutTextarea {
+  min-height: 220px;
+}
+
+.publish-collectionItem {
+  gap: 12px;
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.02);
+}
+
+.publish-collectionHead {
+  display: grid;
+  gap: 4px;
+}
+
+.publish-collectionActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .publish-step,
 .publish-metaCard {
   display: grid;
@@ -241,6 +294,16 @@
 
 .publish-validationItem {
   color: var(--text);
+}
+
+.publish-actionBar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.publish-actionBar .btn {
+  min-width: 220px;
 }
 
 .draft-statusRow {
@@ -380,6 +443,31 @@
 .selection-grid {
   display: grid;
   gap: 10px;
+}
+
+.publish-audienceSummary {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.025);
+}
+
+.audience-modeTabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.audience-modeTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.audience-modeTabs .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .check-row {
