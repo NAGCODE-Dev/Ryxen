@@ -10,9 +10,9 @@
     @apply text-sm text-ryxen-text;
     touch-action: manipulation;
     background:
-      radial-gradient(circle at top left, rgba(138, 180, 255, 0.12), transparent 34%),
-      radial-gradient(circle at 100% 8%, rgba(242, 184, 139, 0.08), transparent 22%),
-      linear-gradient(180deg, #11151d 0%, #0f1218 48%, #0c1015 100%);
+      radial-gradient(circle at top left, rgba(168, 194, 247, 0.11), transparent 34%),
+      radial-gradient(circle at 100% 8%, rgba(217, 193, 168, 0.08), transparent 22%),
+      linear-gradient(180deg, #10141a 0%, #0e1218 48%, #0c0f14 100%);
   }
 
   #app {
@@ -25,17 +25,17 @@
   .app-container {
     @apply mx-auto min-h-screen w-full border-x border-white/10 backdrop-blur-[22px];
     min-height: 100dvh;
-    max-width: 1120px;
+    max-width: 1180px;
     background:
-      linear-gradient(180deg, rgba(20, 25, 34, 0.96), rgba(15, 18, 24, 0.985)),
-      radial-gradient(circle at top, rgba(255, 255, 255, 0.02), transparent 48%);
+      linear-gradient(180deg, rgba(22, 27, 35, 0.96), rgba(15, 19, 25, 0.985)),
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.024), transparent 48%);
   }
 
   .loading-screen {
     @apply fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-[opacity,visibility] duration-300 ease-out;
     background:
-      radial-gradient(circle at top, rgba(138, 180, 255, 0.12), transparent 30%),
-      linear-gradient(180deg, #11151d 0%, #0f1218 100%);
+      radial-gradient(circle at top, rgba(168, 194, 247, 0.12), transparent 30%),
+      linear-gradient(180deg, #10141a 0%, #0e1218 100%);
   }
 
   .loading-screen p {
@@ -56,7 +56,10 @@
   }
 
   .ui-toast {
-    @apply pointer-events-none fixed left-1/2 z-[20000] min-w-[180px] max-w-[min(92vw,420px)] rounded-full border border-white/15 bg-[#121821f7] px-4 py-3 text-center text-ryxen-text opacity-0 shadow-[var(--shadow-md)] transition-[opacity,transform] duration-200 ease-out;
+    @apply pointer-events-none fixed left-1/2 z-[20000] min-w-[180px] max-w-[min(92vw,420px)] rounded-full border border-white/15 px-4 py-3 text-center text-ryxen-text opacity-0 shadow-[var(--shadow-md)] transition-[opacity,transform] duration-200 ease-out;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+      rgba(18, 24, 31, 0.92);
     bottom: calc(var(--nav-height) + 18px + var(--safe-bottom));
     transform: translateX(-50%) translateY(12px);
   }

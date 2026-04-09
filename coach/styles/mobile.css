@@ -94,8 +94,8 @@
     top: 0;
     z-index: 5;
     background:
-      linear-gradient(180deg, rgba(15, 20, 28, 0.99), rgba(10, 14, 20, 0.96)),
-      radial-gradient(circle at top, rgba(89, 209, 255, 0.08), transparent 28%);
+      linear-gradient(180deg, rgba(18, 23, 31, 0.99), rgba(13, 17, 23, 0.96)),
+      radial-gradient(circle at top, rgba(168, 194, 247, 0.08), transparent 28%);
   }
 
   .sidebar-title {
@@ -158,7 +158,7 @@
     border: 1px solid var(--line);
     border-radius: 18px;
     background:
-      linear-gradient(180deg, rgba(15, 20, 28, 0.96), rgba(10, 14, 20, 0.98)),
+      linear-gradient(180deg, rgba(18, 23, 31, 0.96), rgba(13, 17, 23, 0.98)),
       var(--surface);
     box-shadow: var(--shadow);
   }

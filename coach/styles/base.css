@@ -1,16 +1,16 @@
 @layer base {
   :root {
-    --bg: #0a0d11;
-    --surface: #12171d;
-    --surface-2: #171c22;
-    --soft: rgba(255,255,255,0.04);
-    --line: rgba(255,255,255,0.08);
+    --bg: #10141a;
+    --surface: #171c23;
+    --surface-2: #1d242d;
+    --soft: rgba(255,255,255,0.038);
+    --line: rgba(255,255,255,0.074);
     --line-strong: rgba(255,255,255,0.14);
-    --text: #f2f4f7;
-    --muted: rgba(242,244,247,0.62);
-    --ok: #9ad5ad;
-    --warn: #f3c57f;
-    --shadow: 0 20px 50px rgba(0,0,0,0.28);
+    --text: #f3f6fb;
+    --muted: rgba(225,231,241,0.68);
+    --ok: #84c9a5;
+    --warn: #ddc28e;
+    --shadow: 0 22px 56px rgba(4,8,16,0.24);
     --radius: 24px;
   }
 
@@ -22,13 +22,18 @@
   body {
     @apply text-ryxen-text;
     font-family: var(--font-sans);
-    background: linear-gradient(180deg, #090c10 0%, #0b0f14 100%);
+    background:
+      radial-gradient(circle at top left, rgba(168,194,247,0.11), transparent 30%),
+      linear-gradient(180deg, #10141a 0%, #0d1117 100%);
   }
 }
 
 @layer components {
   .field {
-    @apply w-full rounded-2xl border border-white/10 bg-[#171c22] px-3.5 py-[13px] text-ryxen-text;
+    @apply w-full rounded-2xl border border-white/10 px-3.5 py-[13px] text-ryxen-text;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+      rgba(24, 31, 40, 0.92);
   }
 
   .field:focus {
@@ -47,12 +52,15 @@
   }
 
   .btn-primary {
-    @apply border-transparent bg-slate-100 text-[#0b0f14];
+    @apply border-transparent text-[#0f141a];
+    background: linear-gradient(135deg, #eef4ff 0%, #dce9ff 100%);
   }
 
   .btn-secondary,
   .btn-chip {
-    background: var(--soft);
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+      rgba(22, 28, 36, 0.88);
     color: var(--text);
   }
 
@@ -70,9 +78,9 @@
   .stat-label,
   .auth-dividerText {
     color: var(--muted);
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+    font-size: 0.7rem;
+    text-transform: none;
+    letter-spacing: 0.06em;
     font-weight: 800;
   }
 

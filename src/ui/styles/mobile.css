@@ -162,14 +162,14 @@
   .modal-container-auth {
     width: 100%;
     max-height: 92vh;
-    border-radius: 26px 26px 0 0;
+    border-radius: 24px 24px 0 0;
     border-bottom: 0;
   }
 
   .modal-overlay-auth .modal-container-auth {
     width: min(100%, 460px);
     max-height: min(88vh, 760px);
-    border-radius: 24px;
+    border-radius: 22px;
     border-bottom: 1px solid var(--line);
     margin: auto;
   }
@@ -186,7 +186,7 @@
   body[data-page="today"] .empty-state,
   body[data-page="today"] .workout-block,
   body[data-page="today"] .athlete-accessBanner {
-    border-radius: 18px;
+    border-radius: 17px;
     box-shadow: var(--shadow-sm);
   }
 
@@ -214,7 +214,7 @@
 
   .page-foldSummaryRow,
   .page-foldBody {
-    padding-inline: 12px;
+    padding-inline: 13px;
   }
 
   .page-foldBody {
@@ -230,7 +230,7 @@
   }
 
   .app-main {
-    padding: 12px 10px calc(var(--safe-bottom) + 18px);
+    padding: 12px 11px calc(var(--safe-bottom) + 18px);
   }
 }
 
@@ -505,7 +505,7 @@
   .admin-userRow,
   .workout-header,
   .page-fold {
-    border-radius: 16px;
+    border-radius: 15px;
     padding: 10px;
   }
 
