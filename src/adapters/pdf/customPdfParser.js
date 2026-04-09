@@ -143,6 +143,7 @@ export function shouldSkipLine(line) {
     lower.includes('licensed to') ||
     lower.includes('hp1570') ||
     lower.includes('www.bsbstrong.com') ||
+    lower.startsWith('#') ||
     lower.includes('#trainwithapurpose') ||
     upper === 'BSB' ||
     upper === 'STRONG' ||
@@ -216,6 +217,7 @@ export function parseWeekText(weekText, weekNumber) {
     }
 
     const nextMeaningfulLine = findNextMeaningfulLine(lines, index + 1);
+    const nextMeaningfulLines = findNextMeaningfulLines(lines, index + 1, 2);
     if (
       !currentBlock
       && /GIN[ÁA]STICA|QUALIDADE|N[ÃA]O POR TEMPO/i.test(line)
@@ -229,6 +231,7 @@ export function parseWeekText(weekText, weekNumber) {
       ? null
       : detectStructuredBlock(line, nextMeaningfulLine, {
           allowInferred: !currentBlock || currentBlock === 'GYMNASTICS' || currentBlock === 'STRENGTH',
+          nextLines: nextMeaningfulLines,
         });
     if (blockDescriptor) {
       flushCurrentBlock();
@@ -324,8 +327,18 @@ function findNextMeaningfulLine(lines, startIndex) {
   return '';
 }
 
+function findNextMeaningfulLines(lines, startIndex, count = 2) {
+  const result = [];
+  for (let index = startIndex; index < lines.length && result.length < count; index += 1) {
+    const candidate = lines[index]?.trim?.() || '';
+    if (!candidate || shouldSkipLine(candidate)) continue;
+    result.push(candidate);
+  }
+  return result;
+}
+
 function detectStructuredBlock(line, nextLine = '', options = {}) {
-  const { allowInferred = true } = options;
+  const { allowInferred = true, nextLines = [] } = options;
   const upper = line.trim().toUpperCase();
   const basicBlockType = detectBlockType(line);
   if (basicBlockType && !detectPeriodName(line)) {
@@ -340,6 +353,10 @@ function detectStructuredBlock(line, nextLine = '', options = {}) {
     return { type: 'ENGINE', title: line.trim(), includeLine: true };
   }
 
+  if (/^LOW INTENSITY MIX\b/.test(upper)) {
+    return { type: 'ENGINE', title: line.trim(), includeLine: true };
+  }
+
   if (/^GYMNASTICS\b/.test(upper)) {
     return { type: 'GYMNASTICS', title: line.trim(), includeLine: true };
   }
@@ -348,28 +365,40 @@ function detectStructuredBlock(line, nextLine = '', options = {}) {
     return { type: 'ACCESSORIES', title: line.trim(), includeLine: false };
   }
 
-  if (allowInferred && looksLikeStrengthHeader(line, nextLine)) {
+  if (allowInferred && looksLikeStrengthHeader(line, nextLine, nextLines)) {
     return { type: 'STRENGTH', title: line.trim(), includeLine: true };
   }
 
   return null;
 }
 
-function looksLikeStrengthHeader(line, nextLine = '') {
+function looksLikeStrengthHeader(line, nextLine = '', nextLines = []) {
   const upper = line.trim().toUpperCase();
   if (!upper || /[a-zà-ÿ]/.test(line)) return false;
   if (detectDayName(line) || detectPeriodName(line) || shouldSkipLine(line)) return false;
+  if (isCadenceLine(line)) return false;
   if (/^OBJETIVO\b|^REST\b|^RECOVERY\b/.test(upper)) return false;
   if (!/[A-Z]/.test(upper)) return false;
-  return isStrengthSchemeLine(nextLine) || isAccessorySchemeLine(nextLine);
+  const candidates = [nextLine, ...nextLines].filter(Boolean);
+  return candidates.some((candidate) => isStrengthSchemeLine(candidate) || isAccessorySchemeLine(candidate) || isCadenceLine(candidate));
 }
 
 function isStrengthSchemeLine(line = '') {
-  return /^(\d+\+)+\d+\s*@\??$/i.test(line.trim()) || /^\d+\s*@\?\s*\+\s*\d+$/i.test(line.trim());
+  const compact = line.trim().replace(/\s+/g, '');
+  return /^(\d+\+)+\d+@\d+(?:\.\d+)?%$/i.test(compact)
+    || /^(\d+\+)+\d+@\?$/i.test(compact)
+    || /^\d+@\d+(?:\.\d+)?%(\(x\d+\))?$/i.test(compact)
+    || /^\d+@\?(\+\d+)?$/i.test(compact)
+    || /^\d+@\d+(?:\.\d+)?%\+\d+$/i.test(compact)
+    || /^\d+x\d+@\d+(?:\.\d+)?%\+\d+$/i.test(compact);
 }
 
 function isAccessorySchemeLine(line = '') {
   return /^\d+\s*x\s*\d+$/i.test(line.trim());
+}
+
+function isCadenceLine(line = '') {
+  return /^(A CADA|EVERY)\s+\d+\s*(SEC|SEG|SECONDS?)/i.test(line.trim());
 }
 
 function mapLegacyBlockTypeToStructuredType(type) {
@@ -418,7 +447,7 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
     const line = lines[index];
     const upper = line.toUpperCase();
 
-    const amrapMatch = upper.match(/^(\d+)\s*['’]?\s*AMRAP\b/);
+    const amrapMatch = upper.match(/^(\d+)\s*['’`´]?\s*AMRAP\b/);
     if (amrapMatch) {
       format = 'amrap';
       timeCapMinutes = Number(amrapMatch[1]);
@@ -426,7 +455,7 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
-    const emomMatch = upper.match(/^(\d+)\s*['’]?\s*EMOM\b/);
+    const emomMatch = upper.match(/^(\d+)\s*['’`´]?\s*EMOM\b/);
     if (emomMatch) {
       format = 'emom';
       timeCapMinutes = Number(emomMatch[1]);
@@ -440,7 +469,7 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
-    const forTimeCapMatch = upper.match(/^(\d+)\s*['’]?\s*FOR TIME\b/);
+    const forTimeCapMatch = upper.match(/^(\d+)\s*['’`´]?\s*FOR TIME\b/);
     if (forTimeCapMatch) {
       format = 'for_time';
       timeCapMinutes = Number(forTimeCapMatch[1]);
@@ -448,17 +477,27 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
-    const capMatch = upper.match(/(?:TIME\s*CAP|CAP)\s*(\d+)\s*['’]?/);
+    const capMatch = upper.match(/(?:TIME\s*CAP|CAP)\s*(\d+)\s*['’`´]?/);
     if (capMatch) {
       timeCapMinutes = Number(capMatch[1]);
       items.push({ type: 'cap', timeCapMinutes, raw: line });
       continue;
     }
 
-    const roundsMatch = upper.match(/^(\d+)\s*X$/);
+    const roundsMatch = upper.match(/^\(?\s*(\d+)\s*X\s*\)?$/);
     if (roundsMatch) {
       rounds = Number(roundsMatch[1]);
       items.push({ type: 'rounds', rounds, raw: line });
+      continue;
+    }
+
+    const cadence = parseCadenceLine(line);
+    if (cadence) {
+      format = 'emom';
+      if (cadence.intervalSeconds % 60 === 0) {
+        timeCapMinutes = cadence.repeatCount ? (cadence.intervalSeconds / 60) * cadence.repeatCount : timeCapMinutes;
+      }
+      items.push(cadence);
       continue;
     }
 
@@ -469,13 +508,18 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
+    if (/^\*+/.test(line) || /^FLOW\s*=/i.test(line) || /^DIRETO PARA$/i.test(upper)) {
+      items.push({ type: 'note', text: line.trim(), raw: line });
+      continue;
+    }
+
     const rest = parseRestLine(line);
     if (rest) {
       items.push(rest);
       continue;
     }
 
-    const recoveryMatch = upper.match(/^(\d+)\s*['’]\s*RECOVERY ROW\b/);
+    const recoveryMatch = upper.match(/^(\d+)\s*['’`´]\s*RECOVERY ROW\b/);
     if (recoveryMatch) {
       items.push({ type: 'recovery', modality: 'row', durationMinutes: Number(recoveryMatch[1]), raw: line });
       continue;
@@ -561,8 +605,12 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
 function parseMovementLine(line) {
   const raw = String(line || '').trim();
   if (!raw) return null;
+  if (/^\(?\s*\d+(?:-\d+)+\s*\)?(?:\(?\s*\d+(?:-\d+)+\s*\)?)+$/i.test(raw.replace(/\)+/g, ')'))) {
+    return { type: 'rep_wave', raw, text: raw };
+  }
 
-  const pairLoadMatch = raw.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*LBS?/i);
+  const pairLoadMatch = raw.match(/(\d+(?:\.\d+)?)\s*[-/]\s*(\d+(?:\.\d+)?)\s*LBS?/i);
+  const pairKgLoadMatch = raw.match(/(\d+(?:\.\d+)?)\s*[-/]\s*(\d+(?:\.\d+)?)\s*KG/i);
   const heightMatch = raw.match(/\((\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*CM\)/i);
   const alternativeMatch = raw.match(/\(OU\s+([^)]+)\)/i);
   const noteMatch = raw.match(/\((?!OU\s)([^)]+)\)/i);
@@ -598,6 +646,13 @@ function parseMovementLine(line) {
       femaleLb,
       maleKg: roundKg(lbsToKg(maleLb)),
       femaleKg: roundKg(lbsToKg(femaleLb)),
+    };
+  }
+
+  if (pairKgLoadMatch) {
+    item.load = {
+      maleKg: Number(pairKgLoadMatch[1]),
+      femaleKg: Number(pairKgLoadMatch[2]),
     };
   }
 
@@ -724,7 +779,7 @@ function roundKg(value) {
 
 function parseRestLine(line) {
   const upper = String(line || '').trim().toUpperCase();
-  const restMatch = upper.match(/^(?:(\d+)\s*['’]\s*)?REST(?:\s+TOTAL)?(?:\s+(\d+)\s*['’])?$/);
+  const restMatch = upper.match(/^(?:(\d+)\s*['’`´]\s*)?REST(?:\s+TOTAL)?(?:\s+(\d+)\s*['’`´])?$/);
   if (restMatch) {
     const minutes = Number(restMatch[1] || restMatch[2] || 0);
     return { type: 'rest', durationMinutes: minutes || null, raw: line };
@@ -739,12 +794,21 @@ function parseRestLine(line) {
     return { type: 'rest', durationMinutes: Number(minuteRestMatch[1]), raw: line };
   }
 
+  const betweenSetsMatch = upper.match(/(\d+)\s*['’`´]\s*REST\s+BETWEEN\s+SETS/);
+  if (betweenSetsMatch) {
+    return { type: 'rest', durationMinutes: Number(betweenSetsMatch[1]), raw: line, betweenSets: true };
+  }
+
   return null;
 }
 
 function parseStrengthSchemeLine(line) {
   const raw = String(line || '').trim();
   const compact = raw.replace(/\s+/g, '');
+  const repeatMatch = compact.match(/^(.*)\(x(\d+)\)$/i);
+  const repeatCount = repeatMatch ? Number(repeatMatch[2]) : null;
+  const base = repeatMatch ? repeatMatch[1] : compact;
+  const percentMatch = base.match(/@(\d+(?:\.\d+)?)%/i);
   const pairedMatch = compact.match(/^(\d+)@(\?)?\+(\d+)$/i);
   if (pairedMatch) {
     return {
@@ -754,17 +818,34 @@ function parseStrengthSchemeLine(line) {
       intensityUnknown: !!pairedMatch[2],
       pairedReps: Number(pairedMatch[3]),
       scheme: `${pairedMatch[1]}@${pairedMatch[2] ? '?' : ''}+${pairedMatch[3]}`,
+      repeatCount,
+      percent: percentMatch ? Number(percentMatch[1]) : null,
     };
   }
 
-  const sequenceMatch = compact.match(/^((?:\d+\+)+\d+)@(\?)?$/i);
+  const sequenceMatch = base.match(/^((?:\d+\+)+\d+)@(\d+(?:\.\d+)?%|\?)$/i);
   if (sequenceMatch) {
     return {
       type: 'strength_scheme',
       raw,
       scheme: sequenceMatch[1],
-      intensityUnknown: !!sequenceMatch[2],
+      intensityUnknown: sequenceMatch[2] === '?',
       sequenceReps: sequenceMatch[1].split('+').map((value) => Number(value)),
+      percent: percentMatch ? Number(percentMatch[1]) : null,
+      repeatCount,
+    };
+  }
+
+  const singleMatch = base.match(/^(\d+)@(\d+(?:\.\d+)?%|\?)$/i);
+  if (singleMatch) {
+    return {
+      type: 'strength_scheme',
+      raw,
+      scheme: `${singleMatch[1]}@${singleMatch[2]}`,
+      reps: Number(singleMatch[1]),
+      intensityUnknown: singleMatch[2] === '?',
+      percent: percentMatch ? Number(percentMatch[1]) : null,
+      repeatCount,
     };
   }
 
@@ -772,15 +853,34 @@ function parseStrengthSchemeLine(line) {
     type: 'strength_scheme',
     scheme: raw,
     intensityUnknown: raw.includes('?'),
+    percent: percentMatch ? Number(percentMatch[1]) : null,
+    repeatCount,
     raw,
+  };
+}
+
+function parseCadenceLine(line) {
+  const raw = String(line || '').trim();
+  const match = raw.match(/^(A CADA|EVERY)\s+(\d+)\s*(SEC|SEG|SECONDS?)(?:\s*\(x(\d+)\))?$/i);
+  if (!match) return null;
+  return {
+    type: 'cadence',
+    raw,
+    intervalSeconds: Number(match[2]),
+    repeatCount: match[4] ? Number(match[4]) : null,
   };
 }
 
 function parseEngineIntervalLine(line) {
   const upper = String(line || '').trim().toUpperCase();
-  const durationMatch = upper.match(/^(\d+)\s*MIN$/);
+  const durationMatch = upper.match(/^(\d+)\s*MIN(?:\s+([A-Z* ]+))?$/);
   if (durationMatch) {
-    return { type: 'engine_work', durationMinutes: Number(durationMatch[1]), raw: line };
+    return {
+      type: 'engine_work',
+      durationMinutes: Number(durationMatch[1]),
+      modality: cleanupMovementName(durationMatch[2] || ''),
+      raw: line,
+    };
   }
 
   const hrConstraintMatch = line.match(/frequ[êe]ncia card[íi]aca.+180\s*-\s*idade/i);
@@ -859,6 +959,7 @@ function buildEngineSummary(items, context = {}) {
     title: context.title || '',
     rounds: roundsItem?.rounds || null,
     workMinutes: workItem?.durationMinutes || null,
+    modality: workItem?.modality || null,
     restMinutes: restItem?.durationMinutes || null,
     constraints,
   };
@@ -894,7 +995,8 @@ function buildGymnasticsSummary(items, context = {}) {
 
 function buildStrengthSummary(items, context = {}) {
   const schemes = items.filter((item) => item.type === 'strength_scheme');
-  if (!schemes.length) return null;
+  const cadence = items.find((item) => item.type === 'cadence');
+  if (!schemes.length && !cadence) return null;
 
   return {
     title: context.title || '',
@@ -904,7 +1006,11 @@ function buildStrengthSummary(items, context = {}) {
       reps: item.reps || null,
       pairedReps: item.pairedReps || null,
       intensityUnknown: !!item.intensityUnknown,
+      percent: item.percent || null,
+      repeatCount: item.repeatCount || null,
     })),
+    cadenceSeconds: cadence?.intervalSeconds || null,
+    cadenceRepeats: cadence?.repeatCount || null,
   };
 }
 

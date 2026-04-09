@@ -222,3 +222,55 @@ SUPINO PEGADA FECHADA 4x8
   assert.equal(accessoriesBlock.parsed.accessories[0].name, 'supino pegada fechada');
   assert.equal(accessoriesBlock.parsed.accessories[0].canonicalSlug, 'supino-pegada-fechada');
 });
+
+test('parser lida melhor com padrões reais do pdf 7 da bsb strong', () => {
+  const text = `
+SEMANA 19
+SEGUNDA
+WOD
+(5x)
+4 WALL WALKS
+10 CTBs
+10 KB SWING 24/16kg
+Objetivo=approx 8 min
+
+WOD 2
+(3x)
+75 DUs
+20 GHD SIT UPs
+3 ROPE CLIMBS
+REST 3\`
+Objetivo=approx 3\` min por round
+
+TERÇA
+SQUAT SNATCH
+A CADA 60 SEC
+1@85% (x5)
+
+SEX
+SQUAT CLEAN + JERK
+EVERY 60 seg (x3)
+1+1@85%
+  `.trim();
+
+  const weeks = parseMultiWeekPdf(text);
+  const monday = weeks[0].workouts.find((workout) => workout.day === 'Segunda');
+  const tuesday = weeks[0].workouts.find((workout) => workout.day === 'Terça');
+  const friday = weeks[0].workouts.find((workout) => workout.day === 'Sexta');
+
+  assert.equal(monday.blocks[0].parsed.rounds, 5);
+  assert.equal(monday.blocks[0].parsed.items[2].name, 'chest-to-bar pull-up');
+  assert.equal(monday.blocks[0].parsed.items[3].load.maleKg, 24);
+  assert.equal(monday.blocks[0].parsed.items[3].load.femaleKg, 16);
+  assert.equal(monday.blocks[1].parsed.rounds, 3);
+  assert.equal(monday.blocks[1].parsed.items.some((item) => item.type === 'rest'), true);
+
+  assert.equal(tuesday.blocks[0].type, 'STRENGTH');
+  assert.equal(tuesday.blocks[0].parsed.format, 'emom');
+  assert.equal(tuesday.blocks[0].parsed.strength.cadenceSeconds, 60);
+  assert.equal(tuesday.blocks[0].parsed.strength.sets[0].percent, 85);
+  assert.equal(tuesday.blocks[0].parsed.strength.sets[0].repeatCount, 5);
+
+  assert.equal(friday.blocks[0].type, 'STRENGTH');
+  assert.equal(friday.blocks[0].parsed.strength.cadenceRepeats, 3);
+});
