@@ -1,4 +1,5 @@
 import { createEmptyPasswordResetState } from './authResetActions.js';
+import { hasTrustedDeviceGrant } from '../../../../src/core/services/authService.js';
 
 export async function handleAthleteAuthFlowAction(action, context) {
   const {
@@ -88,8 +89,12 @@ export async function handleAthleteAuthFlowAction(action, context) {
         result = await getAppBridge().confirmSignUp({ email, code });
       } else {
         if (!email) throw new Error('Informe seu email');
-        if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
-        result = await getAppBridge().signIn({ email, password });
+        if ((!password || password.length < 8) && hasTrustedDeviceGrant(email)) {
+          result = await getAppBridge().signInWithTrustedDevice({ email });
+        } else {
+          if (!password || password.length < 8) throw new Error('Use uma senha com pelo menos 8 caracteres');
+          result = await getAppBridge().signIn({ email, password });
+        }
       }
 
       if (!result?.token && !result?.user) {

@@ -1,6 +1,7 @@
 import {
   confirmSignUp,
   signIn,
+  signInWithTrustedDevice,
   signInWithGoogle,
   startGoogleRedirect,
   signOut,
@@ -69,6 +70,10 @@ export function createRemoteHandlers({
 
     async handleSignIn(credentials) {
       return signIn(credentials);
+    },
+
+    async handleSignInWithTrustedDevice(payload) {
+      return signInWithTrustedDevice(payload);
     },
 
     async handleSignInWithGoogle(payload) {

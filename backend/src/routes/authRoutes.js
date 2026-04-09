@@ -25,6 +25,7 @@ import {
   getPasswordResetSupportRequestByKey,
   getPasswordResetSupportRequestStatus,
 } from '../passwordResetSupport.js';
+import { authenticateTrustedDevice, issueTrustedDeviceGrant } from '../trustedDevices.js';
 import { captureBackendError } from '../sentry.js';
 import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
@@ -55,6 +56,33 @@ function buildPasswordResetSupportResponse({ response = {}, request = null }) {
     message: 'Nao conseguimos entregar o codigo por email. O pedido foi enviado para liberacao do suporte no app.',
     supportRequestKey: request?.request_key || '',
     supportRequestStatus: request ? getPasswordResetSupportRequestStatus(request) : 'pending',
+  };
+}
+
+function normalizeDeviceId(value) {
+  const normalized = String(value || '').trim();
+  return normalized ? normalized.slice(0, 190) : '';
+}
+
+function normalizeDeviceLabel(value) {
+  const normalized = String(value || '').trim();
+  return normalized ? normalized.slice(0, 160) : '';
+}
+
+async function buildTrustedDeviceResponse({ user, deviceId, deviceLabel }) {
+  const grant = await issueTrustedDeviceGrant({
+    userId: user?.id,
+    email: user?.email,
+    deviceId,
+    label: deviceLabel,
+  });
+  if (!grant) return null;
+
+  return {
+    deviceId: grant.deviceId,
+    trustedToken: grant.trustedToken,
+    expiresAt: grant.expiresAt,
+    label: grant.label,
   };
 }
 
@@ -90,6 +118,8 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
   router.post('/signup/confirm', authRateLimit, async (req, res) => {
     const email = normalizeEmail(req.body?.email);
     const code = String(req.body?.code || '').trim();
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
     if (!email || !code) {
       return res.status(400).json({ error: 'email e code são obrigatórios' });
     }
@@ -154,7 +184,8 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       await attachPendingMembershipsToUser(user.id, user.email);
       await attachPendingBillingClaimsToUser(user.id, user.email);
       const token = signToken(user);
-      return res.json({ token, user });
+      const trustedDevice = await buildTrustedDeviceResponse({ user, deviceId, deviceLabel });
+      return res.json({ token, user, trustedDevice });
     } catch (error) {
       captureBackendError(error, {
         tags: { feature: 'auth', source: 'signup_confirm' },
@@ -170,6 +201,8 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
   router.post('/signin', authRateLimit, async (req, res) => {
     const { email, password } = req.body || {};
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
     if (!email || !password) {
       return res.status(400).json({ error: 'email e password são obrigatórios' });
     }
@@ -202,11 +235,36 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     await attachPendingMembershipsToUser(user.id, user.email);
     await attachPendingBillingClaimsToUser(user.id, user.email);
     const token = signToken(safeUser);
-    return res.json({ token, user: safeUser });
+    const trustedDevice = await buildTrustedDeviceResponse({ user: safeUser, deviceId, deviceLabel });
+    return res.json({ token, user: safeUser, trustedDevice });
+  });
+
+  router.post('/trusted-device/signin', authRateLimit, async (req, res) => {
+    const email = normalizeEmail(req.body?.email);
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const trustedToken = String(req.body?.trustedToken || '').trim();
+    const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
+
+    if (!email || !deviceId || !trustedToken) {
+      return res.status(400).json({ error: 'email, deviceId e trustedToken são obrigatórios' });
+    }
+
+    const authenticated = await authenticateTrustedDevice({ email, deviceId, trustedToken });
+    if (!authenticated?.user) {
+      return res.status(401).json({ error: 'Dispositivo não confiável ou expirado' });
+    }
+
+    await attachPendingMembershipsToUser(authenticated.user.id, authenticated.user.email);
+    await attachPendingBillingClaimsToUser(authenticated.user.id, authenticated.user.email);
+    const token = signToken(authenticated.user);
+    const trustedDevice = await buildTrustedDeviceResponse({ user: authenticated.user, deviceId, deviceLabel });
+    return res.json({ token, user: authenticated.user, trustedDevice });
   });
 
   router.post('/google', authRateLimit, async (req, res) => {
     const credential = String(req.body?.credential || '').trim();
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
     if (!credential) {
       return res.status(400).json({ error: 'credential é obrigatório' });
     }
@@ -231,7 +289,8 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     try {
       const user = await upsertGoogleUser({ email, name, sub: payload.sub });
       const token = signToken(user);
-      return res.json({ token, user });
+      const trustedDevice = await buildTrustedDeviceResponse({ user, deviceId, deviceLabel });
+      return res.json({ token, user, trustedDevice });
     } catch (error) {
       captureBackendError(error, {
         tags: { feature: 'auth', source: 'google_signin' },

@@ -16,6 +16,7 @@ import { migration as fkIndexesAndIndexCleanupMigration } from './016_fk_indexes
 import { migration as operationalRetentionIndexesMigration } from './017_operational_retention_indexes.js';
 import { migration as appStateSyncIndexMigration } from './018_app_state_sync_index.js';
 import { migration as passwordResetSupportRequestsMigration } from './019_password_reset_support_requests.js';
+import { migration as trustedDevicesMigration } from './020_trusted_devices.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -35,6 +36,7 @@ const MIGRATIONS = [
   operationalRetentionIndexesMigration,
   appStateSyncIndexMigration,
   passwordResetSupportRequestsMigration,
+  trustedDevicesMigration,
 ];
 
 export async function runMigrations() {

@@ -36,6 +36,7 @@ export function renderGuestAuthView({
             <input class="add-input" id="auth-name" type="text" placeholder="Seu nome" autocomplete="name" value="${escapeHtml(signupVerification.name || '')}" ${isSignup ? '' : 'style="display:none"'} />
             <input class="add-input" id="auth-email" type="email" inputmode="email" autocapitalize="off" autocomplete="email username" placeholder="Seu email" value="${escapeHtml(rememberedEmail)}" />
             <input class="add-input" id="auth-password" type="password" autocomplete="${isSignup ? 'new-password' : 'current-password'}" placeholder="Sua senha" />
+            ${!isSignup ? '<p class="account-hint auth-inlineStatus">Neste dispositivo confiavel, voce pode entrar so com o email.</p>' : ''}
             ${isSignup ? renderSignupVerificationBox({ signupVerification, escapeHtml }) : ''}
             <button class="btn-primary auth-submitButton" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
               ${isSignup ? 'Criar conta com código' : 'Entrar'}

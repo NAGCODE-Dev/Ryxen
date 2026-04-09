@@ -4,6 +4,8 @@ import { getRuntimeConfig } from '../../config/runtime.js';
 
 const PROFILE_KEY = 'ryxen-user-profile';
 const LEGACY_PROFILE_KEY = 'crossapp-user-profile';
+const TRUSTED_DEVICE_ID_KEY = 'ryxen-trusted-device-id';
+const TRUSTED_DEVICE_MAP_KEY = 'ryxen-trusted-device-map';
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
@@ -15,19 +17,39 @@ export async function requestSignUpVerification(payload) {
 }
 
 export async function confirmSignUp(payload) {
-  const res = await apiRequest('/auth/signup/confirm', { method: 'POST', body: payload });
+  const res = await apiRequest('/auth/signup/confirm', { method: 'POST', body: withTrustedDevicePayload(payload) });
   handleAuthResponse(res);
   return res;
 }
 
 export async function signIn(payload) {
-  const res = await apiRequest('/auth/signin', { method: 'POST', body: payload });
+  const res = await apiRequest('/auth/signin', { method: 'POST', body: withTrustedDevicePayload(payload) });
+  handleAuthResponse(res);
+  return res;
+}
+
+export async function signInWithTrustedDevice(payload) {
+  const email = String(payload?.email || '').trim().toLowerCase();
+  const grant = getTrustedDeviceGrant(email);
+  if (!grant?.trustedToken) {
+    throw new Error('Dispositivo confiável não disponível para este email');
+  }
+
+  const res = await apiRequest('/auth/trusted-device/signin', {
+    method: 'POST',
+    body: {
+      email,
+      deviceId: grant.deviceId,
+      trustedToken: grant.trustedToken,
+      deviceLabel: getTrustedDeviceLabel(),
+    },
+  });
   handleAuthResponse(res);
   return res;
 }
 
 export async function signInWithGoogle(payload) {
-  const res = await requestWithPathFallback(['/auth/google', '/api/auth/google'], { method: 'POST', body: payload });
+  const res = await requestWithPathFallback(['/auth/google', '/api/auth/google'], { method: 'POST', body: withTrustedDevicePayload(payload) });
   handleAuthResponse(res);
   return res;
 }
@@ -63,6 +85,10 @@ export async function getPasswordResetSupportStatus(payload) {
 
 export async function confirmPasswordResetSupport(payload) {
   return apiRequest('/auth/confirm-password-reset-support', { method: 'POST', body: payload });
+}
+
+export function hasTrustedDeviceGrant(email) {
+  return !!getTrustedDeviceGrant(email);
 }
 
 export async function signOut() {
@@ -147,6 +173,9 @@ function handleAuthResponse(res) {
     saveStoredProfile(res.user);
     setErrorMonitorUser(res.user);
   }
+  if (res?.trustedDevice && res?.user?.email) {
+    saveTrustedDeviceGrant(res.user.email, res.trustedDevice);
+  }
 }
 
 function saveStoredProfile(profile) {
@@ -166,6 +195,74 @@ function clearStoredProfile() {
   } catch {
     // no-op
   }
+}
+
+function withTrustedDevicePayload(payload = {}) {
+  return {
+    ...(payload || {}),
+    deviceId: getOrCreateTrustedDeviceId(),
+    deviceLabel: getTrustedDeviceLabel(),
+  };
+}
+
+function getOrCreateTrustedDeviceId() {
+  try {
+    const existing = localStorage.getItem(TRUSTED_DEVICE_ID_KEY);
+    if (existing) return existing;
+    const next = (globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`).slice(0, 190);
+    localStorage.setItem(TRUSTED_DEVICE_ID_KEY, next);
+    return next;
+  } catch {
+    return `device-${Date.now()}`;
+  }
+}
+
+function getTrustedDeviceLabel() {
+  try {
+    const platform = isNativePlatform() ? 'mobile-app' : 'browser';
+    const ua = String(window.navigator?.userAgent || '').trim();
+    return `${platform}:${ua}`.slice(0, 160);
+  } catch {
+    return 'browser';
+  }
+}
+
+function getTrustedDeviceMap() {
+  try {
+    const raw = localStorage.getItem(TRUSTED_DEVICE_MAP_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveTrustedDeviceGrant(email, grant) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail || !grant?.trustedToken || !grant?.deviceId) return;
+  try {
+    const next = getTrustedDeviceMap();
+    next[normalizedEmail] = {
+      trustedToken: String(grant.trustedToken || ''),
+      deviceId: String(grant.deviceId || ''),
+      expiresAt: String(grant.expiresAt || ''),
+      label: String(grant.label || ''),
+    };
+    localStorage.setItem(TRUSTED_DEVICE_MAP_KEY, JSON.stringify(next));
+  } catch {
+    // no-op
+  }
+}
+
+function getTrustedDeviceGrant(email) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  const grant = getTrustedDeviceMap()[normalizedEmail];
+  if (!grant || typeof grant !== 'object') return null;
+  if (String(grant.deviceId || '') !== getOrCreateTrustedDeviceId()) return null;
+  if (grant.expiresAt && new Date(grant.expiresAt).getTime() <= Date.now()) return null;
+  return grant;
 }
 
 async function requestWithPathFallback(paths, options) {
