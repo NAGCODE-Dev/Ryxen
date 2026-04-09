@@ -180,6 +180,299 @@
   .auth-googleBlock {
     @apply items-stretch gap-1.5;
   }
+
+  .guide-overlay {
+    padding: clamp(12px, 2.4vw, 22px);
+    align-items: stretch;
+    justify-content: center;
+    background:
+      radial-gradient(circle at top, color-mix(in srgb, var(--accent) 18%, transparent), transparent 34%),
+      rgba(7, 10, 15, 0.72);
+  }
+
+  .guide-shell {
+    width: min(100%, 1040px);
+    height: min(94dvh, 920px);
+    max-height: min(94dvh, 920px);
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    border: 1px solid color-mix(in srgb, var(--line) 92%, transparent);
+    border-radius: 34px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.014)),
+      linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, black 4%), color-mix(in srgb, var(--bg-app) 96%, black 4%));
+    box-shadow: 0 40px 96px rgba(4, 8, 16, 0.32);
+    overflow: hidden;
+  }
+
+  .guide-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-bottom: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 54%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  .guide-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .guide-markBadge {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+    background:
+      radial-gradient(circle at 34% 34%, rgba(255,255,255,0.24), transparent 28%),
+      linear-gradient(145deg, color-mix(in srgb, var(--accent) 46%, #232c38), #151b24 72%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    position: relative;
+  }
+
+  .guide-markBadge::before,
+  .guide-markBadge::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+    background: #0f141d;
+    transform: rotate(45deg);
+  }
+
+  .guide-markBadge::before {
+    left: 5px;
+  }
+
+  .guide-markBadge::after {
+    right: 5px;
+  }
+
+  .guide-card {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    min-height: 0;
+  }
+
+  .guide-stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1.02fr) minmax(320px, 0.98fr);
+    gap: 20px;
+    padding: clamp(18px, 3vw, 28px);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .guide-copy {
+    display: grid;
+    align-content: space-between;
+    gap: 18px;
+    min-width: 0;
+  }
+
+  .guide-copyBody {
+    display: grid;
+    gap: 14px;
+  }
+
+  .guide-progress {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .guide-progressItem {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 76%, transparent);
+    color: var(--text-muted);
+    font-size: 0.71rem;
+    font-weight: 700;
+  }
+
+  .guide-progressItem.isActive {
+    color: var(--text-primary);
+    border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)),
+      color-mix(in srgb, var(--bg-soft) 80%, transparent);
+  }
+
+  .guide-kicker {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .guide-title {
+    margin: 0;
+    max-width: 12ch;
+    font-size: clamp(1.72rem, 3.6vw, 3.45rem);
+    line-height: 0.95;
+    letter-spacing: -0.06em;
+    color: var(--text-primary);
+  }
+
+  .guide-lead,
+  .guide-note {
+    margin: 0;
+    max-width: 44ch;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .guide-note {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .guide-chipRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .guide-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 74%, transparent);
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .guide-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .guide-visualPane {
+    display: grid;
+    align-content: stretch;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .guide-visualCard,
+  .guide-surfaceCard {
+    border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+    border-radius: 28px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.012)),
+      color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .guide-visualCard {
+    display: grid;
+    place-items: center;
+    min-height: 420px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .guide-visualCard::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 16%, transparent), transparent 30%),
+      radial-gradient(circle at bottom left, rgba(255,255,255,0.06), transparent 34%);
+    pointer-events: none;
+  }
+
+  .guide-surfaceCard {
+    display: grid;
+    gap: 10px;
+    padding: 15px 16px;
+  }
+
+  .guide-surfaceCard strong {
+    font-size: 0.92rem;
+    line-height: 1.2;
+  }
+
+  .guide-surfaceCard p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.48;
+  }
+
+  .guide-surfaceRow {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .guide-surfaceTile {
+    display: grid;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 18px;
+    border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 76%, transparent);
+  }
+
+  .guide-surfaceTile span {
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .guide-surfaceTile strong {
+    font-size: 0.84rem;
+    line-height: 1.18;
+  }
+
+  .guide-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px 20px;
+    border-top: 1px solid color-mix(in srgb, var(--line) 86%, transparent);
+    background: color-mix(in srgb, var(--bg-soft) 32%, transparent);
+  }
+
+  .guide-footerMeta {
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    line-height: 1.48;
+  }
+
+  .nyx-illustration {
+    width: min(100%, 420px);
+    height: auto;
+  }
+
+  .nyx-illustration-teaser {
+    width: 116px;
+  }
 }
 
 .import-statusCard {
@@ -481,6 +774,80 @@
 }
 
 @media (max-width: 640px) {
+  .guide-overlay {
+    padding: max(10px, var(--safe-top)) 10px max(10px, var(--safe-bottom));
+  }
+
+  .guide-shell {
+    height: calc(100dvh - max(20px, var(--safe-top) + var(--safe-bottom)));
+    max-height: calc(100dvh - max(20px, var(--safe-top) + var(--safe-bottom)));
+    border-radius: 28px;
+  }
+
+  .guide-topbar {
+    padding: 14px 14px 12px;
+  }
+
+  .guide-stage {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .guide-copy {
+    align-content: start;
+    gap: 14px;
+  }
+
+  .guide-copyBody {
+    gap: 12px;
+  }
+
+  .guide-title {
+    max-width: 11ch;
+    font-size: clamp(1.38rem, 7vw, 2.34rem);
+  }
+
+  .guide-lead {
+    font-size: 0.86rem;
+  }
+
+  .guide-visualCard {
+    min-height: 240px;
+    border-radius: 22px;
+  }
+
+  .guide-surfaceCard {
+    border-radius: 20px;
+    padding: 12px 13px;
+  }
+
+  .guide-surfaceRow {
+    grid-template-columns: 1fr;
+  }
+
+  .guide-surfaceTile {
+    border-radius: 16px;
+    padding: 10px 11px;
+  }
+
+  .guide-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px 14px 14px;
+  }
+
+  .guide-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .guide-actions .btn-primary,
+  .guide-actions .btn-secondary {
+    width: 100%;
+  }
+
   .modal-overlay-auth {
     padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 12px);
     align-items: center !important;
@@ -601,6 +968,34 @@
 }
 
 @media (max-width: 380px) {
+  .guide-shell {
+    border-radius: 22px;
+  }
+
+  .guide-topbar {
+    padding: 12px;
+  }
+
+  .guide-stage {
+    padding: 12px;
+  }
+
+  .guide-visualCard {
+    min-height: 212px;
+  }
+
+  .guide-kicker,
+  .guide-footerMeta {
+    font-size: 0.68rem;
+  }
+
+  .guide-progressItem,
+  .guide-chip {
+    min-height: 26px;
+    padding: 0 10px;
+    font-size: 0.66rem;
+  }
+
   .modal-overlay-auth {
     padding: calc(var(--safe-top) + 8px) 8px calc(var(--safe-bottom) + 8px);
   }

@@ -109,6 +109,8 @@ export function createAccountSyncDomain({
           autoConvertLbs: state.preferences?.autoConvertLbs !== false,
           showEmojis: state.preferences?.showEmojis !== false,
           showGoals: state.preferences?.showGoals !== false,
+          showNyxHints: state.preferences?.showNyxHints !== false,
+          nyxGuideCompleted: state.preferences?.nyxGuideCompleted === true,
           workoutPriority: String(state.preferences?.workoutPriority || 'uploaded'),
           theme: String(state.preferences?.theme || 'dark'),
           accentTone: String(state.preferences?.accentTone || 'blue'),

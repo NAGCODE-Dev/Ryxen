@@ -21,12 +21,14 @@ test('normalizeAthleteUiState define conta e preferências novas com defaults se
     showLbsConversion: true,
     showEmojis: true,
     showObjectivesInWods: true,
+    showNyxHints: true,
     theme: 'dark',
     accentTone: 'rose',
     interfaceDensity: 'compact',
     reduceMotion: true,
     workoutPriority: 'uploaded',
   });
+  assert.deepEqual(normalized.guide, { step: 0 });
 });
 
 test('buildUiSnapshotSignature reage a troca de aba da conta e preferências visuais', () => {
@@ -37,6 +39,7 @@ test('buildUiSnapshotSignature reage a troca de aba da conta e preferências vis
       showLbsConversion: true,
       showEmojis: true,
       showObjectivesInWods: true,
+      showNyxHints: true,
       theme: 'dark',
       accentTone: 'blue',
       interfaceDensity: 'comfortable',
@@ -54,6 +57,7 @@ test('buildUiSnapshotSignature reage a troca de aba da conta e preferências vis
       showLbsConversion: true,
       showEmojis: true,
       showObjectivesInWods: true,
+      showNyxHints: false,
       theme: 'light',
       accentTone: 'sage',
       interfaceDensity: 'compact',

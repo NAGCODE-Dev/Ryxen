@@ -48,6 +48,8 @@ test('saveRemoteAppStateSnapshot persiste envelope local e sincroniza snapshot r
       showEmojis: true,
       showLbsConversion: true,
       autoConvertLbs: true,
+      showNyxHints: false,
+      nyxGuideCompleted: true,
     },
   };
   const localStorage = createLocalStorageMock();
@@ -113,6 +115,8 @@ test('saveRemoteAppStateSnapshot persiste envelope local e sincroniza snapshot r
   assert.equal(persisted.snapshot.core.preferences.accentTone, 'sage');
   assert.equal(persisted.snapshot.core.preferences.interfaceDensity, 'compact');
   assert.equal(persisted.snapshot.core.preferences.reduceMotion, true);
+  assert.equal(persisted.snapshot.core.preferences.showNyxHints, false);
+  assert.equal(persisted.snapshot.core.preferences.nyxGuideCompleted, true);
   assert.equal(persisted.snapshot.core.preferences.serverFlag, true);
 });
 

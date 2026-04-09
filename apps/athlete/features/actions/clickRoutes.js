@@ -12,6 +12,7 @@ export async function routeAthleteModalClick(action, context) {
     applyUiState: context.applyUiState,
     applyUiPatch: context.applyUiPatch,
     isImportBusy: context.isImportBusy,
+    getAppBridge,
   });
 }
 

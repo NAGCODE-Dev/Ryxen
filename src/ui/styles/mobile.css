@@ -211,6 +211,29 @@
     gap: 8px;
   }
 
+  body[data-page="today"] .nyx-teaserCard {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 11px;
+    border-radius: 14px;
+  }
+
+  body[data-page="today"] .nyx-teaserVisual {
+    justify-items: start;
+  }
+
+  body[data-page="today"] .nyx-teaserTitle {
+    font-size: 0.88rem;
+  }
+
+  body[data-page="today"] .nyx-teaserText {
+    font-size: 0.74rem;
+  }
+
+  body[data-page="today"] .nyx-teaserActions {
+    justify-content: stretch;
+  }
+
   body[data-page="account"] .workout-container,
   body[data-page="history"] .workout-container {
     gap: 12px;
@@ -368,6 +391,11 @@
 
   .empty-state .page-actions-inline {
     width: 100%;
+  }
+
+  .nyx-teaserCard {
+    padding: 10px 11px;
+    border-radius: 14px;
   }
 
   .modal-body-settings {
@@ -611,6 +639,19 @@
 
   .page-foldBody {
     padding-bottom: 10px;
+  }
+
+  .nyx-teaserCard {
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .nyx-teaserTitle {
+    font-size: 0.84rem;
+  }
+
+  .nyx-teaserText {
+    font-size: 0.72rem;
   }
 
   .page-foldTitle {

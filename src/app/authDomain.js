@@ -116,6 +116,8 @@ export function createAuthDomain({
         autoConvertLbs: true,
         showEmojis: true,
         showGoals: true,
+        showNyxHints: true,
+        nyxGuideCompleted: false,
         workoutPriority: 'uploaded',
         theme: 'dark',
         accentTone: 'blue',

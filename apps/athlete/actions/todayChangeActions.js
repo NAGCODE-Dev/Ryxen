@@ -36,6 +36,10 @@ export async function handleAthleteTodaySettingsChange(event, context) {
       '#setting-showObjectives',
       currentUiSettings.showObjectivesInWods ?? currentCorePreferences.showGoals !== false,
     ),
+    showNyxHints: readCheckbox(
+      '#setting-showNyxHints',
+      currentUiSettings.showNyxHints ?? currentCorePreferences.showNyxHints !== false,
+    ),
     theme: readRadio(
       'input[name="setting-theme"]:checked',
       currentUiSettings.theme || currentCorePreferences.theme || 'dark',
@@ -64,6 +68,7 @@ export async function handleAthleteTodaySettingsChange(event, context) {
         showLbsConversion: nextSettings.showLbsConversion,
         showEmojis: nextSettings.showEmojis,
         showGoals: nextSettings.showObjectivesInWods,
+        showNyxHints: nextSettings.showNyxHints,
         autoConvertLbs: nextSettings.showLbsConversion,
         theme: nextSettings.theme,
         accentTone: nextSettings.accentTone,

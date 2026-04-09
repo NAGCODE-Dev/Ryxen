@@ -44,6 +44,7 @@ export function buildUiSnapshotSignature(value) {
     settings.showLbsConversion ? 1 : 0,
     settings.showEmojis ? 1 : 0,
     settings.showObjectivesInWods ? 1 : 0,
+    settings.showNyxHints ? 1 : 0,
     settings.theme || 'dark',
     settings.accentTone || 'blue',
     settings.interfaceDensity || 'comfortable',

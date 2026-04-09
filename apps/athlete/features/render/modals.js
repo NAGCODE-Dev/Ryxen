@@ -2,6 +2,7 @@ import {
   renderAthleteAuthModal,
   renderAthleteSettingsModal,
 } from '../account/modals.js';
+import { renderAthleteNyxGuideModal } from '../guide/modal.js';
 import { renderAthleteImportModal } from '../import/modal.js';
 import { renderAthletePrsModal } from '../prs/modal.js';
 
@@ -11,6 +12,12 @@ export function renderAthleteModals(state, helpers) {
   const settings = state?.__ui?.settings || {};
   const authMode = state?.__ui?.authMode || 'signin';
 
+  if (modal === 'nyx-guide') {
+    return renderAthleteNyxGuideModal({
+      guide: state?.__ui?.guide || {},
+      preferences: state?.preferences || {},
+    });
+  }
   if (modal === 'prs') return renderAthletePrsModal(prs, { escapeHtml: helpers.escapeHtml });
   if (modal === 'settings') return renderAthleteSettingsModal(settings);
   if (modal === 'import') return renderAthleteImportModal(state, { escapeHtml: helpers.escapeHtml });

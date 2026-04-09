@@ -186,6 +186,8 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
   const showLbsConversion = preferences.showLbsConversion !== false;
   const showEmojis = preferences.showEmojis !== false;
   const showGoals = preferences.showGoals !== false;
+  const showNyxHints = preferences.showNyxHints !== false;
+  const nyxGuideCompleted = preferences.nyxGuideCompleted === true;
   const theme = preferences.theme === 'light' ? 'light' : 'dark';
   const accentTone = ['blue', 'sage', 'sand', 'rose'].includes(preferences.accentTone)
     ? preferences.accentTone
@@ -362,10 +364,41 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
                 title: 'Mostrar emojis',
                 description: 'Preserva sinais rápidos de leitura nas áreas que usam esse apoio visual.',
               })}
+              ${renderSwitchRow({
+                id: 'setting-showNyxHints',
+                key: 'showNyxHints',
+                checked: showNyxHints,
+                title: 'Mostrar sugestões do Nyx',
+                description: 'Deixa o guia aparecer em empty states e momentos de onboarding leve.',
+              })}
             </div>
           </div>
 
           <p class="account-settingsFootnote">Tudo salva automaticamente. O app aplica as mudanças assim que você toca em cada opção.</p>
+        </div>
+      `,
+    })}
+
+    ${renderPageFold({
+      title: 'Nyx',
+      subtitle: 'Um guia opcional, calmo e direto para quando você quiser uma ajuda leve.',
+      content: `
+        <div class="account-settingsCard account-settingsCard-nyx">
+          <div class="account-settingsHead">
+            <strong>${nyxGuideCompleted ? 'Tour concluído' : 'Tour opcional do Nyx'}</strong>
+            <span>${nyxGuideCompleted ? 'Você já viu o essencial. Se quiser, o Nyx pode te mostrar tudo de novo.' : 'Boas-vindas, treino do dia e evolução em quatro telas bem curtas.'}</span>
+          </div>
+          <div class="account-nyxPreview">
+            <div class="account-nyxPreviewMark" aria-hidden="true"></div>
+            <div class="account-nyxPreviewCopy">
+              <strong>Guiado por Nyx</strong>
+              <small>Curto, claro e sem invadir o app inteiro.</small>
+            </div>
+          </div>
+          <div class="page-actions">
+            <button class="btn-primary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">${nyxGuideCompleted ? 'Ver de novo' : 'Começar tour'}</button>
+            <button class="btn-secondary" data-action="account:view:set" data-account-view="data" type="button">Ir para Dados</button>
+          </div>
         </div>
       `,
     })}

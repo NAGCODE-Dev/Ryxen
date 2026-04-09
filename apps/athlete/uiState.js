@@ -6,6 +6,7 @@ import {
 import { computeLineIdsFromState } from './uiLineIds.js';
 import {
   normalizeAthleteAdminState,
+  normalizeAthleteGuideState,
   normalizeAthleteImportStatus,
   normalizeAthleteOverviewState,
   normalizeAthleteSettings,
@@ -30,6 +31,7 @@ export function normalizeAthleteUiState(state) {
   next.passwordReset = next.passwordReset && typeof next.passwordReset === 'object' ? next.passwordReset : {};
   next.signupVerification = next.signupVerification && typeof next.signupVerification === 'object' ? next.signupVerification : {};
   next.settings = normalizeAthleteSettings(next.settings);
+  next.guide = normalizeAthleteGuideState(next.guide);
   next.importStatus = normalizeAthleteImportStatus(next.importStatus);
   next.admin = normalizeAthleteAdminState(next.admin);
   next.athleteOverview = normalizeAthleteOverviewState(next.athleteOverview);
@@ -55,6 +57,7 @@ export function buildAthleteUiForRender({ state, uiState, uiBusy, profile }) {
     auth: { profile },
     passwordReset: uiState.passwordReset,
     signupVerification: uiState.signupVerification,
+    guide: uiState.guide,
     importStatus: uiState.importStatus,
     admin: uiState.admin,
     athleteOverview: uiState.athleteOverview,

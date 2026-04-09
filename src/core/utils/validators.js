@@ -166,6 +166,8 @@ export function isValidPreferences(prefs) {
     'showLbsConversion',
     'showEmojis',
     'showGoals',
+    'showNyxHints',
+    'nyxGuideCompleted',
     'theme',
     'accentTone',
     'interfaceDensity',

@@ -337,6 +337,48 @@
   padding: 16px;
 }
 
+.nyx-teaserCard {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: calc(var(--radius-lg) - 4px);
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  background:
+    radial-gradient(circle at top right, color-mix(in srgb, var(--accent) 12%, transparent), transparent 34%),
+    color-mix(in srgb, var(--bg-soft) 74%, transparent);
+}
+
+.nyx-teaserVisual {
+  display: grid;
+  place-items: center;
+}
+
+.nyx-teaserCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.nyx-teaserTitle {
+  font-size: 0.95rem;
+  line-height: 1.18;
+  letter-spacing: -0.03em;
+}
+
+.nyx-teaserText {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.nyx-teaserActions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+}
+
 .workout-block {
   display: grid;
   gap: 10px;

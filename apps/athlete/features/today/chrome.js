@@ -1,7 +1,30 @@
+import { renderNyxIllustration } from '../guide/nyxIllustrations.js';
+
 export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
   const hasWeeks = (state?.weeks?.length ?? 0) > 0;
   const day = formatDay(state?.currentDay);
   const isAuthenticated = !!state?.__ui?.auth?.profile?.email;
+  const showNyxHints = state?.preferences?.showNyxHints !== false;
+  const nyxGuideCompleted = state?.preferences?.nyxGuideCompleted === true;
+
+  const nyxTeaser = showNyxHints && !nyxGuideCompleted
+    ? `
+      <div class="nyx-teaserCard">
+        <div class="nyx-teaserVisual" aria-hidden="true">
+          ${renderNyxIllustration({ pose: 'welcome', className: 'nyx-illustration nyx-illustration-teaser' })}
+        </div>
+        <div class="nyx-teaserCopy">
+          <span class="section-kicker">Guiado por Nyx</span>
+          <strong class="nyx-teaserTitle">Quer um tour rápido?</strong>
+          <p class="nyx-teaserText">Eu te mostro o essencial do Ryxen sem atrapalhar seu começo.</p>
+        </div>
+        <div class="page-actions page-actions-inline nyx-teaserActions">
+          <button class="btn-secondary" data-action="nyx:hints:disable" type="button">Agora não</button>
+          <button class="btn-primary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">Começar</button>
+        </div>
+      </div>
+    `
+    : '';
 
   if (!hasWeeks) {
     return `
@@ -13,6 +36,7 @@ export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
           <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">${isAuthenticated ? 'Conta' : 'Entrar'}</button>
         </div>
+        ${nyxTeaser}
       </div>
     `;
   }
@@ -26,6 +50,7 @@ export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
         <button class="btn-primary" data-action="day:auto" type="button">Modo automático</button>
         <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Trocar planilha</button>
       </div>
+      ${nyxTeaser}
     </div>
   `;
 }
