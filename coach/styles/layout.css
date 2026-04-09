@@ -4,6 +4,20 @@
   grid-template-columns: 280px 1fr;
 }
 
+.portal-shell > *,
+.portal-main > *,
+.card,
+.hero,
+.billing-banner,
+.selection-panel,
+.publish-previewCard,
+.publish-metaCard,
+.publish-step,
+.list-item,
+.check-row {
+  min-width: 0;
+}
+
 .sidebar {
   position: sticky;
   top: 0;
@@ -93,6 +107,14 @@
   gap: 10px;
   flex-wrap: wrap;
   margin: 0 0 18px;
+}
+
+.portal-viewTabs .btn,
+.tabs .btn,
+.billing-bannerActions .btn,
+.toolbar .btn,
+.toolbar .field {
+  min-width: 0;
 }
 
 .publish-flow {
@@ -259,6 +281,10 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.toolbar > * {
+  flex: 1 1 180px;
 }
 
 .grid {
@@ -550,6 +576,11 @@
 
 .portal-link {
   color: var(--muted);
+}
+
+.sidebar .stack .btn,
+.sidebar .stack .btn-link {
+  width: 100%;
 }
 
 @supports (content-visibility: auto) {
