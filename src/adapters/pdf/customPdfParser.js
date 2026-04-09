@@ -387,9 +387,10 @@ function isStrengthSchemeLine(line = '') {
   const compact = line.trim().replace(/\s+/g, '');
   return /^(\d+\+)+\d+@\d+(?:\.\d+)?%$/i.test(compact)
     || /^(\d+\+)+\d+@\?$/i.test(compact)
-    || /^\d+@\d+(?:\.\d+)?%(\(x\d+\))?$/i.test(compact)
+    || /^\d+@\d+(?:\.\d+)?%(?:(?:\(x\d+\))|(?:x\d+))?$/i.test(compact)
     || /^\d+@\?(\+\d+)?$/i.test(compact)
     || /^\d+@\d+(?:\.\d+)?%\+\d+$/i.test(compact)
+    || /^\d+x\d+@\d+(?:\.\d+)?%$/i.test(compact)
     || /^\d+x\d+@\d+(?:\.\d+)?%\+\d+$/i.test(compact);
 }
 
@@ -503,7 +504,12 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
 
     const goalMatch = line.match(/^OBJETIVO\s*=\s*(.+)$/i);
     if (goalMatch) {
-      goal = goalMatch[1].trim();
+      const goalLines = [goalMatch[1].trim()];
+      while (index + 1 < lines.length && isGoalContinuationLine(lines[index + 1])) {
+        goalLines.push(String(lines[index + 1] || '').trim());
+        index += 1;
+      }
+      goal = goalLines.join(' ').replace(/\s+/g, ' ').trim();
       items.push({ type: 'goal', text: goal, raw: line });
       continue;
     }
@@ -516,6 +522,12 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
     const rest = parseRestLine(line);
     if (rest) {
       items.push(rest);
+      continue;
+    }
+
+    const timedInterval = parseTimedIntervalLine(line);
+    if (timedInterval) {
+      items.push(timedInterval);
       continue;
     }
 
@@ -785,6 +797,27 @@ function parseRestLine(line) {
     return { type: 'rest', durationMinutes: minutes || null, raw: line };
   }
 
+  const mixedDurationRestMatch = upper.match(/^(\d+)\s*['’`´]\s*(\d+)\s*REST(?:\s+TOTAL)?$/);
+  if (mixedDurationRestMatch) {
+    const minutes = Number(mixedDurationRestMatch[1] || 0);
+    const seconds = Number(mixedDurationRestMatch[2] || 0);
+    return {
+      type: 'rest',
+      durationMinutes: minutes || null,
+      durationSeconds: (minutes * 60) + seconds,
+      raw: line,
+    };
+  }
+
+  const secondsRestMatch = upper.match(/^(\d+)\s*(SEC|SEG|SECONDS?)\s+(?:OFF|REST)$/);
+  if (secondsRestMatch) {
+    return {
+      type: 'rest',
+      durationSeconds: Number(secondsRestMatch[1]),
+      raw: line,
+    };
+  }
+
   if (/^REST AS NECESSARY$/i.test(upper)) {
     return { type: 'rest', durationMinutes: null, auto: true, raw: line };
   }
@@ -805,10 +838,23 @@ function parseRestLine(line) {
 function parseStrengthSchemeLine(line) {
   const raw = String(line || '').trim();
   const compact = raw.replace(/\s+/g, '');
-  const repeatMatch = compact.match(/^(.*)\(x(\d+)\)$/i);
-  const repeatCount = repeatMatch ? Number(repeatMatch[2]) : null;
+  const repeatMatch = compact.match(/^(.*?)(?:\(x(\d+)\)|x(\d+))$/i);
+  const repeatCount = repeatMatch ? Number(repeatMatch[2] || repeatMatch[3]) : null;
   const base = repeatMatch ? repeatMatch[1] : compact;
   const percentMatch = base.match(/@(\d+(?:\.\d+)?)%/i);
+  const repeatedSetMatch = base.match(/^(\d+)x(\d+)@(\d+(?:\.\d+)?)%$/i);
+  if (repeatedSetMatch) {
+    return {
+      type: 'strength_scheme',
+      raw,
+      scheme: `${repeatedSetMatch[1]}x${repeatedSetMatch[2]}@${repeatedSetMatch[3]}%`,
+      sets: Number(repeatedSetMatch[1]),
+      reps: Number(repeatedSetMatch[2]),
+      percent: Number(repeatedSetMatch[3]),
+      repeatCount,
+    };
+  }
+
   const pairedMatch = compact.match(/^(\d+)@(\?)?\+(\d+)$/i);
   if (pairedMatch) {
     return {
@@ -868,6 +914,33 @@ function parseCadenceLine(line) {
     raw,
     intervalSeconds: Number(match[2]),
     repeatCount: match[4] ? Number(match[4]) : null,
+  };
+}
+
+function parseTimedIntervalLine(line) {
+  const raw = String(line || '').trim();
+  const upper = raw.toUpperCase();
+  const offMatch = upper.match(/^(\d+)\s*(SEC|SEG|SECONDS?)\s+OFF$/);
+  if (offMatch) {
+    return {
+      type: 'rest',
+      durationSeconds: Number(offMatch[1]),
+      raw,
+    };
+  }
+
+  const workMatch = raw.match(/^(\d+)\s*(SEC|SEG|SECONDS?)\s+(.+)$/i);
+  if (!workMatch) return null;
+
+  const durationSeconds = Number(workMatch[1]);
+  const movement = parseMovementLine(workMatch[3]);
+  if (!movement) return null;
+
+  return {
+    ...movement,
+    raw,
+    durationSeconds,
+    interval: true,
   };
 }
 
@@ -965,6 +1038,17 @@ function buildEngineSummary(items, context = {}) {
   };
 }
 
+function isGoalContinuationLine(line = '') {
+  const raw = String(line || '').trim();
+  if (!raw) return false;
+  if (/^https?:\/\//i.test(raw)) return false;
+  if (detectDayName(raw) || detectPeriodName(raw) || detectBlockType(raw)) return false;
+  if (detectStructuredBlock(raw, '') || isCadenceLine(raw) || isStrengthSchemeLine(raw) || isAccessorySchemeLine(raw)) return false;
+  if (/^\(?\s*\d+\s*X\s*\)?$/i.test(raw)) return false;
+  if (/^(REST|RECOVERY|OBJETIVO)\b/i.test(raw)) return false;
+  return true;
+}
+
 function buildGymnasticsSummary(items, context = {}) {
   const normalizedTitle = normalizeMovementName(context.title || '');
   const movements = items
@@ -1002,6 +1086,7 @@ function buildStrengthSummary(items, context = {}) {
     title: context.title || '',
     sets: schemes.map((item) => ({
       scheme: item.scheme || null,
+      sets: item.sets || null,
       sequenceReps: item.sequenceReps || null,
       reps: item.reps || null,
       pairedReps: item.pairedReps || null,

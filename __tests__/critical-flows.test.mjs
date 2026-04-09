@@ -274,3 +274,60 @@ EVERY 60 seg (x3)
   assert.equal(friday.blocks[0].type, 'STRENGTH');
   assert.equal(friday.blocks[0].parsed.strength.cadenceRepeats, 3);
 });
+
+test('parser lida melhor com intervalos em segundos e schemes de strength do pdf 6', () => {
+  const text = `
+SEMANA 18
+SEGUNDA
+WOD
+(6x)
+40 SEG MUs
+20 SEC OFF
+40 SEC ASSAULT
+20 SEC OFF
+40 SEC DB BURPEE(50/35lbs)
+20 SEC OFF
+40 SEC TTBs
+20 SEC OFF
+40 SEC WALL WALK
+1\`20 REST
+Objetivo= acima de 7 mu por round/acima de 11/14 cal assault por round/acima de 9 burpee por
+round/acima de approx 20 TTB por round/3 wall walks
+
+TERÇA
+SQUAT SNATCH
+A CADA 60 SEC
+1@82% x4
+
+SEX
+BACK SQUATS
+4x4 @82%
+  `.trim();
+
+  const weeks = parseMultiWeekPdf(text);
+  const monday = weeks[0].workouts.find((workout) => workout.day === 'Segunda');
+  const tuesday = weeks[0].workouts.find((workout) => workout.day === 'Terça');
+  const friday = weeks[0].workouts.find((workout) => workout.day === 'Sexta');
+  const mondayIntervals = monday.blocks[0].parsed.items.filter((item) => item.durationSeconds);
+  const mondayRests = monday.blocks[0].parsed.items.filter((item) => item.type === 'rest');
+  const mondayMovements = monday.blocks[0].parsed.items.filter((item) => item.type === 'movement');
+
+  assert.equal(monday.blocks[0].parsed.rounds, 6);
+  assert.equal(monday.blocks[0].parsed.goal.includes('round/acima de approx 20 TTB por round/3 wall walks'), true);
+  assert.equal(mondayMovements[0].durationSeconds, 40);
+  assert.equal(mondayMovements[0].name, 'muscle-up');
+  assert.equal(mondayMovements[1].name, 'assault');
+  assert.equal(mondayRests[0].durationSeconds, 20);
+  assert.equal(mondayIntervals.some((item) => item.durationSeconds === 80), true);
+
+  assert.equal(tuesday.blocks[0].type, 'STRENGTH');
+  assert.equal(tuesday.blocks[0].parsed.strength.cadenceSeconds, 60);
+  assert.equal(tuesday.blocks[0].parsed.strength.sets[0].reps, 1);
+  assert.equal(tuesday.blocks[0].parsed.strength.sets[0].percent, 82);
+  assert.equal(tuesday.blocks[0].parsed.strength.sets[0].repeatCount, 4);
+
+  assert.equal(friday.blocks[0].type, 'STRENGTH');
+  assert.equal(friday.blocks[0].parsed.strength.sets[0].sets, 4);
+  assert.equal(friday.blocks[0].parsed.strength.sets[0].reps, 4);
+  assert.equal(friday.blocks[0].parsed.strength.sets[0].percent, 82);
+});
