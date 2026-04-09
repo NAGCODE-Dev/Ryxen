@@ -743,81 +743,94 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   function renderSportSpecificWorkoutFields() {
     if (isRunning) {
       return React.createElement(React.Fragment, null,
-        React.createElement('div', { className: 'grid dual-grid' },
-          React.createElement('select', {
-            className: 'field',
-            value: forms.runningSessionType,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningSessionType: e.target.value })),
-          },
-            React.createElement('option', { value: 'easy' }, 'Easy run'),
-            React.createElement('option', { value: 'interval' }, 'Intervalado'),
-            React.createElement('option', { value: 'tempo' }, 'Tempo run'),
-            React.createElement('option', { value: 'long' }, 'Longão'),
-            React.createElement('option', { value: 'recovery' }, 'Recovery')
+        React.createElement('section', { className: 'stack nested-card publish-formSection' },
+          React.createElement('div', { className: 'publish-formSectionHead' },
+            React.createElement('div', { className: 'eyebrow' }, 'Resumo da corrida'),
+            React.createElement('strong', null, 'Sessão estruturada')
           ),
-          React.createElement('input', {
-            className: 'field',
-            type: 'number',
-            min: '0',
-            step: '0.1',
-            placeholder: 'Distância (km)',
-            value: forms.runningDistanceKm,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningDistanceKm: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            type: 'number',
-            min: '0',
-            step: '1',
-            placeholder: 'Duração (min)',
-            value: forms.runningDurationMin,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningDurationMin: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            placeholder: 'Pace alvo (ex: 5:00/km)',
-            value: forms.runningTargetPace,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningTargetPace: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            placeholder: 'Zona (ex: Z2, Threshold)',
-            value: forms.runningZone,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningZone: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            placeholder: 'Notas rápidas',
-            value: forms.runningNotes,
-            onChange: (e) => setForms((prev) => ({ ...prev, runningNotes: e.target.value })),
-          }),
+          React.createElement('div', { className: 'grid dual-grid' },
+            React.createElement('select', {
+              className: 'field',
+              value: forms.runningSessionType,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningSessionType: e.target.value })),
+            },
+              React.createElement('option', { value: 'easy' }, 'Easy run'),
+              React.createElement('option', { value: 'interval' }, 'Intervalado'),
+              React.createElement('option', { value: 'tempo' }, 'Tempo run'),
+              React.createElement('option', { value: 'long' }, 'Longão'),
+              React.createElement('option', { value: 'recovery' }, 'Recovery')
+            ),
+            React.createElement('input', {
+              className: 'field',
+              type: 'number',
+              min: '0',
+              step: '0.1',
+              placeholder: 'Distância (km)',
+              value: forms.runningDistanceKm,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningDistanceKm: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              type: 'number',
+              min: '0',
+              step: '1',
+              placeholder: 'Duração (min)',
+              value: forms.runningDurationMin,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningDurationMin: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Pace alvo (ex: 5:00/km)',
+              value: forms.runningTargetPace,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningTargetPace: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Zona (ex: Z2, Threshold)',
+              value: forms.runningZone,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningZone: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Notas rápidas',
+              value: forms.runningNotes,
+              onChange: (e) => setForms((prev) => ({ ...prev, runningNotes: e.target.value })),
+            }),
+          )
         ),
-        React.createElement('div', { className: 'stack nested-card' },
-          React.createElement('div', { className: 'eyebrow' }, 'Segmentos / intervalos'),
+        React.createElement('section', { className: 'stack nested-card publish-formSection' },
+          React.createElement('div', { className: 'publish-formSectionHead' },
+            React.createElement('div', { className: 'eyebrow' }, 'Segmentos / intervalos'),
+            React.createElement('span', { className: 'muted' }, 'Cada bloco ganha mais espaço no mobile para edição rápida.')
+          ),
           (forms.runningSegments || []).map((segment, index) =>
-            React.createElement('div', { key: `seg-${index}`, className: 'grid dual-grid' },
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Bloco (ex: 6x400m)',
-                value: segment.label,
-                onChange: (e) => updateCollectionItem('runningSegments', index, 'label', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                type: 'number',
-                min: '0',
-                step: '50',
-                placeholder: 'Distância (m)',
-                value: segment.distanceMeters,
-                onChange: (e) => updateCollectionItem('runningSegments', index, 'distanceMeters', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Pace alvo',
-                value: segment.targetPace,
-                onChange: (e) => updateCollectionItem('runningSegments', index, 'targetPace', e.target.value),
-              }),
-              React.createElement('div', { className: 'stack' },
+            React.createElement('div', { key: `seg-${index}`, className: 'stack publish-collectionItem' },
+              React.createElement('div', { className: 'publish-collectionHead' },
+                React.createElement('strong', null, `Segmento ${index + 1}`),
+                React.createElement('span', { className: 'muted' }, segment.label || 'Defina bloco, distância, pace e descanso')
+              ),
+              React.createElement('div', { className: 'grid dual-grid' },
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Bloco (ex: 6x400m)',
+                  value: segment.label,
+                  onChange: (e) => updateCollectionItem('runningSegments', index, 'label', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  type: 'number',
+                  min: '0',
+                  step: '50',
+                  placeholder: 'Distância (m)',
+                  value: segment.distanceMeters,
+                  onChange: (e) => updateCollectionItem('runningSegments', index, 'distanceMeters', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Pace alvo',
+                  value: segment.targetPace,
+                  onChange: (e) => updateCollectionItem('runningSegments', index, 'targetPace', e.target.value),
+                }),
                 React.createElement('input', {
                   className: 'field',
                   type: 'number',
@@ -827,6 +840,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   value: segment.restSeconds,
                   onChange: (e) => updateCollectionItem('runningSegments', index, 'restSeconds', e.target.value),
                 }),
+              ),
+              React.createElement('div', { className: 'publish-collectionActions' },
                 React.createElement('button', {
                   type: 'button',
                   className: 'btn btn-secondary',
@@ -847,84 +862,101 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
 
     if (isStrength) {
       return React.createElement(React.Fragment, null,
-        React.createElement('div', { className: 'grid dual-grid' },
-          React.createElement('input', {
-            className: 'field',
-            placeholder: 'Foco (ex: Lower, Push, Pull)',
-            value: forms.strengthFocus,
-            onChange: (e) => setForms((prev) => ({ ...prev, strengthFocus: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            placeholder: 'Carga/guia (ex: 75-80% RM)',
-            value: forms.strengthLoadGuidance,
-            onChange: (e) => setForms((prev) => ({ ...prev, strengthLoadGuidance: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            type: 'number',
-            min: '0',
-            step: '0.5',
-            placeholder: 'RIR',
-            value: forms.strengthRir,
-            onChange: (e) => setForms((prev) => ({ ...prev, strengthRir: e.target.value })),
-          }),
-          React.createElement('input', {
-            className: 'field',
-            type: 'number',
-            min: '0',
-            step: '15',
-            placeholder: 'Descanso (seg)',
-            value: forms.strengthRestSeconds,
-            onChange: (e) => setForms((prev) => ({ ...prev, strengthRestSeconds: e.target.value })),
-          }),
+        React.createElement('section', { className: 'stack nested-card publish-formSection' },
+          React.createElement('div', { className: 'publish-formSectionHead' },
+            React.createElement('div', { className: 'eyebrow' }, 'Guia de força'),
+            React.createElement('strong', null, 'Parâmetros da sessão')
+          ),
+          React.createElement('div', { className: 'grid dual-grid' },
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Foco (ex: Lower, Push, Pull)',
+              value: forms.strengthFocus,
+              onChange: (e) => setForms((prev) => ({ ...prev, strengthFocus: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              placeholder: 'Carga/guia (ex: 75-80% RM)',
+              value: forms.strengthLoadGuidance,
+              onChange: (e) => setForms((prev) => ({ ...prev, strengthLoadGuidance: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              type: 'number',
+              min: '0',
+              step: '0.5',
+              placeholder: 'RIR',
+              value: forms.strengthRir,
+              onChange: (e) => setForms((prev) => ({ ...prev, strengthRir: e.target.value })),
+            }),
+            React.createElement('input', {
+              className: 'field',
+              type: 'number',
+              min: '0',
+              step: '15',
+              placeholder: 'Descanso (seg)',
+              value: forms.strengthRestSeconds,
+              onChange: (e) => setForms((prev) => ({ ...prev, strengthRestSeconds: e.target.value })),
+            }),
+          )
         ),
-        React.createElement('div', { className: 'stack nested-card' },
-          React.createElement('div', { className: 'eyebrow' }, 'Exercícios estruturados'),
+        React.createElement('section', { className: 'stack nested-card publish-formSection' },
+          React.createElement('div', { className: 'publish-formSectionHead' },
+            React.createElement('div', { className: 'eyebrow' }, 'Exercícios estruturados'),
+            React.createElement('span', { className: 'muted' }, 'Bom para montar força por exercício sem ficar apertado no celular.')
+          ),
           (forms.strengthExercises || []).map((exercise, index) =>
-            React.createElement('div', { key: `ex-${index}`, className: 'grid dual-grid' },
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Exercício',
-                value: exercise.name,
-                onChange: (e) => updateCollectionItem('strengthExercises', index, 'name', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                type: 'number',
-                min: '1',
-                step: '1',
-                placeholder: 'Sets',
-                value: exercise.sets,
-                onChange: (e) => updateCollectionItem('strengthExercises', index, 'sets', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Reps (ex: 5 ou 8-10)',
-                value: exercise.reps,
-                onChange: (e) => updateCollectionItem('strengthExercises', index, 'reps', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Carga (ex: 100kg ou 75%)',
-                value: exercise.load,
-                onChange: (e) => updateCollectionItem('strengthExercises', index, 'load', e.target.value),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                type: 'number',
-                min: '0',
-                step: '0.5',
-                placeholder: 'RIR',
-                value: exercise.rir,
-                onChange: (e) => updateCollectionItem('strengthExercises', index, 'rir', e.target.value),
-              }),
-              React.createElement('button', {
-                type: 'button',
-                className: 'btn btn-secondary',
-                onClick: () => removeCollectionItem('strengthExercises', index),
-                disabled: (forms.strengthExercises || []).length <= 1,
-              }, 'Remover exercício')
+            React.createElement('div', { key: `ex-${index}`, className: 'stack publish-collectionItem' },
+              React.createElement('div', { className: 'publish-collectionHead' },
+                React.createElement('strong', null, `Exercício ${index + 1}`),
+                React.createElement('span', { className: 'muted' }, exercise.name || 'Nome, sets, reps, carga e RIR')
+              ),
+              React.createElement('div', { className: 'grid dual-grid' },
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Exercício',
+                  value: exercise.name,
+                  onChange: (e) => updateCollectionItem('strengthExercises', index, 'name', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  type: 'number',
+                  min: '1',
+                  step: '1',
+                  placeholder: 'Sets',
+                  value: exercise.sets,
+                  onChange: (e) => updateCollectionItem('strengthExercises', index, 'sets', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Reps (ex: 5 ou 8-10)',
+                  value: exercise.reps,
+                  onChange: (e) => updateCollectionItem('strengthExercises', index, 'reps', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Carga (ex: 100kg ou 75%)',
+                  value: exercise.load,
+                  onChange: (e) => updateCollectionItem('strengthExercises', index, 'load', e.target.value),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  type: 'number',
+                  min: '0',
+                  step: '0.5',
+                  placeholder: 'RIR',
+                  value: exercise.rir,
+                  onChange: (e) => updateCollectionItem('strengthExercises', index, 'rir', e.target.value),
+                }),
+              ),
+              React.createElement('div', { className: 'publish-collectionActions' },
+                React.createElement('button', {
+                  type: 'button',
+                  className: 'btn btn-secondary',
+                  onClick: () => removeCollectionItem('strengthExercises', index),
+                  disabled: (forms.strengthExercises || []).length <= 1,
+                }, 'Remover exercício')
+              )
             )
           ),
           React.createElement('button', {
@@ -1263,172 +1295,195 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             : React.createElement('p', { className: 'muted' }, 'Selecione um gym para carregar métricas operacionais.')
         ),
         React.createElement('div', { className: 'card wide', hidden: !isProgrammingSection },
-          React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline', id: 'programming' },
-            React.createElement('div', { className: 'eyebrow' }, 'Programação'),
-            React.createElement('h3', null, `Publicar treino • ${sportLabel(dashboard.selectedSportType)}`),
-            React.createElement('p', { className: 'muted' }, 'Monte a sessão, escolha a audiência e publique sem sair do portal.')
-          ),
-          React.createElement('form', { className: 'stack', onSubmit: handlePublishWorkout },
-            React.createElement('div', { className: 'publish-flow' },
-              React.createElement('div', { className: 'publish-step isActive' },
-                React.createElement('span', { className: 'publish-stepIndex' }, '1'),
-                React.createElement('div', null,
-                  React.createElement('strong', null, 'Sessão'),
-                  React.createElement('span', null, 'Título, data e estrutura do treino')
-                )
-              ),
-              React.createElement('div', { className: 'publish-step' },
-                React.createElement('span', { className: 'publish-stepIndex' }, '2'),
-                React.createElement('div', null,
-                  React.createElement('strong', null, 'Audiência'),
-                  React.createElement('span', null, publishSummary)
-                )
-              ),
-              React.createElement('div', { className: 'publish-step' },
-                React.createElement('span', { className: 'publish-stepIndex' }, '3'),
-                React.createElement('div', null,
-                  React.createElement('strong', null, 'Publicação'),
-                  React.createElement('span', null, selectedGym ? `Vai para ${selectedGym.name}` : 'Selecione um gym')
-                )
-              )
-            ),
-            React.createElement('div', { className: 'publish-metaCard' },
-              React.createElement('strong', null, 'Resumo rápido'),
-              React.createElement('span', null, selectedGym ? `${selectedGym.name} • ${sportLabel(dashboard.selectedSportType)}` : 'Escolha um gym para publicar'),
-              React.createElement('span', null, publishSummary)
-            ),
-            React.createElement('div', { className: 'publish-previewCard' },
-              React.createElement('div', { className: 'publish-previewHead' },
-                React.createElement('strong', null, 'Prévia do atleta'),
-                React.createElement('span', null, forms.workoutTitle || 'Título do treino')
-              ),
-              React.createElement('div', { className: 'publish-previewMeta' },
-                React.createElement('span', null, forms.workoutDate ? formatDateLabel(forms.workoutDate) : 'Sem data definida'),
-                React.createElement('span', null, publishSummary)
-              ),
-              previewLines.length
-                ? React.createElement('div', { className: 'publish-previewList' },
-                    previewLines.map((line, index) =>
-                      React.createElement('div', { key: `preview-line-${index}`, className: 'publish-previewLine' },
-                        React.createElement('span', { className: 'publish-previewDot', 'aria-hidden': 'true' }),
-                        React.createElement('span', null, line)
+        React.createElement('div', { className: 'portal-sectionHeader portal-sectionHeader-inline', id: 'programming' },
+          React.createElement('div', { className: 'eyebrow' }, 'Programação'),
+          React.createElement('h3', null, `Publicar treino • ${sportLabel(dashboard.selectedSportType)}`),
+          React.createElement('p', { className: 'muted' }, 'Monte a sessão, escolha a audiência e publique sem sair do portal.')
+        ),
+          React.createElement('form', { className: 'stack publish-form', onSubmit: handlePublishWorkout },
+            React.createElement('div', { className: 'publish-shellLayout' },
+              React.createElement('div', { className: 'stack publish-editorRail' },
+                React.createElement('section', { className: 'stack nested-card publish-formSection' },
+                  React.createElement('div', { className: 'publish-formSectionHead' },
+                    React.createElement('div', { className: 'eyebrow' }, 'Sessão'),
+                    React.createElement('strong', null, 'Base da publicação')
+                  ),
+                  React.createElement('div', { className: 'grid dual-grid' },
+                    React.createElement('input', {
+                      className: 'field',
+                      placeholder: 'Título do treino',
+                      value: forms.workoutTitle,
+                      onChange: (e) => setForms((prev) => ({ ...prev, workoutTitle: e.target.value })),
+                    }),
+                    React.createElement('input', {
+                      className: 'field',
+                      type: 'date',
+                      value: forms.workoutDate,
+                      onChange: (e) => setForms((prev) => ({ ...prev, workoutDate: e.target.value })),
+                    }),
+                  ),
+                  renderSportSpecificWorkoutFields(),
+                  React.createElement('textarea', {
+                    className: 'field textarea publish-workoutTextarea',
+                    placeholder: isRunning
+                      ? 'Uma linha por bloco/intervalo (ex: 6x400m @ 4:20/km / 1:30 trote)'
+                      : isStrength
+                        ? 'Uma linha por exercício (ex: Back Squat | 5x5 | 100kg)'
+                        : 'Uma linha por exercício',
+                    value: forms.workoutLines,
+                    onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
+                  })
+                ),
+                React.createElement('section', { className: 'stack nested-card audience-card publish-formSection' },
+                  React.createElement('div', { className: 'publish-formSectionHead' },
+                    React.createElement('div', { className: 'eyebrow' }, 'Audiência'),
+                    React.createElement('strong', null, 'Destino da publicação')
+                  ),
+                  React.createElement('span', { className: 'muted' }, 'Escolha só o destino que precisa publicar agora.'),
+                  React.createElement('div', { className: 'tabs audience-modeTabs' },
+                    [
+                      ['all', 'Todos os atletas'],
+                      ['selected', 'Atletas específicos'],
+                      ['groups', 'Grupos'],
+                    ].map(([value, label]) =>
+                      React.createElement('button', {
+                        key: value,
+                        type: 'button',
+                        className: `btn btn-chip ${forms.workoutAudienceMode === value ? 'is-active' : ''}`,
+                        onClick: () => setForms((prev) => ({ ...prev, workoutAudienceMode: value })),
+                      }, label)
+                    )
+                  ),
+                  React.createElement('div', { className: 'publish-audienceSummary' },
+                    React.createElement('strong', null, 'Resumo da audiência'),
+                    React.createElement('span', { className: 'muted' }, publishSummary)
+                  ),
+                  React.createElement('div', { className: 'selection-panels', hidden: publishAudienceMode === 'all' },
+                    React.createElement('div', { className: 'selection-panel' },
+                      publishAudienceMode === 'groups' ? null : React.createElement(React.Fragment, null,
+                      React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
+                      React.createElement('div', { className: 'selection-grid' },
+                        athleteMembers.length
+                          ? athleteMembers.map((member) =>
+                              React.createElement('label', { key: member.id, className: 'check-row' },
+                                React.createElement('input', {
+                                  type: 'checkbox',
+                                  checked: forms.targetMembershipIds.includes(member.id),
+                                  onChange: () => toggleSelection('targetMembershipIds', member.id),
+                                }),
+                                React.createElement('span', null,
+                                  React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
+                                  React.createElement('small', null, member.email || member.pending_email || '')
+                                )
+                              )
+                            )
+                          : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
+                      )
                       )
                     ),
-                    previewOverflow > 0
-                      ? React.createElement('span', { className: 'muted' }, `+${previewOverflow} linha(s) na publicação`)
-                      : null
-                  )
-                : React.createElement('p', { className: 'muted' }, 'A prévia aparece conforme você preenche o treino.')
-            ),
-            publishErrors.length
-              ? React.createElement('div', { className: 'publish-validationCard' },
-                  React.createElement('strong', null, 'Falta ajustar antes de publicar'),
-                  React.createElement('div', { className: 'publish-validationList' },
-                    publishErrors.map((item) =>
-                      React.createElement('span', { key: item, className: 'publish-validationItem' }, item)
+                    React.createElement('div', { className: 'selection-panel' },
+                      publishAudienceMode === 'selected' ? null : React.createElement(React.Fragment, null,
+                      React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
+                      React.createElement('div', { className: 'selection-grid' },
+                        dashboard.groups.length
+                          ? dashboard.groups.map((group) =>
+                              React.createElement('label', { key: group.id, className: 'check-row' },
+                                React.createElement('input', {
+                                  type: 'checkbox',
+                                  checked: forms.targetGroupIds.includes(group.id),
+                                  onChange: () => toggleSelection('targetGroupIds', group.id),
+                                }),
+                                React.createElement('span', null,
+                                  React.createElement('strong', null, group.name),
+                                  React.createElement('small', null, `${group.member_count || group.members?.length || 0} atleta(s)`)
+                                )
+                              )
+                            )
+                          : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
+                      )
+                      )
                     )
                   )
                 )
-              : React.createElement('div', { className: 'publish-validationCard isReady' },
-                  React.createElement('strong', null, 'Pronto para publicar'),
-                  React.createElement('span', { className: 'muted' }, 'O treino já tem o mínimo necessário para ser enviado.')
-                ),
-            draftStatus ? React.createElement('div', { className: 'draft-statusRow' },
-              React.createElement('span', { className: 'muted' }, draftStatus),
-              React.createElement('button', {
-                type: 'button',
-                className: 'btn btn-secondary',
-                onClick: handleClearWorkoutDraft,
-              }, 'Limpar rascunho')
-            ) : null,
-            React.createElement('input', {
-              className: 'field',
-              placeholder: 'Título do treino',
-              value: forms.workoutTitle,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutTitle: e.target.value })),
-            }),
-            React.createElement('input', {
-              className: 'field',
-              type: 'date',
-              value: forms.workoutDate,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutDate: e.target.value })),
-            }),
-            renderSportSpecificWorkoutFields(),
-            React.createElement('textarea', {
-              className: 'field textarea',
-              placeholder: isRunning
-                ? 'Uma linha por bloco/intervalo (ex: 6x400m @ 4:20/km / 1:30 trote)'
-                : isStrength
-                  ? 'Uma linha por exercício (ex: Back Squat | 5x5 | 100kg)'
-                  : 'Uma linha por exercício',
-              value: forms.workoutLines,
-              onChange: (e) => setForms((prev) => ({ ...prev, workoutLines: e.target.value })),
-            }),
-            React.createElement('div', { className: 'stack nested-card audience-card' },
-              React.createElement('strong', null, 'Audiência'),
-              React.createElement('span', { className: 'muted' }, 'Escolha só o destino que precisa publicar agora.'),
-              React.createElement('div', { className: 'tabs' },
-                [
-                  ['all', 'Todos os atletas'],
-                  ['selected', 'Atletas específicos'],
-                  ['groups', 'Grupos'],
-                ].map(([value, label]) =>
-                  React.createElement('button', {
-                    key: value,
-                    type: 'button',
-                    className: `btn btn-chip ${forms.workoutAudienceMode === value ? 'is-active' : ''}`,
-                    onClick: () => setForms((prev) => ({ ...prev, workoutAudienceMode: value })),
-                  }, label)
-                )
               ),
-              React.createElement('div', { className: 'selection-panels', hidden: publishAudienceMode === 'all' },
-                React.createElement('div', { className: 'selection-panel' },
-                  publishAudienceMode === 'groups' ? null : React.createElement(React.Fragment, null,
-                  React.createElement('div', { className: 'eyebrow' }, 'Atletas'),
-                  React.createElement('div', { className: 'selection-grid' },
-                    athleteMembers.length
-                      ? athleteMembers.map((member) =>
-                          React.createElement('label', { key: member.id, className: 'check-row' },
-                            React.createElement('input', {
-                              type: 'checkbox',
-                              checked: forms.targetMembershipIds.includes(member.id),
-                              onChange: () => toggleSelection('targetMembershipIds', member.id),
-                            }),
-                            React.createElement('span', null,
-                              React.createElement('strong', null, member.name || member.email || member.pending_email || 'Atleta'),
-                              React.createElement('small', null, member.email || member.pending_email || '')
-                            )
-                          )
-                        )
-                      : React.createElement('p', { className: 'muted' }, 'Sem atletas ativos.')
-                  )
+              React.createElement('div', { className: 'stack publish-summaryRail' },
+                React.createElement('div', { className: 'publish-flow' },
+                  React.createElement('div', { className: 'publish-step isActive' },
+                    React.createElement('span', { className: 'publish-stepIndex' }, '1'),
+                    React.createElement('div', null,
+                      React.createElement('strong', null, 'Sessão'),
+                      React.createElement('span', null, 'Título, data e estrutura do treino')
+                    )
+                  ),
+                  React.createElement('div', { className: 'publish-step' },
+                    React.createElement('span', { className: 'publish-stepIndex' }, '2'),
+                    React.createElement('div', null,
+                      React.createElement('strong', null, 'Audiência'),
+                      React.createElement('span', null, publishSummary)
+                    )
+                  ),
+                  React.createElement('div', { className: 'publish-step' },
+                    React.createElement('span', { className: 'publish-stepIndex' }, '3'),
+                    React.createElement('div', null,
+                      React.createElement('strong', null, 'Publicação'),
+                      React.createElement('span', null, selectedGym ? `Vai para ${selectedGym.name}` : 'Selecione um gym')
+                    )
                   )
                 ),
-                React.createElement('div', { className: 'selection-panel' },
-                  publishAudienceMode === 'selected' ? null : React.createElement(React.Fragment, null,
-                  React.createElement('div', { className: 'eyebrow' }, 'Grupos'),
-                  React.createElement('div', { className: 'selection-grid' },
-                    dashboard.groups.length
-                      ? dashboard.groups.map((group) =>
-                          React.createElement('label', { key: group.id, className: 'check-row' },
-                            React.createElement('input', {
-                              type: 'checkbox',
-                              checked: forms.targetGroupIds.includes(group.id),
-                              onChange: () => toggleSelection('targetGroupIds', group.id),
-                            }),
-                            React.createElement('span', null,
-                              React.createElement('strong', null, group.name),
-                              React.createElement('small', null, `${group.member_count || group.members?.length || 0} atleta(s)`)
-                            )
+                React.createElement('div', { className: 'publish-metaCard' },
+                  React.createElement('strong', null, 'Resumo rápido'),
+                  React.createElement('span', null, selectedGym ? `${selectedGym.name} • ${sportLabel(dashboard.selectedSportType)}` : 'Escolha um gym para publicar'),
+                  React.createElement('span', null, publishSummary)
+                ),
+                React.createElement('div', { className: 'publish-previewCard' },
+                  React.createElement('div', { className: 'publish-previewHead' },
+                    React.createElement('strong', null, 'Prévia do atleta'),
+                    React.createElement('span', null, forms.workoutTitle || 'Título do treino')
+                  ),
+                  React.createElement('div', { className: 'publish-previewMeta' },
+                    React.createElement('span', null, forms.workoutDate ? formatDateLabel(forms.workoutDate) : 'Sem data definida'),
+                    React.createElement('span', null, publishSummary)
+                  ),
+                  previewLines.length
+                    ? React.createElement('div', { className: 'publish-previewList' },
+                        previewLines.map((line, index) =>
+                          React.createElement('div', { key: `preview-line-${index}`, className: 'publish-previewLine' },
+                            React.createElement('span', { className: 'publish-previewDot', 'aria-hidden': 'true' }),
+                            React.createElement('span', null, line)
                           )
+                        ),
+                        previewOverflow > 0
+                          ? React.createElement('span', { className: 'muted' }, `+${previewOverflow} linha(s) na publicação`)
+                          : null
+                      )
+                    : React.createElement('p', { className: 'muted' }, 'A prévia aparece conforme você preenche o treino.')
+                ),
+                publishErrors.length
+                  ? React.createElement('div', { className: 'publish-validationCard' },
+                      React.createElement('strong', null, 'Falta ajustar antes de publicar'),
+                      React.createElement('div', { className: 'publish-validationList' },
+                        publishErrors.map((item) =>
+                          React.createElement('span', { key: item, className: 'publish-validationItem' }, item)
                         )
-                      : React.createElement('p', { className: 'muted' }, 'Sem grupos criados.')
-                  )
-                  )
-                )
+                      )
+                    )
+                  : React.createElement('div', { className: 'publish-validationCard isReady' },
+                      React.createElement('strong', null, 'Pronto para publicar'),
+                      React.createElement('span', { className: 'muted' }, 'O treino já tem o mínimo necessário para ser enviado.')
+                    ),
+                draftStatus ? React.createElement('div', { className: 'draft-statusRow' },
+                  React.createElement('span', { className: 'muted' }, draftStatus),
+                  React.createElement('button', {
+                    type: 'button',
+                    className: 'btn btn-secondary',
+                    onClick: handleClearWorkoutDraft,
+                  }, 'Limpar rascunho')
+                ) : null
               )
             ),
-            React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: !canPublishWorkout }, loading ? 'Publicando...' : 'Publicar treino')
+            React.createElement('div', { className: 'publish-actionBar' },
+              React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: !canPublishWorkout }, loading ? 'Publicando...' : 'Publicar treino')
+            )
           )
         ),
         React.createElement('div', { className: 'card', id: 'library', hidden: !isLibrarySection },
