@@ -27,6 +27,21 @@ const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth
 const GOOGLE_OAUTH_CONTEXT_COOKIE = 'ryxen_google_oauth_ctx';
 const LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
 
+function buildDeveloperPreviewResponse({ response = {}, code, error = null, transport = null }) {
+  return {
+    ...response,
+    deliveryStatus: 'preview_fallback',
+    previewCode: code,
+    delivery: {
+      transport,
+      previewUrl: null,
+      fallback: true,
+      error: error?.message || null,
+      errorCode: error?.code || null,
+    },
+  };
+}
+
 async function withUserBootstrap(normalizedEmail, factory) {
   const client = await pool.connect();
   try {
@@ -398,6 +413,21 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         },
       });
     } catch (error) {
+      if (EXPOSE_RESET_CODE && isDeveloperEmail(email)) {
+        await logOpsEvent({
+          kind: 'password_reset_email',
+          status: 'preview_fallback',
+          userId: user.id,
+          email,
+          payload: {
+            error: error?.message || String(error),
+            errorCode: error?.code || null,
+          },
+        });
+
+        return res.json(buildDeveloperPreviewResponse({ response, code, error }));
+      }
+
       captureBackendError(error, {
         tags: { feature: 'auth', source: 'password_reset_email' },
         email,
@@ -812,27 +842,45 @@ async function requestSignupVerification(req, res) {
       cooldownSeconds: 30,
     };
 
-    const mailInfo = await sendSignupVerificationEmail({ to: normalizedEmail, code });
-    response.deliveryStatus = 'sent';
-    if (isDeveloperEmail(normalizedEmail)) {
-      response.delivery = {
-        transport: mailInfo.transport,
-        previewUrl: mailInfo.previewUrl,
-      };
-      if (mailInfo.previewUrl) response.deliveryStatus = 'preview';
-    }
+    try {
+      const mailInfo = await sendSignupVerificationEmail({ to: normalizedEmail, code });
+      response.deliveryStatus = 'sent';
+      if (isDeveloperEmail(normalizedEmail)) {
+        response.delivery = {
+          transport: mailInfo.transport,
+          previewUrl: mailInfo.previewUrl,
+        };
+        if (mailInfo.previewUrl) response.deliveryStatus = 'preview';
+      }
 
-    await logOpsEvent({
-      kind: 'signup_verification_email',
-      status: response.deliveryStatus,
-      email: normalizedEmail,
-      payload: {
-        messageId: mailInfo.messageId,
-        transport: mailInfo.transport,
-        durationMs: mailInfo.durationMs || null,
-        previewUrl: isDeveloperEmail(normalizedEmail) ? (mailInfo.previewUrl || null) : null,
-      },
-    });
+      await logOpsEvent({
+        kind: 'signup_verification_email',
+        status: response.deliveryStatus,
+        email: normalizedEmail,
+        payload: {
+          messageId: mailInfo.messageId,
+          transport: mailInfo.transport,
+          durationMs: mailInfo.durationMs || null,
+          previewUrl: isDeveloperEmail(normalizedEmail) ? (mailInfo.previewUrl || null) : null,
+        },
+      });
+    } catch (error) {
+      if (EXPOSE_RESET_CODE && isDeveloperEmail(normalizedEmail)) {
+        await logOpsEvent({
+          kind: 'signup_verification_email',
+          status: 'preview_fallback',
+          email: normalizedEmail,
+          payload: {
+            error: error?.message || String(error),
+            errorCode: error?.code || null,
+          },
+        });
+
+        return res.json(buildDeveloperPreviewResponse({ response, code, error }));
+      }
+
+      throw error;
+    }
 
     if (EXPOSE_RESET_CODE && isDeveloperEmail(normalizedEmail)) {
       response.previewCode = code;
