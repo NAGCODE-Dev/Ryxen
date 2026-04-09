@@ -108,28 +108,28 @@
   }
 
   .bottom-nav {
-    top: calc(var(--safe-top) + 46px);
-    padding: 3px 10px 5px;
+    top: calc(var(--safe-top) + 44px);
+    padding: 2px 8px 4px;
   }
 
   .bottom-navItems {
-    gap: 4px;
+    gap: 3px;
     padding: 3px;
-    border-radius: 12px;
+    border-radius: 11px;
   }
 
   .nav-btn {
-    min-height: 34px;
-    border-radius: 9px;
+    min-height: 31px;
+    border-radius: 8px;
   }
 
   .nav-icon {
-    font-size: 0.76rem;
+    font-size: 0.7rem;
   }
 
   .nav-label {
-    font-size: 0.54rem;
-    letter-spacing: 0.08em;
+    font-size: 0.5rem;
+    letter-spacing: 0.04em;
   }
 
   .pr-item,
@@ -470,23 +470,23 @@
   }
 
   .bottom-nav {
-    top: calc(var(--safe-top) + 42px);
-    padding: 3px 8px 4px;
+    top: calc(var(--safe-top) + 40px);
+    padding: 2px 7px 4px;
   }
 
   .bottom-navItems {
     padding: 3px;
-    border-radius: 11px;
+    border-radius: 10px;
   }
 
   .nav-btn {
-    min-height: 32px;
-    border-radius: 8px;
+    min-height: 29px;
+    border-radius: 7px;
   }
 
   .nav-label {
-    font-size: 0.5rem;
-    letter-spacing: 0.05em;
+    font-size: 0.46rem;
+    letter-spacing: 0.03em;
   }
 
   .workout-block,

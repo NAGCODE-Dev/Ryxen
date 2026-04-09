@@ -71,7 +71,7 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
         <span class="today-overviewBadge">${weeks ? `Semana ${activeWeek || 1}` : 'Sessão avulsa'}</span>
         <span class="today-overviewMeta">${activeSource === 'coach' ? 'Coach' : 'Planilha'}</span>
       </div>
-      <strong class="today-overviewTitle">${warningsCount ? `${warningsCount} aviso(s) na sessão` : `${blocks} bloco(s) e ${lines} linha(s)`}</strong>
+      <strong class="today-overviewTitle">${warningsCount ? `${warningsCount} aviso(s)` : `${blocks} blocos · ${lines} linhas`}</strong>
       ${metadata.periods.length || metadata.blockTypes.length ? `
         <div class="today-metaChips">
           ${metadata.periods.map((period) => `<span class="today-metaChip">${escapeHtml(period)}</span>`).join('')}
@@ -88,6 +88,7 @@ export function renderTodaySessionCard(state, workout, { escapeHtml }) {
   const warningsCount = workout?.warnings?.length || 0;
   const blocks = workout?.blocks?.length || 0;
   const metadata = summarizeWorkoutForDisplay(workout);
+  const compactHighlights = metadata.highlights.slice(0, 2);
 
   return `
     <section class="today-sessionCard">
@@ -99,14 +100,15 @@ export function renderTodaySessionCard(state, workout, { escapeHtml }) {
         <div class="today-sessionPill ${warningsCount ? 'isWarn' : 'isGood'}">${warningsCount ? `${warningsCount} aviso(s)` : 'Pronto'}</div>
       </div>
       <div class="today-sessionMeta">
-        <span>${escapeHtml(activeSource === 'coach' ? 'Vindo do coach' : 'Vindo da sua planilha')}</span>
-        <span>${blocks} bloco(s)</span>
+        <span>${escapeHtml(activeSource === 'coach' ? 'Coach' : 'Planilha')}</span>
+        <span>${blocks} blocos</span>
         ${metadata.periods.map((period) => `<span>${escapeHtml(period)}</span>`).join('')}
       </div>
-      <div class="today-sessionStrip">
-        <span class="today-sessionStripItem">${warningsCount ? 'Ajuste os avisos antes de começar' : 'Sessão pronta para executar'}</span>
-        ${metadata.highlights.map((item) => `<span class="today-sessionStripItem">${escapeHtml(item)}</span>`).join('')}
-      </div>
+      ${compactHighlights.length ? `
+        <div class="today-sessionStrip">
+          ${compactHighlights.map((item) => `<span class="today-sessionStripItem">${escapeHtml(item)}</span>`).join('')}
+        </div>
+      ` : ''}
     </section>
   `;
 }

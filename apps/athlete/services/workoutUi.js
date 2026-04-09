@@ -94,7 +94,7 @@ export function startWorkoutTimer(config, toast, options = {}) {
       <div class="timer-meta" data-timer-meta></div>
       <div class="timer-summary" data-timer-summary></div>
       <div class="timer-actions timer-actions-main" data-timer-main-actions>
-        <button class="btn-timer-primary" type="button" data-timer-start>${normalized.prepSeconds > 0 ? `Preparar ${normalized.prepSeconds}s` : 'Iniciar agora'}</button>
+        <button class="btn-timer-primary" type="button" data-timer-start>${normalized.prepSeconds > 0 ? `Começar em ${normalized.prepSeconds}s` : 'Começar'}</button>
       </div>
       <div class="timer-actions" data-timer-live-actions hidden>
         <button class="btn-timer-secondary" type="button" data-timer-minus>−30s</button>
@@ -102,8 +102,8 @@ export function startWorkoutTimer(config, toast, options = {}) {
         <button class="btn-timer-secondary" type="button" data-timer-plus>+30s</button>
       </div>
       <div class="timer-actions timer-actions-modes">
-        <button class="btn-timer-mode ${normalized.mode === 'popup' ? 'is-active' : ''}" type="button" data-timer-mode="popup">Popup</button>
-        <button class="btn-timer-mode ${normalized.mode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela cheia</button>
+        <button class="btn-timer-mode ${normalized.mode === 'popup' ? 'is-active' : ''}" type="button" data-timer-mode="popup">Mini</button>
+        <button class="btn-timer-mode ${normalized.mode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela</button>
       </div>
     </div>
   `;
