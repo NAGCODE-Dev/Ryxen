@@ -48,6 +48,7 @@ export function createAthleteClickContext({
   scrollToLine,
   cssEscape,
   startRestTimer,
+  startWorkoutTimer,
   consumeAthleteImport,
 }) {
   return {
@@ -99,6 +100,7 @@ export function createAthleteClickContext({
     scrollToLine,
     cssEscape,
     startRestTimer,
+    startWorkoutTimer,
     consumeAthleteImport,
   };
 }

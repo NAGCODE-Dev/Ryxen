@@ -308,6 +308,59 @@
   padding: 14px;
 }
 
+.workout-block {
+  display: grid;
+  gap: 10px;
+}
+
+.workout-blockHeader {
+  display: grid;
+  gap: 12px;
+}
+
+.workout-blockHeading {
+  display: grid;
+  gap: 6px;
+}
+
+.workout-blockEyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workout-blockTag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--bg-soft);
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.workout-blockTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.workout-blockMeta {
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+}
+
+.workout-blockActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .workout-section-header,
 .workout-rest,
 .workout-note {
@@ -570,6 +623,30 @@
   font-weight: 800;
 }
 
+.timer-title {
+  margin-top: 4px;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.timer-phase,
+.timer-summary {
+  text-align: center;
+}
+
+.timer-phase {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.timer-summary {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
 .btn-timer-close,
 .btn-timer-primary,
 .btn-timer-mode {
@@ -630,6 +707,10 @@
 
 .timer-actions-modes {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.timer-actions-main {
+  grid-template-columns: 1fr;
 }
 
 .empty-state {

@@ -1,6 +1,6 @@
 import { getAppBridge } from '../../../src/app/bridge.js';
 
-let activeRestTimer = null;
+let activeWorkoutTimer = null;
 
 export function workoutKeyFromAppState() {
   const bridge = getAppBridge?.();
@@ -45,40 +45,65 @@ export function scrollToLine(root, lineId) {
   element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
-export function startRestTimer(totalSeconds, toast, options = {}) {
-  const initialSeconds = Math.max(1, Number(totalSeconds) || 0);
-  const initialMode = options.mode === 'fullscreen' ? 'fullscreen' : 'popup';
+export const scrollToWorkoutLine = scrollToLine;
 
-  if (activeRestTimer?.destroy) {
-    activeRestTimer.destroy(false);
-    activeRestTimer = null;
+export function clearWorkoutTimer() {
+  if (activeWorkoutTimer?.destroy) {
+    activeWorkoutTimer.destroy(false);
+    activeWorkoutTimer = null;
   }
+}
 
-  let remaining = initialSeconds;
-  let paused = false;
+export function startRestTimer(totalSeconds, toast, options = {}) {
+  return startWorkoutTimer({
+    label: 'Timer de descanso',
+    detail: 'Descanso guiado',
+    totalSeconds,
+    kind: 'countdown',
+    completionMessage: 'Descanso finalizado',
+    prepSeconds: 0,
+    autoStart: true,
+  }, toast, options);
+}
+
+export function startWorkoutTimer(config, toast, options = {}) {
+  const normalized = normalizeTimerConfig(config, options);
+  if (!normalized) return null;
+
+  clearWorkoutTimer();
+
+  const state = createTimerState(normalized);
   let intervalId = null;
 
   const modal = document.createElement('div');
-  modal.className = `timer-modal ${initialMode === 'fullscreen' ? 'is-fullscreen' : 'is-popup'}`;
+  modal.className = `timer-modal ${normalized.mode === 'fullscreen' ? 'is-fullscreen' : 'is-popup'}`;
   modal.innerHTML = `
-    <div class="timer-content">
+    <div class="timer-content timer-content-workout">
       <div class="timer-topbar">
-        <div class="timer-kicker">Timer de descanso</div>
+        <div>
+          <div class="timer-kicker">${escapeHtml(normalized.label)}</div>
+          <div class="timer-title">${escapeHtml(normalized.detail)}</div>
+        </div>
         <button class="btn-timer-close" type="button" data-timer-close>Fechar</button>
       </div>
-      <div class="timer-time" data-timer-time>${formatTime(remaining)}</div>
+      <div class="timer-phase" data-timer-phase></div>
+      <div class="timer-time" data-timer-time>${formatTime(readDisplaySeconds(state))}</div>
       <div class="timer-progress">
         <div class="timer-progressBar" data-timer-progress></div>
       </div>
-      <div class="timer-meta" data-timer-meta>${Math.ceil(remaining / 60)} min restantes</div>
-      <div class="timer-actions">
+      <div class="timer-meta" data-timer-meta></div>
+      <div class="timer-summary" data-timer-summary></div>
+      <div class="timer-actions timer-actions-main" data-timer-main-actions>
+        <button class="btn-timer-primary" type="button" data-timer-start>${normalized.prepSeconds > 0 ? `Preparar ${normalized.prepSeconds}s` : 'Iniciar agora'}</button>
+      </div>
+      <div class="timer-actions" data-timer-live-actions hidden>
         <button class="btn-timer-secondary" type="button" data-timer-minus>−30s</button>
-        <button class="btn-timer-primary" type="button" data-timer-toggle>${paused ? 'Retomar' : 'Pausar'}</button>
+        <button class="btn-timer-primary" type="button" data-timer-toggle>Pausar</button>
         <button class="btn-timer-secondary" type="button" data-timer-plus>+30s</button>
       </div>
       <div class="timer-actions timer-actions-modes">
-        <button class="btn-timer-mode ${initialMode === 'popup' ? 'is-active' : ''}" type="button" data-timer-mode="popup">Popup</button>
-        <button class="btn-timer-mode ${initialMode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela cheia</button>
+        <button class="btn-timer-mode ${normalized.mode === 'popup' ? 'is-active' : ''}" type="button" data-timer-mode="popup">Popup</button>
+        <button class="btn-timer-mode ${normalized.mode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela cheia</button>
       </div>
     </div>
   `;
@@ -86,10 +111,15 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
   document.body.appendChild(modal);
 
   const display = modal.querySelector('[data-timer-time]');
+  const phase = modal.querySelector('[data-timer-phase]');
   const progress = modal.querySelector('[data-timer-progress]');
   const meta = modal.querySelector('[data-timer-meta]');
+  const summary = modal.querySelector('[data-timer-summary]');
   const toggleButton = modal.querySelector('[data-timer-toggle]');
   const modeButtons = Array.from(modal.querySelectorAll('[data-timer-mode]'));
+  const startButton = modal.querySelector('[data-timer-start]');
+  const mainActions = modal.querySelector('[data-timer-main-actions]');
+  const liveActions = modal.querySelector('[data-timer-live-actions]');
 
   const updateModeButtons = (mode) => {
     modeButtons.forEach((button) => {
@@ -98,15 +128,15 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
   };
 
   const updateDisplay = () => {
-    if (display) display.textContent = formatTime(remaining);
-    if (meta) meta.textContent = paused
-      ? `Pausado em ${formatTime(remaining)}`
-      : `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')} restantes`;
-    if (progress) {
-      const ratio = Math.max(0, Math.min(1, remaining / initialSeconds));
-      progress.style.width = `${ratio * 100}%`;
-    }
-    if (toggleButton) toggleButton.textContent = paused ? 'Retomar' : 'Pausar';
+    const displaySeconds = readDisplaySeconds(state);
+    if (display) display.textContent = formatTime(displaySeconds);
+    if (phase) phase.textContent = describePhase(state, normalized);
+    if (meta) meta.textContent = describeMeta(state, normalized);
+    if (summary) summary.textContent = describeSummary(state, normalized);
+    if (toggleButton) toggleButton.textContent = state.paused ? 'Retomar' : 'Pausar';
+    if (progress) progress.style.width = `${calculateProgressPercent(state, normalized)}%`;
+    if (mainActions) mainActions.hidden = state.phase !== 'ready';
+    if (liveActions) liveActions.hidden = state.phase === 'ready' || state.phase === 'finished';
   };
 
   const applyMode = async (mode) => {
@@ -124,14 +154,69 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
     }
   };
 
-  const tick = () => {
-    if (paused) return;
-    remaining -= 1;
-    updateDisplay();
+  const finish = () => {
+    destroy(false);
+    toast(normalized.completionMessage);
+  };
 
-    if (remaining <= 0) {
-      destroy(true);
-      toast('Descanso finalizado');
+  const tick = () => {
+    if (state.paused) return;
+
+    if (state.phase === 'prep') {
+      state.prepRemaining -= 1;
+      if (state.prepRemaining <= 0) {
+        state.phase = 'running';
+      }
+      updateDisplay();
+      return;
+    }
+
+    if (state.phase !== 'running') return;
+
+    if (normalized.kind === 'countdown') {
+      state.remaining = Math.max(0, state.remaining - 1);
+      updateDisplay();
+      if (state.remaining <= 0) finish();
+      return;
+    }
+
+    if (normalized.kind === 'countup') {
+      state.elapsed += 1;
+      if (state.capSeconds) state.remaining = Math.max(0, normalized.capSeconds - state.elapsed);
+      updateDisplay();
+      if (state.capSeconds && state.elapsed >= normalized.capSeconds) finish();
+      return;
+    }
+
+    if (normalized.kind === 'interval') {
+      state.intervalRemaining = Math.max(0, state.intervalRemaining - 1);
+      state.totalElapsed += 1;
+      updateDisplay();
+
+      if (state.intervalRemaining > 0) return;
+
+      if (state.segment === 'work') {
+        if (normalized.restSeconds > 0 && state.round < normalized.rounds) {
+          state.segment = 'rest';
+          state.intervalRemaining = normalized.restSeconds;
+        } else if (state.round < normalized.rounds) {
+          state.round += 1;
+          state.segment = 'work';
+          state.intervalRemaining = normalized.workSeconds;
+        } else {
+          finish();
+          return;
+        }
+      } else if (state.round < normalized.rounds) {
+        state.round += 1;
+        state.segment = 'work';
+        state.intervalRemaining = normalized.workSeconds;
+      } else {
+        finish();
+        return;
+      }
+
+      updateDisplay();
     }
   };
 
@@ -139,7 +224,7 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
     intervalId = window.setInterval(tick, 1000);
   };
 
-  function destroy(showToast = true) {
+  function destroy(showToast = false) {
     if (intervalId) {
       window.clearInterval(intervalId);
       intervalId = null;
@@ -148,27 +233,34 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
       document.exitFullscreen().catch(() => {});
     }
     modal.remove();
-    if (activeRestTimer?.modal === modal) activeRestTimer = null;
-    if (!showToast) return;
+    if (activeWorkoutTimer?.modal === modal) activeWorkoutTimer = null;
+    if (showToast) toast('Timer fechado');
   }
 
+  startButton?.addEventListener('click', () => {
+    if (state.phase !== 'ready') return;
+    state.phase = normalized.prepSeconds > 0 ? 'prep' : 'running';
+    state.prepRemaining = normalized.prepSeconds;
+    updateDisplay();
+  });
+
   modal.querySelector('[data-timer-close]')?.addEventListener('click', () => {
-    destroy(false);
-    toast('Timer fechado');
+    destroy(true);
   });
 
   modal.querySelector('[data-timer-toggle]')?.addEventListener('click', () => {
-    paused = !paused;
+    if (state.phase === 'ready' || state.phase === 'finished') return;
+    state.paused = !state.paused;
     updateDisplay();
   });
 
   modal.querySelector('[data-timer-minus]')?.addEventListener('click', () => {
-    remaining = Math.max(5, remaining - 30);
+    adjustTimer(state, normalized, -30);
     updateDisplay();
   });
 
   modal.querySelector('[data-timer-plus]')?.addEventListener('click', () => {
-    remaining += 30;
+    adjustTimer(state, normalized, 30);
     updateDisplay();
   });
 
@@ -176,18 +268,226 @@ export function startRestTimer(totalSeconds, toast, options = {}) {
     button.addEventListener('click', () => applyMode(button.dataset.timerMode));
   });
 
-  activeRestTimer = { modal, destroy, applyMode };
+  activeWorkoutTimer = { modal, destroy, applyMode };
   updateDisplay();
   startInterval();
-  applyMode(initialMode);
+  applyMode(normalized.mode);
+
+  if (normalized.autoStart) {
+    state.phase = normalized.prepSeconds > 0 ? 'prep' : 'running';
+    state.prepRemaining = normalized.prepSeconds;
+    updateDisplay();
+  }
+
+  return activeWorkoutTimer;
+}
+
+function normalizeTimerConfig(config, options = {}) {
+  const input = config && typeof config === 'object' ? config : { totalSeconds: Number(config) || 0 };
+  const kind = ['countdown', 'countup', 'interval'].includes(input.kind) ? input.kind : 'countdown';
+  const mode = options.mode === 'fullscreen' || input.mode === 'fullscreen' ? 'fullscreen' : 'popup';
+  const prepSeconds = Math.max(0, Number(input.prepSeconds ?? 10) || 0);
+  const autoStart = Boolean(input.autoStart);
+  const label = String(input.label || 'Timer do treino').trim();
+  const detail = String(input.detail || describeDefaultDetail(input)).trim();
+
+  if (kind === 'interval') {
+    const rounds = Math.max(1, Number(input.rounds) || 0);
+    const workSeconds = Math.max(1, Number(input.workSeconds) || 0);
+    const restSeconds = Math.max(0, Number(input.restSeconds) || 0);
+    if (!rounds || !workSeconds) return null;
+    return {
+      kind,
+      label,
+      detail,
+      mode,
+      prepSeconds,
+      autoStart,
+      rounds,
+      workSeconds,
+      restSeconds,
+      completionMessage: input.completionMessage || `${label} finalizado`,
+    };
+  }
+
+  const totalSeconds = Math.max(0, Number(input.totalSeconds) || 0);
+  const capSeconds = Math.max(0, Number(input.capSeconds ?? totalSeconds) || 0);
+  if (kind === 'countup' && !capSeconds && !totalSeconds) {
+    return {
+      kind,
+      label,
+      detail,
+      mode,
+      prepSeconds,
+      autoStart,
+      totalSeconds: 0,
+      capSeconds: 0,
+      completionMessage: input.completionMessage || `${label} finalizado`,
+    };
+  }
+  if (kind !== 'countup' && totalSeconds <= 0) return null;
+
+  return {
+    kind,
+    label,
+    detail,
+    mode,
+    prepSeconds,
+    autoStart,
+    totalSeconds,
+    capSeconds,
+    completionMessage: input.completionMessage || `${label} finalizado`,
+  };
+}
+
+function createTimerState(config) {
+  if (config.kind === 'interval') {
+    return {
+      phase: 'ready',
+      paused: false,
+      prepRemaining: config.prepSeconds,
+      round: 1,
+      segment: 'work',
+      intervalRemaining: config.workSeconds,
+      totalElapsed: 0,
+    };
+  }
+
+  return {
+    phase: 'ready',
+    paused: false,
+    prepRemaining: config.prepSeconds,
+    remaining: config.totalSeconds,
+    elapsed: 0,
+    capSeconds: config.capSeconds || 0,
+  };
+}
+
+function readDisplaySeconds(state) {
+  if (state.phase === 'prep') return Math.max(0, state.prepRemaining);
+  if (typeof state.intervalRemaining === 'number') return Math.max(0, state.intervalRemaining);
+  if (typeof state.remaining === 'number' && state.remaining > 0) return state.remaining;
+  if (typeof state.elapsed === 'number') return state.elapsed;
+  return 0;
+}
+
+function describePhase(state, config) {
+  if (state.phase === 'ready') return 'Pronto para iniciar';
+  if (state.phase === 'prep') return 'Preparação';
+  if (config.kind === 'interval') return state.segment === 'rest' ? `Round ${state.round}/${config.rounds} · Descanso` : `Round ${state.round}/${config.rounds} · Trabalho`;
+  if (config.kind === 'countup') return 'Cronômetro correndo';
+  return 'Tempo correndo';
+}
+
+function describeMeta(state, config) {
+  if (state.phase === 'ready') {
+    if (config.kind === 'interval') return `${config.rounds} rounds · ${formatCompactSeconds(config.workSeconds)} de trabalho${config.restSeconds ? ` + ${formatCompactSeconds(config.restSeconds)} descanso` : ''}`;
+    if (config.kind === 'countup' && config.capSeconds) return `Cap ${formatCompactSeconds(config.capSeconds)}`;
+    if (config.kind === 'countup') return 'Sem cap definido';
+    return `${formatCompactSeconds(config.totalSeconds)} totais`;
+  }
+
+  if (state.phase === 'prep') return `Começa em ${Math.max(0, state.prepRemaining)}s`;
+
+  if (config.kind === 'interval') {
+    return state.segment === 'rest'
+      ? `Descanso antes do próximo round`
+      : `Mantenha o ritmo do bloco`; 
+  }
+
+  if (config.kind === 'countup') {
+    return config.capSeconds
+      ? `Cap em ${formatCompactSeconds(config.capSeconds)}`
+      : 'Marcação livre até finalizar';
+  }
+
+  return `${formatCompactSeconds(Math.max(0, state.remaining))} restantes`;
+}
+
+function describeSummary(state, config) {
+  if (config.kind === 'interval') {
+    const totalSeconds = config.rounds * config.workSeconds + Math.max(0, config.rounds - 1) * config.restSeconds;
+    const remaining = Math.max(0, totalSeconds - state.totalElapsed);
+    return `Total restante: ${formatCompactSeconds(remaining)}`;
+  }
+
+  if (config.kind === 'countup') {
+    return `Decorrido: ${formatCompactSeconds(state.elapsed)}`;
+  }
+
+  return config.detail;
+}
+
+function calculateProgressPercent(state, config) {
+  if (state.phase === 'ready') return 100;
+  if (state.phase === 'prep') {
+    const base = Math.max(1, config.prepSeconds || 1);
+    return Math.max(0, Math.min(100, (state.prepRemaining / base) * 100));
+  }
+
+  if (config.kind === 'interval') {
+    const base = state.segment === 'rest' ? Math.max(1, config.restSeconds || 1) : Math.max(1, config.workSeconds);
+    return Math.max(0, Math.min(100, (state.intervalRemaining / base) * 100));
+  }
+
+  if (config.kind === 'countup') {
+    if (!config.capSeconds) return 100;
+    return Math.max(0, Math.min(100, ((config.capSeconds - state.elapsed) / Math.max(1, config.capSeconds)) * 100));
+  }
+
+  return Math.max(0, Math.min(100, (state.remaining / Math.max(1, config.totalSeconds)) * 100));
+}
+
+function adjustTimer(state, config, deltaSeconds) {
+  if (state.phase === 'ready' || state.phase === 'finished') return;
+
+  if (config.kind === 'interval') {
+    state.intervalRemaining = Math.max(5, state.intervalRemaining + deltaSeconds);
+    return;
+  }
+
+  if (config.kind === 'countup') {
+    state.elapsed = Math.max(0, state.elapsed + deltaSeconds);
+    if (state.capSeconds) state.remaining = Math.max(0, state.capSeconds - state.elapsed);
+    return;
+  }
+
+  state.remaining = Math.max(5, state.remaining + deltaSeconds);
+}
+
+function describeDefaultDetail(config) {
+  if (config.kind === 'interval') return 'Bloco intervalado';
+  if (config.kind === 'countup') return 'Cronômetro livre';
+  return 'Contagem regressiva';
 }
 
 export function cssEscape(value) {
-  return String(value || '').replace(/[\"\\]/g, '\\$&');
+  return String(value || '').replace(/["\\]/g, '\\$&');
 }
 
 function formatTime(seconds) {
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
+  const safe = Math.max(0, Number(seconds) || 0);
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const secs = safe % 60;
+  if (hours > 0) return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatCompactSeconds(totalSeconds) {
+  const safe = Math.max(0, Number(totalSeconds) || 0);
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  if (!minutes) return `${seconds}s`;
+  if (!seconds) return `${minutes}min`;
+  return `${minutes}m ${seconds}s`;
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }

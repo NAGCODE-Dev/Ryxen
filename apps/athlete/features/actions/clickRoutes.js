@@ -104,6 +104,7 @@ export async function routeAthleteTodayClick(action, context) {
     hydrateAthleteResultsBlock: context.hydrateAthleteResultsBlock,
     cssEscape: context.cssEscape,
     startRestTimer: context.startRestTimer,
+    startWorkoutTimer: context.startWorkoutTimer,
     consumeAthleteImport: context.consumeAthleteImport,
   });
 }

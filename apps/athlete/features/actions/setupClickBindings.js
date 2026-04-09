@@ -29,6 +29,7 @@ import {
   pickPrevId,
   scrollToLine,
   startRestTimer,
+  startWorkoutTimer,
   workoutKeyFromAppState,
 } from '../today/services.js';
 import {
@@ -110,6 +111,7 @@ export function createAthleteSetupClickBindings({
       scrollToLine,
       cssEscape,
       startRestTimer,
+      startWorkoutTimer,
       consumeAthleteImport,
     }),
   };

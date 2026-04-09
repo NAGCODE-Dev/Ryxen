@@ -426,6 +426,35 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
+    const emomMatch = upper.match(/^(\d+)\s*['’]?\s*EMOM\b/);
+    if (emomMatch) {
+      format = 'emom';
+      timeCapMinutes = Number(emomMatch[1]);
+      items.push({ type: 'format', format, timeCapMinutes, raw: line });
+      continue;
+    }
+
+    if (/^FOR TIME\b/.test(upper)) {
+      format = 'for_time';
+      items.push({ type: 'format', format, timeCapMinutes, raw: line });
+      continue;
+    }
+
+    const forTimeCapMatch = upper.match(/^(\d+)\s*['’]?\s*FOR TIME\b/);
+    if (forTimeCapMatch) {
+      format = 'for_time';
+      timeCapMinutes = Number(forTimeCapMatch[1]);
+      items.push({ type: 'format', format, timeCapMinutes, raw: line });
+      continue;
+    }
+
+    const capMatch = upper.match(/(?:TIME\s*CAP|CAP)\s*(\d+)\s*['’]?/);
+    if (capMatch) {
+      timeCapMinutes = Number(capMatch[1]);
+      items.push({ type: 'cap', timeCapMinutes, raw: line });
+      continue;
+    }
+
     const roundsMatch = upper.match(/^(\d+)\s*X$/);
     if (roundsMatch) {
       rounds = Number(roundsMatch[1]);

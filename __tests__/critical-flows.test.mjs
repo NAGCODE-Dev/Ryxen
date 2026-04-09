@@ -169,3 +169,25 @@ SUPINO PEGADA FECHADA 4x8
   assert.equal(accessoriesBlock.parsed.accessories[0].sets, 3);
   assert.equal(accessoriesBlock.parsed.accessories[0].reps, 10);
 });
+
+test('parser rico reconhece formatos emom e for time com cap', () => {
+  const text = `
+SEMANA 21
+SEXTA
+WOD
+18' EMOM
+2 POWER CLEAN
+WOD 2
+FOR TIME
+CAP 9'
+21-15-9 THRUSTERS
+  `.trim();
+
+  const weeks = parseMultiWeekPdf(text);
+  const workout = weeks[0].workouts[0];
+
+  assert.equal(workout.blocks[0].parsed.format, 'emom');
+  assert.equal(workout.blocks[0].parsed.timeCapMinutes, 18);
+  assert.equal(workout.blocks[1].parsed.format, 'for_time');
+  assert.equal(workout.blocks[1].parsed.timeCapMinutes, 9);
+});

@@ -12,6 +12,7 @@ export async function handleAthleteWodNavigation(action, context) {
     pickPrevId,
     scrollToLine,
     startRestTimer,
+    startWorkoutTimer,
   } = context;
 
   switch (action) {
@@ -82,6 +83,29 @@ export async function handleAthleteWodNavigation(action, context) {
       const seconds = Number(element.dataset.seconds);
       if (!seconds || seconds <= 0) return true;
       startRestTimer(seconds, toast, { mode: element.dataset.timerMode || 'popup' });
+      return true;
+    }
+
+    case 'timer:workout': {
+      const kind = element.dataset.timerKind || 'countdown';
+      const config = {
+        kind,
+        label: element.dataset.label || 'Timer do treino',
+        detail: element.dataset.detail || '',
+        completionMessage: element.dataset.completionMessage || 'Timer finalizado',
+        prepSeconds: Number(element.dataset.prepSeconds || 10),
+      };
+
+      if (kind === 'interval') {
+        config.rounds = Number(element.dataset.rounds || 0);
+        config.workSeconds = Number(element.dataset.workSeconds || 0);
+        config.restSeconds = Number(element.dataset.restSeconds || 0);
+      } else {
+        config.totalSeconds = Number(element.dataset.seconds || 0);
+        config.capSeconds = Number(element.dataset.capSeconds || 0);
+      }
+
+      startWorkoutTimer(config, toast, { mode: element.dataset.timerMode || 'popup' });
       return true;
     }
 
