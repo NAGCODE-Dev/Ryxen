@@ -46,3 +46,25 @@ test('getWorkoutTimerConfig cria cronômetro livre para for time sem cap', () =>
   assert.equal(config.kind, 'countup');
   assert.equal(config.detail, 'Cronômetro livre até completar o treino');
 });
+
+test('getWorkoutTimerConfig cria timer de sequência para blocos intervalados por segundos', () => {
+  const config = getWorkoutTimerConfig({
+    type: 'WOD',
+    title: 'Intervalado',
+    parsed: {
+      rounds: 6,
+      items: [
+        { type: 'movement', durationSeconds: 40, displayName: 'MUs' },
+        { type: 'rest', durationSeconds: 20 },
+        { type: 'movement', durationSeconds: 40, displayName: 'ASSAULT' },
+        { type: 'rest', durationSeconds: 20 },
+      ],
+    },
+  });
+
+  assert.equal(config.kind, 'sequence');
+  assert.equal(config.rounds, 6);
+  assert.equal(config.segments.length, 4);
+  assert.equal(config.segments[0].label, 'MUs');
+  assert.equal(config.segments[1].kind, 'rest');
+});

@@ -100,6 +100,13 @@ export async function handleAthleteWodNavigation(action, context) {
         config.rounds = Number(element.dataset.rounds || 0);
         config.workSeconds = Number(element.dataset.workSeconds || 0);
         config.restSeconds = Number(element.dataset.restSeconds || 0);
+      } else if (kind === 'sequence') {
+        config.rounds = Number(element.dataset.rounds || 0);
+        try {
+          config.segments = JSON.parse(element.dataset.segments || '[]');
+        } catch {
+          config.segments = [];
+        }
       } else {
         config.totalSeconds = Number(element.dataset.seconds || 0);
         config.capSeconds = Number(element.dataset.capSeconds || 0);

@@ -60,6 +60,9 @@ export function createImportExportDomain({
           .filter((item) => item?.type === 'movement')
           .map((item) => item?.canonicalName || item?.name || item?.displayName)
           .filter(Boolean)))];
+        const intervalSummary = blocks
+          .map((block) => buildIntervalReviewSummary(block))
+          .find(Boolean) || '';
 
         previewDays.push({
           weekNumber: week?.weekNumber || null,
@@ -68,6 +71,7 @@ export function createImportExportDomain({
           blockTypes: blockTypes.slice(0, 4),
           goal: goals[0] || '',
           movements: movements.slice(0, 3),
+          intervalSummary,
         });
       }
     }
@@ -81,6 +85,21 @@ export function createImportExportDomain({
       totalBlocks,
       days: previewDays.slice(0, 6),
     };
+  }
+
+  function buildIntervalReviewSummary(block = {}) {
+    const parsed = block?.parsed || {};
+    const rounds = Number(parsed?.rounds || 0);
+    const timedItems = (parsed?.items || []).filter((item) => Number(item?.durationSeconds) > 0);
+    if (!rounds || !timedItems.length) return '';
+
+    const segments = timedItems
+      .map((item) => item.type === 'rest'
+        ? `${item.durationSeconds}s rest`
+        : `${item.durationSeconds}s ${item.displayName || item.canonicalName || item.name || 'trabalho'}`)
+      .slice(0, 4);
+
+    return `${rounds} rounds · ${segments.join(' · ')}`;
   }
 
   async function finalizeImportedWeeks(parsedWeeks, metadata = {}, eventName = 'media:uploaded', eventPayload = {}) {

@@ -92,6 +92,7 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
                         ${(day.blockTypes || []).map((type) => `<span class="today-metaChip">${escapeHtml(type)}</span>`).join('')}
                       </div>
                     ` : ''}
+                    ${day.intervalSummary ? `<p class="import-reviewText">Intervalos: ${escapeHtml(day.intervalSummary)}</p>` : ''}
                     ${day.goal ? `<p class="import-reviewText">Objetivo: ${escapeHtml(day.goal)}</p>` : ''}
                     ${day.movements?.length ? `<p class="import-reviewText">Movimentos: ${escapeHtml(day.movements.join(', '))}</p>` : ''}
                   </div>

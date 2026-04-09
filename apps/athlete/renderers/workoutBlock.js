@@ -81,6 +81,7 @@ function buildTimerAttrs(timerConfig) {
   if (timerConfig.rounds) attrs.push(['data-rounds', timerConfig.rounds]);
   if (timerConfig.workSeconds) attrs.push(['data-work-seconds', timerConfig.workSeconds]);
   if (timerConfig.restSeconds) attrs.push(['data-rest-seconds', timerConfig.restSeconds]);
+  if (timerConfig.segments?.length) attrs.push(['data-segments', JSON.stringify(timerConfig.segments)]);
 
   return attrs
     .filter(([, value]) => value !== null && value !== undefined && value !== '')

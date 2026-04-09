@@ -217,6 +217,33 @@ export function startWorkoutTimer(config, toast, options = {}) {
       }
 
       updateDisplay();
+      return;
+    }
+
+    if (normalized.kind === 'sequence') {
+      state.intervalRemaining = Math.max(0, state.intervalRemaining - 1);
+      state.totalElapsed += 1;
+      updateDisplay();
+
+      if (state.intervalRemaining > 0) return;
+
+      const nextSegmentIndex = state.segmentIndex + 1;
+      if (nextSegmentIndex < normalized.segments.length) {
+        state.segmentIndex = nextSegmentIndex;
+        state.intervalRemaining = normalized.segments[nextSegmentIndex].seconds;
+        updateDisplay();
+        return;
+      }
+
+      if (state.round < normalized.rounds) {
+        state.round += 1;
+        state.segmentIndex = 0;
+        state.intervalRemaining = normalized.segments[0].seconds;
+        updateDisplay();
+        return;
+      }
+
+      finish();
     }
   };
 
@@ -284,7 +311,7 @@ export function startWorkoutTimer(config, toast, options = {}) {
 
 function normalizeTimerConfig(config, options = {}) {
   const input = config && typeof config === 'object' ? config : { totalSeconds: Number(config) || 0 };
-  const kind = ['countdown', 'countup', 'interval'].includes(input.kind) ? input.kind : 'countdown';
+  const kind = ['countdown', 'countup', 'interval', 'sequence'].includes(input.kind) ? input.kind : 'countdown';
   const mode = options.mode === 'fullscreen' || input.mode === 'fullscreen' ? 'fullscreen' : 'popup';
   const prepSeconds = Math.max(0, Number(input.prepSeconds ?? 10) || 0);
   const autoStart = Boolean(input.autoStart);
@@ -306,6 +333,31 @@ function normalizeTimerConfig(config, options = {}) {
       rounds,
       workSeconds,
       restSeconds,
+      completionMessage: input.completionMessage || `${label} finalizado`,
+    };
+  }
+
+  if (kind === 'sequence') {
+    const rounds = Math.max(1, Number(input.rounds) || 0);
+    const segments = Array.isArray(input.segments)
+      ? input.segments
+        .map((segment) => ({
+          kind: segment?.kind === 'rest' ? 'rest' : 'work',
+          seconds: Math.max(1, Number(segment?.seconds) || 0),
+          label: String(segment?.label || (segment?.kind === 'rest' ? 'Descanso' : 'Trabalho')).trim(),
+        }))
+        .filter((segment) => segment.seconds > 0)
+      : [];
+    if (!rounds || !segments.length) return null;
+    return {
+      kind,
+      label,
+      detail,
+      mode,
+      prepSeconds,
+      autoStart,
+      rounds,
+      segments,
       completionMessage: input.completionMessage || `${label} finalizado`,
     };
   }
@@ -353,6 +405,18 @@ function createTimerState(config) {
     };
   }
 
+  if (config.kind === 'sequence') {
+    return {
+      phase: 'ready',
+      paused: false,
+      prepRemaining: config.prepSeconds,
+      round: 1,
+      segmentIndex: 0,
+      intervalRemaining: config.segments[0]?.seconds || 0,
+      totalElapsed: 0,
+    };
+  }
+
   return {
     phase: 'ready',
     paused: false,
@@ -375,6 +439,10 @@ function describePhase(state, config) {
   if (state.phase === 'ready') return 'Pronto para iniciar';
   if (state.phase === 'prep') return 'Preparação';
   if (config.kind === 'interval') return state.segment === 'rest' ? `Round ${state.round}/${config.rounds} · Descanso` : `Round ${state.round}/${config.rounds} · Trabalho`;
+  if (config.kind === 'sequence') {
+    const currentSegment = config.segments[state.segmentIndex] || config.segments[0];
+    return `Round ${state.round}/${config.rounds} · ${currentSegment?.kind === 'rest' ? 'Descanso' : (currentSegment?.label || 'Trabalho')}`;
+  }
   if (config.kind === 'countup') return 'Cronômetro correndo';
   return 'Tempo correndo';
 }
@@ -382,6 +450,7 @@ function describePhase(state, config) {
 function describeMeta(state, config) {
   if (state.phase === 'ready') {
     if (config.kind === 'interval') return `${config.rounds} rounds · ${formatCompactSeconds(config.workSeconds)} de trabalho${config.restSeconds ? ` + ${formatCompactSeconds(config.restSeconds)} descanso` : ''}`;
+    if (config.kind === 'sequence') return `${config.rounds} rounds · ${config.segments.map((segment) => `${formatCompactSeconds(segment.seconds)} ${segment.kind === 'rest' ? 'rest' : segment.label}`).join(' · ')}`;
     if (config.kind === 'countup' && config.capSeconds) return `Cap ${formatCompactSeconds(config.capSeconds)}`;
     if (config.kind === 'countup') return 'Sem cap definido';
     return `${formatCompactSeconds(config.totalSeconds)} totais`;
@@ -393,6 +462,13 @@ function describeMeta(state, config) {
     return state.segment === 'rest'
       ? `Descanso antes do próximo round`
       : `Mantenha o ritmo do bloco`; 
+  }
+
+  if (config.kind === 'sequence') {
+    const currentSegment = config.segments[state.segmentIndex] || config.segments[0];
+    const nextSegment = config.segments[(state.segmentIndex + 1) % config.segments.length] || null;
+    if (currentSegment?.kind === 'rest') return `Descanso antes de ${nextSegment?.label || 'voltar ao bloco'}`;
+    return currentSegment?.label ? `Agora: ${currentSegment.label}` : 'Siga o circuito';
   }
 
   if (config.kind === 'countup') {
@@ -407,6 +483,13 @@ function describeMeta(state, config) {
 function describeSummary(state, config) {
   if (config.kind === 'interval') {
     const totalSeconds = config.rounds * config.workSeconds + Math.max(0, config.rounds - 1) * config.restSeconds;
+    const remaining = Math.max(0, totalSeconds - state.totalElapsed);
+    return `Total restante: ${formatCompactSeconds(remaining)}`;
+  }
+
+  if (config.kind === 'sequence') {
+    const perRound = config.segments.reduce((sum, segment) => sum + segment.seconds, 0);
+    const totalSeconds = perRound * config.rounds;
     const remaining = Math.max(0, totalSeconds - state.totalElapsed);
     return `Total restante: ${formatCompactSeconds(remaining)}`;
   }
@@ -430,6 +513,12 @@ function calculateProgressPercent(state, config) {
     return Math.max(0, Math.min(100, (state.intervalRemaining / base) * 100));
   }
 
+  if (config.kind === 'sequence') {
+    const currentSegment = config.segments[state.segmentIndex] || config.segments[0];
+    const base = Math.max(1, currentSegment?.seconds || 1);
+    return Math.max(0, Math.min(100, (state.intervalRemaining / base) * 100));
+  }
+
   if (config.kind === 'countup') {
     if (!config.capSeconds) return 100;
     return Math.max(0, Math.min(100, ((config.capSeconds - state.elapsed) / Math.max(1, config.capSeconds)) * 100));
@@ -446,6 +535,11 @@ function adjustTimer(state, config, deltaSeconds) {
     return;
   }
 
+  if (config.kind === 'sequence') {
+    state.intervalRemaining = Math.max(5, state.intervalRemaining + deltaSeconds);
+    return;
+  }
+
   if (config.kind === 'countup') {
     state.elapsed = Math.max(0, state.elapsed + deltaSeconds);
     if (state.capSeconds) state.remaining = Math.max(0, state.capSeconds - state.elapsed);
@@ -457,6 +551,7 @@ function adjustTimer(state, config, deltaSeconds) {
 
 function describeDefaultDetail(config) {
   if (config.kind === 'interval') return 'Bloco intervalado';
+  if (config.kind === 'sequence') return 'Circuito intervalado';
   if (config.kind === 'countup') return 'Cronômetro livre';
   return 'Contagem regressiva';
 }

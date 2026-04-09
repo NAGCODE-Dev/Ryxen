@@ -107,6 +107,7 @@ test('modal de importação mostra review antes de salvar', () => {
                 day: 'Quarta',
                 periods: ['manhã', 'tarde'],
                 blockTypes: ['WOD', 'ENGINE'],
+                intervalSummary: '6 rounds · 40s MUs · 20s rest',
                 goal: 'acima de 7 rounds',
                 movements: ['wall ball', 'double unders'],
               },
@@ -120,6 +121,7 @@ test('modal de importação mostra review antes de salvar', () => {
     assert.match(html, /Salvar importação/i);
     assert.match(html, /Descartar preview/i);
     assert.match(html, /Quarta/i);
+    assert.match(html, /6 rounds · 40s MUs · 20s rest/i);
     assert.match(html, /wall ball, double unders/i);
   } finally {
     globalThis.document = previousDocument;

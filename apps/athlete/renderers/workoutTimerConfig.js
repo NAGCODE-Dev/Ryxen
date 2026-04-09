@@ -1,6 +1,7 @@
 export function getWorkoutTimerConfig(block) {
   const parsed = block?.parsed || {};
   const engine = parsed.engine || null;
+  const sequence = buildTimedSequence(parsed);
   const title = String(block?.title || parsed?.title || '').trim();
   const lines = Array.isArray(block?.lines) ? block.lines.map(toLineText).filter(Boolean) : [];
   const upperLines = lines.map((line) => line.toUpperCase());
@@ -16,6 +17,17 @@ export function getWorkoutTimerConfig(block) {
       workSeconds: Number(engine.workMinutes) * 60,
       restSeconds: Number(engine.restMinutes || 0) * 60,
       completionMessage: `${title || 'Engine'} finalizado`,
+    };
+  }
+
+  if (sequence && sequence.rounds > 0 && sequence.segments.length > 0) {
+    return {
+      kind: 'sequence',
+      label: title || 'Intervalado',
+      detail: `${sequence.rounds} rounds · ${sequence.segments.map((segment) => formatSegmentDetail(segment)).join(' · ')}`,
+      rounds: sequence.rounds,
+      segments: sequence.segments,
+      completionMessage: `${title || 'Intervalado'} finalizado`,
     };
   }
 
@@ -69,6 +81,29 @@ export function getWorkoutTimerConfig(block) {
   }
 
   return null;
+}
+
+function buildTimedSequence(parsed = {}) {
+  const rounds = Number(parsed?.rounds || 0);
+  const items = Array.isArray(parsed?.items) ? parsed.items : [];
+  if (!rounds || !items.length) return null;
+
+  const segments = items
+    .filter((item) => Number(item?.durationSeconds) > 0)
+    .map((item) => ({
+      kind: item.type === 'rest' ? 'rest' : 'work',
+      seconds: Number(item.durationSeconds),
+      label: item.type === 'rest'
+        ? 'Descanso'
+        : String(item.displayName || item.canonicalName || item.name || item.modality || 'Trabalho').trim(),
+    }));
+
+  if (!segments.length || !segments.some((segment) => segment.kind === 'work')) return null;
+  return { rounds, segments };
+}
+
+function formatSegmentDetail(segment) {
+  return `${segment.seconds}s ${segment.kind === 'rest' ? 'rest' : segment.label}`;
 }
 
 function toLineText(line) {
