@@ -322,6 +322,65 @@ export async function saveMultiWeekPdf(file, options = {}) {
   }
 }
 
+export async function previewMultiWeekPdf(file, options = {}) {
+  const validation = validatePdfFile(file);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+
+  try {
+    options.onProgress?.({
+      stage: 'pdf-start',
+      message: 'Preparando PDF para importação...',
+    });
+
+    const rawText = await extractTextFromFile(file, options);
+    if (!rawText || rawText.length < 50) {
+      return { success: false, error: 'PDF vazio ou com muito pouco texto' };
+    }
+
+    const cleanedText = cleanPdfText(rawText);
+
+    options.onProgress?.({
+      stage: 'pdf-parse',
+      message: 'Organizando semanas encontradas no PDF...',
+    });
+
+    const parsedWeeks = parseMultiWeekPdf(cleanedText);
+    if (!parsedWeeks || parsedWeeks.length === 0) {
+      return { success: false, error: 'Nenhuma semana detectada no PDF' };
+    }
+
+    const existingResult = await loadParsedWeeks();
+    const existingWeeks = existingResult.success ? (existingResult.data?.weeks || []) : [];
+    const weekNumbers = [...new Set([
+      ...existingWeeks.map((week) => week?.weekNumber).filter(Boolean),
+      ...parsedWeeks.map((week) => week?.weekNumber).filter(Boolean),
+    ])].sort((a, b) => Number(a) - Number(b));
+
+    const metadata = {
+      uploadedAt: getTimestamp(),
+      fileName: file.name,
+      fileSize: file.size,
+      weeksCount: parsedWeeks.length,
+      weekNumbers,
+      previewWeekNumbers: parsedWeeks.map((week) => week.weekNumber),
+      source: 'pdf',
+      existingWeeksCount: existingWeeks.length,
+    };
+
+    return {
+      success: true,
+      data: {
+        parsedWeeks,
+        metadata,
+      },
+    };
+  } catch (error) {
+    return { success: false, error: `Erro ao preparar PDF: ${error.message}` };
+  }
+}
+
 /**
  * Salva semanas parseadas diretamente (texto/OCR/etc)
  * @param {Array} parsedWeeks

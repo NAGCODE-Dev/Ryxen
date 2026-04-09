@@ -15,8 +15,9 @@ export function normalizeAthleteSettings(settings) {
 export function normalizeAthleteImportStatus(importStatus) {
   const next = importStatus && typeof importStatus === 'object'
     ? importStatus
-    : { active: false, tone: 'idle', title: '', message: '', fileName: '', step: 'idle' };
+    : { active: false, tone: 'idle', title: '', message: '', fileName: '', step: 'idle', review: null };
   if (typeof next.step !== 'string') next.step = 'idle';
+  next.review = next.review && typeof next.review === 'object' ? next.review : null;
   return next;
 }
 

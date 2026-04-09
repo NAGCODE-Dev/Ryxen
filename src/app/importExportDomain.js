@@ -13,6 +13,7 @@ export function createImportExportDomain({
   logDebug,
   downloadFile,
   saveMultiWeekPdf,
+  previewMultiWeekPdf,
   saveParsedWeeks,
   isImageFile,
   extractTextFromImageFile,
@@ -41,6 +42,70 @@ export function createImportExportDomain({
   applyPreferredWorkout,
   reprocessActiveWeek,
 }) {
+  let pendingImportReview = null;
+
+  function summarizeWeeksForReview(weeks = [], source = 'text', fileName = '') {
+    const normalizedWeeks = Array.isArray(weeks) ? weeks : [];
+    const previewDays = [];
+    let totalBlocks = 0;
+
+    for (const week of normalizedWeeks) {
+      for (const workout of week?.workouts || []) {
+        const blocks = Array.isArray(workout?.blocks) ? workout.blocks : [];
+        totalBlocks += blocks.length;
+        const periods = [...new Set(blocks.map((block) => block?.period).filter(Boolean))];
+        const blockTypes = [...new Set(blocks.map((block) => String(block?.type || '').trim()).filter(Boolean))];
+        const goals = [...new Set(blocks.map((block) => block?.parsed?.goal).filter(Boolean))];
+        const movements = [...new Set(blocks.flatMap((block) => (block?.parsed?.items || [])
+          .filter((item) => item?.type === 'movement')
+          .map((item) => item?.canonicalName || item?.name || item?.displayName)
+          .filter(Boolean)))];
+
+        previewDays.push({
+          weekNumber: week?.weekNumber || null,
+          day: workout?.day || '',
+          periods: periods.slice(0, 3),
+          blockTypes: blockTypes.slice(0, 4),
+          goal: goals[0] || '',
+          movements: movements.slice(0, 3),
+        });
+      }
+    }
+
+    return {
+      source,
+      fileName,
+      weeksCount: normalizedWeeks.length,
+      weekNumbers: normalizedWeeks.map((week) => week?.weekNumber).filter(Boolean),
+      totalDays: previewDays.length,
+      totalBlocks,
+      days: previewDays.slice(0, 6),
+    };
+  }
+
+  async function finalizeImportedWeeks(parsedWeeks, metadata = {}, eventName = 'media:uploaded', eventPayload = {}) {
+    const saveResult = await saveParsedWeeks(parsedWeeks, metadata);
+    if (!saveResult.success) throw new Error(saveResult.error || 'Falha ao salvar treino importado');
+
+    const weeks = saveResult.data.parsedWeeks;
+    setState({ weeks });
+    const weekResult = await selectActiveWeek(weeks[0].weekNumber);
+    if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
+    await safeSyncImportedPlan(weeks, saveResult.data.metadata);
+
+    emit(eventName, {
+      weeksCount: weeks.length,
+      weekNumbers: weeks.map((week) => week.weekNumber),
+      ...eventPayload,
+    });
+
+    return { success: true, weeks };
+  }
+
+  function clearPendingImportReview() {
+    pendingImportReview = null;
+  }
+
   async function safeSyncImportedPlan(weeks, metadata) {
     try {
       return await syncImportedPlanToAccount(weeks, metadata);
@@ -203,6 +268,42 @@ export function createImportExportDomain({
     }
   }
 
+  async function previewMultiWeekPdfUpload(file) {
+    logDebug('👀 Preparando preview do PDF:', file?.name);
+    emit('pdf:uploading', { fileName: file.name });
+
+    try {
+      const result = await previewMultiWeekPdf(file, {
+        onProgress: (progress) => emit('pdf:progress', {
+          fileName: file.name,
+          ...progress,
+        }),
+      });
+
+      if (!result.success) {
+        emit('pdf:error', { error: result.error });
+        return result;
+      }
+
+      const parsedWeeks = result.data.parsedWeeks;
+      const metadata = {
+        ...(result.data.metadata || {}),
+        fileName: file.name,
+        fileSize: file.size,
+        source: 'pdf',
+      };
+      const review = summarizeWeeksForReview(parsedWeeks, 'pdf', file.name);
+      pendingImportReview = { parsedWeeks, metadata, review, eventName: 'pdf:uploaded' };
+
+      emit('pdf:review', review);
+      return { success: true, review };
+    } catch (error) {
+      const errorMsg = error.message || 'Erro ao preparar preview do PDF';
+      emit('pdf:error', { error: errorMsg });
+      return { success: false, error: errorMsg };
+    }
+  }
+
   async function handleUniversalImport(file) {
     if (!file) {
       return { success: false, error: 'Arquivo não fornecido' };
@@ -290,36 +391,24 @@ export function createImportExportDomain({
         throw new Error('Não foi possível identificar treinos no conteúdo importado');
       }
 
-      emit('media:progress', {
-        fileName: file.name,
-        type: source,
-        message: 'Salvando treino importado...',
-      });
+      const review = summarizeWeeksForReview(parsedWeeks, source, file.name);
+      pendingImportReview = {
+        parsedWeeks,
+        metadata: {
+          fileName: file.name,
+          fileSize: file.size,
+          source,
+        },
+        review,
+        eventName: 'media:uploaded',
+      };
 
-      const saveResult = await saveParsedWeeks(parsedWeeks, {
-        fileName: file.name,
-        fileSize: file.size,
-        source,
-      });
-
-      if (!saveResult.success) throw new Error(saveResult.error || 'Falha ao salvar treino importado');
-
-      const weeks = saveResult.data.parsedWeeks;
-      setState({ weeks });
-      const weekResult = await selectActiveWeek(weeks[0].weekNumber);
-      if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
-      await safeSyncImportedPlan(weeks, saveResult.data.metadata);
-
-      emit('media:uploaded', {
-        fileName: file.name,
-        type: source,
-        weeksCount: weeks.length,
-        weekNumbers: weeks.map((week) => week.weekNumber),
-      });
+      emit('media:review', review);
 
       return {
         success: true,
-        weeks,
+        preview: true,
+        review,
         source,
       };
     } catch (error) {
@@ -334,6 +423,55 @@ export function createImportExportDomain({
       emit('media:error', { error: errorMsg, fileName: file.name });
       return { success: false, error: errorMsg };
     }
+  }
+
+  async function previewUniversalImport(file) {
+    return handleUniversalImport(file);
+  }
+
+  async function commitPendingImportReview() {
+    if (!pendingImportReview?.parsedWeeks?.length) {
+      return { success: false, error: 'Nenhuma importação pendente para confirmar' };
+    }
+
+    const source = pendingImportReview.metadata?.source || 'arquivo';
+    const fileName = pendingImportReview.metadata?.fileName || '';
+    const progressEvent = pendingImportReview.eventName === 'pdf:uploaded' ? 'pdf:progress' : 'media:progress';
+    const errorEvent = pendingImportReview.eventName === 'pdf:uploaded' ? 'pdf:error' : 'media:error';
+
+    emit(progressEvent, {
+      fileName,
+      type: source,
+      message: 'Salvando treino importado...',
+    });
+
+    try {
+      const result = await finalizeImportedWeeks(
+        pendingImportReview.parsedWeeks,
+        pendingImportReview.metadata,
+        pendingImportReview.eventName || 'media:uploaded',
+        {
+          fileName,
+          type: source,
+        },
+      );
+      clearPendingImportReview();
+      return {
+        success: true,
+        weeks: result.weeks,
+        source,
+      };
+    } catch (error) {
+      const errorMsg = error.message || 'Falha ao confirmar importação';
+      emit(errorEvent, { error: errorMsg, fileName });
+      return { success: false, error: errorMsg };
+    }
+  }
+
+  async function cancelPendingImportReview() {
+    clearPendingImportReview();
+    emit('import:review-cleared', {});
+    return { success: true };
   }
 
   async function handleExportBackup() {
@@ -641,5 +779,9 @@ export function createImportExportDomain({
     handleImportPRs,
     loadDefaultPRs,
     clearAllPdfs,
+    previewMultiWeekPdfUpload,
+    previewUniversalImport,
+    commitPendingImportReview,
+    cancelPendingImportReview,
   };
 }

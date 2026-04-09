@@ -41,6 +41,7 @@ function createDomain(overrides = {}) {
       downloads.push({ content, filename, mimeType });
     },
     saveMultiWeekPdf: async () => ({ success: false, error: 'not used' }),
+    previewMultiWeekPdf: async () => ({ success: false, error: 'not used' }),
     saveParsedWeeks: async () => ({ success: false, error: 'not used' }),
     isImageFile: () => false,
     extractTextFromImageFile: async () => '',
@@ -187,19 +188,7 @@ test('handleUniversalImport mantém sucesso local mesmo com falha de sync remoto
       workouts: [{ day: 'Segunda', sections: [{ type: 'warmup', lines: ['row 8 min'] }] }],
     },
   ];
-  const selected = [];
   const { domain } = createDomain({
-    saveParsedWeeks: async () => ({
-      success: true,
-      data: {
-        parsedWeeks,
-        metadata: { uploadedAt: '2026-04-08T10:00:00.000Z' },
-      },
-    }),
-    selectActiveWeek: async (weekNumber) => {
-      selected.push(weekNumber);
-      return { success: true };
-    },
     syncImportedPlanToAccount: async () => {
       throw new Error('remote timeout');
     },
@@ -222,6 +211,105 @@ test('handleUniversalImport mantém sucesso local mesmo com falha de sync remoto
   const result = await domain.handleUniversalImport(file);
 
   assert.equal(result.success, true);
+  assert.equal(result.preview, true);
   assert.equal(result.source, 'structured-json');
-  assert.deepEqual(selected, [4]);
+  assert.equal(result.review.weeksCount, 1);
+  assert.deepEqual(result.review.weekNumbers, [4]);
+});
+
+test('preview e confirmação de importação salvam semanas apenas após confirmar', async () => {
+  const parsedWeeks = [
+    {
+      weekNumber: 19,
+      workouts: [{ day: 'Quarta', blocks: [{ type: 'WOD', lines: ['12 AMRAP'] }] }],
+    },
+  ];
+  const savedPayloads = [];
+  const selected = [];
+  const { domain, emitted } = createDomain({
+    previewMultiWeekPdf: async () => ({
+      success: true,
+      data: {
+        parsedWeeks,
+        metadata: {
+          fileName: '7.pdf',
+          fileSize: 321,
+          source: 'pdf',
+        },
+      },
+    }),
+    saveParsedWeeks: async (weeks, metadata) => {
+      savedPayloads.push({ weeks, metadata });
+      return {
+        success: true,
+        data: {
+          parsedWeeks: weeks,
+          metadata,
+        },
+      };
+    },
+    selectActiveWeek: async (weekNumber) => {
+      selected.push(weekNumber);
+      return { success: true };
+    },
+  });
+
+  const previewResult = await domain.previewMultiWeekPdfUpload({
+    name: '7.pdf',
+    size: 321,
+  });
+
+  assert.equal(previewResult.success, true);
+  assert.equal(savedPayloads.length, 0);
+  assert.equal(previewResult.review.weeksCount, 1);
+
+  const commitResult = await domain.commitPendingImportReview();
+
+  assert.equal(commitResult.success, true);
+  assert.equal(savedPayloads.length, 1);
+  assert.deepEqual(selected, [19]);
+  assert.equal(emitted.some(([name]) => name === 'pdf:review'), true);
+  assert.equal(emitted.some(([name]) => name === 'pdf:uploaded'), true);
+});
+
+test('cancelar preview de importação limpa pendência sem salvar', async () => {
+  const parsedWeeks = [
+    {
+      weekNumber: 7,
+      workouts: [{ day: 'Segunda', blocks: [{ type: 'WOD', lines: ['row 10 min'] }] }],
+    },
+  ];
+  const savedPayloads = [];
+  const { domain, emitted } = createDomain({
+    previewMultiWeekPdf: async () => ({
+      success: true,
+      data: {
+        parsedWeeks,
+        metadata: {
+          fileName: '6.pdf',
+          fileSize: 111,
+          source: 'pdf',
+        },
+      },
+    }),
+    saveParsedWeeks: async (weeks, metadata) => {
+      savedPayloads.push({ weeks, metadata });
+      return {
+        success: true,
+        data: {
+          parsedWeeks: weeks,
+          metadata,
+        },
+      };
+    },
+  });
+
+  await domain.previewMultiWeekPdfUpload({ name: '6.pdf', size: 111 });
+  const cancelResult = await domain.cancelPendingImportReview();
+  const commitAfterCancel = await domain.commitPendingImportReview();
+
+  assert.equal(cancelResult.success, true);
+  assert.equal(savedPayloads.length, 0);
+  assert.equal(commitAfterCancel.success, false);
+  assert.equal(emitted.some(([name]) => name === 'import:review-cleared'), true);
 });

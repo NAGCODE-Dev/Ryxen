@@ -25,6 +25,7 @@ import { isDeveloperProfile } from './core/utils/devAccess.js';
 // Adapters
 import {
   saveMultiWeekPdf,
+  previewMultiWeekPdf,
   saveParsedWeeks,
   loadParsedWeeks,
   getPdfInfo
@@ -499,6 +500,7 @@ const importExportDomain = createImportExportDomain({
   logDebug,
   downloadFile,
   saveMultiWeekPdf,
+  previewMultiWeekPdf,
   saveParsedWeeks,
   isImageFile,
   extractTextFromImageFile,
@@ -534,7 +536,11 @@ const {
   handleExportPRsToCSV,
   downloadPRsTemplate,
   handleMultiWeekPdfUpload,
+  previewMultiWeekPdfUpload,
   handleUniversalImport,
+  previewUniversalImport,
+  commitPendingImportReview,
+  cancelPendingImportReview,
   handleExportBackup,
   handleImportBackup,
   handleExportWorkout,
@@ -632,7 +638,11 @@ function exposeDebugAPIs() {
 
     // PDF Multi-week
     uploadMultiWeekPdf: handleMultiWeekPdfUpload,
+    previewMultiWeekPdf: previewMultiWeekPdfUpload,
     importFromFile: handleUniversalImport,
+    previewImportFromFile: previewUniversalImport,
+    commitImportReview: commitPendingImportReview,
+    cancelImportReview: cancelPendingImportReview,
     clearAllPdfs,
     selectWeek: selectActiveWeek,
     getWeeks: () => getState().weeks,

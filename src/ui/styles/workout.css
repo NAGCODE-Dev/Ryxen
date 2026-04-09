@@ -459,6 +459,48 @@
   line-height: 1.2;
 }
 
+.import-reviewCard,
+.import-reviewItem {
+  display: grid;
+  gap: 10px;
+}
+
+.import-reviewCard {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.06), rgba(255, 255, 255, 0.02)), var(--bg-surface);
+}
+
+.import-reviewHead,
+.import-reviewItemHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.import-reviewHead span,
+.import-reviewItemHead span,
+.import-reviewText {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.import-reviewList {
+  display: grid;
+  gap: 10px;
+}
+
+.import-reviewItem {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--bg-surface-2);
+}
+
 .workout-line:last-child {
   margin-bottom: 0;
 }

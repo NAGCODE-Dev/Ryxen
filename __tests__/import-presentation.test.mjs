@@ -73,6 +73,59 @@ test('modal de importação trava ações enquanto arquivo está sendo processad
   }
 });
 
+test('modal de importação mostra review antes de salvar', () => {
+  const previousDocument = globalThis.document;
+  globalThis.document = {
+    createElement() {
+      return {
+        _text: '',
+        set textContent(value) { this._text = String(value ?? ''); },
+        get innerHTML() { return this._text; },
+      };
+    },
+  };
+
+  try {
+    const html = renderImportModal({
+      __ui: {
+        importStatus: {
+          active: false,
+          tone: 'idle',
+          title: 'Revise antes de salvar',
+          message: 'Preview pronto',
+          step: 'review',
+          review: {
+            fileName: '7.pdf',
+            source: 'pdf',
+            weeksCount: 2,
+            totalDays: 6,
+            totalBlocks: 14,
+            weekNumbers: [19, 20],
+            days: [
+              {
+                weekNumber: 19,
+                day: 'Quarta',
+                periods: ['manhã', 'tarde'],
+                blockTypes: ['WOD', 'ENGINE'],
+                goal: 'acima de 7 rounds',
+                movements: ['wall ball', 'double unders'],
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    assert.match(html, /Preview da importação/i);
+    assert.match(html, /Salvar importação/i);
+    assert.match(html, /Descartar preview/i);
+    assert.match(html, /Quarta/i);
+    assert.match(html, /wall ball, double unders/i);
+  } finally {
+    globalThis.document = previousDocument;
+  }
+});
+
 test('página Hoje apresenta treino importado de forma direta', () => {
   const previousDocument = globalThis.document;
   globalThis.document = {

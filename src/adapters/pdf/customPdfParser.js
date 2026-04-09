@@ -617,8 +617,19 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
 function parseMovementLine(line) {
   const raw = String(line || '').trim();
   if (!raw) return null;
-  if (/^\(?\s*\d+(?:-\d+)+\s*\)?(?:\(?\s*\d+(?:-\d+)+\s*\)?)+$/i.test(raw.replace(/\)+/g, ')'))) {
+  const normalizedRepWave = raw.replace(/[()]/g, '').replace(/\s+/g, '');
+  if (/^(?:\d+(?:-\d+)+)+$/i.test(normalizedRepWave)) {
     return { type: 'rep_wave', raw, text: raw };
+  }
+
+  const accumulationMatch = raw.match(/^ACUMULAR\s+(\d+)\s+REPS?\b(.*)$/i);
+  if (accumulationMatch) {
+    return {
+      type: 'accumulation',
+      raw,
+      reps: Number(accumulationMatch[1]),
+      notes: String(accumulationMatch[2] || '').trim() || null,
+    };
   }
 
   const pairLoadMatch = raw.match(/(\d+(?:\.\d+)?)\s*[-/]\s*(\d+(?:\.\d+)?)\s*LBS?/i);

@@ -37,18 +37,21 @@ export async function handleAthletePdfImport(context) {
   });
   if (!file) return true;
   await renderUi();
-  const result = await getAppBridge().uploadMultiWeekPdf(file);
+  const result = await getAppBridge().previewMultiWeekPdf(file);
   if (!result?.success) {
     throw new Error(result?.error || 'Falha ao importar PDF');
   }
-  importPolicy.benefits && consumeAthleteImport?.(importPolicy.benefits, 'pdf');
-  await applyUiState(
-    {
-      modal: null,
-      importStatus: idleImportStatus(),
-    },
-    { toastMessage: 'PDF importado' },
-  );
+  if (importPolicy.benefits && result?.review) {
+    await applyUiState({
+      importStatus: {
+        review: {
+          ...result.review,
+          benefits: importPolicy.benefits,
+          importType: 'pdf',
+        },
+      },
+    }, { render: false });
+  }
   return true;
 }
 
@@ -98,7 +101,7 @@ export async function handleAthleteMediaImport(context) {
   }
 
   await renderUi();
-  const result = await getAppBridge().importFromFile(file);
+  const result = await getAppBridge().previewImportFromFile(file);
   if (!result?.success) {
     throw new Error(explainImportFailure(result?.error || 'Falha ao importar arquivo', file));
   }
@@ -107,13 +110,16 @@ export async function handleAthleteMediaImport(context) {
     toast(`Imagem reduzida de ${formatBytes(selectedFile.size)} para ${formatBytes(file.size)}`);
   }
 
-  importPolicy.benefits && consumeAthleteImport?.(importPolicy.benefits, 'media');
-  await applyUiState(
-    {
-      modal: null,
-      importStatus: idleImportStatus(),
-    },
-    { toastMessage: 'Arquivo importado' },
-  );
+  if (importPolicy.benefits && result?.review) {
+    await applyUiState({
+      importStatus: {
+        review: {
+          ...result.review,
+          benefits: importPolicy.benefits,
+          importType: result.source || 'media',
+        },
+      },
+    }, { render: false });
+  }
   return true;
 }

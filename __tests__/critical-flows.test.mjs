@@ -275,6 +275,31 @@ EVERY 60 seg (x3)
   assert.equal(friday.blocks[0].parsed.strength.cadenceRepeats, 3);
 });
 
+test('parser lida com ondas de reps e linhas de acumular do pdf 7', () => {
+  const text = `
+SEMANA 19
+QUI
+WOD 2
+(4-4-4)(8-8-8))(12-12-12)(8-8-8)(4-4-4)
+THRUSTERS 95-65lbs
+SHUTTLE RUN(7.5m = 1 rep)
+BURPEE FACING BAR
+
+SEX
+STRICT HSPU
+Acumular 40 reps quebrando o mínimo possível
+  `.trim();
+
+  const weeks = parseMultiWeekPdf(text);
+  const thursday = weeks[0].workouts.find((workout) => workout.day === 'Quinta');
+  const friday = weeks[0].workouts.find((workout) => workout.day === 'Sexta');
+
+  assert.equal(thursday.blocks[0].parsed.items[0].type, 'rep_wave');
+  assert.match(thursday.blocks[0].parsed.items[0].text, /12-12-12/);
+  assert.equal(friday.blocks[0].parsed.items[1].type, 'accumulation');
+  assert.equal(friday.blocks[0].parsed.items[1].reps, 40);
+});
+
 test('parser lida melhor com intervalos em segundos e schemes de strength do pdf 6', () => {
   const text = `
 SEMANA 18

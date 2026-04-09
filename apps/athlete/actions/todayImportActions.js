@@ -12,9 +12,11 @@ export async function handleAthleteImportAction(action, context) {
     toast,
     finalizeUiChange,
     getAppBridge,
+    getUiState,
     readAppState,
     pickJsonFile,
     explainImportFailure,
+    consumeAthleteImport,
   } = context;
 
   switch (action) {
@@ -24,6 +26,49 @@ export async function handleAthleteImportAction(action, context) {
 
     case 'media:pick': {
       return handleAthleteMediaImport(context);
+    }
+
+    case 'import:confirm': {
+      const review = getUiState?.()?.importStatus?.review || null;
+      const result = await getAppBridge().commitImportReview();
+      if (!result?.success) throw new Error(result?.error || 'Falha ao confirmar importação');
+
+      if (review?.benefits) {
+        consumeAthleteImport?.(review.benefits, review.importType || result.source || 'media');
+      }
+
+      await finalizeUiChange({
+        modal: null,
+        importStatus: {
+          active: false,
+          tone: 'success',
+          title: 'Importação concluída',
+          message: 'Treino salvo com sucesso.',
+          fileName: '',
+          step: 'done',
+          review: null,
+        },
+        toastMessage: 'Treino importado',
+      });
+      return true;
+    }
+
+    case 'import:cancel-review': {
+      const result = await getAppBridge().cancelImportReview();
+      if (!result?.success) throw new Error(result?.error || 'Falha ao cancelar review');
+      await finalizeUiChange({
+        importStatus: {
+          active: false,
+          tone: 'idle',
+          title: '',
+          message: '',
+          fileName: '',
+          step: 'idle',
+          review: null,
+        },
+      });
+      toast?.('Preview descartado');
+      return true;
     }
 
     case 'pdf:clear': {

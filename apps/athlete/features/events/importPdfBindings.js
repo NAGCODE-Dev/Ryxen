@@ -44,6 +44,7 @@ export function createAthletePdfImportBindings({
         message: `${data?.weeksCount ?? '?'} semana(s) carregada(s).`,
         fileName: '',
         step: 'done',
+        review: null,
       });
       pushEventLine?.(`PDF carregado (${data?.weeksCount ?? '?'} semanas)`);
       toast?.('PDF carregado');
@@ -59,6 +60,7 @@ export function createAthletePdfImportBindings({
         message: data?.error || 'Erro no PDF',
         fileName: '',
         step: 'read',
+        review: null,
       });
       pushEventLine?.(`Erro PDF: ${data?.error || 'desconhecido'}`);
       toast?.(data?.error || 'Erro no PDF');
@@ -69,6 +71,35 @@ export function createAthletePdfImportBindings({
       busy(false);
       pushEventLine?.('Todos os PDFs removidos');
       toast?.('PDFs limpos');
+      rerender?.();
+    }],
+
+    ['pdf:review', (data) => {
+      busy(false);
+      updateImportStatus({
+        active: false,
+        tone: 'idle',
+        title: 'Revise antes de salvar',
+        message: `${data?.weeksCount ?? '?'} semana(s), ${data?.totalDays ?? '?'} dia(s) e ${data?.totalBlocks ?? '?'} bloco(s) detectados.`,
+        fileName: data?.fileName || '',
+        step: 'review',
+        review: data || null,
+      });
+      pushEventLine?.(`Preview PDF pronto (${data?.weeksCount ?? '?'} semanas)`);
+      rerender?.();
+    }],
+
+    ['import:review-cleared', () => {
+      busy(false);
+      updateImportStatus({
+        active: false,
+        tone: 'idle',
+        title: '',
+        message: '',
+        fileName: '',
+        step: 'idle',
+        review: null,
+      });
       rerender?.();
     }],
   ];

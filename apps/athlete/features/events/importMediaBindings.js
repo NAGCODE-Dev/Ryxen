@@ -51,6 +51,7 @@ export function createAthleteMediaImportBindings({
         message: `${data?.weeksCount ?? '?'} semana(s) carregada(s) via ${data?.type || 'arquivo'}.`,
         fileName: '',
         step: 'done',
+        review: null,
       });
       pushEventLine?.(`Importado (${data?.weeksCount ?? '?'} semanas)`);
       toast?.(`Importado via ${data?.type || 'arquivo'}`);
@@ -66,9 +67,25 @@ export function createAthleteMediaImportBindings({
         message: data?.error || 'Erro na importação',
         fileName: data?.fileName || '',
         step: 'read',
+        review: null,
       });
       pushEventLine?.(`Erro de importação: ${data?.error || 'desconhecido'}`);
       toast?.(data?.error || 'Erro na importação');
+      rerender?.();
+    }],
+
+    ['media:review', (data) => {
+      busy(false);
+      updateImportStatus({
+        active: false,
+        tone: 'idle',
+        title: 'Revise antes de salvar',
+        message: `${data?.weeksCount ?? '?'} semana(s), ${data?.totalDays ?? '?'} dia(s) e ${data?.totalBlocks ?? '?'} bloco(s) detectados.`,
+        fileName: data?.fileName || '',
+        step: 'review',
+        review: data || null,
+      });
+      pushEventLine?.(`Preview ${data?.source || 'arquivo'} pronto (${data?.weeksCount ?? '?'} semanas)`);
       rerender?.();
     }],
   ];

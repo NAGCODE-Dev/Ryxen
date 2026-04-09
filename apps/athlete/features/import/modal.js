@@ -6,6 +6,7 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
   const currentWorkout = state?.workout?.blocks?.length ? state.workout : state?.workoutOfDay;
   const hasCurrentWorkout = !!currentWorkout?.blocks?.length;
   const metadata = summarizeWorkoutForDisplay(currentWorkout);
+  const review = importStatus?.review || null;
   const importSteps = [
     { key: 'selected', label: 'Selecionado' },
     { key: 'read', label: 'Lendo' },
@@ -66,26 +67,63 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
               </div>
             </div>
           ` : ''}
-          <div class="coach-grid">
-            <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
-              <span class="quick-actionIcon">PDF</span>
-              <span class="quick-actionLabel">Planilha em PDF</span>
-            </button>
-            <button class="quick-action quick-action-modal" data-action="media:pick" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
-              <span class="quick-actionIcon">ARQ</span>
-              <span class="quick-actionLabel">Imagem, vídeo, planilha ou texto</span>
-            </button>
-            <button class="quick-action quick-action-modal" data-action="workout:import" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
-              <span class="quick-actionIcon">JSON</span>
-              <span class="quick-actionLabel">Arquivo salvo</span>
-            </button>
-            ${hasCurrentWorkout ? `
-              <button class="quick-action quick-action-modal" data-action="workout:export" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
-                <span class="quick-actionIcon">EXP</span>
-                <span class="quick-actionLabel">Exportar treino atual</span>
+          ${review ? `
+            <div class="import-reviewCard">
+              <div class="import-reviewHead">
+                <strong>Preview da importação</strong>
+                <span>${escapeHtml((review.weekNumbers || []).join(', ') || 'Semanas detectadas')}</span>
+              </div>
+              <div class="today-metaChips">
+                <span class="today-metaChip">${escapeHtml(`${review.weeksCount || 0} semana(s)`)}</span>
+                <span class="today-metaChip">${escapeHtml(`${review.totalDays || 0} dia(s)`)}</span>
+                <span class="today-metaChip">${escapeHtml(`${review.totalBlocks || 0} bloco(s)`)}</span>
+                ${review.source ? `<span class="today-metaChip">${escapeHtml(review.source)}</span>` : ''}
+              </div>
+              <div class="import-reviewList">
+                ${(review.days || []).map((day) => `
+                  <div class="import-reviewItem">
+                    <div class="import-reviewItemHead">
+                      <strong>${escapeHtml(day.day || 'Dia')}</strong>
+                      ${day.weekNumber ? `<span>Semana ${escapeHtml(day.weekNumber)}</span>` : ''}
+                    </div>
+                    ${day.periods?.length || day.blockTypes?.length ? `
+                      <div class="today-metaChips">
+                        ${(day.periods || []).map((period) => `<span class="today-metaChip">${escapeHtml(period)}</span>`).join('')}
+                        ${(day.blockTypes || []).map((type) => `<span class="today-metaChip">${escapeHtml(type)}</span>`).join('')}
+                      </div>
+                    ` : ''}
+                    ${day.goal ? `<p class="import-reviewText">Objetivo: ${escapeHtml(day.goal)}</p>` : ''}
+                    ${day.movements?.length ? `<p class="import-reviewText">Movimentos: ${escapeHtml(day.movements.join(', '))}</p>` : ''}
+                  </div>
+                `).join('')}
+              </div>
+              <div class="page-actions">
+                <button class="btn-primary" data-action="import:confirm" type="button">Salvar importação</button>
+                <button class="btn-secondary" data-action="import:cancel-review" type="button">Descartar preview</button>
+              </div>
+            </div>
+          ` : `
+            <div class="coach-grid">
+              <button class="quick-action quick-action-modal" data-action="pdf:pick" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
+                <span class="quick-actionIcon">PDF</span>
+                <span class="quick-actionLabel">Planilha em PDF</span>
               </button>
-            ` : ''}
-          </div>
+              <button class="quick-action quick-action-modal" data-action="media:pick" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
+                <span class="quick-actionIcon">ARQ</span>
+                <span class="quick-actionLabel">Imagem, vídeo, planilha ou texto</span>
+              </button>
+              <button class="quick-action quick-action-modal" data-action="workout:import" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
+                <span class="quick-actionIcon">JSON</span>
+                <span class="quick-actionLabel">Arquivo salvo</span>
+              </button>
+              ${hasCurrentWorkout ? `
+                <button class="quick-action quick-action-modal" data-action="workout:export" type="button" ${importBusy ? 'disabled aria-disabled="true"' : ''}>
+                  <span class="quick-actionIcon">EXP</span>
+                  <span class="quick-actionLabel">Exportar treino atual</span>
+                </button>
+              ` : ''}
+            </div>
+          `}
         </div>
       </div>
     </div>
