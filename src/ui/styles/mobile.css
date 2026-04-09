@@ -132,19 +132,28 @@
     letter-spacing: 0.02em;
   }
 
-  .pr-item,
   .summary-strip,
   .summary-strip-4,
   .account-summaryGrid,
-  .coach-selectionPanels,
   .trend-grid,
-  .coach-grid,
   .admin-stats,
+  .pr-item,
+  .coach-grid,
+  .coach-selectionPanels,
   .page-actions,
   .admin-toolbar,
   .account-hero,
   .page-heroActions {
     grid-template-columns: 1fr;
+  }
+
+  .summary-strip,
+  .summary-strip-4,
+  .account-summaryGrid,
+  .trend-grid,
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .modal-overlay {
@@ -186,7 +195,7 @@
   body[data-page="today"] .empty-state,
   body[data-page="today"] .workout-block,
   body[data-page="today"] .athlete-accessBanner {
-    border-radius: 17px;
+    border-radius: 14px;
     box-shadow: var(--shadow-sm);
   }
 
@@ -311,7 +320,8 @@
   .pr-item,
   .admin-userRow,
   .workout-header {
-    padding: 12px;
+    padding: 10px 11px;
+    border-radius: 14px;
   }
 
   body[data-page="today"] .today-overviewCard,
@@ -319,7 +329,7 @@
   body[data-page="today"] .workout-block,
   body[data-page="today"] .workout-header,
   body[data-page="today"] .empty-state {
-    padding: 14px;
+    padding: 10px 11px;
   }
 
   .settings-actions-grid {
@@ -377,7 +387,21 @@
   }
 
   .page-foldTitle {
-    font-size: 0.88rem;
+    font-size: 0.86rem;
+    line-height: 1.18;
+  }
+
+  .summary-value,
+  .account-planValue,
+  .admin-statValue {
+    font-size: 0.96rem;
+    line-height: 1.05;
+  }
+
+  .coach-listCompact .coach-listItem strong,
+  .coach-cardTitle {
+    font-size: 0.86rem;
+    line-height: 1.18;
   }
 
   .page-foldSubtitle,
@@ -489,6 +513,14 @@
     letter-spacing: 0.02em;
   }
 
+  .summary-strip,
+  .summary-strip-4,
+  .account-summaryGrid,
+  .trend-grid,
+  .admin-stats {
+    grid-template-columns: 1fr;
+  }
+
   .workout-block,
   .today-overviewCard,
   .today-sessionCard,
@@ -505,8 +537,21 @@
   .admin-userRow,
   .workout-header,
   .page-fold {
-    border-radius: 15px;
-    padding: 10px;
+    border-radius: 12px;
+    padding: 9px 10px;
+  }
+
+  body[data-page="account"] .page-fold,
+  body[data-page="history"] .page-fold,
+  body[data-page="account"] .workout-header,
+  body[data-page="history"] .workout-header,
+  body[data-page="today"] .workout-header,
+  body[data-page="today"] .today-overviewCard,
+  body[data-page="today"] .today-sessionCard,
+  body[data-page="today"] .empty-state,
+  body[data-page="today"] .workout-block,
+  body[data-page="today"] .athlete-accessBanner {
+    border-radius: 12px;
   }
 
   .page-foldSummaryRow,
