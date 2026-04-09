@@ -106,7 +106,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
       <section class="hub-hero isolate">
         <div class="hub-heroGrid items-start xl:items-center">
           <div class="hub-heroMain max-w-3xl md:pr-6">
-            <img class="hub-wordmark w-[212px] md:w-[256px]" src="/branding/ryxen-logo-horizontal.svg" alt="Ryxen" width="940" height="240" fetchpriority="high">
+            <img class="hub-wordmark w-[212px] md:w-[256px]" src="/branding/exports/ryxen-logo-horizontal.png" alt="Ryxen" width="940" height="240" fetchpriority="high">
             <div class="hub-kicker max-w-max border-white/10 bg-white/5 px-4">Plataforma de performance para atleta e coach</div>
             <h1 class="max-w-[12ch]">Cada lado entra no lugar certo.</h1>
             <p class="hub-lead max-w-[42rem] text-base/8 md:text-[1.08rem]">

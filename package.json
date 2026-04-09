@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run build:hub:tailwind && npm run build:athlete:tailwind && node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs && node scripts/generate-marketing-assets.mjs",
-    "build:vercel": "npm run build:hub:tailwind && npm run build:athlete:tailwind && node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs",
+    "build": "npm run generate:brand-assets && npm run build:hub:tailwind && npm run build:athlete:tailwind && node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs && node scripts/generate-marketing-assets.mjs",
+    "build:vercel": "npm run generate:brand-assets && npm run build:hub:tailwind && npm run build:athlete:tailwind && node scripts/build-static.mjs && vite build --config coach-portal/vite.config.mjs && node scripts/generate-marketing-assets.mjs",
     "build:prod": "npm run build:vercel",
     "build:coach": "vite build --config coach-portal/vite.config.mjs",
     "build:hub:tailwind": "tailwindcss -i ./src/hub/tailwind.css -o ./src/hub/tailwind.generated.css --minify",
     "build:athlete:tailwind": "tailwindcss -i ./src/ui/tailwind.css -o ./src/ui/tailwind.generated.css --minify",
+    "generate:brand-assets": "node scripts/generate-branding-exports.mjs",
     "generate:marketing-assets": "node scripts/generate-marketing-assets.mjs",
     "lint": "eslint .",
     "check": "npm run lint && npm test && npm run build",
@@ -19,7 +20,8 @@
     "dev:backend-supabase-and-smoke": "bash scripts/dev-backend-supabase-and-smoke.sh",
     "android:sync": "npm run build:android && npx cap sync android",
     "android:copy": "npm run build:android && npx cap copy android",
-    "android:open": "CAPACITOR_ANDROID_STUDIO_PATH=$PWD/scripts/open-android-studio.sh npx cap open android",
+    "android:doctor": "node scripts/android-doctor.mjs",
+    "android:open": "npm run android:sync && npm run android:doctor && CAPACITOR_ANDROID_STUDIO_PATH=$PWD/scripts/open-android-studio.sh npx cap open android",
     "android:run": "npm run build:android && npx cap run android",
     "android:assemble:debug": "cd android && ./gradlew assembleDebug",
     "android:assemble:release": "cd android && ./gradlew assembleRelease",
@@ -62,8 +64,5 @@
     "playwright": "^1.59.1",
     "tailwindcss": "^4.2.2",
     "vite": "^8.0.7"
-  },
-  "overrides": {
-    "tar": "^7.5.13"
   }
 }

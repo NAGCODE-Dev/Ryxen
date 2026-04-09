@@ -9,7 +9,9 @@ const GUIDE_STEPS = [
     note: 'Você pode pular isso quando quiser.',
     chips: ['Hoje', 'Evolução', 'Conta'],
     primaryLabel: 'Começar',
-    primaryAction: 'nyx:next',
+    primaryAction: 'modal:open',
+    primaryModal: 'nyx-guide',
+    primaryGuideStep: 1,
     secondaryLabel: 'Pular',
     secondaryAction: 'modal:close',
     surfaceTitle: 'Tudo começa por aqui.',
@@ -28,7 +30,9 @@ const GUIDE_STEPS = [
     note: 'Menos desvio, mais clareza no que precisa ser feito agora.',
     chips: ['Treino do dia', 'Rotina ativa', 'Contexto'],
     primaryLabel: 'Continuar',
-    primaryAction: 'nyx:next',
+    primaryAction: 'modal:open',
+    primaryModal: 'nyx-guide',
+    primaryGuideStep: 2,
     secondaryLabel: 'Pular tour',
     secondaryAction: 'modal:close',
     surfaceTitle: 'Tudo fica no mesmo eixo.',
@@ -47,7 +51,9 @@ const GUIDE_STEPS = [
     note: 'O progresso continua visível sem te fazer começar do zero toda semana.',
     chips: ['PRs', 'Histórico', 'Referências'],
     primaryLabel: 'Continuar',
-    primaryAction: 'nyx:next',
+    primaryAction: 'modal:open',
+    primaryModal: 'nyx-guide',
+    primaryGuideStep: 3,
     secondaryLabel: 'Pular tour',
     secondaryAction: 'modal:close',
     surfaceTitle: 'Leitura calma do progresso.',
@@ -66,9 +72,12 @@ const GUIDE_STEPS = [
     note: 'Quando precisar, o Nyx pode te mostrar de novo.',
     chips: ['Tour opcional', 'Uso real', 'Menos ruído'],
     primaryLabel: 'Entrar no app',
-    primaryAction: 'nyx:finish',
+    primaryAction: 'modal:close',
+    primaryCompleteGuide: true,
     secondaryLabel: 'Ver de novo',
-    secondaryAction: 'nyx:restart',
+    secondaryAction: 'modal:open',
+    secondaryModal: 'nyx-guide',
+    secondaryGuideStep: 0,
     surfaceTitle: 'Nyx te acompanha sem invadir.',
     surfaceText: 'A ideia é ter um guia silencioso, não um mascote barulhento. Premium, curto e útil.',
     tiles: [
@@ -105,6 +114,28 @@ function renderSurface(step) {
         `).join('')}
       </div>
     </div>
+  `;
+}
+
+function renderGuideActionButton(step, kind) {
+  const action = kind === 'primary' ? step.primaryAction : step.secondaryAction;
+  const label = kind === 'primary' ? step.primaryLabel : step.secondaryLabel;
+  const modal = kind === 'primary' ? step.primaryModal : step.secondaryModal;
+  const guideStep = kind === 'primary' ? step.primaryGuideStep : step.secondaryGuideStep;
+  const completeGuide = kind === 'primary' ? step.primaryCompleteGuide : step.secondaryCompleteGuide;
+  const className = kind === 'primary' ? 'btn-primary' : 'btn-secondary';
+
+  return `
+    <button
+      class="${className}"
+      data-action="${action}"
+      ${modal ? `data-modal="${modal}"` : ''}
+      ${Number.isInteger(guideStep) ? `data-guide-step="${guideStep}"` : ''}
+      ${completeGuide ? 'data-guide-complete="true"' : ''}
+      type="button"
+    >
+      ${label}
+    </button>
   `;
 }
 
@@ -155,8 +186,8 @@ export function renderAthleteNyxGuideModal({ guide = {}, preferences = {} } = {}
               ${isCompleted ? 'Você já concluiu esse tour antes. Pode rever quando quiser.' : 'Nyx aparece só quando ajuda: onboarding leve, momentos vazios e novidades importantes.'}
             </div>
             <div class="guide-actions">
-              <button class="btn-secondary" data-action="${step.secondaryAction}" type="button">${step.secondaryLabel}</button>
-              <button class="btn-primary" data-action="${step.primaryAction}" type="button">${step.primaryLabel}</button>
+              ${renderGuideActionButton(step, 'secondary')}
+              ${renderGuideActionButton(step, 'primary')}
             </div>
           </div>
         </div>

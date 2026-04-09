@@ -143,36 +143,28 @@
       color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
   }
 
-  .account-nyxPreviewMark {
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
+  .account-nyxPreviewVisual {
+    width: 52px;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 16px;
+    display: grid;
+    place-items: center;
     background:
-      radial-gradient(circle at 34% 34%, rgba(255,255,255,0.22), transparent 28%),
-      linear-gradient(145deg, color-mix(in srgb, var(--accent) 48%, #202733), #151b24 72%);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 12px 24px rgba(4, 8, 16, 0.16);
-    position: relative;
+      radial-gradient(circle at 30% 24%, rgba(138, 180, 255, 0.22), transparent 36%),
+      linear-gradient(180deg, rgba(255,255,255,0.032), rgba(255,255,255,0.012)),
+      color-mix(in srgb, var(--bg-surface) 88%, var(--bg-surface-2) 12%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.06),
+      0 12px 24px rgba(4, 8, 16, 0.18);
   }
 
-  .account-nyxPreviewMark::before,
-  .account-nyxPreviewMark::after {
-    content: '';
-    position: absolute;
-    top: 7px;
-    width: 11px;
-    height: 11px;
-    border-radius: 3px;
-    background: #0f141d;
-    transform: rotate(45deg);
-    opacity: 0.92;
-  }
-
-  .account-nyxPreviewMark::before {
-    left: 6px;
-  }
-
-  .account-nyxPreviewMark::after {
-    right: 6px;
+  .account-nyxPreviewArt {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 28%;
+    filter: drop-shadow(0 10px 18px rgba(4, 8, 16, 0.16));
   }
 
   .account-nyxPreviewCopy strong {

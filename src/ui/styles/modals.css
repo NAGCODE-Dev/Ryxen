@@ -467,11 +467,15 @@
 
   .nyx-illustration {
     width: min(100%, 420px);
-    height: auto;
+    height: min(44vh, 420px);
+    display: block;
+    object-fit: contain;
+    object-position: center;
   }
 
   .nyx-illustration-teaser {
     width: 116px;
+    height: 116px;
   }
 }
 
