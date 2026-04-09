@@ -1492,72 +1492,86 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('h3', null, 'Benchmarks'),
             React.createElement('p', { className: 'muted' }, 'Busque e filtre a biblioteca oficial em leitura rápida.')
           ),
-          React.createElement('div', { className: 'toolbar' },
-            React.createElement('input', {
-              className: 'field',
-              placeholder: 'Buscar benchmark',
-              value: forms.benchmarkQuery,
-              onChange: (e) => setForms((prev) => ({ ...prev, benchmarkQuery: e.target.value })),
-            }),
-            React.createElement('select', {
-              className: 'field',
-              value: forms.benchmarkSource,
-              onChange: (e) => setForms((prev) => ({ ...prev, benchmarkSource: e.target.value })),
-            },
-              React.createElement('option', { value: '' }, 'Todas as fontes'),
-              React.createElement('option', { value: 'benchmark' }, 'Benchmarks'),
-              React.createElement('option', { value: 'hero' }, 'Hero'),
-              React.createElement('option', { value: 'open' }, 'Open')
-            ),
-            React.createElement('select', {
-              className: 'field',
-              value: forms.benchmarkSort,
-              onChange: (e) => setForms((prev) => ({ ...prev, benchmarkSort: e.target.value })),
-            },
-              React.createElement('option', { value: 'year_desc' }, 'Ano desc'),
-              React.createElement('option', { value: 'year_asc' }, 'Ano asc'),
-              React.createElement('option', { value: 'name_asc' }, 'Nome A-Z'),
-              React.createElement('option', { value: 'name_desc' }, 'Nome Z-A'),
-              React.createElement('option', { value: 'category_asc' }, 'Categoria')
-            ),
-            React.createElement('button', { className: 'btn btn-secondary', onClick: () => handleSearchBenchmarks(), disabled: loading }, 'Buscar')
-          ),
-          React.createElement('div', { className: 'tabs' },
-            ['', 'girls', 'hero', 'open'].map((category) =>
-              React.createElement('button', {
-                key: category || 'all',
-                className: 'btn btn-chip',
-                onClick: () => handleSearchBenchmarks({ category }),
-              }, category || 'todos')
-            )
-          ),
-          React.createElement('div', { className: 'benchmark-meta' },
-            React.createElement('span', { className: 'muted' }, `${dashboard.benchmarkPagination.total || 0} benchmarks`),
-            React.createElement('span', { className: 'muted' }, `Página ${dashboard.benchmarkPagination.page || 1} de ${dashboard.benchmarkPagination.pages || 1}`)
-          ),
-          React.createElement('div', { className: 'stack list-block' },
-            showSkeleton
-              ? portalSkeletonList(4)
-              : dashboard.benchmarks.map((benchmark) =>
-              React.createElement('div', { key: benchmark.id, className: 'list-item static' },
-                React.createElement('strong', null, benchmark.name),
-                React.createElement('span', null, `${benchmark.category}${benchmark.year ? ` • ${benchmark.year}` : ''}${benchmark.official_source ? ` • ${benchmark.official_source}` : ''}`),
-                React.createElement('code', { className: 'inline-code' }, benchmark.slug)
-              )
+          React.createElement('div', { className: 'library-shellLayout' },
+            React.createElement('section', { className: 'stack nested-card library-filterCard' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Busca'),
+                React.createElement('strong', null, 'Filtros de benchmark')
               ),
-            dashboard.benchmarks.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhum benchmark encontrado para esse filtro.') : null
-          ),
-          React.createElement('div', { className: 'pager' },
-            React.createElement('button', {
-              className: 'btn btn-secondary',
-              disabled: loading || (dashboard.benchmarkPagination.page || 1) <= 1,
-              onClick: () => handleSearchBenchmarks({ page: Math.max(1, (dashboard.benchmarkPagination.page || 1) - 1) }),
-            }, 'Anterior'),
-            React.createElement('button', {
-              className: 'btn btn-secondary',
-              disabled: loading || (dashboard.benchmarkPagination.page || 1) >= (dashboard.benchmarkPagination.pages || 1),
-              onClick: () => handleSearchBenchmarks({ page: Math.min((dashboard.benchmarkPagination.pages || 1), (dashboard.benchmarkPagination.page || 1) + 1) }),
-            }, 'Próxima')
+              React.createElement('div', { className: 'toolbar library-toolbar' },
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Buscar benchmark',
+                  value: forms.benchmarkQuery,
+                  onChange: (e) => setForms((prev) => ({ ...prev, benchmarkQuery: e.target.value })),
+                }),
+                React.createElement('select', {
+                  className: 'field',
+                  value: forms.benchmarkSource,
+                  onChange: (e) => setForms((prev) => ({ ...prev, benchmarkSource: e.target.value })),
+                },
+                  React.createElement('option', { value: '' }, 'Todas as fontes'),
+                  React.createElement('option', { value: 'benchmark' }, 'Benchmarks'),
+                  React.createElement('option', { value: 'hero' }, 'Hero'),
+                  React.createElement('option', { value: 'open' }, 'Open')
+                ),
+                React.createElement('select', {
+                  className: 'field',
+                  value: forms.benchmarkSort,
+                  onChange: (e) => setForms((prev) => ({ ...prev, benchmarkSort: e.target.value })),
+                },
+                  React.createElement('option', { value: 'year_desc' }, 'Ano desc'),
+                  React.createElement('option', { value: 'year_asc' }, 'Ano asc'),
+                  React.createElement('option', { value: 'name_asc' }, 'Nome A-Z'),
+                  React.createElement('option', { value: 'name_desc' }, 'Nome Z-A'),
+                  React.createElement('option', { value: 'category_asc' }, 'Categoria')
+                ),
+                React.createElement('button', { className: 'btn btn-secondary', onClick: () => handleSearchBenchmarks(), disabled: loading }, 'Buscar')
+              ),
+              React.createElement('div', { className: 'tabs library-categoryTabs' },
+                ['', 'girls', 'hero', 'open'].map((category) =>
+                  React.createElement('button', {
+                    key: category || 'all',
+                    className: 'btn btn-chip',
+                    onClick: () => handleSearchBenchmarks({ category }),
+                  }, category || 'todos')
+                )
+              ),
+              React.createElement('div', { className: 'benchmark-meta' },
+                React.createElement('span', { className: 'muted' }, `${dashboard.benchmarkPagination.total || 0} benchmarks`),
+                React.createElement('span', { className: 'muted' }, `Página ${dashboard.benchmarkPagination.page || 1} de ${dashboard.benchmarkPagination.pages || 1}`)
+              )
+            ),
+            React.createElement('section', { className: 'stack nested-card library-resultsCard' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Resultados'),
+                React.createElement('strong', null, 'Lista de benchmarks')
+              ),
+              React.createElement('div', { className: 'stack list-block' },
+                showSkeleton
+                  ? portalSkeletonList(4)
+                  : dashboard.benchmarks.map((benchmark) =>
+                  React.createElement('div', { key: benchmark.id, className: 'list-item static benchmark-item' },
+                    React.createElement('strong', null, benchmark.name),
+                    React.createElement('span', null, `${benchmark.category}${benchmark.year ? ` • ${benchmark.year}` : ''}${benchmark.official_source ? ` • ${benchmark.official_source}` : ''}`),
+                    React.createElement('code', { className: 'inline-code' }, benchmark.slug)
+                  )
+                  ),
+                dashboard.benchmarks.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhum benchmark encontrado para esse filtro.') : null
+              ),
+              React.createElement('div', { className: 'pager' },
+                React.createElement('button', {
+                  className: 'btn btn-secondary',
+                  disabled: loading || (dashboard.benchmarkPagination.page || 1) <= 1,
+                  onClick: () => handleSearchBenchmarks({ page: Math.max(1, (dashboard.benchmarkPagination.page || 1) - 1) }),
+                }, 'Anterior'),
+                React.createElement('button', {
+                  className: 'btn btn-secondary',
+                  disabled: loading || (dashboard.benchmarkPagination.page || 1) >= (dashboard.benchmarkPagination.pages || 1),
+                  onClick: () => handleSearchBenchmarks({ page: Math.min((dashboard.benchmarkPagination.pages || 1), (dashboard.benchmarkPagination.page || 1) + 1) }),
+                }, 'Próxima')
+              )
+            )
           )
         ),
         React.createElement('div', { className: 'card', hidden: !isProgrammingSection },
@@ -1580,85 +1594,99 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('h3', null, 'Calendário e eventos'),
             React.createElement('p', { className: 'muted' }, 'Crie competições, eventos e mantenha o calendário do box organizado.')
           ),
-          React.createElement('div', { className: 'stack list-block competition-list' },
-            dashboard.competitions.map((competition) =>
-              React.createElement('div', { key: competition.id, className: 'list-item static competition-item' },
-                React.createElement('strong', null, competition.title),
-                React.createElement('span', null, `${competition.gym_name || ''} • ${formatDateLabel(competition.starts_at || competition.startsAt)}`),
-                competition.location ? React.createElement('span', null, competition.location) : null,
-                Array.isArray(competition.events) && competition.events.length
-                  ? React.createElement('div', { className: 'competition-events' },
-                      competition.events.map((eventItem) =>
-                        React.createElement('span', { key: eventItem.id, className: 'plan-feature' }, `${eventItem.title}${eventItem.benchmarkSlug ? ` • ${eventItem.benchmarkSlug}` : ''}`)
-                      )
-                    )
-                  : null
+          React.createElement('div', { className: 'competition-shellLayout' },
+            React.createElement('section', { className: 'stack nested-card competition-calendarCard' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Calendário'),
+                React.createElement('strong', null, 'Competições cadastradas')
+              ),
+              React.createElement('div', { className: 'stack list-block competition-list' },
+                dashboard.competitions.map((competition) =>
+                  React.createElement('div', { key: competition.id, className: 'list-item static competition-item' },
+                    React.createElement('strong', null, competition.title),
+                    React.createElement('span', null, `${competition.gym_name || ''} • ${formatDateLabel(competition.starts_at || competition.startsAt)}`),
+                    competition.location ? React.createElement('span', null, competition.location) : null,
+                    Array.isArray(competition.events) && competition.events.length
+                      ? React.createElement('div', { className: 'competition-events' },
+                          competition.events.map((eventItem) =>
+                            React.createElement('span', { key: eventItem.id, className: 'plan-feature' }, `${eventItem.title}${eventItem.benchmarkSlug ? ` • ${eventItem.benchmarkSlug}` : ''}`)
+                          )
+                        )
+                      : null
+                  )
+                ),
+                dashboard.competitions.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhuma competição cadastrada.') : null
               )
             ),
-            dashboard.competitions.length === 0 ? React.createElement('p', { className: 'muted' }, 'Nenhuma competição cadastrada.') : null
-          ),
-          React.createElement('div', { className: 'grid dual-grid' },
-            React.createElement('form', { className: 'card nested-card stack', onSubmit: handleCreateCompetition },
-              React.createElement('h4', null, 'Nova competição'),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Nome da competição',
-                value: forms.competitionTitle,
-                onChange: (e) => setForms((prev) => ({ ...prev, competitionTitle: e.target.value })),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                type: 'datetime-local',
-                value: forms.competitionDate,
-                onChange: (e) => setForms((prev) => ({ ...prev, competitionDate: e.target.value })),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Local',
-                value: forms.competitionLocation,
-                onChange: (e) => setForms((prev) => ({ ...prev, competitionLocation: e.target.value })),
-              }),
-              React.createElement('select', {
-                className: 'field',
-                value: forms.competitionVisibility,
-                onChange: (e) => setForms((prev) => ({ ...prev, competitionVisibility: e.target.value })),
-              },
-                React.createElement('option', { value: 'gym' }, 'Gym'),
-                React.createElement('option', { value: 'public' }, 'Público')
+            React.createElement('div', { className: 'grid dual-grid competition-formGrid' },
+              React.createElement('form', { className: 'card nested-card stack', onSubmit: handleCreateCompetition },
+                React.createElement('div', { className: 'publish-formSectionHead' },
+                  React.createElement('div', { className: 'eyebrow' }, 'Nova competição'),
+                  React.createElement('strong', null, 'Criar calendário')
+                ),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Nome da competição',
+                  value: forms.competitionTitle,
+                  onChange: (e) => setForms((prev) => ({ ...prev, competitionTitle: e.target.value })),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  type: 'datetime-local',
+                  value: forms.competitionDate,
+                  onChange: (e) => setForms((prev) => ({ ...prev, competitionDate: e.target.value })),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Local',
+                  value: forms.competitionLocation,
+                  onChange: (e) => setForms((prev) => ({ ...prev, competitionLocation: e.target.value })),
+                }),
+                React.createElement('select', {
+                  className: 'field',
+                  value: forms.competitionVisibility,
+                  onChange: (e) => setForms((prev) => ({ ...prev, competitionVisibility: e.target.value })),
+                },
+                  React.createElement('option', { value: 'gym' }, 'Gym'),
+                  React.createElement('option', { value: 'public' }, 'Público')
+                ),
+                React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !dashboard.selectedGymId || !canCoachManage }, 'Criar competição')
               ),
-              React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !dashboard.selectedGymId || !canCoachManage }, 'Criar competição')
-            ),
-            React.createElement('form', { className: 'card nested-card stack', onSubmit: handleCreateEvent },
-              React.createElement('h4', null, 'Novo evento'),
-              React.createElement('select', {
-                className: 'field',
-                value: forms.eventCompetitionId,
-                onChange: (e) => setForms((prev) => ({ ...prev, eventCompetitionId: e.target.value })),
-              },
-                React.createElement('option', { value: '' }, 'Selecionar competição'),
-                dashboard.competitions.map((competition) =>
-                  React.createElement('option', { key: competition.id, value: competition.id }, competition.title)
-                )
-              ),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'Título do evento',
-                value: forms.eventTitle,
-                onChange: (e) => setForms((prev) => ({ ...prev, eventTitle: e.target.value })),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                type: 'datetime-local',
-                value: forms.eventDate,
-                onChange: (e) => setForms((prev) => ({ ...prev, eventDate: e.target.value })),
-              }),
-              React.createElement('input', {
-                className: 'field',
-                placeholder: 'benchmark slug (ex: fran)',
-                value: forms.eventBenchmarkSlug,
-                onChange: (e) => setForms((prev) => ({ ...prev, eventBenchmarkSlug: e.target.value })),
-              }),
-              React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !forms.eventCompetitionId }, 'Adicionar evento')
+              React.createElement('form', { className: 'card nested-card stack', onSubmit: handleCreateEvent },
+                React.createElement('div', { className: 'publish-formSectionHead' },
+                  React.createElement('div', { className: 'eyebrow' }, 'Novo evento'),
+                  React.createElement('strong', null, 'Adicionar prova')
+                ),
+                React.createElement('select', {
+                  className: 'field',
+                  value: forms.eventCompetitionId,
+                  onChange: (e) => setForms((prev) => ({ ...prev, eventCompetitionId: e.target.value })),
+                },
+                  React.createElement('option', { value: '' }, 'Selecionar competição'),
+                  dashboard.competitions.map((competition) =>
+                    React.createElement('option', { key: competition.id, value: competition.id }, competition.title)
+                  )
+                ),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'Título do evento',
+                  value: forms.eventTitle,
+                  onChange: (e) => setForms((prev) => ({ ...prev, eventTitle: e.target.value })),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  type: 'datetime-local',
+                  value: forms.eventDate,
+                  onChange: (e) => setForms((prev) => ({ ...prev, eventDate: e.target.value })),
+                }),
+                React.createElement('input', {
+                  className: 'field',
+                  placeholder: 'benchmark slug (ex: fran)',
+                  value: forms.eventBenchmarkSlug,
+                  onChange: (e) => setForms((prev) => ({ ...prev, eventBenchmarkSlug: e.target.value })),
+                }),
+                React.createElement('button', { className: 'btn btn-secondary', type: 'submit', disabled: loading || !forms.eventCompetitionId }, 'Adicionar evento')
+              )
             )
           )
         ),
@@ -1668,9 +1696,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
             React.createElement('h3', null, 'Leaderboards e resultados'),
             React.createElement('p', { className: 'muted' }, 'Consulte rankings e registre resultados sem trocar de contexto.')
           ),
-          React.createElement('div', { className: 'grid dual-grid' },
-            React.createElement('div', { className: 'card nested-card stack' },
-              React.createElement('h4', null, 'Leaderboard'),
+          React.createElement('div', { className: 'grid dual-grid leaderboard-grid' },
+            React.createElement('div', { className: 'card nested-card stack leaderboard-card' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Benchmark'),
+                React.createElement('strong', null, 'Leaderboard')
+              ),
               React.createElement('input', {
                 className: 'field',
                 placeholder: 'benchmark slug',
@@ -1691,8 +1722,11 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   )
                 : React.createElement('p', { className: 'muted' }, 'Informe um benchmark para ver o ranking.')
             ),
-            React.createElement('form', { className: 'card nested-card stack', onSubmit: handleSubmitResult },
-              React.createElement('h4', null, 'Registrar resultado'),
+            React.createElement('form', { className: 'card nested-card stack leaderboard-card', onSubmit: handleSubmitResult },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Resultado'),
+                React.createElement('strong', null, 'Registrar score')
+              ),
               React.createElement('input', {
                 className: 'field',
                 placeholder: 'benchmark slug',
@@ -1714,9 +1748,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
               React.createElement('button', { className: 'btn btn-primary', type: 'submit', disabled: loading || !forms.resultBenchmarkSlug || !forms.resultScore }, 'Salvar resultado')
             )
           ),
-          React.createElement('div', { className: 'grid dual-grid' },
-            React.createElement('div', { className: 'card nested-card stack' },
-              React.createElement('h4', null, 'Ranking da competição'),
+          React.createElement('div', { className: 'grid dual-grid leaderboard-grid' },
+            React.createElement('div', { className: 'card nested-card stack leaderboard-card' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Competição'),
+                React.createElement('strong', null, 'Ranking agregado')
+              ),
               React.createElement('select', {
                 className: 'field',
                 value: forms.competitionLeaderboardId,
@@ -1742,8 +1779,11 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   )
                 : React.createElement('p', { className: 'muted' }, 'Selecione uma competição para ver o ranking agregado.')
             ),
-            React.createElement('div', { className: 'card nested-card stack' },
-              React.createElement('h4', null, 'Ranking do evento'),
+            React.createElement('div', { className: 'card nested-card stack leaderboard-card' },
+              React.createElement('div', { className: 'publish-formSectionHead' },
+                React.createElement('div', { className: 'eyebrow' }, 'Evento'),
+                React.createElement('strong', null, 'Ranking por prova')
+              ),
               React.createElement('select', {
                 className: 'field',
                 value: forms.eventLeaderboardId,

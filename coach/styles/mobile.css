@@ -8,7 +8,9 @@
     grid-template-columns: 1fr;
   }
 
-  .publish-summaryRail {
+  .publish-summaryRail,
+  .library-filterCard,
+  .competition-calendarCard {
     position: static;
     top: auto;
   }
@@ -142,6 +144,11 @@
     grid-template-columns: 1fr;
   }
 
+  .library-shellLayout,
+  .competition-shellLayout {
+    grid-template-columns: 1fr;
+  }
+
   .publish-actionBar {
     position: sticky;
     bottom: 10px;
@@ -175,7 +182,11 @@
   .publish-metaCard,
   .publish-step,
   .selection-panel,
-  .publish-collectionItem {
+  .publish-collectionItem,
+  .leaderboard-card,
+  .library-filterCard,
+  .library-resultsCard,
+  .competition-calendarCard {
     padding: 14px;
   }
 
@@ -229,7 +240,11 @@
   .publish-previewCard,
   .publish-metaCard,
   .publish-validationCard,
-  .audience-card {
+  .audience-card,
+  .leaderboard-card,
+  .library-filterCard,
+  .library-resultsCard,
+  .competition-calendarCard {
     border-radius: 18px;
   }
 }

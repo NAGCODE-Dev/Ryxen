@@ -134,14 +134,35 @@
   align-items: start;
 }
 
+.library-shellLayout,
+.competition-shellLayout {
+  display: grid;
+  gap: 16px;
+}
+
+.library-shellLayout {
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.3fr);
+  align-items: start;
+}
+
 .publish-editorRail,
-.publish-summaryRail {
+.publish-summaryRail,
+.library-filterCard,
+.library-resultsCard,
+.competition-calendarCard {
   min-width: 0;
 }
 
 .publish-summaryRail {
   position: sticky;
   top: 24px;
+}
+
+.library-filterCard,
+.competition-calendarCard {
+  position: sticky;
+  top: 24px;
+  align-self: start;
 }
 
 .publish-formSection {
@@ -306,6 +327,21 @@
   min-width: 220px;
 }
 
+.benchmark-item,
+.competition-item,
+.leaderboard-item {
+  gap: 8px;
+}
+
+.competition-formGrid,
+.leaderboard-grid {
+  margin-top: 16px;
+}
+
+.leaderboard-card {
+  min-width: 0;
+}
+
 .draft-statusRow {
   display: flex;
   align-items: center;
@@ -466,6 +502,22 @@
 }
 
 .audience-modeTabs .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.library-categoryTabs {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+
+.library-categoryTabs::-webkit-scrollbar {
+  display: none;
+}
+
+.library-categoryTabs .btn {
   flex: 0 0 auto;
   white-space: nowrap;
 }
