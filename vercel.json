@@ -18,7 +18,7 @@
     }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "https://crossapp-znmj.onrender.com/api/$1" },
+    { "source": "/api/(.*)", "destination": "https://crossapp-znmj.onrender.com/$1" },
     { "source": "/sports/cross", "destination": "/sports/cross/index.html" },
     { "source": "/sports/cross/", "destination": "/sports/cross/index.html" },
     { "source": "/sports/running", "destination": "/sports/running/index.html" },
