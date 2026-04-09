@@ -1,34 +1,34 @@
 @theme {
-  --font-sans: "Space Grotesk", "Segoe UI", sans-serif;
+  --font-sans: "Manrope", "Segoe UI", sans-serif;
 
-  --color-ryxen-bg: #0b0f14;
-  --color-ryxen-bg-alt: #091018;
-  --color-ryxen-surface: #121821;
-  --color-ryxen-surface-2: #18212d;
-  --color-ryxen-surface-3: #1d2836;
-  --color-ryxen-soft: rgba(59, 130, 246, 0.08);
-  --color-ryxen-soft-2: rgba(59, 130, 246, 0.12);
-  --color-ryxen-line: rgba(148, 163, 184, 0.16);
-  --color-ryxen-line-strong: rgba(148, 163, 184, 0.28);
-  --color-ryxen-text: #f8fafc;
-  --color-ryxen-text-soft: rgba(148, 163, 184, 0.92);
-  --color-ryxen-text-muted: rgba(148, 163, 184, 0.66);
-  --color-ryxen-accent: #3b82f6;
-  --color-ryxen-accent-strong: #2563eb;
-  --color-ryxen-energy: #f97316;
-  --color-ryxen-ok: #22c55e;
-  --color-ryxen-warn: #f59e0b;
-  --color-ryxen-danger: #ef4444;
+  --color-ryxen-bg: #0f1218;
+  --color-ryxen-bg-alt: #10151d;
+  --color-ryxen-surface: #171c24;
+  --color-ryxen-surface-2: #1d2430;
+  --color-ryxen-surface-3: #242d3a;
+  --color-ryxen-soft: rgba(255, 255, 255, 0.045);
+  --color-ryxen-soft-2: rgba(132, 188, 255, 0.12);
+  --color-ryxen-line: rgba(255, 255, 255, 0.08);
+  --color-ryxen-line-strong: rgba(167, 186, 214, 0.18);
+  --color-ryxen-text: #f5f7fb;
+  --color-ryxen-text-soft: rgba(211, 220, 232, 0.9);
+  --color-ryxen-text-muted: rgba(172, 186, 206, 0.72);
+  --color-ryxen-accent: #8ab4ff;
+  --color-ryxen-accent-strong: #6f9cff;
+  --color-ryxen-energy: #f2b88b;
+  --color-ryxen-ok: #71d39a;
+  --color-ryxen-warn: #f0c27b;
+  --color-ryxen-danger: #f18e96;
 
-  --radius-ryxen-sm: 12px;
-  --radius-ryxen-md: 16px;
-  --radius-ryxen-lg: 22px;
-  --radius-ryxen-xl: 28px;
+  --radius-ryxen-sm: 14px;
+  --radius-ryxen-md: 18px;
+  --radius-ryxen-lg: 24px;
+  --radius-ryxen-xl: 32px;
 
-  --shadow-ryxen-sm: 0 8px 18px rgba(0, 0, 0, 0.22);
-  --shadow-ryxen-md: 0 12px 28px rgba(0, 0, 0, 0.26);
-  --shadow-ryxen-lg: 0 24px 60px rgba(0, 0, 0, 0.34);
-  --shadow-ryxen-xl: 0 32px 90px rgba(0, 0, 0, 0.38);
+  --shadow-ryxen-sm: 0 10px 26px rgba(4, 9, 18, 0.16);
+  --shadow-ryxen-md: 0 18px 44px rgba(4, 9, 18, 0.2);
+  --shadow-ryxen-lg: 0 28px 72px rgba(4, 9, 18, 0.24);
+  --shadow-ryxen-xl: 0 40px 100px rgba(4, 9, 18, 0.3);
 }
 
 @layer base {

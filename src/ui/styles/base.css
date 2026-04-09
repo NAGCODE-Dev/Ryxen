@@ -10,19 +10,9 @@
     @apply text-sm text-ryxen-text;
     touch-action: manipulation;
     background:
-      radial-gradient(circle at top, rgba(59, 130, 246, 0.12), transparent 28%),
-      radial-gradient(circle at 100% 12%, rgba(249, 115, 22, 0.08), transparent 22%),
-      linear-gradient(180deg, #091018 0%, #0b0f14 44%, #080c12 100%);
-  }
-
-  body::before {
-    content: '';
-    @apply pointer-events-none fixed inset-0;
-    background:
-      linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
-    background-size: 22px 22px;
-    opacity: 0.35;
+      radial-gradient(circle at top left, rgba(138, 180, 255, 0.12), transparent 34%),
+      radial-gradient(circle at 100% 8%, rgba(242, 184, 139, 0.08), transparent 22%),
+      linear-gradient(180deg, #11151d 0%, #0f1218 48%, #0c1015 100%);
   }
 
   #app {
@@ -33,14 +23,19 @@
 
 @layer components {
   .app-container {
-    @apply mx-auto min-h-screen w-full border-x border-white/10 backdrop-blur-[18px];
+    @apply mx-auto min-h-screen w-full border-x border-white/10 backdrop-blur-[22px];
     min-height: 100dvh;
-    max-width: 980px;
-    background: linear-gradient(180deg, rgba(13, 17, 23, 0.96), rgba(10, 14, 20, 0.99));
+    max-width: 1120px;
+    background:
+      linear-gradient(180deg, rgba(20, 25, 34, 0.96), rgba(15, 18, 24, 0.985)),
+      radial-gradient(circle at top, rgba(255, 255, 255, 0.02), transparent 48%);
   }
 
   .loading-screen {
-    @apply fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-[#091018] transition-[opacity,visibility] duration-300 ease-out;
+    @apply fixed inset-0 z-[99999] flex flex-col items-center justify-center transition-[opacity,visibility] duration-300 ease-out;
+    background:
+      radial-gradient(circle at top, rgba(138, 180, 255, 0.12), transparent 30%),
+      linear-gradient(180deg, #11151d 0%, #0f1218 100%);
   }
 
   .loading-screen p {
@@ -57,7 +52,7 @@
   }
 
   .spinner {
-    @apply mb-3 h-[42px] w-[42px] animate-spin rounded-full border-[3px] border-solid border-white/15 border-t-ryxen-accent;
+    @apply mb-4 h-[40px] w-[40px] animate-spin rounded-full border-[3px] border-solid border-white/12 border-t-ryxen-accent;
   }
 
   .ui-toast {
@@ -73,6 +68,7 @@
 
   .site-footer {
     @apply flex flex-wrap justify-center gap-3.5 px-4 pb-6 pt-[18px] text-[0.78rem] text-ryxen-text-muted;
+    opacity: 0.72;
   }
 
   .site-footer a {

@@ -83,8 +83,8 @@ export function renderTodayPageIntro(state, { renderPageHero, formatDay }) {
       title: hasWorkout && currentDay ? currentDay : 'Treino do dia',
       subtitle: hasWeeks
         ? (hasWorkout
-          ? `Semana ${activeWeek} • ${currentDay || 'sessão pronta'}`
-          : `Semana ${activeWeek} • escolha o dia ou troque a planilha`)
+          ? `Semana ${activeWeek} • ${currentDay || 'sessão pronta para hoje'}`
+          : `Semana ${activeWeek} carregada. Escolha o dia ou troque a planilha.`)
         : 'Importe um treino em PDF, imagem, vídeo, planilha ou texto.',
       actions: heroActions,
       footer: hasWeeks ? `<div class="week-chips">${renderWeekChips(state)}</div>` : '',

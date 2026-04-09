@@ -168,12 +168,12 @@
 .today-overviewCard,
 .today-sessionCard {
   display: grid;
-  gap: 8px;
-  padding: 14px;
+  gap: 10px;
+  padding: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.022), rgba(255, 255, 255, 0.008)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
     var(--bg-surface);
   box-shadow: var(--shadow-sm);
 }
@@ -191,35 +191,35 @@
 .today-sessionPill {
   display: inline-flex;
   align-items: center;
-  min-height: 28px;
-  padding: 0 9px;
+  min-height: 30px;
+  padding: 0 10px;
   border-radius: 999px;
   background: var(--bg-soft);
   border: 1px solid var(--line);
   color: var(--text-secondary);
-  font-size: 0.69rem;
+  font-size: 0.7rem;
   font-weight: 700;
 }
 
 .today-overviewTitle,
 .today-sessionTitle {
-  font-size: 0.96rem;
-  line-height: 1.14;
-  letter-spacing: -0.02em;
+  font-size: 1rem;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
 }
 
 .today-sessionMeta {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: 6px;
   color: var(--text-secondary);
-  font-size: 0.7rem;
+  font-size: 0.73rem;
 }
 
 .today-overviewFoot {
   color: var(--text-muted);
-  font-size: 0.71rem;
-  line-height: 1.4;
+  font-size: 0.74rem;
+  line-height: 1.5;
 }
 
 .today-metaChips,
@@ -237,13 +237,13 @@
 .import-previewItem {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 9px;
+  min-height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
   background: var(--bg-soft);
   border: 1px solid var(--line);
   color: var(--text-secondary);
-  font-size: 0.69rem;
+  font-size: 0.68rem;
   font-weight: 700;
 }
 
@@ -256,13 +256,13 @@
 .today-sessionStripItem {
   display: inline-flex;
   align-items: center;
-  min-height: 22px;
-  padding: 0 8px;
+  min-height: 24px;
+  padding: 0 9px;
   border-radius: 999px;
   background: var(--bg-soft);
   border: 1px solid var(--line);
   color: var(--text-secondary);
-  font-size: 0.64rem;
+  font-size: 0.66rem;
   font-weight: 700;
 }
 
@@ -330,12 +330,12 @@
 .empty-state,
 .auth-intro,
 .reset-codePreview {
-  padding: 14px;
+  padding: 16px;
 }
 
 .workout-block {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .workout-blockHeader {
@@ -357,27 +357,28 @@
 .workout-blockTag {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
-  padding: 0 9px;
+  min-height: 25px;
+  padding: 0 10px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--bg-soft);
   color: var(--text-secondary);
-  font-size: 0.69rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0.01em;
 }
 
 .workout-blockTitle {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .workout-blockMeta {
   color: var(--text-secondary);
-  font-size: 0.78rem;
+  font-size: 0.79rem;
+  line-height: 1.5;
 }
 
 .workout-blockSummaryItem {
@@ -387,7 +388,7 @@
 
 .workout-blockName {
   color: var(--text-primary);
-  background: color-mix(in srgb, var(--accent) 10%, var(--bg-surface-2) 90%);
+  background: color-mix(in srgb, var(--accent) 9%, var(--bg-surface-2) 91%);
 }
 
 .workout-blockActions {
@@ -411,12 +412,14 @@
 .workout-line {
   display: grid;
   grid-template-columns: auto 1fr auto;
-  gap: 7px;
-  padding: 10px 11px;
-  margin-bottom: 7px;
-  border-radius: 13px;
+  gap: 8px;
+  padding: 12px 13px;
+  margin-bottom: 8px;
+  border-radius: 16px;
   border: 1px solid var(--line);
-  background: var(--bg-surface-2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.014)),
+    var(--bg-surface-2);
 }
 
 .workout-lineMarker {
@@ -571,8 +574,8 @@
 .exercise-text,
 .rest-content,
 .workout-note {
-  font-size: 0.84rem;
-  line-height: 1.38;
+  font-size: 0.86rem;
+  line-height: 1.48;
 }
 
 .rest-content {
@@ -1058,12 +1061,14 @@
 
 .btn-timer {
   min-height: 34px;
-  padding: 0 11px;
+  padding: 0 12px;
   border-radius: 999px;
   border: 1px solid var(--line);
-  background: var(--bg-soft);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    var(--bg-soft);
   color: var(--text-primary);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
@@ -1087,7 +1092,7 @@
 .timer-modal.is-popup {
   right: 12px;
   bottom: 88px;
-  width: min(88vw, 312px);
+  width: min(88vw, 328px);
 }
 
 .timer-modal.is-fullscreen {
@@ -1101,18 +1106,20 @@
 .timer-content {
   pointer-events: auto;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   width: 100%;
-  padding: 14px;
-  border-radius: 20px;
+  padding: 16px;
+  border-radius: 24px;
   border: 1px solid var(--line);
-  background: color-mix(in srgb, var(--bg-surface-2) 92%, white 8%);
-  box-shadow: var(--shadow-ryxen-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018)),
+    color-mix(in srgb, var(--bg-surface-2) 94%, white 6%);
+  box-shadow: var(--shadow-ryxen-lg);
 }
 
 .timer-modal.is-fullscreen .timer-content {
   max-width: 560px;
-  padding: 20px;
+  padding: 24px;
 }
 
 .timer-topbar {
@@ -1123,18 +1130,19 @@
 }
 
 .timer-kicker {
-  font-size: 0.64rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-size: 0.65rem;
+  text-transform: none;
+  letter-spacing: 0.03em;
   color: var(--text-secondary);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .timer-title {
   margin-top: 3px;
   color: var(--text-primary);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
 }
 
 .timer-phase,
@@ -1144,51 +1152,53 @@
 
 .timer-phase {
   color: var(--text-secondary);
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  text-transform: none;
+  letter-spacing: 0.03em;
 }
 
 .timer-summary {
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.79rem;
+  line-height: 1.5;
 }
 
 .btn-timer-close,
 .btn-timer-primary,
 .btn-timer-mode {
-  min-height: 32px;
-  padding: 0 10px;
+  min-height: 34px;
+  padding: 0 11px;
   border-radius: 999px;
   border: 1px solid var(--line);
   background: var(--bg-soft);
   color: var(--text-primary);
   font-weight: 700;
-  font-size: 0.72rem;
+  font-size: 0.71rem;
 }
 
 .btn-timer-primary {
-  background: var(--accent);
+  background: linear-gradient(135deg, #eef4ff 0%, #dce9ff 100%);
   border-color: transparent;
-  color: white;
+  color: #0e1520;
 }
 
 .btn-timer-mode.is-active {
-  background: color-mix(in srgb, var(--accent) 22%, var(--bg-soft));
-  border-color: color-mix(in srgb, var(--accent) 42%, var(--line));
+  background: color-mix(in srgb, var(--accent) 16%, var(--bg-soft));
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--line));
 }
 
 .timer-time {
-  font-size: clamp(1.78rem, 7.4vw, 3.6rem);
-  line-height: 1;
+  font-size: clamp(1.96rem, 7vw, 4rem);
+  line-height: 0.96;
   font-weight: 800;
   text-align: center;
+  letter-spacing: -0.05em;
 }
 
 .timer-progress {
   overflow: hidden;
-  height: 8px;
+  height: 7px;
   border-radius: 999px;
   background: var(--bg-soft);
   border: 1px solid var(--line);
@@ -1205,13 +1215,14 @@
 .timer-meta {
   text-align: center;
   color: var(--text-secondary);
-  font-size: 0.74rem;
+  font-size: 0.73rem;
+  line-height: 1.45;
 }
 
 .timer-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 5px;
+  gap: 6px;
 }
 
 .timer-actions-modes {
@@ -1466,9 +1477,9 @@
 .admin-statLabel {
   color: var(--text-muted);
   font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-weight: 800;
+  text-transform: none;
+  letter-spacing: 0.05em;
+  font-weight: 700;
 }
 
 .summary-value,

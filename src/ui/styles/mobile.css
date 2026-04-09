@@ -1,11 +1,11 @@
 @media (max-width: 640px) {
   .app-header {
     padding-top: calc(var(--safe-top) + 8px);
-    padding-bottom: 7px;
+    padding-bottom: 8px;
   }
 
   .app-main {
-    padding: 12px 10px calc(var(--safe-bottom) + 18px);
+    padding: 14px 12px calc(var(--safe-bottom) + 20px);
   }
 
   .page-hero {
@@ -14,7 +14,7 @@
   }
 
   .page-heroTitle {
-    font-size: 1.16rem;
+    font-size: 1.18rem;
   }
 
   body[data-page="history"] .page-heroTitle,
@@ -32,14 +32,14 @@
   }
 
   body[data-page="today"] .page-heroTitle {
-    font-size: 1.08rem;
-    line-height: 1.04;
+    font-size: 1.14rem;
+    line-height: 1.08;
   }
 
   body[data-page="today"] .page-heroSubtitle {
     max-width: 42ch;
-    font-size: 0.71rem;
-    line-height: 1.36;
+    font-size: 0.74rem;
+    line-height: 1.42;
   }
 
   .page-heroActions {
@@ -109,27 +109,27 @@
 
   .bottom-nav {
     top: calc(var(--safe-top) + 44px);
-    padding: 2px 8px 4px;
+    padding: 4px 8px 6px;
   }
 
   .bottom-navItems {
-    gap: 3px;
-    padding: 3px;
-    border-radius: 11px;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
   }
 
   .nav-btn {
-    min-height: 31px;
-    border-radius: 8px;
+    min-height: 35px;
+    border-radius: 12px;
   }
 
   .nav-icon {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
   }
 
   .nav-label {
-    font-size: 0.5rem;
-    letter-spacing: 0.04em;
+    font-size: 0.54rem;
+    letter-spacing: 0.02em;
   }
 
   .pr-item,
@@ -263,8 +263,8 @@
   }
 
   .page-heroTitle {
-    font-size: 1.08rem;
-    line-height: 1.08;
+    font-size: 1.1rem;
+    line-height: 1.1;
   }
 
   body[data-page="history"] .page-heroTitle,
@@ -311,7 +311,7 @@
   .pr-item,
   .admin-userRow,
   .workout-header {
-    padding: 10px;
+    padding: 12px;
   }
 
   body[data-page="today"] .today-overviewCard,
@@ -319,7 +319,7 @@
   body[data-page="today"] .workout-block,
   body[data-page="today"] .workout-header,
   body[data-page="today"] .empty-state {
-    padding: 12px;
+    padding: 14px;
   }
 
   .settings-actions-grid {
@@ -432,7 +432,7 @@
   }
 
   .app-main {
-    padding: 10px 8px calc(var(--safe-bottom) + 14px);
+    padding: 12px 9px calc(var(--safe-bottom) + 16px);
   }
 
   .page-hero {
@@ -445,8 +445,8 @@
 
   .page-heroTitle,
   body[data-page="today"] .page-heroTitle {
-    font-size: 0.98rem;
-    line-height: 1.02;
+    font-size: 1rem;
+    line-height: 1.06;
   }
 
   body[data-page="history"] .page-heroTitle,
@@ -458,8 +458,8 @@
   body[data-page="today"] .page-heroSubtitle,
   body[data-page="history"] .page-heroSubtitle,
   body[data-page="account"] .page-heroSubtitle {
-    font-size: 0.66rem;
-    line-height: 1.3;
+    font-size: 0.68rem;
+    line-height: 1.36;
   }
 
   .page-heroActions .btn-primary,
@@ -471,22 +471,22 @@
 
   .bottom-nav {
     top: calc(var(--safe-top) + 40px);
-    padding: 2px 7px 4px;
+    padding: 4px 7px 6px;
   }
 
   .bottom-navItems {
-    padding: 3px;
-    border-radius: 10px;
+    padding: 4px;
+    border-radius: 14px;
   }
 
   .nav-btn {
-    min-height: 29px;
-    border-radius: 7px;
+    min-height: 33px;
+    border-radius: 10px;
   }
 
   .nav-label {
-    font-size: 0.46rem;
-    letter-spacing: 0.03em;
+    font-size: 0.5rem;
+    letter-spacing: 0.02em;
   }
 
   .workout-block,
@@ -505,8 +505,8 @@
   .admin-userRow,
   .workout-header,
   .page-fold {
-    border-radius: 14px;
-    padding: 9px;
+    border-radius: 16px;
+    padding: 10px;
   }
 
   .page-foldSummaryRow,

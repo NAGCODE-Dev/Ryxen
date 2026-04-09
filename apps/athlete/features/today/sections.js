@@ -71,14 +71,14 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
         <span class="today-overviewBadge">${weeks ? `Semana ${activeWeek || 1}` : 'Sessão avulsa'}</span>
         <span class="today-overviewMeta">${activeSource === 'coach' ? 'Coach' : 'Planilha'}</span>
       </div>
-      <strong class="today-overviewTitle">${warningsCount ? `${warningsCount} aviso(s)` : `${blocks} blocos · ${lines} linhas`}</strong>
+      <strong class="today-overviewTitle">${escapeHtml(metadata.primaryTitle || 'Treino do dia')}</strong>
       ${metadata.periods.length || metadata.blockTypes.length ? `
         <div class="today-metaChips">
           ${metadata.periods.map((period) => `<span class="today-metaChip">${escapeHtml(period)}</span>`).join('')}
           ${metadata.blockTypes.map((type) => `<span class="today-metaChip">${escapeHtml(type)}</span>`).join('')}
         </div>
       ` : ''}
-      ${currentDay ? `<span class="today-overviewFoot">${escapeHtml(currentDay)}</span>` : ''}
+      <span class="today-overviewFoot">${warningsCount ? `${warningsCount} aviso(s)` : `${blocks} blocos · ${lines} linhas`}${currentDay ? ` • ${escapeHtml(currentDay)}` : ''}</span>
     </div>
   `;
 }
@@ -102,7 +102,7 @@ export function renderTodaySessionCard(state, workout, { escapeHtml }) {
       <div class="today-sessionMeta">
         <span>${escapeHtml(activeSource === 'coach' ? 'Coach' : 'Planilha')}</span>
         <span>${blocks} blocos</span>
-        ${metadata.periods.map((period) => `<span>${escapeHtml(period)}</span>`).join('')}
+        ${metadata.periods.slice(0, 2).map((period) => `<span>${escapeHtml(period)}</span>`).join('')}
       </div>
       ${compactHighlights.length ? `
         <div class="today-sessionStrip">
