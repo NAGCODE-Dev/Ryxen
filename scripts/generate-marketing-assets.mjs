@@ -34,6 +34,7 @@ async function ensureBuildArtifacts() {
   await waitForFile(path.join(distDir, 'index.html'));
   await waitForFile(path.join(distDir, 'coach', 'index.html'));
   await waitForFile(athleteShotPath);
+  await waitForFile(path.join(exportsDir, 'ryxen-logo-horizontal.png'));
 }
 
 function createStaticServer(baseDir) {
@@ -98,15 +99,15 @@ async function captureCoachPortalShot(browser) {
 }
 
 async function generateOgImage(browser) {
-  const [wordmarkSvg, athleteShot, coachShot] = await Promise.all([
-    readFile(path.join(root, 'branding', 'ryxen-logo-horizontal.svg'), 'utf8'),
+  const [wordmarkPng, athleteShot, coachShot] = await Promise.all([
+    readFile(path.join(root, 'branding', 'exports', 'ryxen-logo-horizontal.png')),
     readFile(athleteShotPath),
     readFile(coachShotPath),
   ]);
 
   const athleteData = asDataUrl(athleteShot, 'image/png');
   const coachData = asDataUrl(coachShot, 'image/png');
-  const wordmarkData = asDataUrl(Buffer.from(wordmarkSvg), 'image/svg+xml');
+  const wordmarkData = asDataUrl(wordmarkPng, 'image/png');
 
   const page = await browser.newPage({
     viewport: { width: 1200, height: 630 },

@@ -355,6 +355,10 @@
   place-items: center;
 }
 
+.nyx-teaserVisual .nyx-illustration {
+  object-position: center 30%;
+}
+
 .nyx-teaserCopy {
   display: grid;
   gap: 4px;

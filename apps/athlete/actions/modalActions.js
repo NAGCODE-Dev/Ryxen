@@ -25,11 +25,30 @@ async function closeModal(context) {
     applyUiPatch,
     toast,
     isImportBusy,
+    element,
+    getUiState,
+    getAppBridge,
   } = context;
 
   if (isImportBusy?.()) {
     toast?.('A importacao ainda esta em andamento');
     return true;
+  }
+
+  if (element?.dataset?.guideComplete === 'true') {
+    const currentUiSettings = getUiState?.()?.settings || {};
+    const currentCorePreferences = getAppBridge?.()?.getStateSnapshot?.()?.preferences || {};
+    const nextShowNyxHints = currentUiSettings.showNyxHints ?? currentCorePreferences.showNyxHints !== false;
+    if (typeof getAppBridge?.()?.setPreferences === 'function') {
+      const result = await getAppBridge().setPreferences({
+        showNyxHints: nextShowNyxHints,
+        nyxGuideCompleted: true,
+      });
+      if (!result?.success) {
+        throw new Error(result?.error || 'Falha ao concluir tour');
+      }
+    }
+    toast?.('Nyx pronto para te acompanhar');
   }
 
   clearPasswordResetSupportPolling();
@@ -48,6 +67,7 @@ export async function handleAthleteModalAction(action, context) {
     applyUiState,
     applyUiPatch,
     getAppBridge,
+    getUiState,
   } = context;
 
   switch (action) {

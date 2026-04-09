@@ -15,7 +15,7 @@ export function renderAthleteAppShell({ escapeHtml, getAppLabel }) {
         <div class="header-content">
           <div class="header-topline">
             <div class="header-badge">
-              <img class="header-badgeMark" src="/icons/ryxen-mark.svg" alt="" aria-hidden="true">
+              <img class="header-badgeMark" src="/branding/exports/ryxen-icon-64.png" alt="" aria-hidden="true">
               <span>${escapeHtml(appLabel)}</span>
             </div>
             <div class="header-account" id="ui-headerAccount"></div>

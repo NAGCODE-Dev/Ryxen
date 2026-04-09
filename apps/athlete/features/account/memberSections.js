@@ -1,3 +1,5 @@
+import { renderNyxIllustration } from '../guide/nyxIllustrations.js';
+
 export function renderAccountAccessSection(renderPageFold, view) {
   const {
     isBusy = false,
@@ -389,7 +391,9 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
             <span>${nyxGuideCompleted ? 'Você já viu o essencial. Se quiser, o Nyx pode te mostrar tudo de novo.' : 'Boas-vindas, treino do dia e evolução em quatro telas bem curtas.'}</span>
           </div>
           <div class="account-nyxPreview">
-            <div class="account-nyxPreviewMark" aria-hidden="true"></div>
+            <div class="account-nyxPreviewVisual" aria-hidden="true">
+              ${renderNyxIllustration({ pose: 'welcome', className: 'nyx-illustration account-nyxPreviewArt' })}
+            </div>
             <div class="account-nyxPreviewCopy">
               <strong>Guiado por Nyx</strong>
               <small>Curto, claro e sem invadir o app inteiro.</small>

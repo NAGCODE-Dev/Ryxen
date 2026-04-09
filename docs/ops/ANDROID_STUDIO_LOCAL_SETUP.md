@@ -44,6 +44,12 @@ Sincronize os assets web:
 npm run android:sync
 ```
 
+Rode o preflight:
+
+```bash
+npm run android:doctor
+```
+
 Abra o projeto:
 
 ```bash
@@ -55,6 +61,13 @@ No Android Studio:
 1. espere o Gradle sincronizar
 2. selecione um emulador Android 13 ou 14
 3. rode o módulo `app`
+
+O fluxo de `android:open` agora faz:
+
+1. build web com assets oficiais da marca
+2. `cap sync android`
+3. doctor do Android local
+4. abertura do projeto no Android Studio
 
 ## 4. Build por terminal
 
@@ -114,7 +127,39 @@ Observações:
 sdk.dir=/home/nikolas/Android/Sdk
 ```
 
-## 6. Auth local no emulador
+## 6. Doctor e troubleshooting local
+
+O comando principal de verificação agora é:
+
+```bash
+npm run android:doctor
+```
+
+Ele valida:
+
+- `android/local.properties`
+- `sdk.dir`
+- Gradle wrapper
+- launcher do Android Studio
+- sync base do Gradle
+
+Se o Android Studio não abrir, o launcher tenta nesta ordem:
+
+1. Flatpak `com.google.AndroidStudio`
+2. `~/android-studio/bin/studio.sh`
+3. `/opt/android-studio/bin/studio.sh`
+4. `/usr/local/android-studio/bin/studio.sh`
+5. `studio.sh`, `studio` ou `android-studio` no `PATH`
+
+Se faltar launcher, uma correção típica é:
+
+```bash
+flatpak install flathub com.google.AndroidStudio
+```
+
+Ou instalar manualmente em `~/android-studio`.
+
+## 7. Auth local no emulador
 
 Para ambiente local, o Docker sobe com:
 
@@ -129,7 +174,7 @@ O smoke automatizado disponível é:
 npm run smoke:auth
 ```
 
-## 7. Quando usar backend publicado
+## 8. Quando usar backend publicado
 
 Se você quiser que o APK aponte para backend remoto em vez de `10.0.2.2`, configure:
 
@@ -148,7 +193,7 @@ window.__RYXEN_CONFIG__ = {
 };
 ```
 
-## 8. Google OAuth no app nativo
+## 9. Google OAuth no app nativo
 
 Para o fluxo de login com Google funcionar no APK:
 
@@ -159,11 +204,12 @@ Para o fluxo de login com Google funcionar no APK:
 
 Sem backend público, o login normal por email pode ser validado localmente, mas o OAuth Google tende a depender da infraestrutura externa.
 
-## 9. Paridade esperada com o PWA
+## 10. Paridade esperada com o PWA
 
 Hoje a base já cobre:
 
 - sync dos assets web para Android
+- launcher e splash sincronizados com o app icon oficial
 - build debug e release
 - back button nativo
 - callback `ryxen://auth/callback`
