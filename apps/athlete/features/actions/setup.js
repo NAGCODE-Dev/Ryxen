@@ -1,8 +1,8 @@
 import {
-  handleAthleteAuthEnterKey,
   handleAthleteModalEscapeKey,
   handleAthleteModalOverlayClick,
 } from '../../actions/modalActions.js';
+import { handleAthleteAuthEnterKey } from '../../actions/authActions.js';
 import {
   handleAthleteTodayChange,
 } from '../today/actions.js';
