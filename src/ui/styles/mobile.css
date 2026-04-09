@@ -33,6 +33,30 @@
     gap: 8px;
   }
 
+  body[data-page="history"] .page-hero,
+  body[data-page="account"] .page-hero {
+    gap: 10px;
+  }
+
+  body[data-page="history"] .page-heroSubtitle,
+  body[data-page="account"] .page-heroSubtitle {
+    font-size: 0.73rem;
+    line-height: 1.38;
+  }
+
+  body[data-page="history"] .page-heroActions,
+  body[data-page="account"] .page-heroActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  body[data-page="history"] .page-heroActions .btn-secondary,
+  body[data-page="history"] .page-heroActions .btn-primary,
+  body[data-page="account"] .page-heroActions .btn-secondary,
+  body[data-page="account"] .page-heroActions .btn-primary {
+    min-height: 42px;
+  }
+
   .page-heroActions .btn-primary,
   .page-heroActions .btn-secondary,
   .page-heroActions .day-select,
@@ -156,6 +180,11 @@
     gap: 12px;
   }
 
+  body[data-page="history"] .account-hint,
+  body[data-page="account"] .account-hint {
+    line-height: 1.38;
+  }
+
   .page-foldSummary {
     padding: 0;
   }
@@ -209,6 +238,11 @@
   body[data-page="history"] .page-heroTitle,
   body[data-page="account"] .page-heroTitle {
     font-size: 0.98rem;
+  }
+
+  body[data-page="history"] .page-heroActions,
+  body[data-page="account"] .page-heroActions {
+    grid-template-columns: 1fr;
   }
 
   .day-autoBtn,

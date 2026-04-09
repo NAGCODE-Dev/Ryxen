@@ -431,7 +431,7 @@
 @media (max-width: 640px) {
   .modal-overlay-auth {
     padding: calc(var(--safe-top) + 10px) 12px calc(var(--safe-bottom) + 12px);
-    align-items: stretch !important;
+    align-items: center !important;
   }
 
   .modal-header {
@@ -453,12 +453,13 @@
 
   .modal-body-auth {
     gap: 14px;
+    align-content: start;
   }
 
   .modal-container-auth {
     width: 100%;
-    max-height: none;
-    min-height: min(760px, calc(100dvh - var(--safe-top) - var(--safe-bottom) - 22px));
+    max-height: min(82dvh, 720px);
+    min-height: 0;
     border-radius: 26px;
   }
 
@@ -478,12 +479,30 @@
   }
 
   .auth-intro-auth {
-    padding: 15px 16px;
+    gap: 6px;
+    padding: 14px 15px;
   }
 
   .auth-resetBox,
   .auth-signupVerify {
     padding: 14px;
+  }
+
+  .auth-googleNativeButton,
+  .auth-submitButton,
+  .auth-trustedSubmitButton,
+  .auth-resetRequestButton,
+  .auth-resetConfirmButton {
+    min-height: 48px;
+  }
+
+  .auth-resetBody {
+    display: grid;
+    gap: 12px;
+  }
+
+  .auth-resetActions {
+    gap: 10px;
   }
 
   .settings-linkGrid {
@@ -498,7 +517,8 @@
   }
 
   .modal-overlay-auth .modal-container-auth {
-    min-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 16px);
+    min-height: 0;
+    max-height: min(80dvh, 680px);
     border-radius: 24px;
   }
 
@@ -521,5 +541,9 @@
 
   .auth-resetToggle {
     min-height: auto;
+  }
+
+  .auth-intro-auth .account-hint {
+    font-size: 0.78rem;
   }
 }
