@@ -43,6 +43,16 @@ export function renderGuestAuthView({
             <button class="btn-primary auth-submitButton" data-action="auth:submit" data-mode="${escapeHtml(authMode)}" type="button">
               ${isSignup ? 'Criar conta com código' : escapeHtml(trustedDeviceUi.submitLabel)}
             </button>
+            ${!isSignup ? `
+              <button
+                class="btn-secondary auth-trustedSubmitButton"
+                data-action="auth:trusted-submit"
+                type="button"
+                ${trustedDeviceUi.isTrusted ? '' : 'hidden'}
+              >
+                ${escapeHtml(trustedDeviceUi.trustedSubmitLabel)}
+              </button>
+            ` : ''}
             ${!isSignup && reset?.message && !reset?.open ? `
               <p class="account-hint auth-inlineStatus">${escapeHtml(reset.message)}</p>
             ` : ''}

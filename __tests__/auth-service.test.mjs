@@ -244,5 +244,6 @@ test('getTrustedDeviceUiState ajusta a UX conforme o grant do aparelho', async (
   assert.equal(getTrustedDeviceUiState('').submitLabel, 'Entrar');
   assert.equal(getTrustedDeviceUiState('other@example.com').hintTitle, 'Primeiro acesso neste aparelho');
   assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').isTrusted, true);
-  assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').submitLabel, 'Entrar neste aparelho');
+  assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').submitLabel, 'Entrar com senha');
+  assert.equal(getTrustedDeviceUiState('nagcode.contact@gmail.com').trustedSubmitLabel, 'Entrar sem senha neste aparelho');
 });

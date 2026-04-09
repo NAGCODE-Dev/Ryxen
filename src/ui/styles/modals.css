@@ -299,9 +299,14 @@
 
 .auth-googleCta,
 .auth-submitButton,
+.auth-trustedSubmitButton,
 .auth-resetRequestButton,
 .auth-resetConfirmButton {
   width: 100%;
+}
+
+.auth-trustedSubmitButton[hidden] {
+  display: none !important;
 }
 
 #google-signin-button {

@@ -7,7 +7,8 @@ export function getTrustedDeviceUiState(email) {
   if (isTrusted) {
     return {
       isTrusted: true,
-      submitLabel: 'Entrar neste aparelho',
+      submitLabel: 'Entrar com senha',
+      trustedSubmitLabel: 'Entrar sem senha neste aparelho',
       passwordPlaceholder: 'Senha (opcional neste aparelho)',
       hintTitle: 'Aparelho reconhecido',
       hintBody: 'Voce pode entrar so com o email agora. Se preferir, a senha continua funcionando normalmente.',
@@ -18,6 +19,7 @@ export function getTrustedDeviceUiState(email) {
     return {
       isTrusted: false,
       submitLabel: 'Entrar',
+      trustedSubmitLabel: 'Entrar sem senha neste aparelho',
       passwordPlaceholder: 'Sua senha',
       hintTitle: 'Primeiro acesso neste aparelho',
       hintBody: 'Use email e senha para autorizar este aparelho. Depois disso, o proximo login pode ser so com o email.',
@@ -27,6 +29,7 @@ export function getTrustedDeviceUiState(email) {
   return {
     isTrusted: false,
     submitLabel: 'Entrar',
+    trustedSubmitLabel: 'Entrar sem senha neste aparelho',
     passwordPlaceholder: 'Sua senha',
     hintTitle: 'Login rapido neste aparelho',
     hintBody: 'Digite seu email. Se este aparelho ja estiver confiavel para essa conta, a senha fica opcional.',
@@ -49,6 +52,7 @@ export function syncTrustedDeviceAuthUi(root) {
   const emailInput = root.querySelector('#auth-email');
   const passwordInput = root.querySelector('#auth-password');
   const submitButton = root.querySelector('[data-action="auth:submit"][data-mode="signin"]');
+  const trustedSubmitButton = root.querySelector('[data-action="auth:trusted-submit"]');
   const status = root.querySelector('[data-auth-trusted-status]');
   const title = status?.querySelector('.auth-trustedTitle');
   const body = status?.querySelector('.auth-inlineStatus');
@@ -64,6 +68,10 @@ export function syncTrustedDeviceAuthUi(root) {
 
   if (submitButton) {
     submitButton.textContent = ui.submitLabel;
+  }
+  if (trustedSubmitButton) {
+    trustedSubmitButton.textContent = ui.trustedSubmitLabel;
+    trustedSubmitButton.hidden = !ui.isTrusted;
   }
   if (title) {
     title.textContent = ui.hintTitle;

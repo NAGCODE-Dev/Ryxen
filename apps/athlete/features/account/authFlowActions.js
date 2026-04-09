@@ -115,6 +115,32 @@ export async function handleAthleteAuthFlowAction(action, context) {
       return true;
     }
 
+    case 'auth:trusted-submit': {
+      const email = String(root.querySelector('#auth-email')?.value || '').trim().toLowerCase();
+      if (!email) throw new Error('Informe seu email');
+      if (!hasTrustedDeviceGrant(email)) {
+        throw new Error('Este aparelho ainda nao foi autorizado para entrar sem senha');
+      }
+
+      const result = await getAppBridge().signInWithTrustedDevice({ email });
+      if (!result?.token && !result?.user) {
+        throw new Error('Falha ao autenticar');
+      }
+
+      const profile = result?.user || getAppBridge()?.getProfile?.()?.data || null;
+      invalidateHydrationCache();
+      await applyUiState(
+        { modal: null, authMode: 'signin', signupVerification: {} },
+        { toastMessage: 'Login rapido efetuado' },
+      );
+      const currentPage = getUiState?.()?.currentPage || 'today';
+      if (shouldHydratePage(currentPage)) {
+        hydratePage(profile, currentPage, null);
+      }
+      if (await maybeResumePendingCheckout()) return true;
+      return true;
+    }
+
     default:
       return false;
   }
