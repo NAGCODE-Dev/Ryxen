@@ -25,11 +25,11 @@ export async function runAthleteBootstrapFlow() {
     const nativeAuthRedirect = await setupNativeAuthRedirects();
     if (nativeAuthRedirect?.handled) return;
 
-    initPostNativeLayers();
     const authRedirect = applyAuthRedirectFromLocation();
     const initResult = await initApplication();
     if (!initResult.success) return;
 
+    scheduleDeferredPostInitLayers();
     finalizeInit(authRedirect);
     if (maybeRenderDeveloperDebug()) return;
 
@@ -53,6 +53,23 @@ function initPostNativeLayers() {
   setupGlobalTelemetryHandlers();
   registerServiceWorker();
   mountConsentBanner();
+}
+
+function scheduleDeferredPostInitLayers() {
+  const run = () => {
+    try {
+      initPostNativeLayers();
+    } catch (error) {
+      console.warn('Falha ao iniciar camadas adiadas do bootstrap', error);
+    }
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(() => run(), { timeout: 1200 });
+    return;
+  }
+
+  window.setTimeout(run, 180);
 }
 
 async function initApplication() {

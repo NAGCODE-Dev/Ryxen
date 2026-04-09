@@ -150,3 +150,21 @@ test('hydrateAthleteSummary usa cache curto e evita request duplicado', async ()
 
   assert.equal(calls.summary, 1);
 });
+
+test('hydratePage deduplica hidratação concorrente da account', async () => {
+  const { controller, calls } = createControllerFixture();
+  const profile = { email: 'athlete@test.local' };
+
+  await Promise.all([
+    controller.hydratePage(profile, 'account'),
+    controller.hydratePage(profile, 'account'),
+  ]);
+  await flush();
+
+  assert.equal(calls.summary, 1);
+  assert.equal(calls.subscription, 1);
+  assert.equal(calls.entitlements, 1);
+  assert.equal(calls.gyms, 1);
+  assert.equal(calls.results, 1);
+  assert.equal(calls.workouts, 1);
+});

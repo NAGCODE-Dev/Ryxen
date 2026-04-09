@@ -31,6 +31,28 @@ export function createHydrationController({
     return null;
   }
 
+  const backgroundTasks = new Map();
+
+  function createTaskKey(scope, profile, extra = '') {
+    return `${scope}::${getProfileEmail(profile)}::${extra || '-'}`;
+  }
+
+  function runBackgroundTask(taskKey, taskFactory) {
+    const inFlight = backgroundTasks.get(taskKey);
+    if (inFlight) return inFlight;
+
+    const task = Promise.resolve()
+      .then(() => taskFactory())
+      .finally(() => {
+        if (backgroundTasks.get(taskKey) === task) {
+          backgroundTasks.delete(taskKey);
+        }
+      });
+
+    backgroundTasks.set(taskKey, task);
+    return task;
+  }
+
   const coachPortalDomain = createCoachPortalDomain({
     measureAsync,
     emptyCoachPortal,
@@ -163,29 +185,49 @@ export function createHydrationController({
 
   function hydrateAccountLazyBlocks(profile, { force = false } = {}) {
     if (!profile?.email) return;
-    Promise.allSettled([
+    const taskKey = createTaskKey('account-lazy', profile, force ? 'force' : 'cache');
+    runBackgroundTask(taskKey, () => Promise.allSettled([
       hydrateAthleteWorkoutsBlock(profile, { force }),
       hydrateAthleteResultsBlock(profile, { force }),
-    ]).catch(() => {});
+    ])).catch(() => {});
   }
 
   function hydrateHistoryLazyBlocks(profile, { force = false } = {}) {
     if (!profile?.email) return;
-    Promise.resolve()
-      .then(() => hydrateAthleteResultsBlock(profile, { force }))
+    const taskKey = createTaskKey('history-lazy', profile, force ? 'force' : 'cache');
+    runBackgroundTask(taskKey, () => Promise.resolve()
+      .then(() => hydrateAthleteResultsBlock(profile, { force })))
       .catch(() => {});
   }
 
   async function hydratePage(profile, page, selectedGymId = null, { force = false } = {}) {
     if (!profile?.email) return;
-    if (page === 'account') {
-      await hydrateAccountSummary(profile, selectedGymId, { force });
-      hydrateAccountLazyBlocks(profile, { force });
+    const taskKey = createTaskKey('page', profile, `${page}:${selectedGymId || 'default'}:${force ? 'force' : 'cache'}`);
+    const inFlight = backgroundTasks.get(taskKey);
+    if (inFlight) {
+      await inFlight;
       return;
     }
-    if (page === 'history') {
-      await hydrateAthleteSummary(profile, { force });
-      hydrateHistoryLazyBlocks(profile, { force });
+
+    const task = (async () => {
+      if (page === 'account') {
+        await hydrateAccountSummary(profile, selectedGymId, { force });
+        hydrateAccountLazyBlocks(profile, { force });
+        return;
+      }
+      if (page === 'history') {
+        await hydrateAthleteSummary(profile, { force });
+        hydrateHistoryLazyBlocks(profile, { force });
+      }
+    })();
+
+    backgroundTasks.set(taskKey, task);
+    try {
+      await task;
+    } finally {
+      if (backgroundTasks.get(taskKey) === task) {
+        backgroundTasks.delete(taskKey);
+      }
     }
   }
 
