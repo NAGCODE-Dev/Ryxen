@@ -583,6 +583,13 @@ function parseMovementLine(line) {
     item.name = cleanupMovementName(repsMatch[2]);
   }
 
+  const normalized = normalizeMovementName(item.name);
+  item.name = normalized.name;
+  item.displayName = normalized.displayName;
+  item.canonicalName = normalized.canonicalName;
+  item.canonicalSlug = normalized.canonicalSlug;
+  item.aliases = normalized.aliases;
+
   if (pairLoadMatch) {
     const maleLb = Number(pairLoadMatch[1]);
     const femaleLb = Number(pairLoadMatch[2]);
@@ -602,7 +609,7 @@ function parseMovementLine(line) {
   }
 
   if (alternativeMatch) {
-    item.alternatives = [cleanupMovementName(alternativeMatch[1])];
+    item.alternatives = [normalizeMovementName(cleanupMovementName(alternativeMatch[1]).replace(/^\d+\s+/, '')).name];
   }
 
   if (noteMatch) {
@@ -616,8 +623,99 @@ function cleanupMovementName(value) {
   return String(value || '')
     .replace(/\(([^)]+)\)/g, '')
     .replace(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*LBS?/gi, '')
+    .replace(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*LBS?/gi, '')
+    .replace(/(\d+(?:\.\d+)?)\s*\/\s*(\d+(?:\.\d+)?)\s*KG/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function normalizeMovementName(value) {
+  const displayName = String(value || '').trim();
+  const compact = displayName
+    .toUpperCase()
+    .replace(/[().,]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const exactAliasMap = new Map([
+    ['WBS', 'wall ball'],
+    ['WB', 'wall ball'],
+    ['WALL BALLS', 'wall ball'],
+    ['DUS', 'double unders'],
+    ['DU', 'double unders'],
+    ['BMUS', 'bar muscle-up'],
+    ['BMU', 'bar muscle-up'],
+    ['MUS', 'muscle-up'],
+    ['MU', 'muscle-up'],
+    ['CTBS', 'chest-to-bar pull-up'],
+    ['CTB', 'chest-to-bar pull-up'],
+    ['TTBS', 'toes-to-bar'],
+    ['TTB', 'toes-to-bar'],
+    ['OHS', 'overhead squat'],
+    ['OHSQUAT', 'overhead squat'],
+    ['SHSPU', 'strict handstand push-up'],
+    ['HSPU', 'handstand push-up'],
+  ]);
+
+  let normalized = exactAliasMap.get(compact) || null;
+
+  if (!normalized) {
+    normalized = compact
+      .replace(/\bALT\b/g, 'alternating')
+      .replace(/\bDB\b/g, 'dumbbell')
+      .replace(/\bKB\b/g, 'kettlebell')
+      .replace(/\bBB\b/g, 'barbell')
+      .replace(/\bOH\b/g, 'overhead')
+      .replace(/\bOHS\b/g, 'overhead squat')
+      .replace(/\bPOWER SNATCHES\b/g, 'power snatch')
+      .replace(/\bPOWER SNATCH\b/g, 'power snatch')
+      .replace(/\bPOWER CLEAN AND JERK\b/g, 'power clean and jerk')
+      .replace(/\bPOWER CLEAN\b/g, 'power clean')
+      .replace(/\bSQUAT CLEAN AND JERK\b/g, 'squat clean and jerk')
+      .replace(/\bSQUAT CLEAN\b/g, 'squat clean')
+      .replace(/\bPUSH PRESS\b/g, 'push press')
+      .replace(/\bWALKING LUNGE WALKING LUNGE\b/g, 'walking lunge')
+      .replace(/\bREGIONALS WALKING LUNGE\b/g, 'walking lunge')
+      .replace(/\bWALKING LUNGE\b/g, 'walking lunge')
+      .replace(/\bBOX JUMP OVER\b/g, 'box jump over')
+      .replace(/\bROPE CLIMBS\b/g, 'rope climb')
+      .replace(/\bROPE CLIMB\b/g, 'rope climb')
+      .replace(/\bWALL WALKS\b/g, 'wall walk')
+      .replace(/\bCTBS\b/g, 'chest-to-bar pull-up')
+      .replace(/\bCTB\b/g, 'chest-to-bar pull-up')
+      .replace(/\bTTBS\b/g, 'toes-to-bar')
+      .replace(/\bTTB\b/g, 'toes-to-bar')
+      .replace(/\bDUS\b/g, 'double unders')
+      .replace(/\bDU\b/g, 'double unders')
+      .replace(/\bWBS\b/g, 'wall ball')
+      .replace(/\bWB\b/g, 'wall ball')
+      .replace(/\bBMUS\b/g, 'bar muscle-up')
+      .replace(/\bBMU\b/g, 'bar muscle-up')
+      .replace(/\bMUS\b/g, 'muscle-up')
+      .replace(/\bMU\b/g, 'muscle-up')
+      .replace(/\bGHD SIT UPS\b/g, 'ghd sit-up')
+      .replace(/\bGHD SIT UPS\b/g, 'ghd sit-up')
+      .replace(/\bGHD SIT UP\b/g, 'ghd sit-up')
+      .replace(/\bSTRICT PULL UPS PEGADA SUPINADA\b/g, 'strict chin-up')
+      .replace(/\bSTRICT PULL UPS\b/g, 'strict pull-up')
+      .replace(/\bPULL UPS\b/g, 'pull-up')
+      .replace(/\bBURPEE FACING BAR\b/g, 'burpee facing bar')
+      .replace(/\bSHUTTLE RUN\b/g, 'shuttle run')
+      .replace(/\bROW\b/g, 'row')
+      .replace(/\bRUN\b/g, 'run')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  const canonicalName = normalized || displayName.toLowerCase();
+  return {
+    displayName,
+    name: canonicalName,
+    canonicalName,
+    canonicalSlug: canonicalName.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+    aliases: compact && compact !== canonicalName.toUpperCase() ? [compact] : [],
+  };
 }
 
 function roundKg(value) {
@@ -705,18 +803,26 @@ function parseAccessoryLine(line) {
 
   const match = raw.match(/^(.*?)\s+(\d+)\s*x\s*(\d+)$/i);
   if (match) {
+    const normalized = normalizeMovementName(match[1].trim());
     return {
       type: 'accessory_item',
-      name: match[1].trim(),
+      name: normalized.name,
+      displayName: normalized.displayName,
+      canonicalName: normalized.canonicalName,
+      canonicalSlug: normalized.canonicalSlug,
       sets: Number(match[2]),
       reps: Number(match[3]),
       raw,
     };
   }
 
+  const normalized = normalizeMovementName(raw);
   return {
     type: 'accessory_name',
-    name: raw,
+    name: normalized.name,
+    displayName: normalized.displayName,
+    canonicalName: normalized.canonicalName,
+    canonicalSlug: normalized.canonicalSlug,
     raw,
   };
 }
@@ -726,6 +832,9 @@ function buildAccessoryItems(items) {
     .filter((item) => item.type === 'accessory_item')
     .map((item) => ({
       name: item.name,
+      displayName: item.displayName || item.name,
+      canonicalName: item.canonicalName || item.name,
+      canonicalSlug: item.canonicalSlug || null,
       sets: item.sets,
       reps: item.reps,
       notes: extractParentheticalNote(item.name),
@@ -756,9 +865,13 @@ function buildEngineSummary(items, context = {}) {
 }
 
 function buildGymnasticsSummary(items, context = {}) {
+  const normalizedTitle = normalizeMovementName(context.title || '');
   const movements = items
     .filter((item) => item.type === 'movement' || item.type === 'recovery')
-    .filter((item) => String(item.name || item.modality || '').trim() !== String(context.title || '').trim());
+    .filter((item) => {
+      const itemName = String(item.canonicalName || item.name || item.modality || '').trim();
+      return itemName && itemName !== normalizedTitle.canonicalName;
+    });
   if (!movements.length && !context.rounds) return null;
 
   return {
@@ -767,6 +880,9 @@ function buildGymnasticsSummary(items, context = {}) {
     quality: !!context.quality,
     movements: movements.map((item) => ({
       name: item.name || item.modality || '',
+      displayName: item.displayName || item.name || item.modality || '',
+      canonicalName: item.canonicalName || item.name || item.modality || '',
+      canonicalSlug: item.canonicalSlug || null,
       reps: item.reps || null,
       distanceMeters: item.distanceMeters || null,
       notes: item.notes || null,

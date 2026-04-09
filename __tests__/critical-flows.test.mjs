@@ -191,3 +191,34 @@ CAP 9'
   assert.equal(workout.blocks[1].parsed.format, 'for_time');
   assert.equal(workout.blocks[1].parsed.timeCapMinutes, 9);
 });
+
+test('parser rico normaliza siglas comuns de movimentos para nomes canônicos', () => {
+  const text = `
+SEMANA 22
+QUARTA
+WOD
+12' AMRAP
+20 WBs 20-14lbs
+80 DUs
+5 MUs (ou 5 BMU)
+10 ALT DB POWER SNATCH 50-35lbs
+ACESSORIOS
+SUPINO PEGADA FECHADA 4x8
+  `.trim();
+
+  const weeks = parseMultiWeekPdf(text);
+  const workout = weeks[0].workouts[0];
+  const wodBlock = workout.blocks.find((block) => block.type === 'WOD');
+  const accessoriesBlock = workout.blocks.find((block) => block.type === 'ACCESSORIES');
+
+  const movements = wodBlock.parsed.items.filter((item) => item.type === 'movement');
+  assert.equal(movements[0].name, 'wall ball');
+  assert.equal(movements[0].canonicalSlug, 'wall-ball');
+  assert.equal(movements[1].name, 'double unders');
+  assert.equal(movements[2].name, 'muscle-up');
+  assert.equal(movements[2].alternatives[0], 'bar muscle-up');
+  assert.equal(movements[3].name, 'alternating dumbbell power snatch');
+
+  assert.equal(accessoriesBlock.parsed.accessories[0].name, 'supino pegada fechada');
+  assert.equal(accessoriesBlock.parsed.accessories[0].canonicalSlug, 'supino-pegada-fechada');
+});
