@@ -40,6 +40,23 @@ const splashOutputs = [
   { file: path.join(androidResDir, 'drawable-land-xxxhdpi', 'splash.png'), width: 1920, height: 1280 },
 ];
 
+const requiredFallbackOutputs = [
+  ...exportedIcons.map((size) => path.join(exportsDir, `ryxen-icon-${size}.png`)),
+  path.join(exportsDir, 'ryxen-logo-horizontal.png'),
+  path.join(exportsDir, 'ryxen-logo-horizontal@2x-half.png'),
+  path.join(exportsDir, 'ryxen-logo-horizontal-alt.png'),
+  path.join(exportsDir, 'nyx-base.png'),
+  path.join(exportsDir, 'nyx-mentor.png'),
+  path.join(iconsDir, 'icon-192.png'),
+  path.join(iconsDir, 'icon-512.png'),
+  ...androidLauncherSizes.flatMap(({ dir }) => [
+    path.join(androidResDir, dir, 'ic_launcher.png'),
+    path.join(androidResDir, dir, 'ic_launcher_round.png'),
+    path.join(androidResDir, dir, 'ic_launcher_foreground.png'),
+  ]),
+  ...splashOutputs.map(({ file }) => file),
+];
+
 await Promise.all([
   fs.mkdir(exportsDir, { recursive: true }),
   fs.mkdir(iconsDir, { recursive: true }),
@@ -57,7 +74,16 @@ const [wordmarkPrimaryBuffer, wordmarkAltBuffer, appIconBuffer] = await Promise.
   fs.readFile(sources.appIcon),
 ]);
 
-const browser = await chromium.launch({ headless: true });
+let browser;
+try {
+  browser = await chromium.launch({ headless: true });
+} catch (error) {
+  if (await canReuseExistingOutputs(requiredFallbackOutputs)) {
+    console.log('[generate-branding-exports] reusing committed exports (playwright browser unavailable)');
+    process.exit(0);
+  }
+  throw error;
+}
 
 try {
   const wordmarkPrimaryData = asDataUrl(wordmarkPrimaryBuffer, 'image/png');
@@ -155,6 +181,20 @@ async function ensureSources() {
       }
     }),
   );
+}
+
+async function canReuseExistingOutputs(files) {
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        await fs.access(file);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+  );
+  return results.every(Boolean);
 }
 
 function asDataUrl(buffer, mimeType) {

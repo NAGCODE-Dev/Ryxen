@@ -18,7 +18,18 @@ await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const serverPort = typeof address === 'object' && address ? address.port : 4174;
 
-const browser = await chromium.launch({ headless: true });
+let browser;
+try {
+  browser = await chromium.launch({ headless: true });
+} catch (error) {
+  if (await canReuseExistingOutputs([coachShotPath, ogPath])) {
+    await syncArtifactsToDist();
+    await new Promise((resolve, reject) => server.close((closeError) => (closeError ? reject(closeError) : resolve())));
+    console.log('[generate-marketing-assets] reusing committed exports (playwright browser unavailable)');
+    process.exit(0);
+  }
+  throw error;
+}
 
 try {
   await captureCoachPortalShot(browser);
@@ -289,4 +300,18 @@ async function waitForFile(filePath, attempts = 8) {
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
   }
+}
+
+async function canReuseExistingOutputs(files) {
+  const results = await Promise.all(
+    files.map(async (file) => {
+      try {
+        await stat(file);
+        return true;
+      } catch {
+        return false;
+      }
+    }),
+  );
+  return results.every(Boolean);
 }
