@@ -78,6 +78,49 @@ Pull-up
   assert.equal(weeks[0].workouts[0].day, 'Segunda');
 });
 
+test('OCR de screenshot parcial usa o dia atual como fallback e normaliza ruído comum', () => {
+  const text = `
+REST AS NECLESSANT
+woD
+4X
+10 SINGLE DB BOX STEP OVER (50-60CM) 50-35LBS
+20 WBs 20-14lbs
+80 DUs
+20 WBs
+10 SINGLE DB BOX STEP OVER (50-60CM) 50-35LBS
+3° RECOVERY ROW
+1º REST TOTAL
+OBJETIVO = Sub 3°30 por round
+[TARDE]
+WOD
+12° AMRAP
+10 ALT DB POWER SNATCH 50-35Ibs
+10m SINGLE DB OH WALKING LUNGE(alt como quiser)
+5 MUs (ou 5 BMU)
+OBJETIVO = acima de 7 rounds
+  `.trim();
+
+  const weeks = parseTextIntoWeeks(text, 19, { fallbackDay: 'Quarta' });
+
+  assert.equal(weeks.length, 1);
+  assert.equal(weeks[0].workouts.length, 1);
+  assert.equal(weeks[0].workouts[0].day, 'Quarta');
+
+  const blocks = weeks[0].workouts[0].blocks;
+  assert.equal(blocks.length >= 2, true);
+
+  const morningWod = blocks.find((block) => block.type === 'WOD' && !block.period);
+  const afternoonWod = blocks.find((block) => block.type === 'WOD' && block.period === 'tarde');
+
+  assert.ok(morningWod);
+  assert.ok(afternoonWod);
+  assert.equal(morningWod.parsed.rounds, 4);
+  assert.equal(morningWod.parsed.goal, "Sub 3'30 por round");
+  assert.equal(afternoonWod.parsed.format, 'amrap');
+  assert.equal(afternoonWod.parsed.timeCapMinutes, 12);
+  assert.equal(afternoonWod.parsed.goal, 'acima de 7 rounds');
+});
+
 test('json cru de treino salvo não entra no parser textual universal', () => {
   const json = JSON.stringify({
     weekNumber: 19,

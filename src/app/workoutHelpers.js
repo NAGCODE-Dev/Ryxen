@@ -5,7 +5,7 @@ import {
   parseWeekText,
 } from '../adapters/pdf/customPdfParser.js';
 
-export function parseTextIntoWeeks(rawText, activeWeekNumber = null) {
+export function parseTextIntoWeeks(rawText, activeWeekNumber = null, options = {}) {
   const cleaned = cleanPdfText(String(rawText || ''));
   if (!cleaned || cleaned.length < 20) return [];
 
@@ -16,7 +16,9 @@ export function parseTextIntoWeeks(rawText, activeWeekNumber = null) {
 
   const detectedWeek = detectWeekNumbers(cleaned)[0];
   const inferredWeek = detectedWeek || activeWeekNumber || 1;
-  const single = parseWeekText(cleaned, inferredWeek);
+  const single = parseWeekText(cleaned, inferredWeek, {
+    fallbackDay: options?.fallbackDay || null,
+  });
 
   return single?.workouts?.length ? [single] : [];
 }
