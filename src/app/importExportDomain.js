@@ -404,7 +404,9 @@ export function createImportExportDomain({
       });
 
       if (!parsedWeeks.length) {
-        parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber);
+        parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber, {
+          fallbackDay: getState().currentDay,
+        });
       }
       if (!parsedWeeks.length) {
         throw new Error('Não foi possível identificar treinos no conteúdo importado');

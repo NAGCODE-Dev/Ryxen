@@ -86,7 +86,7 @@ export function detectDayName(line) {
     DOMINGO: 'Domingo',
   };
 
-  const upper = line.trim().toUpperCase();
+  const upper = normalizeHeadingToken(line).toUpperCase();
 
   // Verifica se linha é exatamente um nome de dia
   if (dayMap[upper]) return dayMap[upper];
@@ -105,7 +105,7 @@ export function detectDayName(line) {
  * @returns {string|null} Tipo de bloco ou null
  */
 export function detectBlockType(line) {
-  const upper = line.trim().toUpperCase();
+  const upper = normalizeHeadingToken(line).toUpperCase();
 
   if (/^WOD\b/.test(upper)) return 'WOD';
   if (upper === 'WOD 2') return 'WOD 2';
@@ -118,7 +118,7 @@ export function detectBlockType(line) {
 }
 
 export function detectPeriodName(line) {
-  const upper = line.trim().toUpperCase();
+  const upper = normalizeHeadingToken(line).toUpperCase();
   if (upper === 'MANHÃ' || upper === 'MANHA') return 'manhã';
   if (upper === 'TARDE') return 'tarde';
   return null;
@@ -132,8 +132,9 @@ export function detectPeriodName(line) {
 export function shouldSkipLine(line) {
   if (!line || line.trim().length === 0) return true;
 
-  const lower = line.toLowerCase();
-  const upper = line.trim().toUpperCase();
+  const normalized = normalizeHeadingToken(line);
+  const lower = normalized.toLowerCase();
+  const upper = normalized.toUpperCase();
 
   return (
     lower.includes('gmail.com') ||
@@ -160,9 +161,10 @@ export function shouldSkipLine(line) {
  * @param {number} weekNumber - Número da semana
  * @returns {Object} Estrutura de treino da semana
  */
-export function parseWeekText(weekText, weekNumber) {
+export function parseWeekText(weekText, weekNumber, options = {}) {
   const lines = normalizeParserLines(weekText);
   const workouts = [];
+  const fallbackDay = normalizeFallbackDay(options?.fallbackDay);
   let currentDay = null;
   let currentBlock = null;
   let currentBlockTitle = '';
@@ -190,6 +192,10 @@ export function parseWeekText(weekText, weekNumber) {
     const line = lines[index];
     // Pula linhas vazias ou inválidas
     if (shouldSkipLine(line)) continue;
+
+    if (!currentDay && fallbackDay) {
+      currentDay = fallbackDay;
+    }
 
     // Detecta novo dia
     const dayName = detectDayName(line);
@@ -331,10 +337,43 @@ function findNextMeaningfulLine(lines, startIndex) {
 function normalizeParserLines(weekText) {
   return removeEmptyLines(String(weekText || '').replace(/\r/g, ''))
     .split('\n')
-    .map((line) => normalizeSpaces(line))
+    .map((line) => normalizeOcrArtifacts(normalizeSpaces(line)))
     .flatMap((line) => splitDecoratedCompoundLine(line))
-    .map((line) => normalizeSpaces(line))
+    .map((line) => normalizeOcrArtifacts(normalizeSpaces(line)))
     .filter(Boolean);
+}
+
+function normalizeHeadingToken(line = '') {
+  return String(line || '')
+    .trim()
+    .replace(/^[\[\]【】{}<>|()]+/g, '')
+    .replace(/[\[\]【】{}<>|()]+$/g, '')
+    .replace(/[.,;:]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeFallbackDay(day) {
+  if (!day) return null;
+  const resolved = detectDayName(String(day || ''));
+  return resolved || null;
+}
+
+function normalizeOcrArtifacts(line = '') {
+  let normalized = String(line || '').trim();
+  if (!normalized) return '';
+
+  normalized = normalized
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’`´]/g, "'")
+    .replace(/\b(\d+)\s*[º°]\s*(\d{1,2})\b/g, "$1'$2")
+    .replace(/\b(\d+)\s*[º°]\s*(?=[A-Za-zÀ-ÿ])/g, "$1' ")
+    .replace(/\bW[O0]D\b/gi, 'WOD')
+    .replace(/Ibs/gi, 'lbs')
+    .replace(/^REST AS NEC[A-Z]+$/i, 'REST AS NECESSARY')
+    .replace(/^\[(SEGUNDA|TERÇA|TERCA|QUARTA|QUINTA|SEXTA|SÁBADO|SABADO|DOMINGO|MANHÃ|MANHA|TARDE|WOD(?:\s*2)?)\]$/i, '$1');
+
+  return normalizeSpaces(normalized);
 }
 
 function splitDecoratedCompoundLine(line) {
@@ -937,7 +976,7 @@ function roundKg(value) {
 }
 
 function parseRestLine(line) {
-  const upper = String(line || '').trim().replace(/^\*+/, '').trim().toUpperCase();
+  const upper = normalizeOcrArtifacts(String(line || '').trim().replace(/^\*+/, '').trim()).toUpperCase();
   const restMatch = upper.match(/^(?:(\d+)\s*['’`´]\s*)?REST(?:\s+TOTAL)?(?:\s+(\d+)\s*['’`´])?$/);
   if (restMatch) {
     const minutes = Number(restMatch[1] || restMatch[2] || 0);
@@ -965,7 +1004,7 @@ function parseRestLine(line) {
     };
   }
 
-  if (/^REST AS NECESSARY$/i.test(upper)) {
+  if (/^REST AS NEC/i.test(upper)) {
     return { type: 'rest', durationMinutes: null, auto: true, raw: line };
   }
 
