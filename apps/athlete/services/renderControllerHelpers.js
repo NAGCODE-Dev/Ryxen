@@ -38,6 +38,7 @@ export function createRenderSignatures({ getObjectIdentity }) {
   const buildModalSignature = (state) => [
     state?.__ui?.modal || '',
     state?.__ui?.authMode || '',
+    getObjectIdentity(state?.prs || null),
     getObjectIdentity(state?.__ui?.guide || null),
     getObjectIdentity(state?.__ui?.passwordReset || null),
     getObjectIdentity(state?.__ui?.signupVerification || null),

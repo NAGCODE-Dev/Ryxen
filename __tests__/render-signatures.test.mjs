@@ -29,3 +29,30 @@ test('buildModalSignature reage à troca de passo do guia do Nyx', () => {
 
   assert.notEqual(buildModalSignature(step0), buildModalSignature(step1));
 });
+
+test('buildModalSignature reage a mudanças de PRs quando o modal está aberto', () => {
+  const ids = new WeakMap();
+  let nextId = 0;
+  const getObjectIdentity = (value) => {
+    if (!value || typeof value !== 'object') return String(value ?? '');
+    if (!ids.has(value)) ids.set(value, `obj-${++nextId}`);
+    return ids.get(value);
+  };
+
+  const { buildModalSignature } = createRenderSignatures({ getObjectIdentity });
+
+  const before = {
+    prs: { 'BACK SQUAT': 120 },
+    __ui: {
+      modal: 'prs',
+    },
+  };
+  const after = {
+    prs: { 'BACK SQUAT': 120, 'FRONT SQUAT': 132.5 },
+    __ui: {
+      modal: 'prs',
+    },
+  };
+
+  assert.notEqual(buildModalSignature(before), buildModalSignature(after));
+});
