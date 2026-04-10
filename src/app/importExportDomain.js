@@ -714,7 +714,11 @@ export function createImportExportDomain({
 
     logDebug('📥 PRs importados:', result.imported);
 
-    return { success: true };
+    return {
+      success: true,
+      imported: result.imported,
+      total: result.total,
+    };
   }
 
   async function loadDefaultPRs(merge = true) {

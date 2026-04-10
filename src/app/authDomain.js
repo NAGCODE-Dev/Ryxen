@@ -93,7 +93,7 @@ export function createAuthDomain({
     const nextEmail = String(nextProfile?.email || '').trim().toLowerCase();
     if (!nextEmail) return false;
     const previousEmail = String(previousProfile?.email || '').trim().toLowerCase();
-    return !previousEmail || previousEmail !== nextEmail;
+    return Boolean(previousEmail) && previousEmail !== nextEmail;
   }
 
   async function clearSessionScopedData(options = {}) {

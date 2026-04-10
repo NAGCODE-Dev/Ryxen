@@ -96,6 +96,80 @@ export function isValidPRsObject(data) {
   });
 }
 
+function normalizePRValue(value) {
+  if (typeof value === 'number') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    const parsed = Number(trimmed.replace(',', '.'));
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (value && typeof value === 'object') {
+    const nestedValue = value.load ?? value.value ?? value.pr ?? value.kg ?? value.max;
+    return normalizePRValue(nestedValue);
+  }
+
+  return null;
+}
+
+function normalizePRObject(candidate) {
+  if (!isNonEmptyObject(candidate)) return null;
+
+  const normalized = {};
+
+  for (const [name, rawValue] of Object.entries(candidate)) {
+    if (!isValidExerciseName(name)) return null;
+    const value = normalizePRValue(rawValue);
+    if (!isValidPR(value)) return null;
+    normalized[normalizeExerciseName(name)] = value;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+function normalizePRArray(candidate) {
+  if (!Array.isArray(candidate) || candidate.length === 0) return null;
+
+  const normalized = {};
+
+  for (const entry of candidate) {
+    if (!entry || typeof entry !== 'object') return null;
+    const name = entry.exercise ?? entry.name ?? entry.movement ?? entry.label;
+    const value = normalizePRValue(entry.load ?? entry.value ?? entry.pr ?? entry.kg ?? entry.max);
+    if (!isValidExerciseName(name) || !isValidPR(value)) return null;
+    normalized[normalizeExerciseName(name)] = value;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+function resolveImportCandidate(parsed) {
+  const candidates = [
+    parsed,
+    parsed?.prs,
+    parsed?.data?.prs,
+    parsed?.records,
+    parsed?.items,
+    Array.isArray(parsed) ? parsed : null,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = Array.isArray(candidate)
+      ? normalizePRArray(candidate)
+      : normalizePRObject(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return null;
+}
+
 /**
  * Mescla múltiplos objetos de PRs (útil para importação)
  * @param {...Object} prsSets - Múltiplos objetos de PRs
@@ -142,17 +216,12 @@ export function importFromJSON(jsonString) {
     throw new Error('JSON inválido: ' + error.message);
   }
   
-  if (!isValidPRsObject(parsed)) {
+  const normalized = resolveImportCandidate(parsed);
+
+  if (!normalized) {
     throw new Error('Formato de PRs inválido no JSON');
   }
-  
-  // Normaliza nomes de exercícios
-  const normalized = {};
-  Object.entries(parsed).forEach(([name, load]) => {
-    const key = normalizeExerciseName(name);
-    normalized[key] = load;
-  });
-  
+
   return normalized;
 }
 

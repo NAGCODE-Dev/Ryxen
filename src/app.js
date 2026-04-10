@@ -115,7 +115,16 @@ const ATHLETE_USAGE_KEY = ['ryxen-athlete-usage-v1', 'crossapp-athlete-usage-v1'
 const TELEMETRY_QUEUE_KEY = ['ryxen-telemetry-queue', 'crossapp-telemetry-queue'];
 const APP_STATE_SYNC_KEY = ['ryxen-app-state-sync-v1', 'crossapp-app-state-sync-v1'];
 const SYNC_OUTBOX_KEY = ['ryxen-sync-outbox-v1', 'crossapp-sync-outbox-v1'];
-const PRESERVED_LOCAL_KEYS = [RUNTIME_CONFIG_KEY, TELEMETRY_CONSENT_KEY];
+const TRUSTED_DEVICE_ID_KEY = 'ryxen-trusted-device-id';
+const TRUSTED_DEVICE_MAP_KEY = 'ryxen-trusted-device-map';
+const LAST_AUTH_EMAIL_KEY = 'ryxen-last-auth-email';
+const PRESERVED_LOCAL_KEYS = [
+  RUNTIME_CONFIG_KEY,
+  TELEMETRY_CONSENT_KEY,
+  TRUSTED_DEVICE_ID_KEY,
+  TRUSTED_DEVICE_MAP_KEY,
+  LAST_AUTH_EMAIL_KEY,
+];
 
 const localSessionDomain = createLocalSessionDomain({
   windowObject: WINDOW_OBJECT,

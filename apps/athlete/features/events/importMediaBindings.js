@@ -61,7 +61,7 @@ export function createAthleteMediaImportBindings({
     ['media:error', (data) => {
       busy(false);
       updateImportStatus({
-        active: true,
+        active: false,
         tone: 'error',
         title: 'Falha na importação',
         message: data?.error || 'Erro na importação',

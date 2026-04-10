@@ -4,6 +4,7 @@
  */
 
 const TESSERACT_CDN = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+const DEFAULT_OCR_TIMEOUT_MS = 30000;
 let tesseractPromise = null;
 
 export function isImageFile(file) {
@@ -21,10 +22,15 @@ export async function extractTextFromImageFile(file, options = {}) {
 
   const Tesseract = await ensureTesseract();
   const lang = options.lang || 'por+eng';
+  const timeoutMs = Number(options.timeoutMs) > 0 ? Number(options.timeoutMs) : DEFAULT_OCR_TIMEOUT_MS;
 
-  const result = await Tesseract.recognize(file, lang, {
-    logger: options.logger || (() => {}),
-  });
+  const result = await withTimeout(
+    Tesseract.recognize(file, lang, {
+      logger: options.logger || (() => {}),
+    }),
+    timeoutMs,
+    'OCR da imagem demorou demais. Tente uma imagem menor ou mais nítida.',
+  );
 
   return result?.data?.text?.trim() || '';
 }
@@ -69,5 +75,16 @@ function loadScript(src) {
     script.onload = () => resolve();
     script.onerror = () => reject(new Error('Falha ao carregar OCR'));
     document.head.appendChild(script);
+  });
+}
+
+function withTimeout(task, timeoutMs, message) {
+  let timeoutId = null;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+  });
+
+  return Promise.race([task, timeoutPromise]).finally(() => {
+    if (timeoutId) clearTimeout(timeoutId);
   });
 }

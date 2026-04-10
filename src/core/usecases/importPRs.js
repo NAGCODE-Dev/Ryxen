@@ -79,28 +79,12 @@ export function validatePRsFile(jsonString) {
   }
   
   try {
-    const parsed = JSON.parse(jsonString);
-    
-    if (typeof parsed !== 'object' || parsed === null) {
-      return {
-        valid: false,
-        error: 'JSON não contém objeto',
-      };
-    }
-    
-    const count = Object.keys(parsed).length;
-    
-    if (count === 0) {
-      return {
-        valid: false,
-        error: 'Nenhum PR encontrado no arquivo',
-      };
-    }
-    
+    const importedPRs = importFromJSON(jsonString);
+    const count = Object.keys(importedPRs).length;
     return {
       valid: true,
       count: count,
-      exercises: Object.keys(parsed),
+      exercises: Object.keys(importedPRs),
     };
     
   } catch (error) {

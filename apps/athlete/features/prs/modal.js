@@ -16,6 +16,7 @@ export function renderAthletePrsModal(prs = {}, helpers = {}) {
         <div class="modal-body">
           <div class="modal-intro modal-intro-compact">
             <p class="account-hint">Guarde suas referências de força para o app calcular melhor as cargas do treino.</p>
+            <p class="account-hint">Edite quantos exercícios quiser e salve tudo de uma vez.</p>
           </div>
 
           <div class="pr-search">
@@ -61,16 +62,6 @@ export function renderAthletePrsModal(prs = {}, helpers = {}) {
                 />
 
                 <button
-                  class="btn-secondary pr-save"
-                  data-action="prs:save"
-                  data-exercise="${escapeHtml(exercise)}"
-                  type="button"
-                  title="Salvar"
-                >
-                  Salvar
-                </button>
-
-                <button
                   class="pr-remove"
                   data-action="prs:remove"
                   data-exercise="${escapeHtml(exercise)}"
@@ -82,6 +73,14 @@ export function renderAthletePrsModal(prs = {}, helpers = {}) {
               </div>
             `).join('')}
           </div>
+
+          ${entries.length > 0 ? `
+            <div class="pr-batchActions">
+              <button class="btn-primary pr-saveAll" data-action="prs:save-all" type="button">
+                Salvar tudo
+              </button>
+            </div>
+          ` : ''}
 
           <div class="pr-add">
             <input

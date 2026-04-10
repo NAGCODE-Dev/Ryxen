@@ -10,7 +10,6 @@ export async function handleAthletePrAction(action, context) {
     invalidateHydrationCache,
     hydrateAthleteSummary,
     hydrateAthleteResultsBlock,
-    cssEscape,
   } = context;
 
   switch (action) {
@@ -34,20 +33,32 @@ export async function handleAthletePrAction(action, context) {
       return true;
     }
 
-    case 'prs:save': {
-      const exercise = element.dataset.exercise;
-      if (!exercise) return true;
-
-      const input = root.querySelector(
-        `input[data-action="prs:editValue"][data-exercise="${cssEscape(exercise)}"]`
+    case 'prs:save-all': {
+      const inputs = Array.from(
+        root.querySelectorAll('input[data-action="prs:editValue"][data-exercise]')
       );
-      const value = Number(input?.value);
-      if (!Number.isFinite(value) || value <= 0) throw new Error('PR inválido');
+      if (!inputs.length) {
+        toast('Nenhum PR para salvar');
+        return true;
+      }
 
-      const result = await getAppBridge().addPR(exercise, value);
-      if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PR');
-      await syncAthletePrIfAuthenticated(exercise, value);
-      await finalizeUiChange({ toastMessage: 'PR atualizado' });
+      const payload = {};
+      for (const input of inputs) {
+        const exercise = String(input.dataset.exercise || '').trim();
+        if (!exercise) continue;
+        const value = Number(input.value);
+        if (!Number.isFinite(value) || value <= 0) {
+          throw new Error(`Revise o PR de "${exercise}" antes de salvar`);
+        }
+        payload[exercise] = value;
+      }
+
+      const result = await getAppBridge().importPRs(JSON.stringify(payload));
+      if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PRs');
+      await syncAthletePrIfAuthenticated?.();
+      await finalizeUiChange({
+        toastMessage: `${Object.keys(payload).length} PRs salvos`,
+      });
       return true;
     }
 
@@ -78,8 +89,9 @@ export async function handleAthletePrAction(action, context) {
       if (!file) return true;
       try {
         const text = await file.text();
-        const result = getAppBridge().importPRs(text);
+        const result = await getAppBridge().importPRs(text);
         if (!result?.success) throw new Error(result?.error || 'Falha ao importar');
+        await syncAthletePrIfAuthenticated?.();
         await finalizeUiChange({ toastMessage: `${result.imported} PRs importados de ${file.name}` });
       } catch (error) {
         toast(error?.message || 'Erro ao ler arquivo');
@@ -99,8 +111,9 @@ export async function handleAthletePrAction(action, context) {
       const json = prompt('Cole aqui o JSON de PRs (ex: {"BACK SQUAT":120})');
       if (!json) return true;
 
-      const result = getAppBridge().importPRs(json);
+      const result = await getAppBridge().importPRs(json);
       if (!result?.success) throw new Error(result?.error || 'Falha ao importar PRs');
+      await syncAthletePrIfAuthenticated?.();
       await finalizeUiChange({ toastMessage: 'PRs importados' });
       return true;
     }

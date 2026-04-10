@@ -54,6 +54,10 @@ export function explainImportFailure(error, file) {
     return rawMessage;
   }
 
+  if (lower.includes('demorou demais') || lower.includes('timeout')) {
+    return 'Essa imagem demorou demais para ser lida. Tente cortar, reduzir ou enviar uma versão mais nítida.';
+  }
+
   return rawMessage;
 }
 
