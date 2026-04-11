@@ -132,34 +132,38 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     const deviceId = normalizeDeviceId(req.body?.deviceId);
     const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
     if (!email || !code) {
+      console.warn('[auth/signup/confirm] missing required fields - email or code not provided');
       return res.status(400).json({ error: 'email e code são obrigatórios' });
     }
 
-    const tokenRow = await pool.query(
-      `SELECT id, email, name, password_hash, code_hash, expires_at
-       FROM email_verification_tokens
-       WHERE email = $1
-         AND purpose = 'signup'
-         AND consumed_at IS NULL
-       ORDER BY created_at DESC
-       LIMIT 1`,
-      [email],
-    );
-
-    const verification = tokenRow.rows[0] || null;
-    if (!verification) {
-      return res.status(400).json({ error: 'Nenhum código ativo encontrado para este email' });
-    }
-
-    if (isResetCodeExpired(verification.expires_at)) {
-      return res.status(400).json({ error: 'Código expirado' });
-    }
-
-    if (hashResetCode(code) !== verification.code_hash) {
-      return res.status(400).json({ error: 'Código inválido' });
-    }
-
     try {
+      const tokenRow = await pool.query(
+        `SELECT id, email, name, password_hash, code_hash, expires_at
+         FROM email_verification_tokens
+         WHERE email = $1
+           AND purpose = 'signup'
+           AND consumed_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [email],
+      );
+
+      const verification = tokenRow.rows[0] || null;
+      if (!verification) {
+        console.warn('[auth/signup/confirm] no active verification token found', { email });
+        return res.status(400).json({ error: 'Nenhum código ativo encontrado para este email' });
+      }
+
+      if (isResetCodeExpired(verification.expires_at)) {
+        console.warn('[auth/signup/confirm] verification code expired', { email });
+        return res.status(400).json({ error: 'Código expirado' });
+      }
+
+      if (hashResetCode(code) !== verification.code_hash) {
+        console.warn('[auth/signup/confirm] invalid verification code', { email });
+        return res.status(400).json({ error: 'Código inválido' });
+      }
+
       const inserted = await withUserBootstrap(email, async (client, shouldBeAdmin) => {
         const existing = await client.query(
           `SELECT id, email, name, is_admin, email_verified, email_verified_at
@@ -214,40 +218,52 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     const { email, password } = req.body || {};
     const deviceId = normalizeDeviceId(req.body?.deviceId);
     const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
+    const normalizedEmail = normalizeEmail(email);
+    
     if (!email || !password) {
+      console.warn('[auth/signin] missing required fields - email or password not provided');
       return res.status(400).json({ error: 'email e password são obrigatórios' });
     }
 
-    const found = await pool.query(
-      `SELECT id, email, name, password_hash, is_admin, email_verified, email_verified_at
-       FROM users
-       WHERE email = $1`,
-      [normalizeEmail(email)],
-    );
+    try {
+      const found = await pool.query(
+        `SELECT id, email, name, password_hash, is_admin, email_verified, email_verified_at
+         FROM users
+         WHERE email = $1`,
+        [normalizedEmail],
+      );
 
-    const user = found.rows[0];
-    if (!user) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
+      const user = found.rows[0];
+      if (!user) {
+        console.warn('[auth/signin] user not found', { email: normalizedEmail });
+        return res.status(401).json({ error: 'Credenciais inválidas' });
+      }
+
+      const valid = await bcrypt.compare(String(password), user.password_hash);
+      if (!valid) {
+        console.warn('[auth/signin] invalid password attempt', { userId: user.id, email: normalizedEmail });
+        return res.status(401).json({ error: 'Credenciais inválidas' });
+      }
+
+      const safeUser = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        is_admin: user.is_admin,
+        email_verified: user.email_verified,
+        email_verified_at: user.email_verified_at,
+      };
+      await attachPendingMembershipsToUser(user.id, user.email);
+      await attachPendingBillingClaimsToUser(user.id, user.email);
+      const token = signToken(safeUser);
+      const trustedDevice = await buildTrustedDeviceResponse({ user: safeUser, deviceId, deviceLabel });
+      
+      console.info('[auth/signin] successful login', { userId: user.id, email: normalizedEmail });
+      return res.json({ token, user: safeUser, trustedDevice });
+    } catch (error) {
+      console.error('[auth/signin] unexpected error during signin', { email: normalizedEmail, error: error.message });
+      throw error;
     }
-
-    const valid = await bcrypt.compare(String(password), user.password_hash);
-    if (!valid) {
-      return res.status(401).json({ error: 'Credenciais inválidas' });
-    }
-
-    const safeUser = {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      is_admin: user.is_admin,
-      email_verified: user.email_verified,
-      email_verified_at: user.email_verified_at,
-    };
-    await attachPendingMembershipsToUser(user.id, user.email);
-    await attachPendingBillingClaimsToUser(user.id, user.email);
-    const token = signToken(safeUser);
-    const trustedDevice = await buildTrustedDeviceResponse({ user: safeUser, deviceId, deviceLabel });
-    return res.json({ token, user: safeUser, trustedDevice });
   });
 
   router.post('/trusted-device/signin', authRateLimit, async (req, res) => {

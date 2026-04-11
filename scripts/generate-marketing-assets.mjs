@@ -17,28 +17,64 @@ const server = createStaticServer(distDir);
 await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 const address = server.address();
 const serverPort = typeof address === 'object' && address ? address.port : 4174;
+console.log('[generate-marketing-assets] static server started on port', serverPort);
 
-let browser;
-try {
-  browser = await chromium.launch({ headless: true });
-} catch (error) {
-  if (await canReuseExistingOutputs([coachShotPath, ogPath])) {
-    await syncArtifactsToDist();
-    await new Promise((resolve, reject) => server.close((closeError) => (closeError ? reject(closeError) : resolve())));
-    console.log('[generate-marketing-assets] reusing committed exports (playwright browser unavailable)');
-    process.exit(0);
+let browser = null;
+
+async function launchBrowser() {
+  try {
+    const instance = await chromium.launch({ headless: true });
+    console.log('[generate-marketing-assets] browser launched successfully');
+    return instance;
+  } catch (error) {
+    console.error('[generate-marketing-assets] failed to launch browser:', error.message);
+    if (await canReuseExistingOutputs([coachShotPath, ogPath])) {
+      await syncArtifactsToDist();
+      await closeServerSafely(server);
+      console.log('[generate-marketing-assets] reusing committed exports (playwright browser unavailable)');
+      process.exit(0);
+    }
+    throw error;
   }
-  throw error;
 }
+
+async function closeServerSafely(srv) {
+  return new Promise((resolve, reject) => {
+    srv.close((error) => {
+      if (error) {
+        console.error('[generate-marketing-assets] error closing server:', error.message);
+        reject(error);
+      } else {
+        console.log('[generate-marketing-assets] server closed successfully');
+        resolve();
+      }
+    });
+  });
+}
+
+async function closeBrowserSafely(instance) {
+  if (!instance) return;
+  try {
+    await instance.close();
+    console.log('[generate-marketing-assets] browser closed successfully');
+  } catch (error) {
+    console.error('[generate-marketing-assets] error closing browser:', error.message);
+  }
+}
+
+browser = await launchBrowser();
 
 try {
   await captureCoachPortalShot(browser);
   await generateOgImage(browser);
   await syncArtifactsToDist();
-  console.log('[generate-marketing-assets] ok');
+  console.log('[generate-marketing-assets] all marketing assets generated successfully');
+} catch (error) {
+  console.error('[generate-marketing-assets] error during asset generation:', error.message);
+  throw error;
 } finally {
-  await browser.close();
-  await new Promise((resolve, reject) => server.close((error) => (error ? reject(error) : resolve())));
+  await closeBrowserSafely(browser);
+  await closeServerSafely(server);
 }
 
 async function ensureBuildArtifacts() {
