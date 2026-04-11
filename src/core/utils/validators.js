@@ -138,16 +138,16 @@ export function isNonEmptyArray(arr) {
 }
 
 /**
- * Valida tema (dark/light)
+ * Valida tema
  * @param {string} theme - Tema
  * @returns {boolean}
  */
 export function isValidTheme(theme) {
-  return theme === 'dark' || theme === 'light';
+  return theme === 'dark';
 }
 
 export function isValidAccentTone(accentTone) {
-  return ['blue', 'sage', 'sand', 'rose'].includes(accentTone);
+  return ['blue', 'sage', 'sand', 'rose', 'teal', 'plum', 'ember'].includes(accentTone);
 }
 
 export function isValidInterfaceDensity(interfaceDensity) {

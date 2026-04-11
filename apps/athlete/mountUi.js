@@ -12,6 +12,7 @@ import {
   createAthleteUiStateController,
 } from './services/uiController.js';
 import { createAthleteRenderController } from './services/renderController.js';
+import { markBootstrapStep } from './bootstrapObservability.js';
 
 export async function mountUI({ root }) {
   if (!root) throw new Error('mountUI: root é obrigatório');
@@ -25,6 +26,12 @@ export async function mountUI({ root }) {
   let uiBusy = false;
   let uiBusyMessage = '';
   let loadingHideTimer = null;
+  let loadingHiddenReported = false;
+  const clearPendingLoadingHide = () => {
+    if (loadingHideTimer == null) return;
+    clearTimeout(loadingHideTimer);
+    loadingHideTimer = null;
+  };
 
   const setBusy = (isBusy, message) => {
     uiBusy = !!isBusy;
@@ -32,10 +39,7 @@ export async function mountUI({ root }) {
     const loadingEl = document.getElementById('loading-screen');
     if (!loadingEl) return;
     const labelEl = loadingEl.querySelector('[data-loading-label]');
-    if (loadingHideTimer) {
-      clearTimeout(loadingHideTimer);
-      loadingHideTimer = null;
-    }
+    clearPendingLoadingHide();
     if (isBusy) {
       loadingEl.hidden = false;
       loadingEl.removeAttribute('aria-hidden');
@@ -49,7 +53,12 @@ export async function mountUI({ root }) {
       loadingHideTimer = window.setTimeout(() => {
         loadingEl.hidden = true;
         loadingEl.setAttribute('aria-hidden', 'true');
-      }, 220);
+        if (!loadingHiddenReported) {
+          loadingHiddenReported = true;
+          markBootstrapStep('loading_hidden');
+        }
+        loadingHideTimer = null;
+      }, 28);
     }
   };
 

@@ -35,7 +35,7 @@ export async function handleAthleteBillingAction(action, context) {
     case 'billing:activate-local': {
       const profile = getAppBridge()?.getProfile?.()?.data || null;
       if (!isDeveloperProfile(profile)) {
-        throw new Error('Recurso restrito ao ambiente de desenvolvimento');
+        throw new Error('Recurso restrito a admin ou ambiente de desenvolvimento');
       }
 
       const plan = element.dataset.plan || 'coach';

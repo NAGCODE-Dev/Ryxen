@@ -51,6 +51,7 @@ export function createRenderSignatures({ getObjectIdentity }) {
   ].join('|');
   const buildMainSignature = (state) => [
     state?.__ui?.currentPage || 'today',
+    state?.__ui?.accountView || 'overview',
     state?.activeWeekNumber ?? '',
     state?.currentDay ?? '',
     getObjectIdentity(state?.weeks || null),

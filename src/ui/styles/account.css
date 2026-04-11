@@ -179,6 +179,10 @@
     @apply grid grid-cols-2 gap-2.5;
   }
 
+  .account-choiceGrid-single {
+    grid-template-columns: 1fr;
+  }
+
   .account-toneGrid {
     @apply grid grid-cols-4 gap-2.5;
   }
@@ -199,6 +203,10 @@
       linear-gradient(180deg, rgba(255, 255, 255, 0.026), rgba(255, 255, 255, 0.01)),
       color-mix(in srgb, var(--bg-surface) 92%, var(--bg-surface-2) 8%);
     transition: border-color 160ms ease, background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  }
+
+  .account-choiceFace-static {
+    min-height: 0;
   }
 
   .account-toneFace {
@@ -251,6 +259,18 @@
 
   .account-toneSwatch-rose {
     background: linear-gradient(135deg, #f8e3ea 0%, #c990a7 100%);
+  }
+
+  .account-toneSwatch-teal {
+    background: linear-gradient(135deg, #def5f2 0%, #6bbab6 100%);
+  }
+
+  .account-toneSwatch-plum {
+    background: linear-gradient(135deg, #eee3fb 0%, #9a7ec9 100%);
+  }
+
+  .account-toneSwatch-ember {
+    background: linear-gradient(135deg, #f8e5d8 0%, #cd8756 100%);
   }
 
   .account-switchStack {

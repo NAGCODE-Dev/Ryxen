@@ -9,7 +9,7 @@ import {
   KIWIFY_PRODUCT_STARTER_ID,
   KIWIFY_WEBHOOK_TOKEN,
 } from '../config.js';
-import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
+import { canUseDeveloperTools, normalizeEmail } from '../devAccess.js';
 import { authRequired } from '../auth.js';
 import { getKiwifySaleById, isKiwifyNativeApiConfigured } from '../kiwifyApi.js';
 import { getBillingStatusSnapshot, getEntitlementsSnapshot, resolveFallbackBillingPlanId } from '../queries/billingQueries.js';
@@ -158,13 +158,14 @@ export function createBillingRouter() {
     const snapshot = await getEntitlementsSnapshot({
       userId: req.user.userId,
       email: req.user.email,
+      isAdmin: !!req.user?.isAdmin,
     });
     return res.json(snapshot);
   });
 
   router.post('/mock/activate', authRequired, async (req, res) => {
-    if (!isDeveloperEmail(req.user.email)) {
-      return res.status(403).json({ error: 'Acesso restrito ao ambiente de desenvolvimento' });
+    if (!canUseDeveloperTools(req.user)) {
+      return res.status(403).json({ error: 'Acesso restrito a admin ou ambiente de desenvolvimento' });
     }
 
     const { planId = 'coach', provider = 'mock' } = req.body || {};

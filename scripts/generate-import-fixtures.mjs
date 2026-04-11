@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
-import XLSX from 'xlsx';
+import XLSX from '@lokalise/xlsx';
 
 const rootDir = path.resolve(new URL('..', import.meta.url).pathname);
 const fixturesDir = path.join(rootDir, '__tests__', 'fixtures', 'imports');
@@ -132,6 +132,46 @@ const MANIFEST = [
     category: 'image',
     shouldParse: true,
   },
+  {
+    name: 'treino-bsb-clean.png',
+    mime: 'image/png',
+    quality: 'bsb-clean',
+    format: 'png',
+    category: 'image',
+    shouldParse: true,
+  },
+  {
+    name: 'treino-bsb-cropped.png',
+    mime: 'image/png',
+    quality: 'bsb-edge',
+    format: 'png',
+    category: 'image',
+    shouldParse: true,
+  },
+  {
+    name: 'treino-bsb-low-contrast.png',
+    mime: 'image/png',
+    quality: 'bsb-edge',
+    format: 'png',
+    category: 'image',
+    shouldParse: true,
+  },
+  {
+    name: 'treino-bsb-tilted.png',
+    mime: 'image/png',
+    quality: 'bsb-edge',
+    format: 'png',
+    category: 'image',
+    shouldParse: true,
+  },
+  {
+    name: 'treino-bsb-impossivel.png',
+    mime: 'image/png',
+    quality: 'failure',
+    format: 'png',
+    category: 'image',
+    shouldParse: false,
+  },
 ];
 
 async function main() {
@@ -254,7 +294,8 @@ async function writeWorkbook(sheetMap, fileName, bookType) {
     const worksheet = XLSX.utils.aoa_to_sheet(rows);
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   }
-  XLSX.writeFile(workbook, path.join(fixturesDir, fileName), { bookType });
+  const output = XLSX.write(workbook, { bookType, type: 'buffer' });
+  await fs.writeFile(path.join(fixturesDir, fileName), output);
 }
 
 async function writePdfFixtures() {
@@ -334,6 +375,66 @@ def draw_fixture(path, noisy=False):
 
 draw_fixture(r"${escapePython(path.join(fixturesDir, 'treino-foto-limpa.png'))}", noisy=False)
 draw_fixture(r"${escapePython(path.join(fixturesDir, 'treino-foto-ruidosa.png'))}", noisy=True)
+
+def draw_bsb_fixture(path, variant='clean'):
+    width, height = 1180, 1500
+    image = Image.new("RGB", (width, height), (250, 250, 248))
+    draw = ImageDraw.Draw(image)
+    font = ImageFont.load_default()
+
+    def text(x, y, value, fill=(12, 18, 28)):
+        draw.text((x, y), value, fill=fill, font=font)
+
+    text(94, 110, "BSB")
+    text(94, 160, "STRONG")
+    text(94, 286, "QUARTA", fill=(249, 214, 0))
+    text(94, 352, "MANHA", fill=(74, 203, 230))
+    text(94, 438, "WOD", fill=(208, 39, 34))
+    text(94, 512, "4X", fill=(208, 39, 34))
+    text(94, 560, "10 SINGLE DB BOX STEP OVER (50-60CM) 50-35LBS", fill=(208, 39, 34))
+    text(94, 608, "20 WBS 20-14LBS", fill=(208, 39, 34))
+    text(94, 656, "80 DUs", fill=(208, 39, 34))
+    text(94, 704, "20 WBS", fill=(208, 39, 34))
+    text(94, 752, "10 SINGLE DB BOX STEP OVER (50-60CM) 50-35LBS", fill=(208, 39, 34))
+    draw.line((90, 930, 1080, 930), fill=(180, 180, 180), width=2)
+    text(94, 952, "www.bsbstrong.com", fill=(66, 116, 210))
+    text(94, 994, "#trainwithapurpose #treinocomproposito")
+    text(1020, 994, "123")
+    text(94, 1110, "TARDE", fill=(74, 203, 230))
+    text(94, 1190, "12' AMRAP", fill=(208, 39, 34))
+    text(94, 1238, "10 ALT DB POWER SNATCH 50-35lbs", fill=(208, 39, 34))
+    text(94, 1286, "10m SINGLE DB OH WALKING LUNGE (alt como quiser)", fill=(208, 39, 34))
+    text(94, 1334, "5 MUs (ou 5 BMU)", fill=(208, 39, 34))
+    text(94, 1402, "OBJETIVO = acima de 7 rounds", fill=(159, 52, 217))
+
+    if variant == 'cropped':
+        image = image.crop((64, 220, 1110, 1420))
+    elif variant == 'low_contrast':
+        overlay = Image.new("RGB", image.size, (240, 240, 240))
+        image = Image.blend(image, overlay, 0.32).filter(ImageFilter.GaussianBlur(radius=0.4))
+    elif variant == 'tilted':
+        image = image.rotate(-3.2, expand=True, fillcolor=(247, 247, 245))
+        bbox = image.getbbox()
+        image = image.crop(bbox)
+    elif variant == 'impossible':
+        image = Image.new("RGB", (width, height), (245, 245, 245))
+        draw = ImageDraw.Draw(image)
+        for _ in range(2600):
+            x = random.randint(0, width - 1)
+            y = random.randint(0, height - 1)
+            shade = random.randint(170, 240)
+            image.putpixel((x, y), (shade, shade, shade))
+        for x in range(0, width, 60):
+            draw.line((x, 0, x + 120, height), fill=(210, 210, 210), width=2)
+        image = image.filter(ImageFilter.GaussianBlur(radius=2.4))
+
+    image.save(path, "PNG")
+
+draw_bsb_fixture(r"${escapePython(path.join(fixturesDir, 'treino-bsb-clean.png'))}", 'clean')
+draw_bsb_fixture(r"${escapePython(path.join(fixturesDir, 'treino-bsb-cropped.png'))}", 'cropped')
+draw_bsb_fixture(r"${escapePython(path.join(fixturesDir, 'treino-bsb-low-contrast.png'))}", 'low_contrast')
+draw_bsb_fixture(r"${escapePython(path.join(fixturesDir, 'treino-bsb-tilted.png'))}", 'tilted')
+draw_bsb_fixture(r"${escapePython(path.join(fixturesDir, 'treino-bsb-impossivel.png'))}", 'impossible')
 `);
 }
 

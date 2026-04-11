@@ -23,11 +23,23 @@ export function createAthleteUiActions({
   };
 
   async function finalizeUiChange({
+    ...nextUiState
+  } = {}) {
+    const {
     render = true,
     toastMessage = '',
     ensureGoogle = false,
     focusSelector = '',
-  } = {}) {
+    } = nextUiState;
+    const uiPatch = { ...nextUiState };
+    delete uiPatch.render;
+    delete uiPatch.toastMessage;
+    delete uiPatch.ensureGoogle;
+    delete uiPatch.focusSelector;
+
+    if (Object.keys(uiPatch).length) {
+      await setUiState(uiPatch);
+    }
     if (toastMessage) toast(toastMessage);
     if (render) await renderUi();
     if (ensureGoogle) await getEnsureGoogleSignInUi?.()?.();

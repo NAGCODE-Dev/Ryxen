@@ -15,7 +15,7 @@ export function isDeveloperEmail(email) {
 }
 
 export function isDeveloperProfile(profile) {
-  return isDeveloperEmail(profile?.email);
+  return isDeveloperEmail(profile?.email) || !!profile?.isAdmin || !!profile?.is_admin;
 }
 
 function stripPlusAlias(email) {

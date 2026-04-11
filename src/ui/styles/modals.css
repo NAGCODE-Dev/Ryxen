@@ -653,8 +653,21 @@
   display: none !important;
 }
 
+.auth-googleBlock {
+  overflow: hidden;
+}
+
 #google-signin-button {
   min-height: 40px;
+}
+
+#google-signin-button,
+#google-signin-button > div {
+  width: 100% !important;
+  min-height: 44px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: transparent !important;
 }
 
 .auth-googleHint {

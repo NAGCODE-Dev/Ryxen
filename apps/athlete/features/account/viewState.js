@@ -14,7 +14,7 @@ export function buildAthleteAccountPageState(state, helpers) {
   const planName = formatSubscriptionPlanName(planKey);
   const planStatus = subscription?.status || 'inactive';
   const renewAt = subscription?.renewAt || subscription?.renew_at || null;
-  const canUseDeveloperTools = isDeveloperEmail(profile?.email);
+  const canUseDeveloperTools = isDeveloperEmail(profile?.email) || !!profile?.isAdmin || !!profile?.is_admin;
   const isBusy = !!state?.__ui?.isBusy;
   const athleteBenefits = normalizeAthleteBenefits(state?.__ui?.athleteOverview?.athleteBenefits || null);
   const athleteBlocks = state?.__ui?.athleteOverview?.blocks || {};

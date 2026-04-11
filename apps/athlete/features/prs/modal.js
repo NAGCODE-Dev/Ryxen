@@ -28,18 +28,24 @@ export function renderAthletePrsModal(prs = {}, helpers = {}) {
             />
           </div>
 
-          <div class="pr-actions">
-            <button class="btn-secondary" data-action="prs:export" type="button">
-              Exportar
-            </button>
+          <div class="pr-actionsCard">
+            <div class="pr-actionsHead">
+              <strong>Importar e exportar</strong>
+              <span>Traga seus PRs antigos, salve um backup limpo ou cole um JSON quando precisar migrar rápido.</span>
+            </div>
+            <div class="pr-actionsRow">
+              <button class="btn-secondary" data-action="prs:export" type="button">
+                Exportar
+              </button>
 
-            <button class="btn-secondary" data-action="prs:import-file" type="button">
-              Importar arquivo
-            </button>
+              <button class="btn-secondary" data-action="prs:import-file" type="button">
+                Importar arquivo
+              </button>
 
-            <button class="btn-secondary" data-action="prs:import" type="button">
-              Colar JSON
-            </button>
+              <button class="btn-secondary" data-action="prs:import" type="button">
+                Colar JSON
+              </button>
+            </div>
           </div>
 
           <div class="pr-list" id="ui-prsTable">
@@ -82,24 +88,30 @@ export function renderAthletePrsModal(prs = {}, helpers = {}) {
             </div>
           ` : ''}
 
-          <div class="pr-add">
-            <input
-              type="text"
-              class="add-input"
-              placeholder="Nome do exercício"
-              id="ui-prsNewName"
-            />
-            <input
-              type="number"
-              class="add-input"
-              placeholder="PR (kg)"
-              id="ui-prsNewValue"
-              step="0.5"
-              min="0"
-            />
-            <button class="btn-primary" data-action="prs:add" type="button">
-              Adicionar
-            </button>
+          <div class="pr-addCard">
+            <div class="pr-addHead">
+              <strong>Adicionar exercício</strong>
+              <span>Inclua uma referência nova sem perder o ritmo do resto da edição.</span>
+            </div>
+            <div class="pr-add">
+              <input
+                type="text"
+                class="add-input"
+                placeholder="Nome do exercício"
+                id="ui-prsNewName"
+              />
+              <input
+                type="number"
+                class="add-input"
+                placeholder="PR (kg)"
+                id="ui-prsNewValue"
+                step="0.5"
+                min="0"
+              />
+              <button class="btn-primary" data-action="prs:add" type="button">
+                Adicionar
+              </button>
+            </div>
           </div>
         </div>
       </div>

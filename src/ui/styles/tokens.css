@@ -111,69 +111,22 @@ body[data-accent-tone="rose"] {
   --accent-strong: #f0d4df;
 }
 
-body[data-ui-theme="light"] {
-  color-scheme: light;
-  --bg-app: #eff3f8;
-  --bg-surface: #ffffff;
-  --bg-surface-2: #f5f8fb;
-  --bg-surface-3: #ebf0f6;
-  --bg-soft: rgba(17, 24, 39, 0.03);
-  --bg-soft-2: color-mix(in srgb, var(--accent) 12%, white);
-  --line: rgba(17, 24, 39, 0.08);
-  --line-strong: rgba(17, 24, 39, 0.14);
-  --text-primary: #17212d;
-  --text-secondary: rgba(23, 33, 45, 0.82);
-  --text-muted: rgba(23, 33, 45, 0.58);
-  --energy: #b6916e;
-  --ok: #659b7f;
-  --warn: #ba975f;
-  --danger: #be7f8c;
-  --shadow-lg: 0 24px 60px rgba(15, 23, 42, 0.1);
-  --shadow-md: 0 16px 40px rgba(15, 23, 42, 0.08);
-  --shadow-sm: 0 8px 22px rgba(15, 23, 42, 0.06);
-  --app-body-bg:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 10%, white), transparent 30%),
-    radial-gradient(circle at 100% 8%, rgba(217, 193, 168, 0.16), transparent 22%),
-    linear-gradient(180deg, #f7f9fc 0%, #f0f4f8 48%, #edf2f7 100%);
-  --app-shell-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(246, 249, 253, 0.98)),
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.9), transparent 54%);
-  --app-loading-bg:
-    radial-gradient(circle at top, color-mix(in srgb, var(--accent) 12%, white), transparent 34%),
-    linear-gradient(180deg, #f7f9fc 0%, #edf2f7 100%);
-  --app-toast-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.94)),
-    rgba(255, 255, 255, 0.92);
-  --app-header-bg:
-    linear-gradient(180deg, rgba(247, 249, 252, 0.92), rgba(247, 249, 252, 0.78)),
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.88), transparent 72%);
-  --app-account-button-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 249, 252, 0.92)),
-    rgba(255, 255, 255, 0.88);
-  --app-account-button-active-bg:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, white), color-mix(in srgb, var(--accent) 8%, white)),
-    rgba(255, 255, 255, 0.92);
-  --app-field-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9)),
-    rgba(255, 255, 255, 0.92);
-  --app-secondary-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9)),
-    rgba(255, 255, 255, 0.92);
-  --app-primary-shadow: 0 14px 28px color-mix(in srgb, var(--accent) 18%, transparent);
-  --app-chip-bg: rgba(255, 255, 255, 0.72);
-  --app-quick-action-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.88)),
-    rgba(255, 255, 255, 0.88);
-  --app-quick-action-accent-bg:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 16%, white), color-mix(in srgb, var(--accent) 7%, white)),
-    rgba(255, 255, 255, 0.9);
-  --app-nav-bg: linear-gradient(180deg, rgba(244, 247, 251, 0.88), rgba(244, 247, 251, 0.16));
-  --app-nav-panel-bg:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.88)),
-    rgba(255, 255, 255, 0.9);
-  --app-nav-active-bg:
-    linear-gradient(180deg, color-mix(in srgb, var(--accent) 18%, white), color-mix(in srgb, var(--accent) 10%, white)),
-    rgba(255, 255, 255, 0.24);
+body[data-accent-tone="teal"] {
+  --accent: #7dc8c8;
+  --accent-soft: rgba(125, 200, 200, 0.16);
+  --accent-strong: #caecec;
+}
+
+body[data-accent-tone="plum"] {
+  --accent: #b695da;
+  --accent-soft: rgba(182, 149, 218, 0.16);
+  --accent-strong: #e1d4f4;
+}
+
+body[data-accent-tone="ember"] {
+  --accent: #dba178;
+  --accent-soft: rgba(219, 161, 120, 0.16);
+  --accent-strong: #f1d7c2;
 }
 
 body[data-interface-density="compact"] {

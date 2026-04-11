@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { getRuntimeConfig } from '../packages/shared-web/runtime.js';
+import { coachRequestOptional, createCoachApiRequest, resolveCoachKiwifyCheckoutUrl } from './apiClient.js';
 import '../coach/styles.css';
 
 const STORAGE_KEYS = {
@@ -40,6 +41,8 @@ const SPORT_OPTIONS = [
   { value: 'running', label: 'Running' },
   { value: 'strength', label: 'Strength' },
 ];
+
+const apiRequest = createCoachApiRequest({ readToken });
 
 export default function CoachWorkspace({ profile: initialProfile = null, onLogout = null } = {}) {
   const token = readToken();
@@ -168,8 +171,8 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
         apiRequest('/gyms/me'),
         apiRequest(`/workouts/feed?sportType=${encodeURIComponent(selectedSportType)}`),
         apiRequest('/benchmarks?limit=30&sort=year_desc'),
-        requestOptional(`/competitions/calendar?sportType=${encodeURIComponent(selectedSportType)}`, { competitions: [] }),
-        requestOptional(`/leaderboards/benchmarks/${encodeURIComponent(forms.leaderboardSlug || 'fran')}?limit=1&sportType=${encodeURIComponent(selectedSportType)}`, null),
+        coachRequestOptional(apiRequest, `/competitions/calendar?sportType=${encodeURIComponent(selectedSportType)}`, { competitions: [] }),
+        coachRequestOptional(apiRequest, `/leaderboards/benchmarks/${encodeURIComponent(forms.leaderboardSlug || 'fran')}?limit=1&sportType=${encodeURIComponent(selectedSportType)}`, null),
       ]);
 
       const gyms = gymsRes?.gyms || [];
@@ -465,7 +468,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
     try {
       const provider = resolveBillingProvider();
       if (provider === 'kiwify_link') {
-        const checkoutUrl = resolveKiwifyCheckoutUrl(planId);
+        const checkoutUrl = resolveCoachKiwifyCheckoutUrl(planId);
         if (!checkoutUrl) {
           throw new Error(`Link da Kiwify não configurado para o plano ${String(planId).toUpperCase()}`);
         }
@@ -695,7 +698,11 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
   const renewAt = subscription?.renewAt || subscription?.renew_at || null;
   const daysRemaining = getDaysRemaining(renewAt);
   const billingTone = daysRemaining !== null && daysRemaining <= 7 ? 'warn' : (canCoachManage ? 'ok' : 'warn');
-  const canUseDeveloperTools = String(profile?.email || '').toLowerCase() === 'nagcode.contact@gmail.com';
+  const canUseDeveloperTools = (
+    String(profile?.email || '').toLowerCase() === 'nagcode.contact@gmail.com'
+    || profile?.isAdmin === true
+    || profile?.is_admin === true
+  );
   const athleteMembers = dashboard.members.filter((member) => member.role === 'athlete' && member.status === 'active');
   const showSkeleton = loading && !dashboard.gyms.length && !dashboard.feed.length && !dashboard.benchmarks.length;
   const isRunning = dashboard.selectedSportType === 'running';
@@ -1919,51 +1926,6 @@ function sportLabel(value) {
   }
 }
 
-async function apiRequest(path, options = {}) {
-  const cfg = readRuntimeConfig();
-  const base = String(cfg.apiBaseUrl || '').trim();
-  if (!base) {
-    throw new Error('API base URL não configurada');
-  }
-  const url = `${base.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
-  const token = options.token !== undefined ? options.token : readToken();
-
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const response = await fetch(url, {
-    method: options.method || 'GET',
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    const error = new Error(data?.error || `Erro API (${response.status})`);
-    error.status = response.status;
-    throw error;
-  }
-
-  return data;
-}
-
-async function requestOptional(path, fallback = null, options = {}) {
-  try {
-    return await apiRequest(path, options);
-  } catch (error) {
-    if (isFeatureUnavailableError(error)) {
-      return fallback;
-    }
-    throw error;
-  }
-}
-
-function isFeatureUnavailableError(error) {
-  return [404, 405, 501].includes(Number(error?.status || 0));
-}
-
 function readToken() {
   try {
     return localStorage.getItem(STORAGE_KEYS.token) || localStorage.getItem(STORAGE_KEYS.legacyToken) || '';
@@ -2120,12 +2082,6 @@ function readRuntimeConfig() {
 function resolveBillingProvider() {
   const cfg = readRuntimeConfig();
   return cfg?.billing?.provider || 'kiwify_link';
-}
-
-function resolveKiwifyCheckoutUrl(planId) {
-  const cfg = readRuntimeConfig();
-  const links = cfg?.billing?.links || {};
-  return links[String(planId || 'coach').trim().toLowerCase()] || '';
 }
 
 function getAvailableSportOptions(config) {

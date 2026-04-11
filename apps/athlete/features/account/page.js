@@ -72,14 +72,41 @@ export function renderAthleteAccountPage(state, helpers) {
         ${renderPageHero({
           eyebrow: 'Conta',
           title: 'Sua conta',
-          subtitle: 'Acesso simples, progresso salvo e tudo no seu ritmo.',
+          subtitle: accountView === 'preferences'
+            ? 'Ajuste o visual, o treino e o conforto deste aparelho.'
+            : accountView === 'data'
+              ? 'Backups, documentos e os dados locais do app continuam por aqui.'
+              : 'Acesso simples, progresso salvo e tudo no seu ritmo.',
           actions: `
             <button class="btn-primary" data-action="modal:open" data-modal="auth" type="button">Entrar</button>
           `,
+          footer: `
+            <div class="account-viewTabs" role="tablist" aria-label="Seções da conta">
+              ${renderAccountViewButton('overview', accountView, 'Visão geral', 'entrada e benefícios')}
+              ${renderAccountViewButton('preferences', accountView, 'Preferências', 'visual e treino')}
+              ${renderAccountViewButton('data', accountView, 'Dados', 'backup e documentos')}
+            </div>
+          `,
         })}
 
-        ${renderGuestBenefitsSection(renderPageFold)}
-        ${renderGuestCoachPortalSection(renderPageFold)}
+        ${accountView === 'preferences'
+          ? renderAccountPreferencesSections(renderPageFold, {
+            preferences,
+            escapeHtml,
+          })
+          : accountView === 'data'
+            ? renderAccountDataSections(renderPageFold, {
+              profileEmail: '',
+              planName: 'Livre',
+              planStatus: 'sem login',
+              athleteBenefitSource: 'Conta local',
+              importUsage,
+              escapeHtml,
+            })
+            : `
+              ${renderGuestBenefitsSection(renderPageFold)}
+              ${renderGuestCoachPortalSection(renderPageFold)}
+            `}
       </div>
     `;
   }

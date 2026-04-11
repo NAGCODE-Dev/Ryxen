@@ -1,5 +1,3 @@
-import { renderNyxIllustration } from '../guide/nyxIllustrations.js';
-
 export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
   const hasWeeks = (state?.weeks?.length ?? 0) > 0;
   const day = formatDay(state?.currentDay);
@@ -9,19 +7,9 @@ export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
 
   const nyxTeaser = showNyxHints && !nyxGuideCompleted
     ? `
-      <div class="nyx-teaserCard">
-        <div class="nyx-teaserVisual" aria-hidden="true">
-          ${renderNyxIllustration({ pose: 'welcome', className: 'nyx-illustration nyx-illustration-teaser' })}
-        </div>
-        <div class="nyx-teaserCopy">
-          <span class="section-kicker">Guiado por Nyx</span>
-          <strong class="nyx-teaserTitle">Quer um tour rápido?</strong>
-          <p class="nyx-teaserText">Eu te mostro o essencial do Ryxen sem atrapalhar seu começo.</p>
-        </div>
-        <div class="page-actions page-actions-inline nyx-teaserActions">
-          <button class="btn-secondary" data-action="nyx:hints:disable" type="button">Agora não</button>
-          <button class="btn-primary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">Começar</button>
-        </div>
+      <div class="page-actions page-actions-inline">
+        <button class="btn-secondary" data-action="nyx:hints:disable" type="button">Ocultar dicas do Nyx</button>
+        <button class="btn-primary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">Tour com Nyx</button>
       </div>
     `
     : '';

@@ -2,9 +2,13 @@ export function createRenderScheduler({ performRender }) {
   let renderQueued = false;
   let renderInflight = null;
   let lastRenderAt = 0;
+  let renderDirty = false;
 
   const rerender = () => {
-    if (renderInflight) return renderInflight;
+    if (renderInflight) {
+      renderDirty = true;
+      return renderInflight;
+    }
 
     renderInflight = new Promise((resolve, reject) => {
       const flush = () => {
@@ -18,6 +22,10 @@ export function createRenderScheduler({ performRender }) {
           .catch(reject)
           .finally(() => {
             renderInflight = null;
+            if (renderDirty) {
+              renderDirty = false;
+              rerender();
+            }
           });
       };
 

@@ -110,5 +110,45 @@
     "format": "png",
     "category": "image",
     "shouldParse": true
+  },
+  {
+    "name": "treino-bsb-clean.png",
+    "mime": "image/png",
+    "quality": "bsb-clean",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-bsb-cropped.png",
+    "mime": "image/png",
+    "quality": "bsb-edge",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-bsb-low-contrast.png",
+    "mime": "image/png",
+    "quality": "bsb-edge",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-bsb-tilted.png",
+    "mime": "image/png",
+    "quality": "bsb-edge",
+    "format": "png",
+    "category": "image",
+    "shouldParse": true
+  },
+  {
+    "name": "treino-bsb-impossivel.png",
+    "mime": "image/png",
+    "quality": "failure",
+    "format": "png",
+    "category": "image",
+    "shouldParse": false
   }
 ]

@@ -37,7 +37,7 @@ export function renderAuthenticatedAccountView({
   const planKey = subscription?.plan || subscription?.plan_id || 'free';
   const planName = formatSubscriptionPlanName(planKey);
   const planStatus = subscription?.status || 'inactive';
-  const canUseDeveloperTools = isDeveloperEmail(profile?.email);
+  const canUseDeveloperTools = isDeveloperEmail(profile?.email) || isAdmin;
   const renewAt = subscription?.renewAt || subscription?.renew_at || null;
   const hasActiveCoachSubscription = planStatus === 'active' && (planKey === 'pro' || planKey === 'coach');
   const notifications = buildAthleteNotifications({

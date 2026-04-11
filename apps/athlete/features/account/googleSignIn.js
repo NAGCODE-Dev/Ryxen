@@ -82,7 +82,7 @@ export function createGoogleSignInHelpers({
       googleInitializedClientId = clientId;
     }
     googleApi.accounts.id.renderButton(buttonEl, {
-      theme: 'outline',
+      theme: 'filled_black',
       size: 'large',
       type: 'standard',
       shape: 'pill',

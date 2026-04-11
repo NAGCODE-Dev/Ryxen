@@ -14,6 +14,10 @@ export function isDeveloperEmail(email) {
   });
 }
 
+export function canUseDeveloperTools(user = null) {
+  return isDeveloperEmail(user?.email) || !!user?.isAdmin || !!user?.is_admin;
+}
+
 function stripPlusAlias(email) {
   const [localPart, domain] = String(email || '').split('@');
   if (!localPart || !domain) return normalizeEmail(email);

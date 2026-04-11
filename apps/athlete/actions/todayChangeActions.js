@@ -40,10 +40,7 @@ export async function handleAthleteTodaySettingsChange(event, context) {
       '#setting-showNyxHints',
       currentUiSettings.showNyxHints ?? currentCorePreferences.showNyxHints !== false,
     ),
-    theme: readRadio(
-      'input[name="setting-theme"]:checked',
-      currentUiSettings.theme || currentCorePreferences.theme || 'dark',
-    ),
+    theme: 'dark',
     accentTone: readRadio(
       'input[name="setting-accentTone"]:checked',
       currentUiSettings.accentTone || currentCorePreferences.accentTone || 'blue',
@@ -70,7 +67,7 @@ export async function handleAthleteTodaySettingsChange(event, context) {
         showGoals: nextSettings.showObjectivesInWods,
         showNyxHints: nextSettings.showNyxHints,
         autoConvertLbs: nextSettings.showLbsConversion,
-        theme: nextSettings.theme,
+        theme: 'dark',
         accentTone: nextSettings.accentTone,
         interfaceDensity: nextSettings.interfaceDensity,
         reduceMotion: nextSettings.reduceMotion,

@@ -272,6 +272,68 @@ test('preview e confirmação de importação salvam semanas apenas após confir
   assert.equal(emitted.some(([name]) => name === 'pdf:uploaded'), true);
 });
 
+test('confirmação de importação reposiciona o Hoje para o primeiro dia disponível quando o dia atual não existe no arquivo', async () => {
+  const parsedWeeks = [
+    {
+      weekNumber: 19,
+      workouts: [
+        { day: 'Quarta', blocks: [{ type: 'WOD', lines: ['12 AMRAP'] }] },
+        { day: 'Quinta', blocks: [{ type: 'Strength', lines: ['Back squat'] }] },
+      ],
+    },
+  ];
+  const selected = [];
+  const dayOverrideStorage = createMemoryStorage();
+  const { domain, state, emitted } = createDomain({
+    state: {
+      weeks: [],
+      prs: {},
+      preferences: { theme: 'dark' },
+      activeWeekNumber: 2,
+      currentDay: 'Segunda',
+    },
+    dayOverrideStorage,
+    previewMultiWeekPdf: async () => ({
+      success: true,
+      data: {
+        parsedWeeks,
+        metadata: {
+          fileName: '7.pdf',
+          fileSize: 321,
+          source: 'pdf',
+        },
+      },
+    }),
+    saveParsedWeeks: async (weeks, metadata) => ({
+      success: true,
+      data: {
+        parsedWeeks: weeks,
+        metadata,
+      },
+    }),
+    selectActiveWeek: async (weekNumber) => {
+      selected.push(weekNumber);
+      return { success: true };
+    },
+  });
+
+  await domain.previewMultiWeekPdfUpload({
+    name: '7.pdf',
+    size: 321,
+  });
+
+  const commitResult = await domain.commitPendingImportReview();
+
+  assert.equal(commitResult.success, true);
+  assert.equal(state.currentDay, 'Quarta');
+  assert.deepEqual(selected, [19]);
+  assert.equal(await dayOverrideStorage.get('custom-day'), 'Quarta');
+  assert.equal(
+    emitted.some(([name, payload]) => name === 'day:changed' && payload?.dayName === 'Quarta' && payload?.reason === 'import-fallback'),
+    true,
+  );
+});
+
 test('cancelar preview de importação limpa pendência sem salvar', async () => {
   const parsedWeeks = [
     {

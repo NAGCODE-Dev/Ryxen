@@ -7,8 +7,27 @@ export function handleExerciseHelpAction(element) {
   const url = directUrl || fallbackUrl;
   if (!url) throw new Error('Vídeo de execução indisponível para este movimento');
 
-  const popup = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!popup) {
-    window.location.href = url;
+  if (isNativeLikeRuntime()) {
+    window.location.assign(url);
+    return;
+  }
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function isNativeLikeRuntime() {
+  try {
+    if (window.Capacitor?.isNativePlatform?.()) return true;
+    const protocol = String(window.location?.protocol || '').toLowerCase();
+    return protocol === 'capacitor:' || protocol === 'file:';
+  } catch {
+    return false;
   }
 }

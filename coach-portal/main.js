@@ -4,6 +4,7 @@ import { inject } from '@vercel/analytics';
 import { injectSpeedInsights } from '@vercel/speed-insights';
 import { getRuntimeConfig } from '../packages/shared-web/runtime.js';
 import { applyAuthRedirectFromUrl, buildGoogleRedirectUrl } from '../packages/shared-web/auth.js';
+import { createCoachApiRequest } from './apiClient.js';
 import '../coach/styles.css';
 
 const CoachWorkspace = React.lazy(() => import('./workspace.js'));
@@ -17,6 +18,8 @@ const STORAGE_KEYS = {
   runtime: 'ryxen-runtime-config',
   legacyRuntime: 'crossapp-runtime-config',
 };
+
+const apiRequest = createCoachApiRequest({ readToken });
 
 setupVercelObservability();
 
@@ -168,34 +171,6 @@ function App() {
     },
     React.createElement(CoachWorkspace, { profile, onLogout: handleLogout })
   );
-}
-
-async function apiRequest(path, options = {}) {
-  const cfg = readRuntimeConfig();
-  const base = String(cfg.apiBaseUrl || '').trim();
-  if (!base) {
-    throw new Error('API base URL não configurada');
-  }
-  const url = `${base.replace(/\/$/, '')}/${String(path).replace(/^\//, '')}`;
-  const token = options.token !== undefined ? options.token : readToken();
-
-  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  const response = await fetch(url, {
-    method: options.method || 'GET',
-    headers,
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
-
-  const text = await response.text();
-  const data = text ? JSON.parse(text) : null;
-
-  if (!response.ok) {
-    throw new Error(data?.error || `Erro API (${response.status})`);
-  }
-
-  return data;
 }
 
 function readToken() {

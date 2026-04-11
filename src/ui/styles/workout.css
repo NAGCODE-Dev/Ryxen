@@ -1391,6 +1391,44 @@
   min-width: 0;
 }
 
+.pr-actionsCard,
+.pr-addCard {
+  display: grid;
+  gap: 12px;
+  padding: 13px 14px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012)),
+    color-mix(in srgb, var(--bg-surface-2) 94%, white 6%);
+}
+
+.pr-actionsHead,
+.pr-addHead {
+  display: grid;
+  gap: 4px;
+}
+
+.pr-actionsHead strong,
+.pr-addHead strong {
+  font-size: 0.92rem;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.pr-actionsHead span,
+.pr-addHead span {
+  color: var(--text-secondary);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.pr-actionsRow {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .coach-listCompact .coach-listItem {
   grid-template-columns: minmax(0, 1.15fr) minmax(0, 1.85fr);
   align-items: start;
@@ -1416,7 +1454,7 @@
 
 .pr-batchActions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .pr-saveAll {

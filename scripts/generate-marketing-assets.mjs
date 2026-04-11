@@ -138,8 +138,284 @@ async function captureCoachPortalShot(browser) {
     deviceScaleFactor: 1,
   });
 
-  await page.goto(`http://127.0.0.1:${serverPort}/coach/`, { waitUntil: 'networkidle' });
-  await page.locator('.auth-layout').screenshot({
+  await page.setContent(`<!DOCTYPE html>
+    <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8">
+        <style>
+          * { box-sizing: border-box; }
+          html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Manrope", "Segoe UI", sans-serif;
+            background:
+              radial-gradient(circle at top left, rgba(66, 142, 255, 0.16), transparent 28%),
+              linear-gradient(180deg, #08111b 0%, #0a1017 100%);
+          }
+          body {
+            padding: 24px;
+          }
+          .frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 34px;
+            overflow: hidden;
+            border: 1px solid rgba(196, 210, 233, 0.12);
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01)),
+              rgba(12, 17, 24, 0.98);
+            box-shadow: 0 34px 92px rgba(4, 8, 16, 0.28);
+            display: grid;
+            grid-template-columns: 260px minmax(0, 1fr);
+          }
+          .sidebar {
+            display: grid;
+            align-content: start;
+            gap: 18px;
+            padding: 24px 20px;
+            border-right: 1px solid rgba(196, 210, 233, 0.1);
+            background:
+              linear-gradient(180deg, rgba(18, 23, 31, 0.98), rgba(12, 16, 22, 0.94)),
+              radial-gradient(circle at top, rgba(168, 194, 247, 0.08), transparent 30%);
+          }
+          .brand {
+            display: grid;
+            gap: 10px;
+          }
+          .brand small {
+            color: rgba(186, 196, 211, 0.72);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+          }
+          .brand strong {
+            color: #f3f6fb;
+            font-size: 30px;
+            line-height: 0.94;
+            letter-spacing: -0.05em;
+          }
+          .brand p {
+            margin: 0;
+            color: rgba(211, 220, 232, 0.72);
+            font-size: 13px;
+            line-height: 1.55;
+          }
+          .nav {
+            display: grid;
+            gap: 10px;
+          }
+          .navItem {
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            padding: 0 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(196, 210, 233, 0.08);
+            background: rgba(255,255,255,0.03);
+            color: rgba(225, 231, 241, 0.82);
+            font-size: 14px;
+            font-weight: 700;
+          }
+          .navItem.active {
+            color: #f8fbff;
+            border-color: rgba(66, 142, 255, 0.28);
+            background:
+              linear-gradient(180deg, rgba(66, 142, 255, 0.14), rgba(66, 142, 255, 0.05)),
+              rgba(255,255,255,0.03);
+          }
+          .main {
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+            background:
+              radial-gradient(circle at top right, rgba(66, 142, 255, 0.08), transparent 24%),
+              linear-gradient(180deg, rgba(255,255,255,0.012), rgba(255,255,255,0));
+          }
+          .hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 22px;
+            border-radius: 24px;
+            border: 1px solid rgba(196, 210, 233, 0.12);
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.012)),
+              rgba(20, 26, 35, 0.92);
+          }
+          .hero small {
+            display: inline-flex;
+            min-height: 28px;
+            align-items: center;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(196, 210, 233, 0.12);
+            color: #a8c2f7;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            background: rgba(255,255,255,0.03);
+          }
+          .hero h2 {
+            margin: 14px 0 10px;
+            color: #f3f6fb;
+            font-size: 34px;
+            line-height: 0.96;
+            letter-spacing: -0.06em;
+            max-width: 11ch;
+          }
+          .hero p {
+            margin: 0;
+            max-width: 56ch;
+            color: rgba(211, 220, 232, 0.76);
+            font-size: 14px;
+            line-height: 1.6;
+          }
+          .heroPills {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 16px;
+          }
+          .heroPills span {
+            display: inline-flex;
+            align-items: center;
+            min-height: 32px;
+            padding: 0 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(196, 210, 233, 0.12);
+            background: rgba(255,255,255,0.03);
+            color: rgba(225, 231, 241, 0.82);
+            font-size: 12px;
+            font-weight: 700;
+          }
+          .heroStat {
+            min-width: 220px;
+            display: grid;
+            gap: 10px;
+          }
+          .heroStatCard {
+            display: grid;
+            gap: 4px;
+            padding: 14px;
+            border-radius: 18px;
+            border: 1px solid rgba(196, 210, 233, 0.1);
+            background: rgba(255,255,255,0.03);
+          }
+          .heroStatCard span {
+            color: rgba(172, 186, 206, 0.72);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+          .heroStatCard strong {
+            color: #f3f6fb;
+            font-size: 18px;
+            line-height: 1.1;
+          }
+          .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 16px;
+          }
+          .card {
+            display: grid;
+            gap: 10px;
+            padding: 18px;
+            border-radius: 22px;
+            border: 1px solid rgba(196, 210, 233, 0.1);
+            background:
+              linear-gradient(180deg, rgba(255,255,255,0.028), rgba(255,255,255,0.01)),
+              rgba(20, 26, 35, 0.9);
+          }
+          .card small {
+            color: rgba(172, 186, 206, 0.72);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+          }
+          .card strong {
+            color: #f3f6fb;
+            font-size: 18px;
+            line-height: 1.08;
+            letter-spacing: -0.03em;
+          }
+          .card p {
+            margin: 0;
+            color: rgba(211, 220, 232, 0.74);
+            font-size: 13px;
+            line-height: 1.55;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="frame">
+          <aside class="sidebar">
+            <div class="brand">
+              <small>Coach Portal</small>
+              <strong>Ryxen</strong>
+              <p>Gestão do box, publicação e visão operacional em uma superfície separada do app do atleta.</p>
+            </div>
+            <div class="nav">
+              <div class="navItem active">Visão geral</div>
+              <div class="navItem">Publicação</div>
+              <div class="navItem">Atletas</div>
+              <div class="navItem">Benchmarks</div>
+              <div class="navItem">Assinatura</div>
+            </div>
+          </aside>
+          <main class="main">
+            <section class="hero">
+              <div>
+                <small>Experiência do coach</small>
+                <h2>Publicar, organizar e acompanhar.</h2>
+                <p>Planejamento, grupos, atletas, benchmarks e assinatura ficam em um workspace mais claro para operar no dia a dia.</p>
+                <div class="heroPills">
+                  <span>Portal dedicado</span>
+                  <span>Publicação com contexto</span>
+                  <span>Gestão com clareza</span>
+                </div>
+              </div>
+              <div class="heroStat">
+                <div class="heroStatCard">
+                  <span>Grupo ativo</span>
+                  <strong>RX • 18 atletas</strong>
+                </div>
+                <div class="heroStatCard">
+                  <span>Benchmark</span>
+                  <strong>Fran • ranking pronto</strong>
+                </div>
+              </div>
+            </section>
+            <section class="grid">
+              <article class="card">
+                <small>Publicação</small>
+                <strong>Treinos e blocos organizados</strong>
+                <p>Planeje a semana e publique sem misturar a rotina operacional com a experiência do atleta.</p>
+              </article>
+              <article class="card">
+                <small>Atletas</small>
+                <strong>Grupos, acessos e contexto</strong>
+                <p>Entenda quem está ativo, quem precisa de ajuste e onde cada conta realmente entra.</p>
+              </article>
+              <article class="card">
+                <small>Box</small>
+                <strong>Assinatura, portal e uso</strong>
+                <p>Billing, período liberado e ferramentas do coach em um lugar só, sem ruído extra.</p>
+              </article>
+            </section>
+          </main>
+        </div>
+      </body>
+    </html>`, { waitUntil: 'load' });
+
+  await page.screenshot({
     path: coachShotPath,
   });
   await page.close();

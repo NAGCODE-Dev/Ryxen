@@ -44,6 +44,36 @@ export function createImportExportDomain({
 }) {
   let pendingImportReview = null;
 
+  function listImportedWorkoutDays(weeks = []) {
+    return [...new Set(
+      (Array.isArray(weeks) ? weeks : [])
+        .flatMap((week) => Array.isArray(week?.workouts) ? week.workouts : [])
+        .map((workout) => String(workout?.day || '').trim())
+        .filter(Boolean),
+    )];
+  }
+
+  async function alignCurrentDayWithImportedWeeks(weeks = []) {
+    const state = getState();
+    const availableDays = listImportedWorkoutDays(weeks);
+    if (!availableDays.length) return null;
+
+    const currentDay = String(state?.currentDay || '').trim();
+    if (currentDay && availableDays.includes(currentDay)) {
+      return currentDay;
+    }
+
+    const fallbackDay = availableDays[0];
+    setState({ currentDay: fallbackDay });
+    try {
+      await dayOverrideStorage.set('custom-day', fallbackDay);
+    } catch {
+      // no-op: imported workout should still render even if persisting the fallback fails
+    }
+    emit('day:changed', { dayName: fallbackDay, manual: true, reason: 'import-fallback' });
+    return fallbackDay;
+  }
+
   function summarizeWeeksForReview(weeks = [], source = 'text', fileName = '') {
     const normalizedWeeks = Array.isArray(weeks) ? weeks : [];
     const previewDays = [];
@@ -108,6 +138,7 @@ export function createImportExportDomain({
 
     const weeks = saveResult.data.parsedWeeks;
     setState({ weeks });
+    await alignCurrentDayWithImportedWeeks(weeks);
     const weekResult = await selectActiveWeek(weeks[0].weekNumber);
     if (!weekResult?.success) throw new Error(weekResult?.error || 'Falha ao selecionar semana');
     await safeSyncImportedPlan(weeks, saveResult.data.metadata);

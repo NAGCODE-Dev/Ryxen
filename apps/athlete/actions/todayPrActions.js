@@ -57,6 +57,7 @@ export async function handleAthletePrAction(action, context) {
       if (!result?.success) throw new Error(result?.error || 'Falha ao salvar PRs');
       await syncAthletePrIfAuthenticated?.();
       await finalizeUiChange({
+        modal: null,
         toastMessage: `${Object.keys(payload).length} PRs salvos`,
       });
       return true;

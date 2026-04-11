@@ -22,8 +22,8 @@ export function createAthleteRenderPipeline({
     const preferences = state?.preferences || {};
 
     document.body.dataset.page = state.__ui.currentPage || 'today';
-    document.body.dataset.uiTheme = preferences.theme === 'light' ? 'light' : 'dark';
-    document.body.dataset.accentTone = ['blue', 'sage', 'sand', 'rose'].includes(preferences.accentTone)
+    document.body.dataset.uiTheme = 'dark';
+    document.body.dataset.accentTone = ['blue', 'sage', 'sand', 'rose', 'teal', 'plum', 'ember'].includes(preferences.accentTone)
       ? preferences.accentTone
       : 'blue';
     document.body.dataset.interfaceDensity = preferences.interfaceDensity === 'compact'

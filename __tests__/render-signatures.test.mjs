@@ -56,3 +56,30 @@ test('buildModalSignature reage a mudanças de PRs quando o modal está aberto',
 
   assert.notEqual(buildModalSignature(before), buildModalSignature(after));
 });
+
+test('buildMainSignature reage à troca de subárea da conta', () => {
+  const ids = new WeakMap();
+  let nextId = 0;
+  const getObjectIdentity = (value) => {
+    if (!value || typeof value !== 'object') return String(value ?? '');
+    if (!ids.has(value)) ids.set(value, `obj-${++nextId}`);
+    return ids.get(value);
+  };
+
+  const { buildMainSignature } = createRenderSignatures({ getObjectIdentity });
+
+  const overview = {
+    __ui: {
+      currentPage: 'account',
+      accountView: 'overview',
+    },
+  };
+  const data = {
+    __ui: {
+      currentPage: 'account',
+      accountView: 'data',
+    },
+  };
+
+  assert.notEqual(buildMainSignature(overview), buildMainSignature(data));
+});

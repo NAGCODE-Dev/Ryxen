@@ -1,5 +1,3 @@
-import { renderNyxIllustration } from '../guide/nyxIllustrations.js';
-
 export function renderAccountAccessSection(renderPageFold, view) {
   const {
     isBusy = false,
@@ -190,8 +188,7 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
   const showGoals = preferences.showGoals !== false;
   const showNyxHints = preferences.showNyxHints !== false;
   const nyxGuideCompleted = preferences.nyxGuideCompleted === true;
-  const theme = preferences.theme === 'light' ? 'light' : 'dark';
-  const accentTone = ['blue', 'sage', 'sand', 'rose'].includes(preferences.accentTone)
+  const accentTone = ['blue', 'sage', 'sand', 'rose', 'teal', 'plum', 'ember'].includes(preferences.accentTone)
     ? preferences.accentTone
     : 'blue';
   const interfaceDensity = preferences.interfaceDensity === 'compact' ? 'compact' : 'comfortable';
@@ -207,26 +204,17 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
           <div class="account-settingsCard">
             <div class="account-settingsHead">
               <strong>Base visual</strong>
-              <span>Escolha entre um ambiente escuro e uma leitura mais clara.</span>
+              <span>O Ryxen agora segue uma base escura única para manter contraste, foco e acabamento premium.</span>
             </div>
-            <div class="account-choiceGrid">
+            <div class="account-choiceGrid account-choiceGrid-single">
               ${renderOptionCard({
                 name: 'setting-theme',
                 key: 'theme',
                 value: 'dark',
-                checked: theme === 'dark',
+                checked: true,
                 eyebrow: 'Escuro',
                 title: 'Noite',
                 description: 'Mais foco, contraste calmo e cara premium.',
-              })}
-              ${renderOptionCard({
-                name: 'setting-theme',
-                key: 'theme',
-                value: 'light',
-                checked: theme === 'light',
-                eyebrow: 'Claro',
-                title: 'Brisa',
-                description: 'Mais leve para leitura longa e ambientes claros.',
               })}
             </div>
           </div>
@@ -264,6 +252,27 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
                 label: 'Rose',
                 description: 'Suave',
                 swatchClass: 'account-toneSwatch-rose',
+              })}
+              ${renderAccentCard({
+                value: 'teal',
+                checked: accentTone === 'teal',
+                label: 'Teal',
+                description: 'Fresco',
+                swatchClass: 'account-toneSwatch-teal',
+              })}
+              ${renderAccentCard({
+                value: 'plum',
+                checked: accentTone === 'plum',
+                label: 'Plum',
+                description: 'Profundo',
+                swatchClass: 'account-toneSwatch-plum',
+              })}
+              ${renderAccentCard({
+                value: 'ember',
+                checked: accentTone === 'ember',
+                label: 'Ember',
+                description: 'Enérgico',
+                swatchClass: 'account-toneSwatch-ember',
               })}
             </div>
           </div>
@@ -388,16 +397,12 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
         <div class="account-settingsCard account-settingsCard-nyx">
           <div class="account-settingsHead">
             <strong>${nyxGuideCompleted ? 'Tour concluído' : 'Tour opcional do Nyx'}</strong>
-            <span>${nyxGuideCompleted ? 'Você já viu o essencial. Se quiser, o Nyx pode te mostrar tudo de novo.' : 'Boas-vindas, treino do dia e evolução em quatro telas bem curtas.'}</span>
+            <span>${nyxGuideCompleted ? 'Você já viu o essencial. Se quiser, o Nyx pode te acompanhar de novo pelas áreas principais.' : 'Hoje, evolução, PRs, importação e conta em um tour curto e guiado.'}</span>
           </div>
-          <div class="account-nyxPreview">
-            <div class="account-nyxPreviewVisual" aria-hidden="true">
-              ${renderNyxIllustration({ pose: 'welcome', className: 'nyx-illustration account-nyxPreviewArt' })}
-            </div>
-            <div class="account-nyxPreviewCopy">
-              <strong>Guiado por Nyx</strong>
-              <small>Curto, claro e sem invadir o app inteiro.</small>
-            </div>
+          <div class="account-choiceFace account-choiceFace-static">
+            <span class="account-choiceEyebrow">Guia premium</span>
+            <strong>Tour real pelo app</strong>
+            <small>Abre as áreas certas, explica o que cada uma faz e guarda seu progresso sem peso visual extra.</small>
           </div>
           <div class="page-actions">
             <button class="btn-primary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">${nyxGuideCompleted ? 'Ver de novo' : 'Começar tour'}</button>

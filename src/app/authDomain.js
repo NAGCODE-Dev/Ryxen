@@ -32,6 +32,13 @@ export function createAuthDomain({
     return result;
   }
 
+  async function handleSignInWithTrustedDevice(payload) {
+    const previousProfile = handleGetProfile()?.data || null;
+    const result = await remoteHandlers.handleSignInWithTrustedDevice(payload);
+    await finalizeAuthChange(previousProfile, result?.user);
+    return result;
+  }
+
   async function handleSignInWithGoogle(payload) {
     const previousProfile = handleGetProfile()?.data || null;
     const result = await remoteHandlers.handleSignInWithGoogle(payload);
@@ -137,6 +144,7 @@ export function createAuthDomain({
     handleSignUp,
     handleConfirmSignUp,
     handleSignIn,
+    handleSignInWithTrustedDevice,
     handleSignInWithGoogle,
     handleStartGoogleRedirect,
     handleRefreshSession,
