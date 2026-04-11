@@ -74,16 +74,34 @@ const [wordmarkPrimaryBuffer, wordmarkAltBuffer, appIconBuffer] = await Promise.
   fs.readFile(sources.appIcon),
 ]);
 
-let browser;
-try {
-  browser = await chromium.launch({ headless: true });
-} catch (error) {
-  if (await canReuseExistingOutputs(requiredFallbackOutputs)) {
-    console.log('[generate-branding-exports] reusing committed exports (playwright browser unavailable)');
-    process.exit(0);
+let browser = null;
+
+async function launchBrowser() {
+  try {
+    const instance = await chromium.launch({ headless: true });
+    console.log('[generate-branding-exports] browser launched successfully');
+    return instance;
+  } catch (error) {
+    console.error('[generate-branding-exports] failed to launch browser:', error.message);
+    if (await canReuseExistingOutputs(requiredFallbackOutputs)) {
+      console.log('[generate-branding-exports] reusing committed exports (playwright browser unavailable)');
+      process.exit(0);
+    }
+    throw error;
   }
-  throw error;
 }
+
+async function closeBrowserSafely(instance) {
+  if (!instance) return;
+  try {
+    await instance.close();
+    console.log('[generate-branding-exports] browser closed successfully');
+  } catch (error) {
+    console.error('[generate-branding-exports] error closing browser:', error.message);
+  }
+}
+
+browser = await launchBrowser();
 
 try {
   const wordmarkPrimaryData = asDataUrl(wordmarkPrimaryBuffer, 'image/png');
@@ -158,8 +176,12 @@ try {
       output: splash.file,
     });
   }
+  console.log('[generate-branding-exports] all assets generated successfully');
+} catch (error) {
+  console.error('[generate-branding-exports] error during asset generation:', error.message);
+  throw error;
 } finally {
-  await browser.close();
+  await closeBrowserSafely(browser);
 }
 
 await Promise.all([

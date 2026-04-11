@@ -16,7 +16,9 @@ async function main() {
   await ensureFixtures();
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   const server = await startStaticServer();
+  console.log('[report-import-format-support] static server started');
 
+  let browser = null;
   try {
     const browserFixtures = manifest.filter((item) => item.category === 'pdf' || item.category === 'image');
     const localFixtures = manifest.filter((item) => !browserFixtures.includes(item));
@@ -27,7 +29,8 @@ async function main() {
       results.push(await evaluateFixtureInNode(fixture));
     }
 
-    const browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true });
+    console.log('[report-import-format-support] browser launched successfully');
     try {
       const page = await browser.newPage();
       page.setDefaultTimeout(120_000);
@@ -38,13 +41,28 @@ async function main() {
         const result = await evaluateFixtureInBrowser(page, fixture);
         results.push(result);
       }
+    } catch (error) {
+      console.error('[report-import-format-support] error during browser evaluation:', error.message);
+      throw error;
     } finally {
-      await browser.close();
+      if (browser) {
+        try {
+          await browser.close();
+          console.log('[report-import-format-support] browser closed successfully');
+        } catch (error) {
+          console.error('[report-import-format-support] error closing browser:', error.message);
+        }
+      }
     }
 
     printReport(results);
+  } catch (error) {
+    console.error('[report-import-format-support] fatal error:', error.message);
+    throw error;
   } finally {
+    console.log('[report-import-format-support] stopping static server');
     await stopProcess(server);
+    console.log('[report-import-format-support] cleanup completed');
   }
 }
 
