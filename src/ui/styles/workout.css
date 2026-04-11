@@ -1,11 +1,11 @@
 .workout-container {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .page-stack {
   display: grid;
-  gap: 14px;
+  gap: 16px;
 }
 
 .page-section {
@@ -59,7 +59,7 @@
 .coach-pillRow,
 .coach-tabs {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -143,7 +143,7 @@
 
 .page-foldBody {
   display: grid;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
   padding: 14px 16px 16px;
   border-top: 1px solid var(--line);
@@ -172,7 +172,7 @@
 .today-overviewCard,
 .today-sessionCard {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
@@ -385,7 +385,7 @@
 
 .workout-block {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .workout-blockHeader {
@@ -556,6 +556,43 @@
 
 .workout-line:last-child {
   margin-bottom: 0;
+}
+
+[data-guide-target] {
+  scroll-margin-top: 120px;
+}
+
+body[data-guide-target] [data-guide-target] {
+  transition:
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    transform 180ms ease,
+    background 180ms ease,
+    opacity 180ms ease;
+}
+
+body[data-guide-target] [data-guide-target]:not(body) {
+  position: relative;
+}
+
+body[data-guide-target="today-overview"] [data-guide-target="today-overview"],
+body[data-guide-target="today-workout"] [data-guide-target="today-workout"],
+body[data-guide-target="today-import"] [data-guide-target="today-import"],
+body[data-guide-target="history-benchmarks"] [data-guide-target="history-benchmarks"],
+body[data-guide-target="history-prs"] [data-guide-target="history-prs"],
+body[data-guide-target="account-access"] [data-guide-target="account-access"],
+body[data-guide-target="account-coach"] [data-guide-target="account-coach"],
+body[data-guide-target="account-preferences"] [data-guide-target="account-preferences"],
+body[data-guide-target="account-data"] [data-guide-target="account-data"] {
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), rgba(255, 255, 255, 0.016)),
+    color-mix(in srgb, var(--bg-surface) 90%, var(--bg-surface-2) 10%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent),
+    var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .workout-line.is-active {

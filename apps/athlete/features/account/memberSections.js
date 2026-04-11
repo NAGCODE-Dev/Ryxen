@@ -17,6 +17,7 @@ export function renderAccountAccessSection(renderPageFold, view) {
   return renderPageFold({
     title: 'Seu acesso',
     subtitle: 'Conta, plano e uso em uma leitura só.',
+    guideTarget: 'account-access',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
@@ -57,6 +58,7 @@ export function renderAccountCoachPortalSection(renderPageFold, view) {
   return renderPageFold({
     title: 'Coach Portal',
     subtitle: 'Gestão do box, quando fizer sentido ativar.',
+    guideTarget: 'account-coach',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
@@ -199,6 +201,7 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
     ${renderPageFold({
       title: 'Aparência',
       subtitle: 'Ajuste o clima visual para o jeito que você mais gosta de usar.',
+      guideTarget: 'account-preferences',
       content: `
         <div class="account-settingsGrid">
           <div class="account-settingsCard">
@@ -319,6 +322,7 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
     ${renderPageFold({
       title: 'Treino',
       subtitle: 'Controle a forma como os blocos e prioridades aparecem para você.',
+      guideTarget: 'account-preferences',
       content: `
         <div class="account-settingsGrid">
           <div class="account-settingsCard">
@@ -393,6 +397,7 @@ export function renderAccountPreferencesSections(renderPageFold, view) {
     ${renderPageFold({
       title: 'Nyx',
       subtitle: 'Um guia opcional, calmo e direto para quando você quiser uma ajuda leve.',
+      guideTarget: 'account-preferences',
       content: `
         <div class="account-settingsCard account-settingsCard-nyx">
           <div class="account-settingsHead">
@@ -428,6 +433,7 @@ export function renderAccountDataSections(renderPageFold, view) {
     ${renderPageFold({
       title: 'Seus dados',
       subtitle: 'Backup, restauração e o básico do que está salvo hoje.',
+      guideTarget: 'account-data',
       content: `
         <div class="account-dataGrid">
           <article class="account-dataCard">
@@ -451,6 +457,7 @@ export function renderAccountDataSections(renderPageFold, view) {
     ${renderPageFold({
       title: 'Documentos e privacidade',
       subtitle: 'Acesso rápido às páginas mais importantes do produto.',
+      guideTarget: 'account-data',
       content: `
         <div class="settings-actions settings-actions-grid">
           <a class="btn-secondary settings-linkBtn" href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacidade</a>

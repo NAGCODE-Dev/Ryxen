@@ -44,6 +44,15 @@ const SPORT_OPTIONS = [
 
 const apiRequest = createCoachApiRequest({ readToken });
 
+const BENCHMARK_SOURCE_OPTIONS = [
+  { value: '', label: 'Todas as fontes' },
+  { value: 'benchmark', label: 'Benchmark oficial' },
+  { value: 'hero', label: 'Hero' },
+  { value: 'open', label: 'Open' },
+];
+
+const BENCHMARK_CATEGORY_TABS = ['', 'girls', 'classic', 'hero', 'open'];
+
 export default function CoachWorkspace({ profile: initialProfile = null, onLogout = null } = {}) {
   const token = readToken();
   const profile = initialProfile || readProfile();
@@ -1544,10 +1553,9 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   value: forms.benchmarkSource,
                   onChange: (e) => setForms((prev) => ({ ...prev, benchmarkSource: e.target.value })),
                 },
-                  React.createElement('option', { value: '' }, 'Todas as fontes'),
-                  React.createElement('option', { value: 'benchmark' }, 'Benchmarks'),
-                  React.createElement('option', { value: 'hero' }, 'Hero'),
-                  React.createElement('option', { value: 'open' }, 'Open')
+                  BENCHMARK_SOURCE_OPTIONS.map((option) =>
+                    React.createElement('option', { key: option.value || 'all', value: option.value }, option.label)
+                  )
                 ),
                 React.createElement('select', {
                   className: 'field',
@@ -1563,12 +1571,12 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                 React.createElement('button', { className: 'btn btn-secondary', onClick: () => handleSearchBenchmarks(), disabled: loading }, 'Buscar')
               ),
               React.createElement('div', { className: 'tabs library-categoryTabs' },
-                ['', 'girls', 'hero', 'open'].map((category) =>
+                BENCHMARK_CATEGORY_TABS.map((category) =>
                   React.createElement('button', {
                     key: category || 'all',
                     className: 'btn btn-chip',
                     onClick: () => handleSearchBenchmarks({ category }),
-                  }, category || 'todos')
+                  }, benchmarkCategoryLabel(category || 'all'))
                 )
               ),
               React.createElement('div', { className: 'benchmark-meta' },
@@ -1587,7 +1595,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
                   : dashboard.benchmarks.map((benchmark) =>
                   React.createElement('div', { key: benchmark.id, className: 'list-item static benchmark-item' },
                     React.createElement('strong', null, benchmark.name),
-                    React.createElement('span', null, `${benchmark.category}${benchmark.year ? ` • ${benchmark.year}` : ''}${benchmark.official_source ? ` • ${benchmark.official_source}` : ''}`),
+                    React.createElement('span', null, `${benchmarkCategoryLabel(benchmark.category)}${benchmark.year ? ` • ${benchmark.year}` : ''}${benchmark.official_source ? ` • ${benchmarkSourceLabel(benchmark.official_source)}` : ''}`),
                     React.createElement('code', { className: 'inline-code' }, benchmark.slug)
                   )
                   ),
@@ -1913,6 +1921,37 @@ function formatNumericValue(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return String(value || '');
   return Number.isInteger(numeric) ? String(numeric) : numeric.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+}
+
+function benchmarkCategoryLabel(value) {
+  switch (String(value || '').toLowerCase()) {
+    case 'girls':
+      return 'Girls';
+    case 'classic':
+      return 'Classics';
+    case 'hero':
+      return 'Hero';
+    case 'open':
+      return 'Open';
+    case 'all':
+    case '':
+      return 'Todos';
+    default:
+      return String(value || 'Todos');
+  }
+}
+
+function benchmarkSourceLabel(value) {
+  switch (String(value || '').toLowerCase()) {
+    case 'benchmark':
+      return 'Benchmark oficial';
+    case 'hero':
+      return 'Hero';
+    case 'open':
+      return 'Open';
+    default:
+      return String(value || 'Sem fonte');
+  }
 }
 
 function sportLabel(value) {

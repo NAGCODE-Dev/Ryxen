@@ -90,10 +90,11 @@ function resolveCoachApiMocks(pathname, state) {
   if (pathname === '/benchmarks') {
     return {
       benchmarks: [
-        { slug: 'fran', name: 'Fran', category: 'girl', source: 'crossfit' },
-        { slug: 'murph', name: 'Murph', category: 'hero', source: 'crossfit' },
+        { slug: 'fran', name: 'Fran', category: 'girls', official_source: 'benchmark', year: 2003 },
+        { slug: 'murph', name: 'Murph', category: 'hero', official_source: 'hero', year: 2005 },
+        { slug: 'fight-gone-bad', name: 'Fight Gone Bad', category: 'classic', official_source: 'benchmark', year: 2004 },
       ],
-      pagination: { total: 2, page: 1, limit: 30, pages: 1 },
+      pagination: { total: 3, page: 1, limit: 30, pages: 1 },
     };
   }
   if (pathname === '/gyms/gym-1/memberships') {
@@ -288,6 +289,53 @@ test.describe('athlete hardening', () => {
     await page.waitForFunction(() => !document.querySelector('.modal-overlay.isOpen'));
 
     await expect(page.locator('.header-account-btn.isActive')).toContainText(/Trusted User|trusted@example\.com/i);
+  });
+
+  test('Nyx conduz um tour real abrindo Hoje, Evolução e Conta passo a passo', async ({ page }) => {
+    test.setTimeout(90000);
+
+    await waitForAthleteReady(page);
+    await importWorkoutAndSave(page, CLEAN_TEXT_IMPORT);
+
+    await page.getByRole('button', { name: /Tour com Nyx/i }).click();
+    await expect(page.locator('#nyx-guide-shell')).toBeVisible();
+    await expect(page.locator('.guide-progressLabel')).toContainText('Passo 1');
+
+    await page.getByRole('button', { name: 'Começar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'today-overview');
+    await page.waitForFunction(() => document.body?.dataset.page === 'today');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'today-workout');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'today-import');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.page === 'history');
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'history-benchmarks');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'history-prs');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.page === 'account');
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'account-access');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'account-coach');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'account-preferences');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'account-data');
+
+    await page.getByRole('button', { name: 'Continuar' }).click();
+    await page.waitForFunction(() => document.body?.dataset.guideTarget === 'today-overview');
+    await page.getByRole('button', { name: /Entrar no app/i }).click();
+    await page.waitForFunction(() => !document.querySelector('.modal-overlay.isOpen'));
+    await expect(page.locator('[data-guide-target="today-overview"]')).toBeVisible();
   });
 });
 

@@ -2,6 +2,7 @@ export function renderGuestBenefitsSection(renderPageFold) {
   return renderPageFold({
     title: 'O que libera',
     subtitle: 'Benefícios práticos dentro do app.',
+    guideTarget: 'account-access',
     content: `
       <div class="coach-list coach-listCompact">
         <div class="coach-listItem static">
@@ -25,6 +26,7 @@ export function renderGuestCoachPortalSection(renderPageFold) {
   return renderPageFold({
     title: 'Coach Portal',
     subtitle: 'A mesma conta também abre a área separada do box.',
+    guideTarget: 'account-coach',
     content: `
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">

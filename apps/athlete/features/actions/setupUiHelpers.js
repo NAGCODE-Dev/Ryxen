@@ -43,7 +43,15 @@ export function createAthleteUiActions({
     if (toastMessage) toast(toastMessage);
     if (render) await renderUi();
     if (ensureGoogle) await getEnsureGoogleSignInUi?.()?.();
-    if (focusSelector) root.querySelector(focusSelector)?.focus();
+    if (focusSelector) {
+      const focusTarget = root.querySelector(focusSelector);
+      if (focusTarget?.scrollIntoView) {
+        focusTarget.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      }
+      if (focusTarget?.focus) {
+        focusTarget.focus({ preventScroll: true });
+      }
+    }
   }
 
   async function applyUiState(next, options = {}) {

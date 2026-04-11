@@ -9,10 +9,12 @@ test('benchmark seed possui slugs unicos e categorias esperadas', () => {
   const girlsCount = BENCHMARK_SEED.filter((item) => item.category === 'girls').length;
   const heroCount = BENCHMARK_SEED.filter((item) => item.category === 'hero').length;
   const openCount = BENCHMARK_SEED.filter((item) => item.category === 'open').length;
+  const classicCount = BENCHMARK_SEED.filter((item) => item.category === 'classic').length;
 
   assert.equal(uniqueSlugs.size, slugs.length);
-  assert.ok(BENCHMARK_SEED.length >= 35);
-  assert.ok(girlsCount >= 10);
-  assert.ok(heroCount >= 8);
-  assert.ok(openCount >= 10);
+  assert.ok(BENCHMARK_SEED.length >= 70);
+  assert.ok(girlsCount >= 20);
+  assert.ok(heroCount >= 15);
+  assert.ok(openCount >= 20);
+  assert.ok(classicCount >= 10);
 });

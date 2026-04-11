@@ -216,6 +216,17 @@
     backdrop-filter: blur(16px);
   }
 
+  .guide-topbarMeta {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
   .guide-mark {
     display: inline-flex;
     align-items: center;
@@ -286,30 +297,44 @@
   }
 
   .guide-progress {
+    display: grid;
+    gap: 8px;
+  }
+
+  .guide-progressLabel {
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .guide-progressDots {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
 
-  .guide-progressItem {
-    display: inline-flex;
-    align-items: center;
-    min-height: 28px;
-    padding: 0 11px;
+  .guide-progressDot {
+    width: 11px;
+    height: 11px;
     border-radius: 999px;
     border: 1px solid color-mix(in srgb, var(--line) 84%, transparent);
-    background: color-mix(in srgb, var(--bg-soft) 76%, transparent);
-    color: var(--text-muted);
-    font-size: 0.71rem;
-    font-weight: 700;
+    background: color-mix(in srgb, var(--bg-soft) 82%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
-  .guide-progressItem.isActive {
-    color: var(--text-primary);
-    border-color: color-mix(in srgb, var(--accent) 26%, var(--line));
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent) 6%, transparent)),
-      color-mix(in srgb, var(--bg-soft) 80%, transparent);
+  .guide-progressDot.isDone {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+
+  .guide-progressDot.isActive {
+    background: var(--accent);
+    border-color: color-mix(in srgb, var(--accent) 54%, white 10%);
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, var(--accent) 12%, transparent),
+      0 10px 22px rgba(4, 8, 16, 0.18);
   }
 
   .guide-kicker {
@@ -368,6 +393,40 @@
     gap: 10px;
   }
 
+  .guide-targetNote {
+    display: grid;
+    gap: 8px;
+    padding: 14px 15px;
+    border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, color-mix(in srgb, var(--accent) 8%, transparent), rgba(255,255,255,0.01)),
+      color-mix(in srgb, var(--bg-soft) 72%, transparent);
+  }
+
+  .guide-targetBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-self: start;
+    min-height: 28px;
+    padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .guide-targetText {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    line-height: 1.56;
+  }
+
   .guide-visualPane {
     display: grid;
     align-content: stretch;
@@ -391,6 +450,16 @@
     min-height: 420px;
     overflow: hidden;
     position: relative;
+  }
+
+  .guide-visualHalo {
+    position: absolute;
+    inset: 14% 16%;
+    border-radius: 999px;
+    background:
+      radial-gradient(circle, color-mix(in srgb, var(--accent) 18%, transparent), transparent 62%);
+    filter: blur(10px);
+    pointer-events: none;
   }
 
   .guide-visualCard::before {
@@ -829,6 +898,19 @@
     font-size: 0.86rem;
   }
 
+  .guide-progressLabel {
+    font-size: 0.68rem;
+  }
+
+  .guide-progressDots {
+    gap: 7px;
+  }
+
+  .guide-progressDot {
+    width: 10px;
+    height: 10px;
+  }
+
   .guide-visualCard {
     min-height: 240px;
     border-radius: 22px;
@@ -852,6 +934,11 @@
     align-items: stretch;
     flex-direction: column;
     padding: 12px 14px 14px;
+  }
+
+  .guide-topbarMeta {
+    gap: 8px;
+    font-size: 0.66rem;
   }
 
   .guide-actions {
@@ -1006,7 +1093,19 @@
     font-size: 0.68rem;
   }
 
-  .guide-progressItem,
+  .guide-progressLabel {
+    font-size: 0.64rem;
+  }
+
+  .guide-progressDots {
+    gap: 6px;
+  }
+
+  .guide-progressDot {
+    width: 9px;
+    height: 9px;
+  }
+
   .guide-chip {
     min-height: 26px;
     padding: 0 10px;

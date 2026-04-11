@@ -1,4 +1,5 @@
 import { clearPasswordResetSupportPolling } from '../features/account/authResetActions.js';
+import { clampNyxGuideStep, getNyxGuideStep } from '../features/guide/steps.js';
 
 function emptyPasswordResetState() {
   return {
@@ -18,6 +19,37 @@ function emptyPasswordResetState() {
 
 function emptyGuideState() {
   return { step: 0 };
+}
+
+function buildGuideUiPatch(stepIndex, currentState) {
+  const safeStep = clampNyxGuideStep(stepIndex);
+  const step = getNyxGuideStep(safeStep);
+  return {
+    ...currentState,
+    modal: 'nyx-guide',
+    currentPage: step.page || currentState?.currentPage || 'today',
+    accountView: step.accountView || (step.page === 'account'
+      ? currentState?.accountView || 'overview'
+      : currentState?.accountView || 'overview'),
+    guide: { step: safeStep },
+  };
+}
+
+function buildGuideFocusSelector(stepIndex) {
+  const step = getNyxGuideStep(stepIndex);
+  if (!step?.target) return '#nyx-guide-shell';
+  return `[data-guide-target="${step.target}"]`;
+}
+
+async function openNyxGuideStep(stepIndex, context) {
+  const {
+    applyUiPatch,
+  } = context;
+  const safeStep = clampNyxGuideStep(stepIndex);
+  await applyUiPatch(
+    (state) => buildGuideUiPatch(safeStep, state),
+    { focusSelector: buildGuideFocusSelector(safeStep) },
+  );
 }
 
 async function closeModal(context) {
@@ -75,16 +107,7 @@ export async function handleAthleteModalAction(action, context) {
       const modal = element.dataset.modal || null;
       if (modal === 'nyx-guide') {
         const nextStep = Number(element.dataset.guideStep);
-        await applyUiPatch(
-          (state) => ({
-            ...state,
-            modal,
-            guide: {
-              step: Number.isInteger(nextStep) && nextStep >= 0 && nextStep <= 3 ? nextStep : 0,
-            },
-          }),
-          { focusSelector: '#nyx-guide-shell' },
-        );
+        await openNyxGuideStep(nextStep, context);
         return true;
       }
       if (modal === 'auth') {
@@ -119,28 +142,19 @@ export async function handleAthleteModalAction(action, context) {
       return closeModal(context);
 
     case 'nyx:next': {
-      await applyUiPatch(
-        (state) => ({
-          ...state,
-          modal: 'nyx-guide',
-          guide: {
-            step: Math.min(Number(state?.guide?.step || 0) + 1, 3),
-          },
-        }),
-        { focusSelector: '#nyx-guide-shell' },
-      );
+      const nextStep = clampNyxGuideStep(Number(getUiState?.()?.guide?.step || 0) + 1);
+      await openNyxGuideStep(nextStep, context);
       return true;
     }
 
     case 'nyx:restart': {
-      await applyUiPatch(
-        (state) => ({
-          ...state,
-          modal: 'nyx-guide',
-          guide: { step: 0 },
-        }),
-        { focusSelector: '#nyx-guide-shell' },
-      );
+      await openNyxGuideStep(0, context);
+      return true;
+    }
+
+    case 'nyx:step': {
+      const nextStep = Number(element?.dataset?.guideStep);
+      await openNyxGuideStep(nextStep, context);
       return true;
     }
 

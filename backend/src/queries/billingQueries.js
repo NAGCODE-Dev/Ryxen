@@ -1,5 +1,4 @@
 import { pool } from '../db.js';
-import { canUseDeveloperTools, isDeveloperEmail } from '../devAccess.js';
 import { getAccessContextForUser, getSubscriptionAccessState } from '../access.js';
 import { buildEntitlements } from '../accessPolicy.js';
 import { normalizeSubscriptionPlanId } from '../utils/subscriptionBilling.js';
@@ -36,21 +35,13 @@ export async function getBillingStatusSnapshot(userId) {
   return serializeSubscriptionStatus(subscription);
 }
 
-export async function getEntitlementsSnapshot({ userId, email, isAdmin = false }) {
+export async function getEntitlementsSnapshot({ userId }) {
   const [subscription, gymContexts] = await Promise.all([
     getLatestSubscription(userId),
     getAccessContextForUser(userId),
   ]);
 
   const entitlements = buildEntitlements({ subscription, gymContexts });
-  if (
-    canUseDeveloperTools({ email, isAdmin })
-    && subscription?.status === 'active'
-    && subscription?.provider === 'mock'
-    && ['starter', 'pro', 'coach', 'performance'].includes(String(subscription?.plan_id || '').trim().toLowerCase())
-  ) {
-    entitlements.push('coach_portal');
-  }
 
   return {
     entitlements: Array.from(new Set(entitlements)),

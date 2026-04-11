@@ -12,9 +12,10 @@ export function renderPageHero({ eyebrow, title, subtitle, actions = '', footer 
   `;
 }
 
-export function renderPageFold({ title, subtitle = '', content = '', open = true }, { escapeHtml }) {
+export function renderPageFold({ title, subtitle = '', content = '', open = true, className = '', guideTarget = '' }, { escapeHtml }) {
+  const foldClassName = ['page-fold', 'page-section', className].filter(Boolean).join(' ');
   return `
-    <details class="page-fold page-section" ${open ? 'open' : ''}>
+    <details class="${foldClassName}" ${guideTarget ? `data-guide-target="${escapeHtml(guideTarget)}"` : ''} ${open ? 'open' : ''}>
       <summary class="page-foldSummary">
         <div class="page-foldSummaryRow">
           <div class="page-foldHead">
@@ -67,13 +68,13 @@ export function renderBottomTools(state, { escapeHtml }) {
           <span class="quick-actionLabel">Copiar treino</span>
           <span class="quick-actionMeta">Leve a sessão para mensagem, nota ou WhatsApp.</span>
         </button>
-        <button class="quick-action quick-action-wide" data-action="modal:open" data-modal="import" type="button">
+        <button class="quick-action quick-action-wide" data-action="modal:open" data-modal="import" data-guide-target="today-import" type="button">
           <span class="quick-actionIcon">+</span>
           <span class="quick-actionLabel">Trocar treino</span>
           <span class="quick-actionMeta">Substitua a planilha atual sem perder a navegação.</span>
         </button>
       ` : `
-        <button class="quick-action quick-action-primary quick-action-wide" data-action="modal:open" data-modal="import" type="button">
+        <button class="quick-action quick-action-primary quick-action-wide" data-action="modal:open" data-modal="import" data-guide-target="today-import" type="button">
           <span class="quick-actionIcon">+</span>
           <span class="quick-actionLabel">Importar treino</span>
           <span class="quick-actionMeta">PDF, imagem, vídeo, texto ou planilha em um só fluxo.</span>

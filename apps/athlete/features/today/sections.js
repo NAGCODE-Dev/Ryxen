@@ -10,7 +10,7 @@ export function renderTodayWorkoutHeader({
   if (!showWorkoutHeader) return '';
 
   return `
-    <div class="workout-header">
+    <div class="workout-header" data-guide-target="today-workout">
       ${showSourceToggle ? `
         <div class="coach-pillRow workout-sourceToggle">
           <button
@@ -55,7 +55,7 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
 
   if (!workout) {
     return `
-      <div class="today-overviewCard">
+      <div class="today-overviewCard" data-guide-target="today-overview">
         <div class="today-overviewTop">
           <span class="today-overviewBadge">${weeks ? `Semana ${activeWeek || 1}` : 'Modo livre'}</span>
           <span class="today-overviewMeta">Sem sessão carregada</span>
@@ -66,7 +66,7 @@ export function renderTodayOverview(state, workout, { escapeHtml, formatDay }) {
   }
 
   return `
-    <div class="today-overviewCard">
+    <div class="today-overviewCard" data-guide-target="today-overview">
       <div class="today-overviewTop">
         <span class="today-overviewBadge">${weeks ? `Semana ${activeWeek || 1}` : 'Sessão avulsa'}</span>
         <span class="today-overviewMeta">${activeSource === 'coach' ? 'Coach' : 'Planilha'}</span>
@@ -91,7 +91,7 @@ export function renderTodaySessionCard(state, workout, { escapeHtml }) {
   const compactHighlights = metadata.highlights.slice(0, 2);
 
   return `
-    <section class="today-sessionCard">
+    <section class="today-sessionCard" data-guide-target="today-workout">
       <div class="today-sessionHead">
         <div>
           <div class="section-kicker">Sessão</div>

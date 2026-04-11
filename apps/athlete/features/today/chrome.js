@@ -21,7 +21,7 @@ export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
         <h2>Nenhum treino carregado</h2>
         <p>Importe um treino para começar ou entre para recuperar seu histórico.</p>
         <div class="page-actions page-actions-inline">
-          <button class="btn-primary" data-action="modal:open" data-modal="import" type="button">Importar treino</button>
+          <button class="btn-primary" data-action="modal:open" data-modal="import" data-guide-target="today-import" type="button">Importar treino</button>
           <button class="btn-secondary" data-action="modal:open" data-modal="auth" type="button">${isAuthenticated ? 'Conta' : 'Entrar'}</button>
         </div>
         ${nyxTeaser}
@@ -36,7 +36,7 @@ export function renderTodayEmptyState(state, { escapeHtml, formatDay }) {
       <p>Volte para o modo automático ou escolha outra planilha para esse dia.</p>
       <div class="page-actions page-actions-inline">
         <button class="btn-primary" data-action="day:auto" type="button">Modo automático</button>
-        <button class="btn-secondary" data-action="modal:open" data-modal="import" type="button">Trocar planilha</button>
+        <button class="btn-secondary" data-action="modal:open" data-modal="import" data-guide-target="today-import" type="button">Trocar planilha</button>
       </div>
       ${nyxTeaser}
     </div>
@@ -48,6 +48,11 @@ export function renderTodayPageIntro(state, { renderPageHero, formatDay }) {
   const hasWorkout = !!(state?.workout?.blocks?.length || state?.workoutOfDay?.blocks?.length);
   const activeWeek = state?.activeWeekNumber || state?.weeks?.[0]?.weekNumber || 1;
   const currentDay = formatDay(state?.currentDay || state?.workout?.day || state?.workoutOfDay?.day || '');
+  const showNyxHints = state?.preferences?.showNyxHints !== false;
+  const nyxGuideCompleted = state?.preferences?.nyxGuideCompleted === true;
+  const nyxAction = showNyxHints || nyxGuideCompleted
+    ? `<button class="btn-secondary" data-action="modal:open" data-modal="nyx-guide" data-guide-step="0" type="button">${nyxGuideCompleted ? 'Rever tour' : 'Tour com Nyx'}</button>`
+    : '';
   const heroActions = hasWeeks ? `
     <button class="btn-secondary" data-action="day:auto" type="button">Automático</button>
     <select class="day-select" data-action="day:set">
@@ -60,7 +65,8 @@ export function renderTodayPageIntro(state, { renderPageHero, formatDay }) {
       <option value="Sábado">Sábado</option>
       <option value="Domingo">Domingo</option>
     </select>
-  ` : '';
+    ${nyxAction}
+  ` : nyxAction;
 
   const renderWeekChips = (localState) => {
     const weeks = localState?.weeks || [];
