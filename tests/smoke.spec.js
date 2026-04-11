@@ -9,6 +9,8 @@ test('landing shows official wordmark and balanced product shots', async ({ page
 
   const coachShot = page.locator('img[alt*="Coach Portal do Ryxen"]');
   await expect(coachShot).toBeVisible();
+  await expect.poll(async () => coachShot.evaluate((img) => img.naturalWidth)).toBeGreaterThan(1000);
+  await expect.poll(async () => coachShot.evaluate((img) => img.naturalHeight)).toBeGreaterThan(700);
 
   const coachSize = await coachShot.evaluate((img) => ({
     naturalWidth: img.naturalWidth,
