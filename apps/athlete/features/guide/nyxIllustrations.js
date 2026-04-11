@@ -9,6 +9,16 @@ const NYX_POSES = {
     width: 1024,
     height: 1536,
   },
+  curious: {
+    src: '/branding/exports/nyx-mentor.png',
+    width: 1024,
+    height: 1536,
+  },
+  mentor: {
+    src: '/branding/exports/nyx-mentor.png',
+    width: 1024,
+    height: 1536,
+  },
   rest: {
     src: '/branding/exports/nyx-base.png',
     width: 1536,

@@ -81,6 +81,7 @@ export function renderAthleteHistoryPage(state, helpers) {
       ${renderPageFold({
         title: 'Benchmarks',
         subtitle: 'Tendência das marcas já registradas.',
+        guideTarget: 'history-benchmarks',
         content: `
         <div class="trend-grid">
           ${renderBenchmarkHistorySection({
@@ -100,6 +101,7 @@ export function renderAthleteHistoryPage(state, helpers) {
       ${renderPageFold({
         title: 'PRs',
         subtitle: 'Suas cargas de referência, sem ruído.',
+        guideTarget: 'history-prs',
         content: `
         <div class="trend-grid">
           ${renderPrHistorySection({

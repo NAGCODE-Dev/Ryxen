@@ -20,6 +20,17 @@ test('buildEntitlements libera coach_portal e athlete_app conforme contextos do 
   assert.equal(entitlements.includes('athlete_app'), true);
 });
 
+test('buildEntitlements libera coach_portal para assinatura pessoal ativa de coach', () => {
+  const entitlements = buildEntitlements({
+    subscription: { status: 'active', plan_id: 'starter' },
+    gymContexts: [],
+  });
+
+  assert.equal(entitlements.includes('premium'), true);
+  assert.equal(entitlements.includes('coach_portal'), true);
+  assert.equal(entitlements.includes('athlete_app'), true);
+});
+
 test('buildEntitlements mantem athlete_app autenticado, mas nao libera coach tiers quando coach expirou', () => {
   const entitlements = buildEntitlements({
     subscription: { status: 'inactive', plan_id: 'free' },

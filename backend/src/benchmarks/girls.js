@@ -1,4 +1,16 @@
+const GIRLS_SOURCE_URL = 'https://library.crossfit.com/free/pdf/27_04_new_girls.pdf';
+
 export const GIRLS_BENCHMARKS = [
+  {
+    slug: 'amanda',
+    name: 'Amanda',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'for_time',
+    description: '9-7-5 muscle-ups e snatches.',
+    payload: { reps: [9, 7, 5], movements: ['Muscle-Up', 'Snatch'], sourceUrl: GIRLS_SOURCE_URL },
+  },
   {
     slug: 'angie',
     name: 'Angie',
@@ -8,6 +20,16 @@ export const GIRLS_BENCHMARKS = [
     score_type: 'for_time',
     description: '100 pull-ups, 100 push-ups, 100 sit-ups e 100 squats.',
     payload: { movements: ['Pull-Up', 'Push-Up', 'Sit-Up', 'Air Squat'] },
+  },
+  {
+    slug: 'annie',
+    name: 'Annie',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'for_time',
+    description: '50-40-30-20-10 double-unders e sit-ups.',
+    payload: { reps: [50, 40, 30, 20, 10], movements: ['Double-Under', 'Sit-Up'], sourceUrl: GIRLS_SOURCE_URL },
   },
   {
     slug: 'barbara',
@@ -28,6 +50,16 @@ export const GIRLS_BENCHMARKS = [
     score_type: 'rounds_reps',
     description: 'EMOM 30 min: 5 pull-ups, 10 push-ups, 15 squats.',
     payload: { timeCapMinutes: 30 },
+  },
+  {
+    slug: 'christine',
+    name: 'Christine',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'for_time',
+    description: '3 rounds com remo, deadlift e box jump.',
+    payload: { rounds: 3, movements: ['Row', 'Deadlift', 'Box Jump'], sourceUrl: GIRLS_SOURCE_URL },
   },
   {
     slug: 'cindy',
@@ -66,7 +98,7 @@ export const GIRLS_BENCHMARKS = [
     official_source: 'benchmark',
     year: null,
     score_type: 'for_time',
-    description: '5 rounds com corrida, KB swing e pull-up.',
+    description: '5 rounds com corrida, kettlebell swing e pull-up.',
     payload: { rounds: 5 },
   },
   {
@@ -90,6 +122,16 @@ export const GIRLS_BENCHMARKS = [
     payload: { reps: 30, movements: ['Clean and Jerk'] },
   },
   {
+    slug: 'gwen',
+    name: 'Gwen',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'for_time',
+    description: '15-12-9 clean and jerk com descanso livre entre rounds.',
+    payload: { reps: [15, 12, 9], movements: ['Clean and Jerk'], sourceUrl: GIRLS_SOURCE_URL },
+  },
+  {
     slug: 'helen',
     name: 'Helen',
     category: 'girls',
@@ -98,6 +140,16 @@ export const GIRLS_BENCHMARKS = [
     score_type: 'for_time',
     description: '3 rounds: 400m run, 21 kettlebell swings, 12 pull-ups.',
     payload: { rounds: 3 },
+  },
+  {
+    slug: 'hope',
+    name: 'Hope',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'reps',
+    description: '3 rounds de 1 minuto por estacao: burpee, power snatch, box jump, thruster e chest-to-bar pull-up.',
+    payload: { rounds: 3, stations: ['Burpee', 'Power Snatch', 'Box Jump', 'Thruster', 'Chest-to-Bar Pull-Up'], sourceUrl: GIRLS_SOURCE_URL },
   },
   {
     slug: 'isabel',
@@ -130,6 +182,16 @@ export const GIRLS_BENCHMARKS = [
     payload: { reps: 150, movements: ['Wall Ball Shot'] },
   },
   {
+    slug: 'kelly',
+    name: 'Kelly',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'for_time',
+    description: '5 rounds: 400m run, 30 box jumps e 30 wall-ball shots.',
+    payload: { rounds: 5, sourceUrl: GIRLS_SOURCE_URL },
+  },
+  {
     slug: 'linda',
     name: 'Linda',
     category: 'girls',
@@ -138,6 +200,16 @@ export const GIRLS_BENCHMARKS = [
     score_type: 'for_time',
     description: '10-9-8-7-6-5-4-3-2-1 deadlift, bench press e clean.',
     payload: { descending: true },
+  },
+  {
+    slug: 'lynne',
+    name: 'Lynne',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'reps',
+    description: '5 rounds de max reps de body-weight bench press e pull-ups.',
+    payload: { rounds: 5, sourceUrl: GIRLS_SOURCE_URL },
   },
   {
     slug: 'mary',
@@ -158,5 +230,15 @@ export const GIRLS_BENCHMARKS = [
     score_type: 'for_time',
     description: '5 rounds: 400m run e 15 overhead squats.',
     payload: { rounds: 5 },
+  },
+  {
+    slug: 'nicole',
+    name: 'Nicole',
+    category: 'girls',
+    official_source: 'benchmark',
+    year: null,
+    score_type: 'rounds_reps',
+    description: 'AMRAP 20 min de 400m run e max pull-ups.',
+    payload: { timeCapMinutes: 20, sourceUrl: GIRLS_SOURCE_URL },
   },
 ];

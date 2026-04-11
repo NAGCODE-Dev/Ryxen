@@ -74,11 +74,11 @@
   }
 
   .page-stack-account .summary-strip {
-    @apply gap-2;
+    @apply gap-2.5;
   }
 
   .account-viewTabs {
-    @apply grid grid-cols-3 gap-2;
+    @apply grid grid-cols-3 gap-2.5;
   }
 
   .account-viewTab {
@@ -106,7 +106,7 @@
   }
 
   .account-settingsGrid {
-    @apply grid gap-3;
+    @apply grid gap-3.5;
   }
 
   .account-settingsCard,
@@ -329,7 +329,7 @@
   }
 
   .account-dataGrid {
-    @apply grid grid-cols-2 gap-2.5;
+    @apply grid grid-cols-2 gap-3;
   }
 
   .account-dataCard {
@@ -337,7 +337,7 @@
   }
 
   .page-stack-account .coach-listCompact {
-    @apply gap-1.5;
+    @apply gap-2;
   }
 
   .page-stack-account .coach-listCompact .coach-listItem {

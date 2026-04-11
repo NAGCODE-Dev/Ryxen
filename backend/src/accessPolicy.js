@@ -146,12 +146,18 @@ export function buildEntitlements({ subscription, gymContexts }) {
   const entitlements = ['athlete_app'];
   const contexts = gymContexts || [];
   const canManageGym = (role) => role === 'owner' || role === 'coach';
+  const coachTier = resolveCoachPlanTier(subscription?.plan_id);
+  const subscriptionIsActive = subscription?.status === 'active';
 
-  if (subscription?.status === 'active') {
+  if (subscriptionIsActive) {
     entitlements.push('premium');
-    if (subscription.plan_id === 'pro' || subscription.plan_id === 'coach') {
+    if (coachTier === 'pro' || coachTier === 'performance') {
       entitlements.push('advanced_analytics');
     }
+  }
+
+  if (subscriptionIsActive && coachTier !== 'base') {
+    entitlements.push('coach_portal');
   }
 
   if (contexts.some((ctx) => canManageGym(ctx.membership.role) && ctx?.access?.gymAccess?.canCoachManage)) {

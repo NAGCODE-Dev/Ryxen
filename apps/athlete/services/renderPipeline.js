@@ -1,5 +1,6 @@
 import { applyAthleteRenderLayout } from './renderLayoutUpdates.js';
 import { buildAthleteRenderState } from './renderViewState.js';
+import { getNyxGuideStep } from '../features/guide/steps.js';
 
 export function createAthleteRenderPipeline({
   refs,
@@ -30,6 +31,14 @@ export function createAthleteRenderPipeline({
       ? 'compact'
       : 'comfortable';
     document.body.dataset.motion = preferences.reduceMotion ? 'reduced' : 'full';
+    const guideTarget = state?.__ui?.modal === 'nyx-guide'
+      ? (getNyxGuideStep(state?.__ui?.guide?.step).target || '')
+      : '';
+    if (guideTarget) {
+      document.body.dataset.guideTarget = guideTarget;
+    } else {
+      delete document.body.dataset.guideTarget;
+    }
     applyAthleteRenderLayout({
       state,
       refs,

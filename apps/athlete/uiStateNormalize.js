@@ -3,6 +3,7 @@ import {
   createEmptyAthleteOverviewState,
   createEmptyCoachPortalState,
 } from './uiEmptyStates.js';
+import { clampNyxGuideStep } from './features/guide/steps.js';
 
 export function normalizeAthleteSettings(settings) {
   const next = settings && typeof settings === 'object' ? settings : {};
@@ -20,8 +21,7 @@ export function normalizeAthleteSettings(settings) {
 
 export function normalizeAthleteGuideState(guide) {
   const next = guide && typeof guide === 'object' ? guide : {};
-  const step = Number(next.step);
-  next.step = Number.isInteger(step) && step >= 0 && step <= 3 ? step : 0;
+  next.step = clampNyxGuideStep(next.step);
   return next;
 }
 
