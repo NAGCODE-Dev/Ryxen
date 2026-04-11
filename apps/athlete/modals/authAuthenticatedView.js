@@ -48,10 +48,13 @@ export function renderAuthenticatedAccountView({
       },
     },
   });
+  const platformVariant = helpers?.platformVariant === 'native' ? 'native' : 'web';
+  const nativeOverlayClass = platformVariant === 'native' ? 'modal-overlay-native' : '';
+  const nativeContainerClass = platformVariant === 'native' ? 'modal-container-nativeSheet modal-container-nativeSheet-full' : '';
 
   return `
-    <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
-      <div class="modal-container modal-container-auth">
+    <div class="modal-overlay modal-overlay-auth ${nativeOverlayClass} isOpen" id="ui-authModalBackdrop">
+      <div class="modal-container modal-container-auth ${nativeContainerClass}">
       <div class="modal-header">
         <div class="modal-titleGroup">
           <span class="modal-kicker">Conta</span>

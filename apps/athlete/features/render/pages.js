@@ -4,7 +4,7 @@ import { renderAthleteAccountPage } from '../account/page.js';
 
 export function renderAthleteMainContent(state, { createPageHelpers }) {
   const currentPage = state?.__ui?.currentPage || 'today';
-  const pageHelpers = createPageHelpers();
+  const pageHelpers = createPageHelpers(state);
 
   if (currentPage === 'history') return renderAthleteHistoryPage(state, pageHelpers);
   if (currentPage === 'account') return renderAthleteAccountPage(state, pageHelpers);

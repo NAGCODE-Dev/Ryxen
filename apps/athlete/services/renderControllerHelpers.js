@@ -33,11 +33,21 @@ export function createObjectIdentityTracker() {
 }
 
 export function createRenderSignatures({ getObjectIdentity }) {
-  const buildHeaderSignature = (state) => getObjectIdentity(state?.__ui?.auth?.profile || null);
-  const buildBottomSignature = (state) => String(state?.__ui?.currentPage || 'today');
+  const buildHeaderSignature = (state) => [
+    getObjectIdentity(state?.__ui?.auth?.profile || null),
+    getObjectIdentity(state?.__ui?.passwordReset || null),
+    getObjectIdentity(state?.__ui?.admin || null),
+    state?.__ui?.sessionRestore || 'idle',
+    state?.__ui?.platformVariant || 'web',
+  ].join('|');
+  const buildBottomSignature = (state) => [
+    String(state?.__ui?.currentPage || 'today'),
+    state?.__ui?.platformVariant || 'web',
+  ].join('|');
   const buildModalSignature = (state) => [
     state?.__ui?.modal || '',
     state?.__ui?.authMode || '',
+    state?.__ui?.platformVariant || 'web',
     getObjectIdentity(state?.prs || null),
     getObjectIdentity(state?.__ui?.guide || null),
     getObjectIdentity(state?.__ui?.passwordReset || null),
@@ -52,6 +62,7 @@ export function createRenderSignatures({ getObjectIdentity }) {
   const buildMainSignature = (state) => [
     state?.__ui?.currentPage || 'today',
     state?.__ui?.accountView || 'overview',
+    state?.__ui?.platformVariant || 'web',
     state?.activeWeekNumber ?? '',
     state?.currentDay ?? '',
     getObjectIdentity(state?.weeks || null),

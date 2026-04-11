@@ -31,6 +31,8 @@ export function createAthleteRenderPipeline({
       ? 'compact'
       : 'comfortable';
     document.body.dataset.motion = preferences.reduceMotion ? 'reduced' : 'full';
+    document.body.dataset.platformVariant = state?.__ui?.platformVariant || 'web';
+    document.body.dataset.sessionRestore = state?.__ui?.sessionRestore || 'idle';
     const guideTarget = state?.__ui?.modal === 'nyx-guide'
       ? (getNyxGuideStep(state?.__ui?.guide?.step).target || '')
       : '';

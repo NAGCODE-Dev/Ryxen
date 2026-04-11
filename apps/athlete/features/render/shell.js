@@ -14,9 +14,14 @@ import {
 } from './chrome.js';
 import { renderAthleteModals } from './modals.js';
 import { renderAthleteMainContent } from './pages.js';
+import { getAthletePlatformVariant } from '../../platformVariant.js';
 
 export function renderAppShell() {
-  return renderAthleteAppShell({ escapeHtml, getAppLabel });
+  return renderAthleteAppShell({
+    escapeHtml,
+    getAppLabel,
+    platformVariant: getAthletePlatformVariant(),
+  });
 }
 
 export function renderAll(state = {}) {
@@ -38,7 +43,10 @@ export function renderModals(state) {
 }
 
 export function renderHeaderAccount(state) {
-  return renderAthleteHeaderAccount(state, { escapeHtml });
+  return renderAthleteHeaderAccount(state, {
+    escapeHtml,
+    platformVariant: state?.__ui?.platformVariant || getAthletePlatformVariant(),
+  });
 }
 
 export function renderMainContent(state) {
@@ -48,7 +56,9 @@ export function renderMainContent(state) {
 }
 
 export function renderBottomNav(state) {
-  return renderAthleteBottomNav(state);
+  return renderAthleteBottomNav(state, {
+    platformVariant: state?.__ui?.platformVariant || getAthletePlatformVariant(),
+  });
 }
 
 export function renderImportModal(state = {}) {
@@ -77,13 +87,17 @@ export function renderSettingsModal(settings = {}) {
   }, createAthleteModalHelpers());
 }
 
-function createAthletePageHelpers() {
-  return createAthleteRenderHelpers({ escapeHtml });
+function createAthletePageHelpers(state = {}) {
+  return createAthleteRenderHelpers({
+    escapeHtml,
+    platformVariant: state?.__ui?.platformVariant || getAthletePlatformVariant(),
+  });
 }
 
 function createAthleteModalHelpers() {
   return {
     escapeHtml,
+    platformVariant: getAthletePlatformVariant(),
     formatDateShort,
     renderAccountSkeleton,
     describeAthleteBenefitSource,

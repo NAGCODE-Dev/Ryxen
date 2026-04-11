@@ -6,13 +6,16 @@ import {
 } from './settingsSections.js';
 
 export function renderAthleteSettingsModal(settings = {}) {
+  const platformVariant = arguments[1]?.platformVariant === 'native' ? 'native' : 'web';
+  const nativeOverlayClass = platformVariant === 'native' ? 'modal-overlay-native' : '';
+  const nativeContainerClass = platformVariant === 'native' ? 'modal-container-nativeSheet' : '';
   const showLbsConversion = settings.showLbsConversion !== false;
   const showEmojis = settings.showEmojis !== false;
   const showObjectivesInWods = settings.showObjectivesInWods !== false;
 
   return `
-    <div class="modal-overlay isOpen" id="ui-settingsModalBackdrop">
-      <div class="modal-container modal-container-settings">
+    <div class="modal-overlay ${nativeOverlayClass} isOpen" id="ui-settingsModalBackdrop">
+      <div class="modal-container modal-container-settings ${nativeContainerClass}">
         <div class="modal-header">
           <div class="modal-titleGroup">
             <span class="modal-kicker">Ajustes</span>

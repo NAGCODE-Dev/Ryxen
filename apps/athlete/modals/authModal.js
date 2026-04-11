@@ -35,5 +35,6 @@ export function renderAthleteAuthModal({ auth = {}, authMode = 'signin', helpers
     reset,
     signupVerification,
     escapeHtml,
+    platformVariant: helpers?.platformVariant || 'web',
   });
 }

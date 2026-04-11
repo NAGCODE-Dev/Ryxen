@@ -2,6 +2,9 @@ import { summarizeWorkoutForDisplay } from '../../workoutMetadataSummary.js';
 
 export function renderAthleteImportModal(state = {}, helpers = {}) {
   const { escapeHtml } = helpers;
+  const platformVariant = helpers?.platformVariant === 'native' ? 'native' : 'web';
+  const nativeOverlayClass = platformVariant === 'native' ? 'modal-overlay-native' : '';
+  const nativeContainerClass = platformVariant === 'native' ? 'modal-container-nativeSheet' : '';
   const importStatus = state?.__ui?.importStatus || {};
   const currentWorkout = state?.workout?.blocks?.length ? state.workout : state?.workoutOfDay;
   const hasCurrentWorkout = !!currentWorkout?.blocks?.length;
@@ -17,8 +20,8 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
   const importBusy = !!importStatus?.active;
 
   return `
-    <div class="modal-overlay isOpen">
-      <div class="modal-container">
+    <div class="modal-overlay ${nativeOverlayClass} isOpen">
+      <div class="modal-container ${nativeContainerClass}">
         <div class="modal-header">
           <div class="modal-titleGroup">
             <span class="modal-kicker">Importação</span>

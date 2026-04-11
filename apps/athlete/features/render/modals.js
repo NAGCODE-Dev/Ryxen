@@ -16,11 +16,26 @@ export function renderAthleteModals(state, helpers) {
     return renderAthleteNyxGuideModal({
       guide: state?.__ui?.guide || {},
       preferences: state?.preferences || {},
+      platformVariant: state?.__ui?.platformVariant || helpers.platformVariant || 'web',
     });
   }
-  if (modal === 'prs') return renderAthletePrsModal(prs, { escapeHtml: helpers.escapeHtml });
-  if (modal === 'settings') return renderAthleteSettingsModal(settings);
-  if (modal === 'import') return renderAthleteImportModal(state, { escapeHtml: helpers.escapeHtml });
+  if (modal === 'prs') {
+    return renderAthletePrsModal(prs, {
+      escapeHtml: helpers.escapeHtml,
+      platformVariant: state?.__ui?.platformVariant || helpers.platformVariant || 'web',
+    });
+  }
+  if (modal === 'settings') {
+    return renderAthleteSettingsModal(settings, {
+      platformVariant: state?.__ui?.platformVariant || helpers.platformVariant || 'web',
+    });
+  }
+  if (modal === 'import') {
+    return renderAthleteImportModal(state, {
+      escapeHtml: helpers.escapeHtml,
+      platformVariant: state?.__ui?.platformVariant || helpers.platformVariant || 'web',
+    });
+  }
   if (modal === 'auth') {
     return renderAthleteAuthModal({
       auth: {
@@ -35,6 +50,7 @@ export function renderAthleteModals(state, helpers) {
       authMode,
       helpers: {
         escapeHtml: helpers.escapeHtml,
+        platformVariant: state?.__ui?.platformVariant || helpers.platformVariant || 'web',
         formatDateShort: helpers.formatDateShort,
         renderAccountSkeleton: helpers.renderAccountSkeleton,
         describeAthleteBenefitSource: helpers.describeAthleteBenefitSource,

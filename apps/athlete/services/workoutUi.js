@@ -2,8 +2,17 @@ import { getAppBridge } from '../../../src/app/bridge.js';
 
 let activeWorkoutTimer = null;
 const TIMER_POPUP_LAYOUT_KEY = 'ryxen-workout-timer-popup-v1';
+const TIMER_LAST_CUSTOM_CONFIG_KEY = 'ryxen-workout-timer-last-config-v1';
 const MIN_TIMER_POPUP_WIDTH = 280;
 const MIN_TIMER_POPUP_HEIGHT = 360;
+const TIMER_PRESET_LIBRARY = Object.freeze([
+  { id: 'countdown-60', label: '60s', config: { kind: 'countdown', label: '60 segundos', detail: 'Contagem regressiva', totalSeconds: 60, prepSeconds: 0 } },
+  { id: 'rest-90', label: '90s', config: { kind: 'countdown', label: 'Descanso 90s', detail: 'Descanso', totalSeconds: 90, prepSeconds: 0 } },
+  { id: 'cap-20', label: '20 min', config: { kind: 'countdown', label: '20 minutos', detail: 'Cap', totalSeconds: 20 * 60, prepSeconds: 10 } },
+  { id: 'tabata', label: '8x20/10', config: { kind: 'interval', label: '8x20/10', detail: 'Tabata', rounds: 8, workSeconds: 20, restSeconds: 10, prepSeconds: 10 } },
+  { id: 'interval-10x45', label: '10x45/15', config: { kind: 'interval', label: '10x45/15', detail: 'Intervalado', rounds: 10, workSeconds: 45, restSeconds: 15, prepSeconds: 10 } },
+  { id: 'countup-free', label: 'Livre', config: { kind: 'countup', label: 'Cronômetro livre', detail: 'Livre', capSeconds: 0, prepSeconds: 0 } },
+]);
 
 export function workoutKeyFromAppState() {
   const bridge = getAppBridge?.();
@@ -79,12 +88,14 @@ export function startWorkoutTimer(config, toast, options = {}) {
   const state = createTimerState(currentConfig);
   let intervalId = null;
   let popupLayout = normalizeTimerPopupLayout(readTimerPopupLayout());
+  let lastCustomConfig = readLastTimerCustomConfig();
   let configOpen = Boolean(options.startInConfig);
   let dragState = null;
   let resizeState = null;
 
   const modal = document.createElement('div');
   modal.className = `timer-modal ${currentConfig.mode === 'fullscreen' ? 'is-fullscreen' : 'is-popup'}`;
+  modal.dataset.nativePopup = isNativeTimerSurface() ? 'true' : 'false';
   modal.innerHTML = `
     <div class="timer-content timer-content-workout">
       <div class="timer-topbar">
@@ -117,6 +128,11 @@ export function startWorkoutTimer(config, toast, options = {}) {
         <button class="btn-timer-mode ${normalized.mode === 'fullscreen' ? 'is-active' : ''}" type="button" data-timer-mode="fullscreen">Tela</button>
       </div>
       <section class="timer-config" data-timer-config-panel hidden>
+        <div class="timer-presets" data-timer-presets>
+          ${TIMER_PRESET_LIBRARY.map((preset) => `
+            <button class="btn-timer-preset" type="button" data-timer-preset="${preset.id}">${preset.label}</button>
+          `).join('')}
+        </div>
         <div class="timer-configGrid">
           <label class="timer-field">
             <span>Tipo</span>
@@ -167,6 +183,7 @@ export function startWorkoutTimer(config, toast, options = {}) {
         <p class="timer-configNote" data-timer-config-note></p>
         <div class="timer-actions timer-actions-config">
           <button class="btn-timer-secondary" type="button" data-timer-config-reset>Usar base do treino</button>
+          <button class="btn-timer-secondary" type="button" data-timer-popup-reset>Resetar janela</button>
           <button class="btn-timer-primary" type="button" data-timer-config-apply>Aplicar</button>
         </div>
       </section>
@@ -191,6 +208,7 @@ export function startWorkoutTimer(config, toast, options = {}) {
   const configToggle = modal.querySelector('[data-timer-config-toggle]');
   const dragHandle = modal.querySelector('[data-timer-drag-handle]');
   const resizeHandle = modal.querySelector('[data-timer-resize]');
+  const presetButtons = Array.from(modal.querySelectorAll('[data-timer-preset]'));
   const configFields = {
     kind: modal.querySelector('[data-timer-config-kind]'),
     prepSeconds: modal.querySelector('[data-timer-config-prep]'),
@@ -385,11 +403,20 @@ export function startWorkoutTimer(config, toast, options = {}) {
     updateDisplay();
   }
 
+  function resetPopupWindow() {
+    popupLayout = normalizeTimerPopupLayout({});
+    applyTimerPopupLayout(modal, popupLayout);
+    writeTimerPopupLayout(popupLayout);
+  }
+
   function toggleConfigPanel(forceOpen) {
     configOpen = typeof forceOpen === 'boolean' ? forceOpen : !configOpen;
     if (configPanel) configPanel.hidden = !configOpen;
     if (content) content.classList.toggle('is-configOpen', configOpen);
     if (configToggle) configToggle.classList.toggle('is-active', configOpen);
+    if (configOpen) {
+      updateConfigEditor(lastCustomConfig || currentConfig || normalized);
+    }
   }
 
   function updateConfigVisibility() {
@@ -499,9 +526,24 @@ export function startWorkoutTimer(config, toast, options = {}) {
     updateConfigVisibility();
   });
 
+  presetButtons.forEach((button) => {
+    button.addEventListener('click', () => {
+      const preset = getTimerPresetConfig(button.dataset.timerPreset);
+      if (!preset) return;
+      updateConfigEditor({
+        ...preset,
+        mode: currentConfig.mode || 'popup',
+      });
+    });
+  });
+
   modal.querySelector('[data-timer-config-reset]')?.addEventListener('click', () => {
     resetTimerWithConfig(normalized);
     toggleConfigPanel(true);
+  });
+
+  modal.querySelector('[data-timer-popup-reset]')?.addEventListener('click', () => {
+    resetPopupWindow();
   });
 
   modal.querySelector('[data-timer-config-apply]')?.addEventListener('click', () => {
@@ -510,6 +552,8 @@ export function startWorkoutTimer(config, toast, options = {}) {
       toast('Revise os ajustes do timer');
       return;
     }
+    lastCustomConfig = buildStoredTimerConfig(nextConfig);
+    writeLastTimerCustomConfig(lastCustomConfig);
     resetTimerWithConfig(nextConfig);
     toggleConfigPanel(false);
     toast('Timer ajustado');
@@ -646,10 +690,12 @@ function getTimerViewport() {
 
 function normalizeTimerPopupLayout(layout = {}) {
   const viewport = getTimerViewport();
+  const reservedBottom = isNativeTimerSurface() ? 124 : 96;
+  const reservedTop = isNativeTimerSurface() ? 74 : 8;
   const maxWidth = Math.max(MIN_TIMER_POPUP_WIDTH, viewport.width - 16);
   const maxHeight = Math.max(MIN_TIMER_POPUP_HEIGHT, viewport.height - 16);
   const width = clampNumber(Number(layout.width) || Math.min(360, viewport.width - 24), MIN_TIMER_POPUP_WIDTH, maxWidth);
-  const height = clampNumber(Number(layout.height) || Math.min(440, viewport.height - 120), MIN_TIMER_POPUP_HEIGHT, maxHeight);
+  const height = clampNumber(Number(layout.height) || Math.min(440, viewport.height - reservedBottom), MIN_TIMER_POPUP_HEIGHT, maxHeight);
   const left = clampNumber(
     Number(layout.left),
     8,
@@ -658,9 +704,9 @@ function normalizeTimerPopupLayout(layout = {}) {
   );
   const top = clampNumber(
     Number(layout.top),
-    8,
-    Math.max(8, viewport.height - height - 8),
-    Math.max(8, viewport.height - height - 96),
+    reservedTop,
+    Math.max(reservedTop, viewport.height - height - 8),
+    Math.max(reservedTop, viewport.height - height - reservedBottom),
   );
 
   return { width, height, left, top };
@@ -688,6 +734,53 @@ function writeTimerPopupLayout(layout) {
     window.localStorage?.setItem(TIMER_POPUP_LAYOUT_KEY, JSON.stringify(layout || {}));
   } catch {
     // no-op
+  }
+}
+
+export function buildStoredTimerConfig(config = {}) {
+  const normalized = normalizeTimerConfig(config, { mode: config?.mode || 'popup' });
+  if (!normalized) return null;
+  return {
+    kind: normalized.kind,
+    label: normalized.label,
+    detail: normalized.detail,
+    prepSeconds: normalized.prepSeconds,
+    totalSeconds: normalized.totalSeconds || 0,
+    capSeconds: normalized.capSeconds || 0,
+    rounds: normalized.rounds || 1,
+    workSeconds: normalized.workSeconds || 0,
+    restSeconds: normalized.restSeconds || 0,
+    segments: Array.isArray(normalized.segments) ? normalized.segments.map((segment) => ({
+      kind: segment.kind === 'rest' ? 'rest' : 'work',
+      seconds: Math.max(1, Number(segment.seconds) || 0),
+      label: String(segment.label || '').trim(),
+    })) : [],
+  };
+}
+
+export function getTimerPresetConfig(presetId) {
+  const preset = TIMER_PRESET_LIBRARY.find((item) => item.id === presetId);
+  return preset ? buildStoredTimerConfig(preset.config) : null;
+}
+
+export function readLastTimerCustomConfig(storage = window?.localStorage) {
+  try {
+    const raw = storage?.getItem?.(TIMER_LAST_CUSTOM_CONFIG_KEY);
+    if (!raw) return null;
+    return buildStoredTimerConfig(JSON.parse(raw));
+  } catch {
+    return null;
+  }
+}
+
+export function writeLastTimerCustomConfig(config, storage = window?.localStorage) {
+  try {
+    const nextConfig = buildStoredTimerConfig(config);
+    if (!nextConfig) return false;
+    storage?.setItem?.(TIMER_LAST_CUSTOM_CONFIG_KEY, JSON.stringify(nextConfig));
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -972,4 +1065,12 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+function isNativeTimerSurface() {
+  try {
+    return document.body?.dataset?.platformVariant === 'native' || document.body?.dataset?.nativeApp === 'true';
+  } catch {
+    return false;
+  }
 }

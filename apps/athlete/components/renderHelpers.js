@@ -17,16 +17,18 @@ import {
   renderTrendSkeletons,
 } from './pageChrome.js';
 
-export function createAthleteRenderHelpers({ escapeHtml } = {}) {
+export function createAthleteRenderHelpers({ escapeHtml, platformVariant = 'web' } = {}) {
+  const resolvedVariant = platformVariant === 'native' ? 'native' : 'web';
   return {
-    renderPageHero: (options) => renderPageHero(options, { escapeHtml }),
-    renderPageFold: (options) => renderPageFold(options, { escapeHtml }),
+    platformVariant: resolvedVariant,
+    renderPageHero: (options) => renderPageHero(options, { escapeHtml, platformVariant: resolvedVariant }),
+    renderPageFold: (options) => renderPageFold(options, { escapeHtml, platformVariant: resolvedVariant }),
     renderTrendSkeletons,
     renderSparkline,
     formatTrendValue,
     formatNumber,
     formatDateShort,
-    renderBottomTools: (state) => renderBottomTools(state, { escapeHtml }),
+    renderBottomTools: (state) => renderBottomTools(state, { escapeHtml, platformVariant: resolvedVariant }),
     renderWorkoutBlock: (block, blockIndex, ui) => renderWorkoutBlock(block, blockIndex, ui, { escapeHtml }),
     renderAccountSkeleton,
     describeAthleteBenefitSource,

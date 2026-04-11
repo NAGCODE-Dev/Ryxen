@@ -1,10 +1,13 @@
 export function renderAthletePrsModal(prs = {}, helpers = {}) {
   const { escapeHtml } = helpers;
+  const platformVariant = helpers?.platformVariant === 'native' ? 'native' : 'web';
+  const nativeOverlayClass = platformVariant === 'native' ? 'modal-overlay-native' : '';
+  const nativeContainerClass = platformVariant === 'native' ? 'modal-container-nativeSheet' : '';
   const entries = Object.entries(prs).sort((a, b) => a[0].localeCompare(b[0]));
 
   return `
-    <div class="modal-overlay isOpen" id="ui-prsModalBackdrop">
-      <div class="modal-container modal-container-prs">
+    <div class="modal-overlay ${nativeOverlayClass} isOpen" id="ui-prsModalBackdrop">
+      <div class="modal-container modal-container-prs ${nativeContainerClass}">
         <div class="modal-header">
           <div class="modal-titleGroup">
             <span class="modal-kicker">Cargas</span>

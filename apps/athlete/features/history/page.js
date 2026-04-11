@@ -23,6 +23,7 @@ export function renderAthleteHistoryPage(state, helpers) {
     formatTrendValue,
     formatNumber,
     escapeHtml,
+    platformVariant,
   } = helpers;
   const {
     benchmarkHistory,
@@ -36,8 +37,10 @@ export function renderAthleteHistoryPage(state, helpers) {
     showSnapshotNotice,
   } = buildAthleteHistoryPageState(state);
 
+  const containerClass = `workout-container page-stack page-stack-history ${platformVariant === 'native' ? 'native-screenStack native-screenStack-history' : ''}`.trim();
+
   return `
-    <div class="workout-container page-stack page-stack-history">
+    <div class="${containerClass}">
       ${renderPageHero({
         eyebrow: 'Histórico',
         title: 'Evolução',

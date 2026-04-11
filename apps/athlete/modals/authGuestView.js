@@ -12,14 +12,17 @@ export function renderGuestAuthView({
   reset,
   signupVerification,
   escapeHtml,
+  platformVariant = 'web',
 }) {
   const rememberedEmail = signupVerification.email || reset.email || '';
   const trustedDeviceUi = getTrustedDeviceUiState(rememberedEmail);
   const initialEmail = rememberedEmail || trustedDeviceUi.resolvedEmail || '';
+  const nativeOverlayClass = platformVariant === 'native' ? 'modal-overlay-native' : '';
+  const nativeContainerClass = platformVariant === 'native' ? 'modal-container-nativeSheet modal-container-nativeSheet-full' : '';
 
   return `
-    <div class="modal-overlay modal-overlay-auth isOpen" id="ui-authModalBackdrop">
-      <div class="modal-container modal-container-auth">
+    <div class="modal-overlay modal-overlay-auth ${nativeOverlayClass} isOpen" id="ui-authModalBackdrop">
+      <div class="modal-container modal-container-auth ${nativeContainerClass}">
         <div class="modal-header">
           <div class="modal-titleGroup">
             <span class="modal-kicker">${isSignup ? 'Cadastro' : 'Acesso'}</span>

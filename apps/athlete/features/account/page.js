@@ -41,6 +41,7 @@ export function renderAthleteAccountPage(state, helpers) {
     renderPageFold,
     formatDateShort,
     escapeHtml,
+    platformVariant,
   } = helpers;
   const {
     profile,
@@ -66,9 +67,11 @@ export function renderAthleteAccountPage(state, helpers) {
     showSnapshotNotice,
   } = buildAthleteAccountPageState(state, helpers);
 
+  const containerClass = `workout-container page-stack page-stack-account ${platformVariant === 'native' ? 'native-screenStack native-screenStack-account' : ''}`.trim();
+
   if (!profile?.email) {
     return `
-      <div class="workout-container page-stack page-stack-account">
+      <div class="${containerClass}">
         ${renderPageHero({
           eyebrow: 'Conta',
           title: 'Sua conta',
@@ -112,7 +115,7 @@ export function renderAthleteAccountPage(state, helpers) {
   }
 
   return `
-    <div class="workout-container page-stack page-stack-account">
+    <div class="${containerClass}">
       ${renderPageHero({
         eyebrow: 'Conta',
         title: profile.name || 'Sua conta',

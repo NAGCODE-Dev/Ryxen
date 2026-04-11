@@ -1,0 +1,533 @@
+@layer components {
+  .header-accountGroup {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    max-width: 100%;
+  }
+
+  .session-statusChip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  .session-statusChip.isInfo {
+    color: #dbeafe;
+    border-color: rgba(138, 180, 255, 0.18);
+    background: rgba(138, 180, 255, 0.1);
+  }
+
+  .session-statusChip.isWarn {
+    color: #fde68a;
+    border-color: rgba(240, 194, 123, 0.22);
+    background: rgba(240, 194, 123, 0.1);
+  }
+
+  .app-container-native {
+    max-width: none;
+    border-inline: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .app-header-native {
+    padding-inline: 14px;
+    padding-top: calc(var(--safe-top) + 10px);
+    padding-bottom: 10px;
+    border-bottom: 0;
+    background:
+      linear-gradient(180deg, rgba(6, 10, 16, 0.96), rgba(6, 10, 16, 0.82));
+    backdrop-filter: blur(20px);
+  }
+
+  .native-appBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .native-appBrand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .native-appMark {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+    background:
+      radial-gradient(circle at top, rgba(138, 180, 255, 0.2), transparent 58%),
+      rgba(20, 29, 41, 0.94);
+  }
+
+  .native-appBrandCopy {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .native-appEyebrow {
+    color: var(--text-muted);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .native-appTitle {
+    color: var(--text-primary);
+    font-size: 0.96rem;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .header-account-native {
+    min-width: 0;
+  }
+
+  .header-accountGroup-native {
+    gap: 10px;
+  }
+
+  .native-accountBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 50px;
+    min-width: 0;
+    max-width: 220px;
+    padding: 0 12px;
+    border-radius: 18px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.018)),
+      rgba(15, 23, 33, 0.94);
+    color: var(--text-primary);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+  }
+
+  .native-accountBtn.isActive {
+    border-color: rgba(138, 180, 255, 0.12);
+  }
+
+  .native-accountAvatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    background:
+      linear-gradient(180deg, rgba(138, 180, 255, 0.2), rgba(138, 180, 255, 0.08)),
+      rgba(26, 34, 46, 0.94);
+    color: #eff6ff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+  }
+
+  .native-accountCopy {
+    display: grid;
+    gap: 1px;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .native-accountLabel {
+    color: var(--text-muted);
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .native-accountName {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .bottom-nav-native {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 46;
+    padding: 10px 12px calc(var(--safe-bottom) + 10px);
+    background:
+      linear-gradient(180deg, rgba(6, 10, 16, 0), rgba(6, 10, 16, 0.88) 28%, rgba(6, 10, 16, 0.98));
+    border-bottom: 0;
+    top: auto;
+  }
+
+  .bottom-navItems-native {
+    width: min(100%, 620px);
+    gap: 6px;
+    padding: 6px;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+      rgba(15, 23, 33, 0.96);
+    box-shadow: 0 22px 44px rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(24px);
+  }
+
+  .nav-btn-native {
+    min-height: 58px;
+    gap: 4px;
+    border-radius: 18px;
+    grid-template-rows: auto auto;
+  }
+
+  .nav-icon-native {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+  }
+
+  .nav-iconSvg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+  }
+
+  .nav-btn-native .nav-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .app-main-native {
+    width: 100%;
+    max-width: 720px;
+    padding: 16px 14px calc(var(--safe-bottom) + 108px);
+  }
+
+  .native-screenStack {
+    display: grid;
+    gap: 14px;
+  }
+
+  .screen-header {
+    display: grid;
+    gap: 12px;
+    padding: 4px 2px 0;
+  }
+
+  .screen-headerBody {
+    display: grid;
+    gap: 4px;
+  }
+
+  .screen-headerEyebrow {
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .screen-headerTitle {
+    color: var(--text-primary);
+    font-size: clamp(1.32rem, 5vw, 1.72rem);
+    line-height: 1.02;
+    letter-spacing: -0.04em;
+  }
+
+  .screen-headerSubtitle {
+    max-width: 52ch;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    line-height: 1.45;
+  }
+
+  .screen-headerActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .screen-headerActions .btn-primary,
+  .screen-headerActions .btn-secondary,
+  .screen-headerActions .day-select,
+  .screen-headerActions a.btn-secondary {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px;
+  }
+
+  .screen-headerFooter {
+    display: grid;
+    gap: 8px;
+  }
+
+  .section-card {
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 22px;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012)),
+      rgba(15, 23, 33, 0.96);
+    box-shadow: 0 18px 38px rgba(0, 0, 0, 0.2);
+  }
+
+  .section-cardHeader {
+    padding: 14px 14px 0;
+  }
+
+  .section-cardHead {
+    display: grid;
+    gap: 4px;
+  }
+
+  .section-cardTitle {
+    color: var(--text-primary);
+    font-size: 0.98rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .section-cardSubtitle {
+    color: var(--text-secondary);
+    font-size: 0.76rem;
+    line-height: 1.42;
+  }
+
+  .section-cardBody {
+    padding: 14px;
+  }
+
+  .bottom-tools-native {
+    gap: 10px;
+    padding-top: 2px;
+  }
+
+  .bottom-toolsHead-native {
+    gap: 3px;
+  }
+
+  .native-quickToolsGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .quick-action-native {
+    min-height: 108px;
+    border-radius: 22px;
+    padding: 13px 13px 14px;
+  }
+
+  .native-quickToolsGrid .quick-action-wide {
+    grid-column: 1 / -1;
+  }
+
+  .modal-overlay-native {
+    padding: 0;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .modal-container-nativeSheet {
+    width: min(100%, 760px);
+    max-height: min(92vh, 860px);
+    margin: 0 auto;
+    border-radius: 28px 28px 0 0;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 0;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+      rgba(11, 17, 26, 0.98);
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  .modal-container-nativeSheet-full {
+    width: 100%;
+    max-width: none;
+    height: min(100dvh - var(--safe-top), 100vh);
+    max-height: min(100dvh - var(--safe-top), 100vh);
+    border-radius: 28px 28px 0 0;
+  }
+
+  .guide-overlay-native {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .guide-shell-native {
+    width: 100%;
+    max-width: none;
+    height: min(100dvh - var(--safe-top), 100vh);
+    border-radius: 28px 28px 0 0;
+    border: 0;
+    background:
+      radial-gradient(circle at top, rgba(138, 180, 255, 0.14), transparent 28%),
+      linear-gradient(180deg, rgba(9, 14, 22, 0.98), rgba(8, 13, 20, 0.98));
+    box-shadow: none;
+  }
+
+  .guide-shell-native .guide-topbar {
+    padding: calc(var(--safe-top) + 10px) 14px 10px;
+  }
+
+  .guide-shell-native .guide-card {
+    height: calc(100% - var(--safe-top) - 22px);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .guide-shell-native .guide-stage {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    height: 100%;
+    padding: 8px 14px 0;
+  }
+
+  .guide-shell-native .guide-copy {
+    gap: 14px;
+  }
+
+  .guide-shell-native .guide-copyBody {
+    gap: 8px;
+  }
+
+  .guide-shell-native .guide-targetNote {
+    padding: 14px;
+    border-radius: 22px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .guide-shell-native .guide-visualPane-native {
+    order: -1;
+  }
+
+  .guide-shell-native .guide-visualCard {
+    min-height: 160px;
+    border-radius: 24px;
+  }
+
+  .guide-shell-native .guide-footer {
+    padding: 10px 14px calc(var(--safe-bottom) + 14px);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(7, 12, 18, 0.9);
+  }
+
+  .guide-shell-native .guide-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .guide-shell-native .guide-actions .btn-primary,
+  .guide-shell-native .guide-actions .btn-secondary {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 14px;
+  }
+
+  .timer-modal.is-popup[data-native-popup="true"] .timer-content {
+    border-radius: 24px;
+    border-color: rgba(255, 255, 255, 0.08);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012)),
+      rgba(10, 16, 24, 0.98);
+    box-shadow: 0 26px 60px rgba(0, 0, 0, 0.34);
+  }
+
+  .timer-modal.is-popup[data-native-popup="true"] .timer-dragArea {
+    min-height: 46px;
+  }
+
+  .timer-modal.is-popup[data-native-popup="true"] .timer-resizeHandle {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 430px) {
+    .header-accountGroup {
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .session-statusChip {
+      min-height: 26px;
+      padding: 0 8px;
+      font-size: 0.62rem;
+    }
+
+    .header-account-btn {
+      max-width: 150px;
+    }
+
+    .native-accountBtn {
+      max-width: 180px;
+      min-height: 46px;
+      padding-inline: 10px;
+    }
+
+    .native-quickToolsGrid,
+    .screen-headerActions {
+      grid-template-columns: 1fr;
+    }
+
+    .guide-shell-native .guide-visualCard {
+      min-height: 136px;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .native-appBar {
+      align-items: flex-start;
+    }
+
+    .native-appTitle {
+      font-size: 0.88rem;
+    }
+
+    .screen-headerTitle {
+      font-size: 1.22rem;
+    }
+
+    .screen-headerSubtitle {
+      font-size: 0.76rem;
+      line-height: 1.38;
+    }
+
+    .guide-shell-native .guide-visualPane-native {
+      display: none;
+    }
+
+    .timer-modal.is-popup[data-native-popup="true"] .timer-resizeHandle {
+      width: 24px;
+      height: 24px;
+    }
+  }
+}

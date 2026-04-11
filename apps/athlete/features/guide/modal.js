@@ -33,15 +33,16 @@ function renderGuideFooter(stepIndex) {
   `;
 }
 
-export function renderAthleteNyxGuideModal({ guide = {}, preferences = {} } = {}) {
+export function renderAthleteNyxGuideModal({ guide = {}, preferences = {}, platformVariant = 'web' } = {}) {
   const stepIndex = clampNyxGuideStep(guide?.step);
   const step = getNyxGuideStep(stepIndex);
   const total = getNyxGuideStepCount();
   const isCompleted = preferences?.nyxGuideCompleted === true;
+  const isNative = platformVariant === 'native';
 
   return `
-    <div class="modal-overlay guide-overlay isOpen" id="ui-nyxGuideBackdrop">
-      <div class="guide-shell" id="nyx-guide-shell" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="nyx-guide-title">
+    <div class="modal-overlay guide-overlay ${isNative ? 'guide-overlay-native modal-overlay-native' : ''} isOpen" id="ui-nyxGuideBackdrop">
+      <div class="guide-shell ${isNative ? 'guide-shell-native' : ''}" id="nyx-guide-shell" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="nyx-guide-title">
         <div class="guide-topbar">
           <div class="guide-mark">
             <span class="guide-markBadge" aria-hidden="true"></span>
@@ -75,7 +76,7 @@ export function renderAthleteNyxGuideModal({ guide = {}, preferences = {} } = {}
               </div>
             </div>
 
-            <div class="guide-visualPane">
+            <div class="guide-visualPane ${isNative ? 'guide-visualPane-native' : ''}">
               <div class="guide-visualCard" aria-hidden="true">
                 <div class="guide-visualHalo"></div>
                 ${renderNyxIllustration({ pose: step.pose })}
