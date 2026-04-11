@@ -98,20 +98,40 @@ async function buildTrustedDeviceResponse({ user, deviceId, deviceLabel }) {
 }
 
 async function withUserBootstrap(normalizedEmail, factory) {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
+    console.info('[auth] database client acquired for bootstrap', { email: normalizedEmail });
+    
     await client.query('BEGIN');
     await client.query('SELECT pg_advisory_xact_lock($1)', [904001]);
     const existingCount = await client.query('SELECT EXISTS(SELECT 1 FROM users) AS has_users');
     const shouldBeAdmin = !existingCount.rows[0]?.has_users || ADMIN_EMAILS.includes(normalizedEmail);
+    
     const result = await factory(client, shouldBeAdmin);
+    
     await client.query('COMMIT');
+    console.info('[auth] bootstrap transaction committed successfully', { email: normalizedEmail });
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.warn('[auth] bootstrap transaction rolled back due to error', { email: normalizedEmail, error: error.message });
+      } catch (rollbackError) {
+        console.error('[auth] error during rollback', { email: normalizedEmail, rollbackError: rollbackError.message });
+      }
+    }
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[auth] database client released', { email: normalizedEmail });
+      } catch (releaseError) {
+        console.error('[auth] error releasing database client', { email: normalizedEmail, releaseError: releaseError.message });
+      }
+    }
   }
 }
 
