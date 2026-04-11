@@ -133,8 +133,11 @@ export async function createAthleteGroup({
   memberIds,
   userId,
 }) {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
+    console.info('[gym-write-services] gym creation started', { gymName });
+    
     await client.query('BEGIN');
     const inserted = await client.query(
       `INSERT INTO athlete_groups (gym_id, name, description, sport_type, created_by_user_id)
@@ -166,11 +169,27 @@ export async function createAthleteGroup({
     }
 
     await client.query('COMMIT');
+    console.info('[gym-write-services] athlete group created successfully', { groupId: group.id, gymId });
     return { group };
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('[gym-write-services] error creating athlete group', { gymId, error: error.message });
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.warn('[gym-write-services] transaction rolled back');
+      } catch (rollbackError) {
+        console.error('[gym-write-services] error during rollback', { rollbackError: rollbackError.message });
+      }
+    }
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[gym-write-services] database client released');
+      } catch (releaseError) {
+        console.error('[gym-write-services] error releasing database client', { releaseError: releaseError.message });
+      }
+    }
   }
 }

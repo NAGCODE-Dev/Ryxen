@@ -91,8 +91,11 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
     throw new Error('jobId inválido');
   }
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
+    console.info('[mailer] email job processing started', { jobId: normalizedJobId });
+    
     await client.query('BEGIN');
     const jobRes = await client.query(
       `SELECT *
@@ -103,7 +106,8 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
     );
     const job = jobRes.rows[0] || null;
     if (!job) {
-      await client.query('ROLLBACK');
+      console.warn('[mailer] email job not found', { jobId: normalizedJobId });
+      await client.query('COMMIT');
       return null;
     }
 
@@ -161,6 +165,8 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
 
     const updatedJob = updatedRes.rows[0];
 
+    console.info('[mailer] email job status updated', { jobId: updatedJob.id, status: updatedJob.status, provider: attempt.provider });
+
     await logOpsEvent({
       kind: 'email_job',
       status: attempt.ok ? 'sent' : (shouldRetry ? 'retry_scheduled' : 'failed'),
@@ -195,9 +201,17 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
       job: mapEmailJob(updatedJob),
     };
   } catch (error) {
+    console.error('[mailer] error processing email job', { jobId: normalizedJobId, error: error.message });
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[mailer] database client released');
+      } catch (releaseError) {
+        console.error('[mailer] error releasing database client', { releaseError: releaseError.message });
+      }
+    }
   }
 }
 

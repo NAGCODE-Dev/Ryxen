@@ -17,9 +17,12 @@ export async function syncAthletePrSnapshot({ userId, prs }) {
     .filter(([exercise, value]) => exercise && Number.isFinite(value) && value > 0);
 
   const incoming = new Map(entries);
-  const client = await pool.connect();
+  let client;
 
   try {
+    client = await pool.connect();
+    console.info('[athlete-write-services] PR snapshot sync started', { userId, exerciseCount: entries.length });
+    
     await client.query('BEGIN');
 
     const latestRes = await client.query(
@@ -68,12 +71,28 @@ export async function syncAthletePrSnapshot({ userId, prs }) {
     }
 
     await client.query('COMMIT');
+    console.info('[athlete-write-services] PR snapshot sync completed', { userId, inserted: insertedCount, removed: removedCount });
     return { inserted: insertedCount, removed: removedCount, total: entries.length };
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('[athlete-write-services] error syncing PR snapshot', { userId, error: error.message });
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.warn('[athlete-write-services] transaction rolled back');
+      } catch (rollbackError) {
+        console.error('[athlete-write-services] error during rollback', { rollbackError: rollbackError.message });
+      }
+    }
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[athlete-write-services] database client released');
+      } catch (releaseError) {
+        console.error('[athlete-write-services] error releasing database client', { releaseError: releaseError.message });
+      }
+    }
   }
 }
 
@@ -103,8 +122,11 @@ export async function syncAthleteMeasurementsSnapshot({ userId, measurements }) 
     });
   }
 
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
+    console.info('[athlete-write-services] measurements sync started', { userId, measurementCount: normalized.length });
+    
     await client.query('BEGIN');
     await client.query(`DELETE FROM athlete_measurements WHERE user_id = $1`, [userId]);
 
@@ -126,11 +148,27 @@ export async function syncAthleteMeasurementsSnapshot({ userId, measurements }) 
     }
 
     await client.query('COMMIT');
+    console.info('[athlete-write-services] measurements sync completed', { userId, synced: normalized.length });
     return { synced: normalized.length };
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('[athlete-write-services] error syncing measurements', { userId, error: error.message });
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.warn('[athlete-write-services] transaction rolled back');
+      } catch (rollbackError) {
+        console.error('[athlete-write-services] error during rollback', { rollbackError: rollbackError.message });
+      }
+    }
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[athlete-write-services] database client released');
+      } catch (releaseError) {
+        console.error('[athlete-write-services] error releasing database client', { releaseError: releaseError.message });
+      }
+    }
   }
 }

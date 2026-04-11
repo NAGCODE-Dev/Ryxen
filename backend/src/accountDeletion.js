@@ -189,8 +189,11 @@ export async function deleteUserAccountNow({ userId, requestedByUserId = null, s
 }
 
 async function deleteUserAccount({ userId, requestedByUserId = null, source, requestId = null, preserveRequest = false, emailOverride = '' }) {
-  const client = await pool.connect();
+  let client;
   try {
+    client = await pool.connect();
+    console.info('[account-deletion] deletion process started', { userId, source });
+    
     await client.query('BEGIN');
     const userRes = await client.query(
       `SELECT id, email, name
@@ -204,11 +207,12 @@ async function deleteUserAccount({ userId, requestedByUserId = null, source, req
     const email = normalizeEmail(emailOverride || user?.email || '');
 
     if (!user && !email) {
-      await client.query('ROLLBACK');
       const error = new Error('Usuário não encontrado');
       error.code = 'user_not_found';
       throw error;
     }
+
+    console.info('[account-deletion] starting data cleanup', { userId, email, source });
 
     await client.query(`DELETE FROM telemetry_events WHERE user_id = $1`, [userId]);
     await client.query(`DELETE FROM billing_claims WHERE applied_user_id = $1 OR email = $2`, [userId, email]);
@@ -253,6 +257,7 @@ async function deleteUserAccount({ userId, requestedByUserId = null, source, req
       ? await pool.query(`SELECT * FROM account_deletion_requests WHERE id = $1 LIMIT 1`, [requestId])
       : { rows: [] };
 
+    console.info('[account-deletion] deletion completed successfully', { userId, email, source });
     return {
       deleted: {
         userId,
@@ -262,12 +267,25 @@ async function deleteUserAccount({ userId, requestedByUserId = null, source, req
       request: requestRes.rows[0] || null,
     };
   } catch (error) {
-    try {
-      await client.query('ROLLBACK');
-    } catch {}
+    console.error('[account-deletion] unexpected error during deletion', { userId, email, source, error: error.message });
+    if (client) {
+      try {
+        await client.query('ROLLBACK');
+        console.warn('[account-deletion] transaction rolled back due to error');
+      } catch (rollbackError) {
+        console.error('[account-deletion] error during rollback', { rollbackError: rollbackError.message });
+      }
+    }
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+        console.info('[account-deletion] database client released');
+      } catch (releaseError) {
+        console.error('[account-deletion] error releasing database client', { releaseError: releaseError.message });
+      }
+    }
   }
 }
 
@@ -300,14 +318,24 @@ export function startAccountDeletionWorker() {
 }
 
 export async function sweepDueAccountDeletions() {
-  const dueRes = await pool.query(
-    `SELECT id, user_id, requested_by_user_id, email
-     FROM account_deletion_requests
-     WHERE status = 'pending_confirmation'
-       AND delete_after <= NOW()
-     ORDER BY delete_after ASC
-     LIMIT 20`,
-  );
+  console.info('[account-deletion-worker] sweep cycle started');
+  
+  let dueRes;
+  try {
+    dueRes = await pool.query(
+      `SELECT id, user_id, requested_by_user_id, email
+       FROM account_deletion_requests
+       WHERE status = 'pending_confirmation'
+         AND delete_after <= NOW()
+       ORDER BY delete_after ASC
+       LIMIT 20`,
+    );
+  } catch (error) {
+    console.error('[account-deletion-worker] failed to query due deletions', { error: error.message });
+    throw error;
+  }
+
+  console.info('[account-deletion-worker] found pending deletions', { count: dueRes.rows.length });
 
   for (const row of dueRes.rows) {
     try {
@@ -319,10 +347,13 @@ export async function sweepDueAccountDeletions() {
         preserveRequest: true,
         emailOverride: row.email,
       });
+      console.info('[account-deletion-worker] user deleted successfully', { requestId: row.id, userId: row.user_id });
     } catch (error) {
-      console.error('[account-deletion-worker] delete failed', row.id, error);
+      console.error('[account-deletion-worker] delete failed', { requestId: row.id, userId: row.user_id, error: error.message });
     }
   }
+  
+  console.info('[account-deletion-worker] sweep cycle completed', { processedCount: dueRes.rows.length });
 }
 
 export function renderAccountDeletionResponseHtml({ title, message }) {
