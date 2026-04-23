@@ -325,8 +325,9 @@ export async function denyPasswordResetSupportRequest({ requestId, deniedByUserI
   return result.rows[0] || null;
 }
 
-export async function completePasswordResetSupportRequest({ requestId }) {
-  const result = await pool.query(
+export async function completePasswordResetSupportRequest({ requestId, client = null }) {
+  const queryable = client?.query ? client : pool;
+  const result = await queryable.query(
     `UPDATE password_reset_support_requests
      SET status = 'completed',
          completed_at = NOW(),

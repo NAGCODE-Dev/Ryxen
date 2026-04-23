@@ -17,6 +17,8 @@ const SMTP_GREETING_TIMEOUT_MS = Math.max(Number(process.env.SMTP_GREETING_TIMEO
 const SMTP_SOCKET_TIMEOUT_MS = Math.max(Number(process.env.SMTP_SOCKET_TIMEOUT_MS || 12000), 1000);
 const EMAIL_JOB_RETRY_DELAY_MS = Math.max(Number(process.env.EMAIL_JOB_RETRY_DELAY_MS || 15000), 1000);
 const EMAIL_JOB_SWEEP_INTERVAL_MS = Math.max(Number(process.env.EMAIL_JOB_SWEEP_INTERVAL_MS || 30000), 5000);
+const EMAIL_JOB_PROCESSING_TIMEOUT_MS = Math.max(Number(process.env.EMAIL_JOB_PROCESSING_TIMEOUT_MS || 10 * 60 * 1000), 60_000);
+const MAX_EMAIL_JOB_RETRY_DELAY_MS = Math.max(Number(process.env.MAX_EMAIL_JOB_RETRY_DELAY_MS || 15 * 60 * 1000), EMAIL_JOB_RETRY_DELAY_MS);
 const MAX_SWEEP_BATCH = 10;
 
 let providerPromises = null;
@@ -116,8 +118,15 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
       return mapEmailJob(job);
     }
 
+    const isStaleProcessing = job.status === 'processing'
+      && new Date(job.updated_at || 0).getTime() <= (Date.now() - EMAIL_JOB_PROCESSING_TIMEOUT_MS);
+    if (job.status === 'processing' && !isStaleProcessing) {
+      await client.query('COMMIT');
+      return mapEmailJob(job);
+    }
+
     const canAttemptNow = !job.next_attempt_at || new Date(job.next_attempt_at).getTime() <= Date.now();
-    if (!immediate && !canAttemptNow) {
+    if (!immediate && !canAttemptNow && !isStaleProcessing) {
       await client.query('COMMIT');
       return mapEmailJob(job);
     }
@@ -135,7 +144,8 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
     const nextRetryCount = Number(job.retry_count || 0) + (attempt.ok ? 0 : 1);
     const maxRetries = Number(job.max_retries || 2);
     const shouldRetry = !attempt.ok && nextRetryCount <= maxRetries;
-    const nextAttemptAt = shouldRetry ? new Date(Date.now() + EMAIL_JOB_RETRY_DELAY_MS).toISOString() : null;
+    const retryDelayMs = shouldRetry ? computeEmailJobRetryDelayMs(nextRetryCount) : 0;
+    const nextAttemptAt = shouldRetry ? new Date(Date.now() + retryDelayMs).toISOString() : null;
 
     const updatedRes = await pool.query(
       `UPDATE email_jobs
@@ -186,7 +196,7 @@ export async function processEmailJob(jobId, { immediate = false } = {}) {
     });
 
     if (shouldRetry) {
-      scheduleEmailJobRetry(updatedJob.id, EMAIL_JOB_RETRY_DELAY_MS);
+      scheduleEmailJobRetry(updatedJob.id, retryDelayMs);
     }
 
     if (!attempt.ok) {
@@ -255,14 +265,20 @@ export function startEmailWorker() {
 }
 
 export async function sweepPendingEmailJobs() {
+  const staleProcessingCutoff = new Date(Date.now() - EMAIL_JOB_PROCESSING_TIMEOUT_MS).toISOString();
   const result = await pool.query(
     `SELECT id
      FROM email_jobs
-     WHERE status IN ('pending', 'failed')
+     WHERE (
+       status IN ('pending', 'failed')
        AND (next_attempt_at IS NULL OR next_attempt_at <= NOW())
+     ) OR (
+       status = 'processing'
+       AND updated_at <= $2
+     )
      ORDER BY created_at ASC
      LIMIT $1`,
-    [MAX_SWEEP_BATCH],
+    [MAX_SWEEP_BATCH, staleProcessingCutoff],
   );
 
   for (const row of result.rows) {
@@ -655,6 +671,14 @@ function mapEmailJob(row) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+function computeEmailJobRetryDelayMs(retryCount) {
+  const safeRetryCount = Math.max(Number(retryCount) || 1, 1);
+  return Math.min(
+    EMAIL_JOB_RETRY_DELAY_MS * (2 ** Math.max(safeRetryCount - 1, 0)),
+    MAX_EMAIL_JOB_RETRY_DELAY_MS,
+  );
 }
 
 function scheduleEmailJobRetry(jobId, delayMs) {

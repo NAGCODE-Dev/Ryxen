@@ -27,8 +27,8 @@ import { startOperationalRetentionWorker } from './retention.js';
 
 initBackendErrorMonitoring();
 const app = express();
-const AUTH_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'auth' });
-const RESET_RATE_LIMIT = createRateLimiter({ windowMs: 15 * 60_000, maxRequests: 8, keyPrefix: 'reset' });
+const AUTH_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'auth', keyResolver: buildSensitiveRateLimitKey });
+const RESET_RATE_LIMIT = createRateLimiter({ windowMs: 15 * 60_000, maxRequests: 8, keyPrefix: 'reset', keyResolver: buildSensitiveRateLimitKey });
 const TELEMETRY_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 120, keyPrefix: 'telemetry' });
 
 validateConfig();
@@ -117,6 +117,11 @@ function resolveBenchmarkOrder(sort) {
     default:
       return 'COALESCE(year, 0) DESC, name ASC';
   }
+}
+
+function buildSensitiveRateLimitKey(req) {
+  const email = String(req.body?.email || req.query?.email || '').trim().toLowerCase();
+  return `${req.ip || 'unknown'}:${email || 'anon'}`;
 }
 
 

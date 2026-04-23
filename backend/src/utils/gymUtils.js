@@ -1,5 +1,6 @@
-import { canManageGym, getAccessContextForGym, getMembershipForUser } from '../access.js';
+import { canManageMembership, getAccessContextForGym, getMembershipForUser } from '../access.js';
 import { pool } from '../db.js';
+import { normalizeEmail } from '../devAccess.js';
 
 export async function requireGymManager(gymId, userId) {
   const membership = await getMembershipForUser(gymId, userId);
@@ -7,7 +8,7 @@ export async function requireGymManager(gymId, userId) {
     return { success: false, code: 404, error: 'Gym não encontrado para este usuário' };
   }
 
-  if (!canManageGym(membership.role)) {
+  if (!canManageMembership(membership)) {
     return { success: false, code: 403, error: 'Usuário sem permissão de gestão neste gym' };
   }
 
@@ -16,11 +17,36 @@ export async function requireGymManager(gymId, userId) {
 }
 
 export async function attachPendingMembershipsToUser(userId, email) {
+  const normalizedEmail = normalizeEmail(email);
+  if (!normalizedEmail) return;
+
   await pool.query(
-    `UPDATE gym_memberships
-     SET user_id = $1, pending_email = NULL, status = 'active'
-     WHERE pending_email = $2 AND user_id IS NULL`,
-    [userId, String(email || '').toLowerCase().trim()],
+    `WITH matched AS (
+       SELECT
+         id,
+         ROW_NUMBER() OVER (
+           PARTITION BY gym_id
+           ORDER BY created_at ASC, id ASC
+         ) AS row_number
+       FROM gym_memberships
+       WHERE LOWER(pending_email) = LOWER($2)
+         AND user_id IS NULL
+     ),
+     promoted AS (
+       UPDATE gym_memberships gm
+       SET user_id = $1,
+           pending_email = NULL,
+           status = 'active'
+       FROM matched
+       WHERE gm.id = matched.id
+         AND matched.row_number = 1
+       RETURNING gm.id
+     )
+     DELETE FROM gym_memberships gm
+     USING matched
+     WHERE gm.id = matched.id
+       AND matched.row_number > 1`,
+    [userId, normalizedEmail],
   );
 }
 

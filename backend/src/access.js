@@ -9,8 +9,30 @@ async function getPool() {
   return poolPromise;
 }
 
-export async function getUserMemberships(userId) {
+function normalizeMembershipStatuses(statuses = ['active']) {
+  if (statuses === null) return [];
+  const values = Array.isArray(statuses) ? statuses : [statuses];
+  return Array.from(new Set(
+    values
+      .map((value) => String(value || '').trim().toLowerCase())
+      .filter(Boolean),
+  ));
+}
+
+export function isMembershipActive(membership) {
+  return String(membership?.status || '').trim().toLowerCase() === 'active';
+}
+
+export async function getUserMemberships(userId, { statuses = ['active'] } = {}) {
   const pool = await getPool();
+  const normalizedStatuses = normalizeMembershipStatuses(statuses);
+  const params = [userId];
+  const statusClause = normalizedStatuses.length
+    ? `AND gm.status = ANY($${params.length + 1}::text[])`
+    : '';
+  if (normalizedStatuses.length) {
+    params.push(normalizedStatuses);
+  }
   const result = await pool.query(
     `SELECT
       gm.id,
@@ -25,8 +47,9 @@ export async function getUserMemberships(userId) {
      FROM gym_memberships gm
      JOIN gyms g ON g.id = gm.gym_id
      WHERE gm.user_id = $1
+       ${statusClause}
      ORDER BY gm.created_at ASC`,
-    [userId],
+    params,
   );
 
   return result.rows;
@@ -38,11 +61,23 @@ export async function getGymById(gymId) {
   return result.rows[0] || null;
 }
 
-export async function getMembershipForUser(gymId, userId) {
+export async function getMembershipForUser(gymId, userId, { statuses = ['active'] } = {}) {
   const pool = await getPool();
+  const normalizedStatuses = normalizeMembershipStatuses(statuses);
+  const params = [gymId, userId];
+  const statusClause = normalizedStatuses.length
+    ? `AND status = ANY($${params.length + 1}::text[])`
+    : '';
+  if (normalizedStatuses.length) {
+    params.push(normalizedStatuses);
+  }
   const result = await pool.query(
-    `SELECT * FROM gym_memberships WHERE gym_id = $1 AND user_id = $2 LIMIT 1`,
-    [gymId, userId],
+    `SELECT * FROM gym_memberships
+     WHERE gym_id = $1
+       AND user_id = $2
+       ${statusClause}
+     LIMIT 1`,
+    params,
   );
   return result.rows[0] || null;
 }
@@ -173,6 +208,10 @@ export async function getAccessContextForUser(userId) {
 
 export function canManageGym(role) {
   return role === 'owner' || role === 'coach';
+}
+
+export function canManageMembership(membership) {
+  return isMembershipActive(membership) && canManageGym(membership?.role);
 }
 
 export function getSubscriptionAccessState(subscription) {

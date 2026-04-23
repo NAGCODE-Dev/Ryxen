@@ -1,7 +1,7 @@
 import express from 'express';
 
 import { authRequired } from '../auth.js';
-import { getMembershipForUser } from '../access.js';
+import { canManageMembership, getMembershipForUser } from '../access.js';
 import { getBenchmarkLeaderboard } from '../queries/leaderboardQueries.js';
 import { normalizeSportType } from '../utils/sportType.js';
 
@@ -13,19 +13,26 @@ export function createLeaderboardRouter() {
     const sportType = normalizeSportType(req.query?.sportType);
     const gymId = req.query?.gymId !== undefined && req.query?.gymId !== '' ? Number(req.query.gymId) : null;
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+    let viewerMembership = null;
 
     if (!slug) {
       return res.status(400).json({ error: 'slug é obrigatório' });
     }
 
     if (Number.isFinite(gymId)) {
-      const membership = await getMembershipForUser(gymId, req.user.userId);
-      if (!membership) {
+      viewerMembership = await getMembershipForUser(gymId, req.user.userId);
+      if (!viewerMembership) {
         return res.status(404).json({ error: 'Gym não encontrado para este usuário' });
       }
     }
 
-    const payload = await getBenchmarkLeaderboard({ slug, sportType, gymId, limit });
+    const payload = await getBenchmarkLeaderboard({
+      slug,
+      sportType,
+      gymId,
+      limit,
+      showPrivateAthleteData: canManageMembership(viewerMembership),
+    });
     if (!payload) {
       return res.status(404).json({ error: 'Benchmark não encontrado' });
     }

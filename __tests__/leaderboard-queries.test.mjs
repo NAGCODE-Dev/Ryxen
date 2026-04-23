@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { parseBenchmarkScoreValue } from '../backend/src/queries/leaderboardQueries.js';
+import {
+  buildLeaderboardDisplayName,
+  formatLeaderboardResult,
+  parseBenchmarkScoreValue,
+} from '../backend/src/queries/leaderboardQueries.js';
 
 test('parseBenchmarkScoreValue converte for_time em segundos', () => {
   assert.equal(parseBenchmarkScoreValue('02:31', 'for_time'), 151);
@@ -15,4 +19,38 @@ test('parseBenchmarkScoreValue converte rounds_reps em valor ordenável', () => 
 test('parseBenchmarkScoreValue mantém numéricos simples para score types diretos', () => {
   assert.equal(parseBenchmarkScoreValue('125', 'reps'), 125);
   assert.equal(parseBenchmarkScoreValue('87.5 kg', 'load'), 87.5);
+});
+
+test('buildLeaderboardDisplayName reduz identidade em rankings públicos', () => {
+  assert.equal(
+    buildLeaderboardDisplayName({ name: 'Maria Silva', email: 'maria@example.com' }, { revealIdentity: false, rank: 1 }),
+    'Maria S.',
+  );
+  assert.equal(
+    buildLeaderboardDisplayName({ name: '', email: 'ma@example.com' }, { revealIdentity: false, rank: 2 }),
+    'ma***@example.com',
+  );
+});
+
+test('formatLeaderboardResult só expõe identidade completa para gestor autorizado', () => {
+  const row = {
+    id: 10,
+    gym_id: 5,
+    gym_name: 'Ryxen',
+    score_display: '8:31',
+    score_value: 511,
+    tiebreak_seconds: null,
+    created_at: '2026-04-23T10:00:00.000Z',
+    name: 'João Pedro',
+    email: 'joao@example.com',
+  };
+
+  const publicView = formatLeaderboardResult(row, 0, { showPrivateAthleteData: false });
+  assert.equal(publicView.name, 'João P.');
+  assert.equal(publicView.identityVisibility, 'redacted');
+  assert.equal('email' in publicView, false);
+
+  const managerView = formatLeaderboardResult(row, 0, { showPrivateAthleteData: true });
+  assert.equal(managerView.name, 'João Pedro');
+  assert.equal(managerView.identityVisibility, 'gym_manager');
 });

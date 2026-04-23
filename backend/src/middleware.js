@@ -13,6 +13,12 @@ export function applySecurityHeaders(_req, res, next) {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  res.setHeader('Pragma', 'no-cache');
+  if (_req.secure || String(_req.headers['x-forwarded-proto'] || '').toLowerCase() === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
   next();
 }
 
@@ -37,10 +43,11 @@ export function attachRequestLogger(req, res, next) {
   next();
 }
 
-export function createRateLimiter({ windowMs, maxRequests, keyPrefix }) {
+export function createRateLimiter({ windowMs, maxRequests, keyPrefix, keyResolver = null }) {
   return (req, res, next) => {
     const now = Date.now();
-    const key = `${keyPrefix}:${req.ip || 'unknown'}`;
+    const resolvedKey = keyResolver ? keyResolver(req) : (req.ip || 'unknown');
+    const key = `${keyPrefix}:${String(resolvedKey || req.ip || 'unknown').trim().toLowerCase()}`;
     const bucket = rateBuckets.get(key);
 
     if (!bucket || now > bucket.resetAt) {

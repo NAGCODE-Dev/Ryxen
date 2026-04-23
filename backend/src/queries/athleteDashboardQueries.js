@@ -53,9 +53,11 @@ export async function loadAthleteAccessSnapshot(userId, sportType) {
   ]);
   const gymIds = contexts.map((ctx) => ctx.membership.gym_id);
   const athleteBenefits = selectEffectiveAthleteBenefits({ gymContexts: contexts, personalSubscription });
-  const allowedGymIds = contexts
+  const allowedContexts = contexts
     .filter((ctx) => ctx?.access?.gymAccess?.canAthletesUseApp)
-    .map((ctx) => ctx.membership.gym_id);
+    .map((ctx) => ctx.membership);
+  const allowedGymIds = allowedContexts.map((membership) => membership.gym_id);
+  const allowedMembershipIds = allowedContexts.map((membership) => membership.id);
 
   return {
     gymIds,
@@ -63,6 +65,7 @@ export async function loadAthleteAccessSnapshot(userId, sportType) {
     personalSubscription,
     athleteBenefits,
     allowedGymIds,
+    allowedMembershipIds,
     sportType,
   };
 }
@@ -70,8 +73,18 @@ export async function loadAthleteAccessSnapshot(userId, sportType) {
 export async function loadAthleteSummaryBlock(userId, access) {
   const [resultCountRes, workoutCountRes] = await Promise.all([
     pool.query(`SELECT COUNT(*)::int AS total FROM benchmark_results WHERE user_id = $1 AND sport_type = $2`, [userId, access.sportType]),
-    access.allowedGymIds.length
-      ? pool.query(`SELECT COUNT(*)::int AS total FROM workouts WHERE gym_id = ANY($1::int[]) AND sport_type = $2`, [access.allowedGymIds, access.sportType])
+    access.allowedMembershipIds.length
+      ? pool.query(
+          `SELECT COUNT(DISTINCT w.id)::int AS total
+           FROM workouts w
+           JOIN gym_memberships gm
+             ON gm.id = ANY($1::int[])
+            AND gm.gym_id = w.gym_id
+           LEFT JOIN workout_assignments wa ON wa.workout_id = w.id
+           WHERE w.sport_type = $2
+             AND (wa.gym_membership_id IS NULL OR wa.gym_membership_id = gm.id)`,
+          [access.allowedMembershipIds, access.sportType],
+        )
       : Promise.resolve({ rows: [{ total: 0 }] }),
   ]);
 
@@ -197,12 +210,12 @@ export async function loadAthleteResultsBlock(userId, access, { buildBenchmarkTr
 }
 
 export async function loadAthleteWorkoutsBlock(access) {
-  if (!access.allowedGymIds.length) {
+  if (!access.allowedMembershipIds.length) {
     return { recentWorkouts: [] };
   }
 
   const workoutsRes = await pool.query(
-    `SELECT
+    `SELECT DISTINCT
       w.id,
       w.title,
       w.scheduled_date,
@@ -210,11 +223,15 @@ export async function loadAthleteWorkoutsBlock(access) {
       g.name AS gym_name
      FROM workouts w
      JOIN gyms g ON g.id = w.gym_id
-     WHERE w.gym_id = ANY($1::int[])
-       AND w.sport_type = $2
+     JOIN gym_memberships gm
+       ON gm.id = ANY($1::int[])
+      AND gm.gym_id = w.gym_id
+     LEFT JOIN workout_assignments wa ON wa.workout_id = w.id
+     WHERE w.sport_type = $2
+       AND (wa.gym_membership_id IS NULL OR wa.gym_membership_id = gm.id)
      ORDER BY w.scheduled_date DESC, w.created_at DESC
      LIMIT 8`,
-    [access.allowedGymIds, access.sportType],
+    [access.allowedMembershipIds, access.sportType],
   );
 
   const isWithinHistoryWindow = buildHistoryWindowFilter(access.athleteBenefits);

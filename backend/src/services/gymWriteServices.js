@@ -1,4 +1,5 @@
 import { pool } from '../db.js';
+import { normalizeEmail } from '../devAccess.js';
 
 export async function resolveWorkoutAudience({ gymId, audienceMode, targetMembershipIds, targetGroupIds }) {
   if (audienceMode === 'all') {
@@ -49,7 +50,8 @@ export async function resolveWorkoutAudience({ gymId, audienceMode, targetMember
 }
 
 export async function inviteGymMembership({ gymId, email, role }) {
-  const foundUser = await pool.query(`SELECT id, email FROM users WHERE email = $1`, [email]);
+  const normalizedEmail = normalizeEmail(email);
+  const foundUser = await pool.query(`SELECT id, email FROM users WHERE email = $1`, [normalizedEmail]);
   const found = foundUser.rows[0] || null;
 
   try {
@@ -57,12 +59,16 @@ export async function inviteGymMembership({ gymId, email, role }) {
       `INSERT INTO gym_memberships (gym_id, user_id, pending_email, role, status)
        VALUES ($1,$2,$3,$4,$5)
        RETURNING *`,
-      [gymId, found?.id || null, found ? null : email, role, found ? 'active' : 'invited'],
+      [gymId, found?.id || null, found ? null : normalizedEmail, role, found ? 'active' : 'invited'],
     );
     return { membership: inserted.rows[0] };
   } catch (error) {
-    if (String(error?.message || '').includes('idx_gym_membership_user_unique')) {
+    const constraint = String(error?.constraint || error?.message || '');
+    if (constraint.includes('idx_gym_membership_user_unique')) {
       return { error: 'Usuário já pertence a este gym', code: 409 };
+    }
+    if (constraint.includes('idx_gym_membership_pending_email_unique')) {
+      return { error: 'Já existe um convite pendente para este email neste gym', code: 409 };
     }
     throw error;
   }

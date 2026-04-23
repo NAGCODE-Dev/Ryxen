@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 
 import { pool } from './db.js';
 import { normalizeEmail } from './devAccess.js';
@@ -7,6 +7,17 @@ const TRUSTED_DEVICE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
 function hashTrustedToken(token) {
   return createHash('sha256').update(String(token || '')).digest('hex');
+}
+
+function hasMatchingTrustedToken(token, expectedHash) {
+  const actual = Buffer.from(hashTrustedToken(token), 'hex');
+  const expected = Buffer.from(String(expectedHash || ''), 'hex');
+  if (!actual.length || actual.length !== expected.length) return false;
+  return timingSafeEqual(actual, expected);
+}
+
+function getQueryable(client = null) {
+  return client?.query ? client : pool;
 }
 
 export async function issueTrustedDeviceGrant({ userId, email, deviceId, label = '' }) {
@@ -66,7 +77,8 @@ export async function authenticateTrustedDevice({ email, deviceId, trustedToken 
 
   const result = await pool.query(
     `SELECT td.id, td.user_id, td.email, td.device_id, td.label, td.token_hash, td.expires_at,
-            u.id AS user_row_id, u.email AS user_email, u.name AS user_name, u.is_admin, u.email_verified, u.email_verified_at
+            u.id AS user_row_id, u.email AS user_email, u.name AS user_name, u.is_admin, u.email_verified, u.email_verified_at,
+            u.session_version
      FROM trusted_devices td
      JOIN users u ON u.id = td.user_id
      WHERE td.email = $1
@@ -80,7 +92,7 @@ export async function authenticateTrustedDevice({ email, deviceId, trustedToken 
   const row = result.rows[0] || null;
   if (!row) return null;
   if (new Date(row.expires_at).getTime() <= Date.now()) return null;
-  if (row.token_hash !== hashTrustedToken(token)) return null;
+  if (!hasMatchingTrustedToken(token, row.token_hash)) return null;
 
   await pool.query(
     `UPDATE trusted_devices
@@ -99,11 +111,33 @@ export async function authenticateTrustedDevice({ email, deviceId, trustedToken 
       is_admin: row.is_admin,
       email_verified: row.email_verified,
       email_verified_at: row.email_verified_at,
+      session_version: Number(row.session_version || 0),
     },
     device: {
       id: row.id,
       deviceId: row.device_id,
       label: row.label || null,
     },
+  };
+}
+
+export async function revokeTrustedDevicesForUser({ userId, client = null }) {
+  const normalizedUserId = Number(userId);
+  if (!Number.isFinite(normalizedUserId) || normalizedUserId <= 0) {
+    return { revokedCount: 0 };
+  }
+
+  const queryable = getQueryable(client);
+  const result = await queryable.query(
+    `UPDATE trusted_devices
+     SET revoked_at = NOW(),
+         updated_at = NOW()
+     WHERE user_id = $1
+       AND revoked_at IS NULL`,
+    [normalizedUserId],
+  );
+
+  return {
+    revokedCount: Number(result.rowCount || 0),
   };
 }

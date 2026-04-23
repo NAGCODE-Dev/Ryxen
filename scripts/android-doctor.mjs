@@ -113,9 +113,14 @@ async function resolveJavaRuntime(requiredMajor) {
   const javaInfo = await readJavaCommandVersion('java', ['-version']);
   const javacInfo = await readJavaCommandVersion('javac', ['-version']);
   const javaHome = String(process.env.JAVA_HOME || '').trim();
+  const inferredJavaHome = await inferJavaHomeFromCommand();
+
+  if (javaHome) {
+    await assertValidJavaHome(javaHome, requiredMajor, inferredJavaHome);
+  }
 
   if (!javaInfo || !javacInfo) {
-    throw new Error(buildJavaSetupMessage(requiredMajor, javaHome));
+    throw new Error(buildJavaSetupMessage(requiredMajor, javaHome, inferredJavaHome));
   }
 
   if (javaInfo.major == null || javacInfo.major == null) {
@@ -138,14 +143,39 @@ async function resolveJavaRuntime(requiredMajor) {
   if (javaInfo.major < requiredMajor) {
     throw new Error([
       `JDK incompatível: encontrado ${javaInfo.versionLabel}, mas o projeto Android requer Java ${requiredMajor}+.`,
-      buildJavaInstallHint(requiredMajor, javaHome),
+      buildJavaInstallHint(requiredMajor, javaHome, inferredJavaHome),
     ].join('\n'));
   }
 
   return {
-    javaHome,
+    javaHome: javaHome || inferredJavaHome,
     versionLabel: javaInfo.versionLabel,
   };
+}
+
+async function assertValidJavaHome(javaHome, requiredMajor, inferredJavaHome) {
+  const javaBinary = path.join(javaHome, 'bin', 'java');
+  const javacBinary = path.join(javaHome, 'bin', 'javac');
+
+  try {
+    await fs.access(javaHome);
+  } catch {
+    throw new Error([
+      `JAVA_HOME aponta para um diretório inexistente: ${javaHome}`,
+      buildJavaInstallHint(requiredMajor, javaHome, inferredJavaHome),
+    ].join('\n'));
+  }
+
+  try {
+    await fs.access(javaBinary, fsConstants.X_OK);
+    await fs.access(javacBinary, fsConstants.X_OK);
+  } catch {
+    throw new Error([
+      `JAVA_HOME não parece um JDK válido: ${javaHome}`,
+      `Esperado encontrar executáveis em ${javaBinary} e ${javacBinary}.`,
+      buildJavaInstallHint(requiredMajor, javaHome, inferredJavaHome),
+    ].join('\n'));
+  }
 }
 
 async function readJavaCommandVersion(command, args) {
@@ -206,11 +236,31 @@ function buildJavaSetupMessage(requiredMajor, javaHome) {
   ].join('\n');
 }
 
-function buildJavaInstallHint(requiredMajor, javaHome) {
-  const javaHomeHint = javaHome || `/usr/lib/jvm/java-${requiredMajor}-openjdk-amd64`;
+function buildJavaInstallHint(requiredMajor, javaHome, inferredJavaHome = '') {
+  const normalizedCurrent = String(javaHome || '').trim();
+  const currentLooksUsable = normalizedCurrent && normalizedCurrent.includes(`java-${requiredMajor}-openjdk`);
+  const javaHomeHint = currentLooksUsable
+    ? normalizedCurrent
+    : (inferredJavaHome || `/usr/lib/jvm/java-${requiredMajor}-openjdk-amd64`);
   return [
     `Instale no Ubuntu/Debian com: sudo apt update && sudo apt install -y openjdk-${requiredMajor}-jdk`,
     `Depois exporte JAVA_HOME, por exemplo: export JAVA_HOME=${javaHomeHint}`,
-    'Reabra o VS Code ou configure `java.configuration.runtimes` apontando para esse diretório.',
+    'Se o erro vier do VS Code, atualize `java.configuration.runtimes` e `java.jdt.ls.java.home` para esse diretório ou remova a referência antiga.',
   ].join('\n');
+}
+
+async function inferJavaHomeFromCommand() {
+  try {
+    const { stdout } = await run('which', ['javac'], {
+      cwd: root,
+      env: process.env,
+    });
+    const javacPath = String(stdout || '').trim();
+    if (!javacPath) return '';
+
+    const realJavacPath = await fs.realpath(javacPath);
+    return path.dirname(path.dirname(realJavacPath));
+  } catch {
+    return '';
+  }
 }

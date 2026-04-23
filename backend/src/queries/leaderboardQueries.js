@@ -64,6 +64,50 @@ export async function getBenchmarkBySlug(slug) {
   return result.rows[0] || null;
 }
 
+function maskEmailAddress(email = '') {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const [localPart, domain] = normalizedEmail.split('@');
+  if (!localPart || !domain) return '';
+
+  const visiblePrefix = localPart.slice(0, Math.min(localPart.length, 2));
+  return `${visiblePrefix}${'*'.repeat(Math.max(3, localPart.length - visiblePrefix.length))}@${domain}`;
+}
+
+export function buildLeaderboardDisplayName({ name = '', email = '' } = {}, { revealIdentity = false, rank = 0 } = {}) {
+  const normalizedName = String(name || '').trim();
+  if (revealIdentity) {
+    return normalizedName || maskEmailAddress(email) || `Atleta #${rank}`;
+  }
+
+  if (normalizedName) {
+    const [firstName, ...rest] = normalizedName.split(/\s+/).filter(Boolean);
+    if (!firstName) return maskEmailAddress(email) || `Atleta #${rank}`;
+    const trailingInitial = rest[0]?.[0] ? ` ${rest[0][0]}.` : '';
+    return `${firstName}${trailingInitial}`;
+  }
+
+  return maskEmailAddress(email) || `Atleta #${rank}`;
+}
+
+export function formatLeaderboardResult(row, index, { showPrivateAthleteData = false } = {}) {
+  const rank = index + 1;
+  return {
+    id: row.id,
+    gym_id: row.gym_id ?? null,
+    gym_name: row.gym_name || null,
+    score_display: row.score_display,
+    score_value: row.score_value,
+    tiebreak_seconds: row.tiebreak_seconds,
+    created_at: row.created_at,
+    name: buildLeaderboardDisplayName(row, {
+      revealIdentity: showPrivateAthleteData,
+      rank,
+    }),
+    identityVisibility: showPrivateAthleteData ? 'gym_manager' : 'redacted',
+    rank,
+  };
+}
+
 export function parseBenchmarkScoreValue(scoreDisplay, scoreType) {
   const raw = String(scoreDisplay || '').trim();
   if (!raw) return 0;
@@ -101,7 +145,7 @@ function buildLeaderboardOrder(scoreType) {
   return 'br.score_value DESC, COALESCE(br.tiebreak_seconds, 0) ASC, br.created_at ASC';
 }
 
-export async function getBenchmarkLeaderboard({ slug, sportType, gymId, limit }) {
+export async function getBenchmarkLeaderboard({ slug, sportType, gymId, limit, showPrivateAthleteData = false }) {
   const benchmark = await getBenchmarkBySlug(slug);
   if (!benchmark) return null;
 
@@ -118,14 +162,12 @@ export async function getBenchmarkLeaderboard({ slug, sportType, gymId, limit })
   const result = await pool.query(
     `SELECT
        br.id,
-       br.user_id,
        br.gym_id,
        br.score_display,
        br.score_value,
        br.tiebreak_seconds,
-       br.notes,
        br.created_at,
-       COALESCE(u.name, u.email) AS name,
+       u.name,
        u.email,
        g.name AS gym_name
      FROM benchmark_results br
@@ -141,9 +183,8 @@ export async function getBenchmarkLeaderboard({ slug, sportType, gymId, limit })
 
   return {
     benchmark,
-    results: result.rows.map((row, index) => ({
-      ...row,
-      rank: index + 1,
+    results: result.rows.map((row, index) => formatLeaderboardResult(row, index, {
+      showPrivateAthleteData,
     })),
   };
 }

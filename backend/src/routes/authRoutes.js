@@ -1,6 +1,6 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
-import { createHmac, randomUUID } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 import { pool } from '../db.js';
@@ -15,10 +15,10 @@ import {
   SUPPORT_EMAIL,
 } from '../config.js';
 import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
-import { authRequired, signToken } from '../auth.js';
+import { authRequired, invalidateUserSessions, signToken } from '../auth.js';
 import { getAuthCodeDeliveryCapability, sendPasswordResetEmail, sendSignupVerificationEmail } from '../mailer.js';
 import { logOpsEvent } from '../opsEvents.js';
-import { generateResetCode, hashResetCode, isResetCodeExpired } from '../passwordReset.js';
+import { generateResetCode, hashResetCode, isResetCodeExpired, matchesResetCode } from '../passwordReset.js';
 import {
   buildPasswordResetSupportRequestMeta,
   completePasswordResetSupportRequest,
@@ -26,7 +26,7 @@ import {
   getPasswordResetSupportRequestByKey,
   getPasswordResetSupportRequestStatus,
 } from '../passwordResetSupport.js';
-import { authenticateTrustedDevice, issueTrustedDeviceGrant } from '../trustedDevices.js';
+import { authenticateTrustedDevice, issueTrustedDeviceGrant, revokeTrustedDevicesForUser } from '../trustedDevices.js';
 import { captureBackendError } from '../sentry.js';
 import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
@@ -34,6 +34,8 @@ import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.j
 const GOOGLE_JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
 const GOOGLE_OAUTH_CONTEXT_COOKIE = 'ryxen_google_oauth_ctx';
 const LEGACY_GOOGLE_OAUTH_CONTEXT_COOKIE = 'crossapp_google_oauth_ctx';
+const PASSWORD_HASH_ROUNDS = Math.max(Number(process.env.PASSWORD_HASH_ROUNDS || 12), 10);
+const GENERIC_CODE_ERROR_MESSAGE = 'Código inválido ou expirado';
 
 function buildDeveloperPreviewResponse({ response = {}, code, error = null, transport = null }) {
   return {
@@ -171,22 +173,22 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       const verification = tokenRow.rows[0] || null;
       if (!verification) {
         console.warn('[auth/signup/confirm] no active verification token found', { email });
-        return res.status(400).json({ error: 'Nenhum código ativo encontrado para este email' });
+        return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
       }
 
       if (isResetCodeExpired(verification.expires_at)) {
         console.warn('[auth/signup/confirm] verification code expired', { email });
-        return res.status(400).json({ error: 'Código expirado' });
+        return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
       }
 
-      if (hashResetCode(code) !== verification.code_hash) {
+      if (!matchesResetCode(code, verification.code_hash)) {
         console.warn('[auth/signup/confirm] invalid verification code', { email });
-        return res.status(400).json({ error: 'Código inválido' });
+        return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
       }
 
       const inserted = await withUserBootstrap(email, async (client, shouldBeAdmin) => {
         const existing = await client.query(
-          `SELECT id, email, name, is_admin, email_verified, email_verified_at
+          `SELECT id, email, name, is_admin, email_verified, email_verified_at, session_version
            FROM users
            WHERE email = $1
            LIMIT 1`,
@@ -201,7 +203,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         return client.query(
           `INSERT INTO users (email, password_hash, name, is_admin, email_verified, email_verified_at)
            VALUES ($1,$2,$3,$4,TRUE,NOW())
-           RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+           RETURNING id, email, name, is_admin, email_verified, email_verified_at, session_version`,
           [email, verification.password_hash, verification.name || null, shouldBeAdmin],
         );
       });
@@ -247,7 +249,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
     try {
       const found = await pool.query(
-        `SELECT id, email, name, password_hash, is_admin, email_verified, email_verified_at
+        `SELECT id, email, name, password_hash, is_admin, email_verified, email_verified_at, session_version
          FROM users
          WHERE email = $1`,
         [normalizedEmail],
@@ -268,10 +270,11 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       const safeUser = {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.name || null,
         is_admin: user.is_admin,
         email_verified: user.email_verified,
         email_verified_at: user.email_verified_at,
+        session_version: Number(user.session_version || 0),
       };
       await attachPendingMembershipsToUser(user.id, user.email);
       await attachPendingBillingClaimsToUser(user.id, user.email);
@@ -437,7 +440,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
   router.post('/refresh', authRequired, async (req, res) => {
     const found = await pool.query(
-      `SELECT id, email, name, is_admin, email_verified, email_verified_at
+      `SELECT id, email, name, is_admin, email_verified, email_verified_at, session_version
        FROM users
        WHERE id = $1`,
       [req.user.userId],
@@ -450,7 +453,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
   router.get('/me', authRequired, async (req, res) => {
     const found = await pool.query(
-      `SELECT id, email, name, is_admin, email_verified, email_verified_at
+      `SELECT id, email, name, is_admin, email_verified, email_verified_at, session_version
        FROM users
        WHERE id = $1`,
       [req.user.userId],
@@ -668,7 +671,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         email,
         payload: {},
       });
-      return res.status(404).json({ error: 'Usuário não encontrado' });
+      return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
     }
 
     const foundToken = await pool.query(
@@ -689,7 +692,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         email,
         payload: {},
       });
-      return res.status(400).json({ error: 'Nenhum código ativo encontrado' });
+      return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
     }
 
     if (isResetCodeExpired(tokenRow.expires_at)) {
@@ -700,10 +703,10 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         email,
         payload: { expiresAt: tokenRow.expires_at },
       });
-      return res.status(400).json({ error: 'Código expirado' });
+      return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
     }
 
-    if (hashResetCode(code) !== tokenRow.code_hash) {
+    if (!matchesResetCode(code, tokenRow.code_hash)) {
       await logOpsEvent({
         kind: 'password_reset_confirm',
         status: 'failed_invalid_code',
@@ -711,12 +714,30 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
         email,
         payload: {},
       });
-      return res.status(400).json({ error: 'Código inválido' });
+      return res.status(400).json({ error: GENERIC_CODE_ERROR_MESSAGE });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, user.id]);
-    await pool.query(`UPDATE password_reset_tokens SET consumed_at = NOW() WHERE id = $1`, [tokenRow.id]);
+    const passwordHash = await bcrypt.hash(newPassword, PASSWORD_HASH_ROUNDS);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(
+        `UPDATE users
+         SET password_hash = $1
+         WHERE id = $2`,
+        [passwordHash, user.id],
+      );
+      await invalidateUserSessions({ userId: user.id, client, passwordChanged: true });
+      await revokeTrustedDevicesForUser({ userId: user.id, client });
+      await client.query(`UPDATE password_reset_tokens SET consumed_at = NOW() WHERE id = $1`, [tokenRow.id]);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
     await logOpsEvent({
       kind: 'password_reset_confirm',
       status: 'success',
@@ -768,10 +789,22 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 10);
-    await pool.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, user.id]);
-    await pool.query(`UPDATE password_reset_tokens SET consumed_at = NOW() WHERE user_id = $1 AND consumed_at IS NULL`, [user.id]);
-    await completePasswordResetSupportRequest({ requestId: request.id });
+    const passwordHash = await bcrypt.hash(newPassword, PASSWORD_HASH_ROUNDS);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`UPDATE users SET password_hash = $1 WHERE id = $2`, [passwordHash, user.id]);
+      await invalidateUserSessions({ userId: user.id, client, passwordChanged: true });
+      await revokeTrustedDevicesForUser({ userId: user.id, client });
+      await client.query(`UPDATE password_reset_tokens SET consumed_at = NOW() WHERE user_id = $1 AND consumed_at IS NULL`, [user.id]);
+      await completePasswordResetSupportRequest({ requestId: request.id, client });
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
 
     await logOpsEvent({
       kind: 'password_reset_support_request',
@@ -825,7 +858,7 @@ async function exchangeGoogleCodeForTokens({ code, redirectUri }) {
 
 async function findUserByEmail(email) {
   const found = await pool.query(
-    `SELECT id, email, name, is_admin, email_verified, email_verified_at
+    `SELECT id, email, name, is_admin, email_verified, email_verified_at, session_version
      FROM users
      WHERE email = $1
      LIMIT 1`,
@@ -838,12 +871,12 @@ async function upsertGoogleUser({ email, name, sub }) {
   let user = await findUserByEmail(email);
 
   if (!user) {
-    const fallbackPassword = await bcrypt.hash(`google-oauth:${sub}:${Date.now()}`, 10);
+    const fallbackPassword = await bcrypt.hash(`google-oauth:${sub}:${Date.now()}`, PASSWORD_HASH_ROUNDS);
     const inserted = await withUserBootstrap(email, async (client, shouldBeAdmin) => {
       return client.query(
         `INSERT INTO users (email, password_hash, name, is_admin, email_verified, email_verified_at)
          VALUES ($1,$2,$3,$4,TRUE,NOW())
-         RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+         RETURNING id, email, name, is_admin, email_verified, email_verified_at, session_version`,
         [email, fallbackPassword, name, shouldBeAdmin],
       );
     });
@@ -855,7 +888,7 @@ async function upsertGoogleUser({ email, name, sub }) {
            email_verified = TRUE,
            email_verified_at = COALESCE(email_verified_at, NOW())
        WHERE id = $1
-       RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+       RETURNING id, email, name, is_admin, email_verified, email_verified_at, session_version`,
       [user.id, name],
     );
     user = updated.rows[0] || user;
@@ -865,7 +898,7 @@ async function upsertGoogleUser({ email, name, sub }) {
        SET email_verified = TRUE,
            email_verified_at = COALESCE(email_verified_at, NOW())
        WHERE id = $1
-       RETURNING id, email, name, is_admin, email_verified, email_verified_at`,
+       RETURNING id, email, name, is_admin, email_verified, email_verified_at, session_version`,
       [user.id],
     );
     user = updated.rows[0] || user;
@@ -1011,7 +1044,11 @@ function parseGoogleOAuthState(value) {
   const [encoded, signature] = raw.split('.');
   if (!encoded || !signature) return null;
   const expected = encodeBase64Url(createHmac('sha256', JWT_SECRET).update(encoded).digest());
-  if (expected !== signature) return null;
+  const expectedBuffer = Buffer.from(expected, 'utf8');
+  const signatureBuffer = Buffer.from(signature, 'utf8');
+  if (expectedBuffer.length !== signatureBuffer.length || !timingSafeEqual(expectedBuffer, signatureBuffer)) {
+    return null;
+  }
 
   try {
     const json = Buffer.from(encoded.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
@@ -1052,13 +1089,25 @@ async function requestSignupVerification(req, res) {
   try {
     const existing = await pool.query(`SELECT 1 FROM users WHERE email = $1 LIMIT 1`, [normalizedEmail]);
     if (existing.rows[0]) {
-      return res.status(409).json({ error: 'Email já cadastrado' });
+      await logOpsEvent({
+        kind: 'signup_verification_request',
+        status: 'suppressed_existing_user',
+        email: normalizedEmail,
+        payload: {},
+      });
+      return res.json({
+        success: true,
+        message: 'Se o email puder receber cadastro, você receberá um código de verificação.',
+        supportEmail: SUPPORT_EMAIL,
+        cooldownSeconds: 30,
+        deliveryStatus: 'suppressed',
+      });
     }
 
     const code = generateResetCode();
     const codeHash = hashResetCode(code);
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    const passwordHash = await bcrypt.hash(String(password), 10);
+    const passwordHash = await bcrypt.hash(String(password), PASSWORD_HASH_ROUNDS);
 
     await pool.query(
       `UPDATE email_verification_tokens
@@ -1084,7 +1133,7 @@ async function requestSignupVerification(req, res) {
 
     const response = {
       success: true,
-      message: 'Enviamos um código de verificação para seu email.',
+      message: 'Se o email puder receber cadastro, você receberá um código de verificação.',
       supportEmail: SUPPORT_EMAIL,
       cooldownSeconds: 30,
     };

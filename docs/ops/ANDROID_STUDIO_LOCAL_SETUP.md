@@ -41,6 +41,31 @@ Se o VS Code continuar mostrando o aviso de JDK ausente, adicione ao `settings.j
 }
 ```
 
+Se aparecer o erro:
+
+```txt
+Supplied javaHome is not a valid folder
+```
+
+ou:
+
+```txt
+JAVA_HOME is set to an invalid directory
+```
+
+então existe uma referência antiga para Java 21 na sua máquina. Corrija para o JDK 17 instalado:
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+```
+
+No VS Code, revise também:
+
+- `java.configuration.runtimes`
+- `java.jdt.ls.java.home`
+
+Se algum deles estiver apontando para `/usr/lib/jvm/java-21-openjdk-amd64`, troque para `/usr/lib/jvm/java-17-openjdk-amd64` ou remova a entrada inválida.
+
 ## 1. Backend local
 
 Suba a stack local:

@@ -2,7 +2,7 @@ import express from 'express';
 
 import { pool } from '../db.js';
 import { authRequired } from '../auth.js';
-import { getAccessContextForGym, getAccessContextForUser, getActiveSubscriptionForUser, getMembershipForUser } from '../access.js';
+import { getAccessContextForUser, getActiveSubscriptionForUser } from '../access.js';
 import { selectEffectiveAthleteBenefits } from '../accessPolicy.js';
 import { loadGymInsights, loadVisibleWorkoutFeed } from '../queries/coachDashboardQueries.js';
 import { createAthleteGroup, createWorkoutForAudience, inviteGymMembership } from '../services/gymWriteServices.js';
@@ -101,9 +101,9 @@ export function createGymRouter({ requireGymManager, slugify, enrichWorkoutWithB
 
   router.get('/gyms/:gymId/memberships', authRequired, async (req, res) => {
     const gymId = Number(req.params.gymId);
-    const ownMembership = await getMembershipForUser(gymId, req.user.userId);
-    if (!ownMembership) {
-      return res.status(404).json({ error: 'Gym não encontrado para este usuário' });
+    const manager = await requireGymManager(gymId, req.user.userId);
+    if (!manager.success) {
+      return res.status(manager.code).json({ error: manager.error });
     }
 
     const rows = await pool.query(

@@ -18,6 +18,7 @@ import { migration as appStateSyncIndexMigration } from './018_app_state_sync_in
 import { migration as passwordResetSupportRequestsMigration } from './019_password_reset_support_requests.js';
 import { migration as trustedDevicesMigration } from './020_trusted_devices.js';
 import { migration as refreshBenchmarkLibraryExpansionMigration } from './021_refresh_benchmark_library_expansion.js';
+import { migration as securityHardeningMigration } from './022_security_hardening.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -39,6 +40,7 @@ const MIGRATIONS = [
   passwordResetSupportRequestsMigration,
   trustedDevicesMigration,
   refreshBenchmarkLibraryExpansionMigration,
+  securityHardeningMigration,
 ];
 
 export async function runMigrations() {
