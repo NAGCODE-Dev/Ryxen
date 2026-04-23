@@ -5,6 +5,42 @@ Nota:
 
 Guia objetivo para rodar o app Android no emulador com comportamento o mais próximo possível do PWA.
 
+## Pré-requisitos locais
+
+Antes de abrir o projeto Android no VS Code ou no Android Studio, instale um JDK 17:
+
+```bash
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+```
+
+Valide:
+
+```bash
+java -version
+javac -version
+```
+
+No Ubuntu, o caminho mais comum do `JAVA_HOME` fica em:
+
+```txt
+/usr/lib/jvm/java-17-openjdk-amd64
+```
+
+Se o VS Code continuar mostrando o aviso de JDK ausente, adicione ao `settings.json`:
+
+```json
+{
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-17",
+      "path": "/usr/lib/jvm/java-17-openjdk-amd64",
+      "default": true
+    }
+  ]
+}
+```
+
 ## 1. Backend local
 
 Suba a stack local:
