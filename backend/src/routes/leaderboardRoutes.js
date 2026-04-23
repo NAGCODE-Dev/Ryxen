@@ -1,4 +1,5 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 
 import { authRequired } from '../auth.js';
 import { canManageMembership, getMembershipForUser } from '../access.js';
@@ -12,8 +13,15 @@ export function createLeaderboardRouter({
   getBenchmarkLeaderboardFn = getBenchmarkLeaderboard,
 } = {}) {
   const router = express.Router();
+  const leaderboardLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Muitas requisições. Tente novamente mais tarde.' },
+  });
 
-  router.get('/leaderboards/benchmarks/:slug', authMiddleware, async (req, res) => {
+  router.get('/leaderboards/benchmarks/:slug', leaderboardLimiter, authMiddleware, async (req, res) => {
     const slug = String(req.params.slug || '').trim().toLowerCase();
     const sportType = normalizeSportType(req.query?.sportType);
     const gymId = req.query?.gymId !== undefined && req.query?.gymId !== '' ? Number(req.query.gymId) : null;
