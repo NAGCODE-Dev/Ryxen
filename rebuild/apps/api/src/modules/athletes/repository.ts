@@ -202,7 +202,7 @@ export async function syncMeasurementsSnapshot(
     label: string;
     unit: string;
     value: number;
-    notes?: string | null;
+    notes?: string | null | undefined;
     recordedAt: string;
   }>,
 ) {
@@ -256,7 +256,7 @@ export async function syncPrSnapshot(userId: number, prs: Record<string, number>
       [userId],
     );
 
-    const latestByExercise = new Map(
+    const latestByExercise = new Map<string, { value: number; source: string }>(
       latestRes.rows.map((row) => [
         String(row.exercise || "").trim().toUpperCase(),
         {

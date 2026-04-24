@@ -19,3 +19,19 @@ preservando comportamento do legado.
 
 Nenhuma feature do legado sera removida na reescrita.
 O rebuild existe para substituir a base atual sem simplificar regras.
+
+## Status
+
+- [x] Workspace instalada com `pnpm`.
+- [x] Lockfile criado em `pnpm-lock.yaml`.
+- [x] `pnpm typecheck` verde.
+- [x] `pnpm lint` verde com checagem TypeScript.
+- [x] `pnpm test` verde, aceitando packages ainda sem testes.
+- [x] `pnpm build` verde para API, packages, Next apps e export Android do atleta.
+- [ ] Superficies ainda precisam sair do estado placeholder.
+
+## Next step
+
+1. Transformar `apps/marketing-web`, `apps/coach-web` e `apps/athlete-mobile` em primeiras telas de produto.
+2. Conectar `coach-web` aos endpoints ja migrados da API.
+3. Adicionar testes reais para contracts/domain/API antes de expandir features.
