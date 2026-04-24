@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import {
   computePkceCodeChallenge,
   validateAuthRedirectExchange,
-} from '../backend/src/authRedirectGrants.js';
+} from '../backend/src/authRedirectGrantCrypto.js';
 
 const verifier = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~';
 
