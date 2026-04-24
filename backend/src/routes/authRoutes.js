@@ -927,7 +927,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     return res.json({ success: true });
   });
 
-  router.post('/signout', authRequired, async (req, res) => {
+  router.post('/signout', authRateLimit, authRequired, async (req, res) => {
     const deviceId = normalizeDeviceId(req.body?.deviceId);
     const client = await pool.connect();
     try {
