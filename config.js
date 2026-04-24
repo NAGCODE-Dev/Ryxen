@@ -5,12 +5,18 @@ window.__RYXEN_CONFIG__ = window.__RYXEN_CONFIG__ || {
   telemetryEnabled: true,
   auth: {
     googleClientId: '581596457498-9vrde3rt79ikqqm751v8bfhngemm2k23.apps.googleusercontent.com',
+    appLinkBaseUrl: 'https://ryxen-app.vercel.app/auth/callback',
   },
   observability: {
     sentry: {
       dsn: '',
       environment: 'production',
       release: '',
+    },
+  },
+  app: {
+    rollout: {
+      athleteReactShell: false,
     },
   },
   billing: {

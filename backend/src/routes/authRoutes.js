@@ -9,6 +9,7 @@ import {
   BACKEND_PUBLIC_URL,
   EXPOSE_RESET_CODE,
   FRONTEND_ORIGIN,
+  NATIVE_APP_LINK_ORIGINS,
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   JWT_SECRET,
@@ -16,6 +17,15 @@ import {
 } from '../config.js';
 import { isDeveloperEmail, normalizeEmail } from '../devAccess.js';
 import { authRequired, invalidateUserSessions, signToken } from '../auth.js';
+import {
+  findAuthRedirectGrant,
+  issueAuthRedirectGrant,
+  markAuthRedirectGrantConsumed,
+  normalizePkceCodeChallenge,
+  normalizePkceCodeChallengeMethod,
+  normalizePkceCodeVerifier,
+  validateAuthRedirectExchange,
+} from '../authRedirectGrants.js';
 import { getAuthCodeDeliveryCapability, sendPasswordResetEmail, sendSignupVerificationEmail } from '../mailer.js';
 import { logOpsEvent } from '../opsEvents.js';
 import { generateResetCode, hashResetCode, isResetCodeExpired, matchesResetCode } from '../passwordReset.js';
@@ -26,7 +36,8 @@ import {
   getPasswordResetSupportRequestByKey,
   getPasswordResetSupportRequestStatus,
 } from '../passwordResetSupport.js';
-import { authenticateTrustedDevice, issueTrustedDeviceGrant, revokeTrustedDevicesForUser } from '../trustedDevices.js';
+import { buildClientPasswordResetSupportMeta } from '../passwordResetSupportClient.js';
+import { authenticateTrustedDevice, issueTrustedDeviceGrant, revokeTrustedDevice, revokeTrustedDevicesForUser } from '../trustedDevices.js';
 import { captureBackendError } from '../sentry.js';
 import { attachPendingMembershipsToUser } from '../utils/gymUtils.js';
 import { attachPendingBillingClaimsToUser } from '../utils/subscriptionBilling.js';
@@ -54,21 +65,20 @@ function buildDeveloperPreviewResponse({ response = {}, code, error = null, tran
 
 async function buildPasswordResetSupportResponse({ response = {}, request = null, supportMeta = null, message = null }) {
   const meta = supportMeta || await buildPasswordResetSupportRequestMeta(request);
+  const clientMeta = buildClientPasswordResetSupportMeta(meta);
   return {
     ...response,
     deliveryStatus: 'admin_review_pending',
     message: message || 'Nao conseguimos entregar o codigo por email. O pedido foi enviado para liberacao do suporte no app.',
     supportRequestKey: request?.request_key || '',
-    supportRequestStatus: meta.status || (request ? getPasswordResetSupportRequestStatus(request) : 'pending'),
-    supportRequestedAt: meta.requestedAt || '',
-    supportApprovedAt: meta.approvedAt || '',
-    supportDeniedAt: meta.deniedAt || '',
-    supportExpiresAt: meta.expiresAt || '',
-    canRetry: !!meta.canRetry,
-    retryAfterSeconds: Number(meta.retryAfterSeconds || 0),
-    trustSignals: meta.trustSignals || {},
-    supportSource: meta.source || '',
-    supportAttemptCount: Number(meta.attemptCount || 1),
+    supportRequestStatus: clientMeta.status || (request ? getPasswordResetSupportRequestStatus(request) : 'pending'),
+    supportRequestedAt: clientMeta.requestedAt || '',
+    supportApprovedAt: clientMeta.approvedAt || '',
+    supportDeniedAt: clientMeta.deniedAt || '',
+    supportExpiresAt: clientMeta.expiresAt || '',
+    canRetry: !!clientMeta.canRetry,
+    retryAfterSeconds: Number(clientMeta.retryAfterSeconds || 0),
+    supportAttemptCount: Number(clientMeta.attemptCount || 1),
   };
 }
 
@@ -80,6 +90,14 @@ function normalizeDeviceId(value) {
 function normalizeDeviceLabel(value) {
   const normalized = String(value || '').trim();
   return normalized ? normalized.slice(0, 160) : '';
+}
+
+function normalizeAuthRedirectContext(query = {}) {
+  return {
+    deviceId: normalizeDeviceId(query?.deviceId),
+    codeChallenge: normalizePkceCodeChallenge(query?.codeChallenge),
+    codeChallengeMethod: normalizePkceCodeChallengeMethod(query?.codeChallengeMethod) || 'S256',
+  };
 }
 
 async function buildTrustedDeviceResponse({ user, deviceId, deviceLabel }) {
@@ -358,13 +376,26 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
 
     const returnTo = normalizeFrontendReturnTo(req.query?.returnTo);
     const appCallback = normalizeNativeAppCallback(req.query?.appCallback, returnTo);
+    const authRedirectContext = normalizeAuthRedirectContext(req.query);
+    if (appCallback && (!authRedirectContext.deviceId || !authRedirectContext.codeChallenge)) {
+      return res.status(400).send('Fluxo nativo de autenticação inválido');
+    }
     const state = createGoogleOAuthState({
       nonce: randomUUID(),
       returnTo,
       appCallback,
+      deviceId: authRedirectContext.deviceId,
+      codeChallenge: authRedirectContext.codeChallenge,
+      codeChallengeMethod: authRedirectContext.codeChallengeMethod,
       at: Date.now(),
     });
-    setGoogleOAuthContextCookie(res, { returnTo, appCallback });
+    setGoogleOAuthContextCookie(res, {
+      returnTo,
+      appCallback,
+      deviceId: authRedirectContext.deviceId,
+      codeChallenge: authRedirectContext.codeChallenge,
+      codeChallengeMethod: authRedirectContext.codeChallengeMethod,
+    });
     const redirectUri = getGoogleRedirectUri(req);
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
@@ -384,6 +415,7 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     const context = statePayload || cookiePayload || {};
     const returnTo = normalizeFrontendReturnTo(context?.returnTo);
     const appCallback = normalizeNativeAppCallback(context?.appCallback, returnTo);
+    const authRedirectContext = normalizeAuthRedirectContext(context);
 
     if (req.query?.error) {
       return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, {
@@ -410,6 +442,12 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       }));
     }
 
+    if (appCallback && (!authRedirectContext.deviceId || !authRedirectContext.codeChallenge)) {
+      return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, {
+        error: 'Sessão de autenticação expirada. Inicie o login novamente.',
+      }));
+    }
+
     try {
       const redirectUri = getGoogleRedirectUri(req);
       const tokenPayload = await exchangeGoogleCodeForTokens({ code, redirectUri });
@@ -424,17 +462,87 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
       }
 
       const user = await upsertGoogleUser({ email, name, sub: payload.sub });
+      if (appCallback) {
+        const grant = await issueAuthRedirectGrant({
+          userId: user.id,
+          payload: {
+            returnTo,
+            source: 'google_callback',
+            deviceId: authRedirectContext.deviceId,
+            codeChallenge: authRedirectContext.codeChallenge,
+            codeChallengeMethod: authRedirectContext.codeChallengeMethod,
+          },
+        });
+        return res.redirect(buildNativeAppAuthRedirectUrl(appCallback, { authCode: grant?.code || '' }));
+      }
+
       const token = signToken(user);
       return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, { token, user }));
     } catch (error) {
       captureBackendError(error, {
         tags: { feature: 'auth', source: 'google_callback' },
-        code,
+        hasCode: !!code,
       });
       console.error('[auth/google/callback] failed', error);
       return res.redirect(buildAuthRedirectUrl({ returnTo, appCallback }, {
         error: error?.message || 'Erro ao entrar com Google',
       }));
+    }
+  });
+
+  router.post('/redirect/exchange', authRateLimit, async (req, res) => {
+    const authCode = String(req.body?.authCode || '').trim();
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const deviceLabel = normalizeDeviceLabel(req.body?.deviceLabel);
+    const authVerifier = normalizePkceCodeVerifier(req.body?.authVerifier);
+    if (!authCode) {
+      return res.status(400).json({ error: 'authCode é obrigatório' });
+    }
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const grant = await findAuthRedirectGrant({ code: authCode, client, lock: true });
+      if (!grant?.userId) {
+        await client.query('ROLLBACK');
+        return res.status(401).json({ error: 'Código de autenticação inválido ou expirado' });
+      }
+
+      const exchangeValidation = validateAuthRedirectExchange({ grant, deviceId, authVerifier });
+      if (!exchangeValidation.ok) {
+        await client.query('ROLLBACK');
+        return res.status(401).json({ error: exchangeValidation.error });
+      }
+
+      await markAuthRedirectGrantConsumed({ grantId: grant.id, client });
+
+      const found = await client.query(
+        `SELECT id, email, name, is_admin, email_verified, email_verified_at, session_version
+         FROM users
+         WHERE id = $1
+         LIMIT 1`,
+        [grant.userId],
+      );
+      const user = found.rows[0] || null;
+      if (!user) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ error: 'Usuário não encontrado' });
+      }
+
+      await client.query('COMMIT');
+      const token = signToken(user);
+      const trustedDevice = await buildTrustedDeviceResponse({ user, deviceId, deviceLabel });
+      return res.json({
+        token,
+        user,
+        trustedDevice,
+        returnTo: normalizeFrontendReturnTo(grant.payload?.returnTo),
+      });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
   });
 
@@ -638,10 +746,9 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     return res.json({
       success: true,
       status: getPasswordResetSupportRequestStatus(request),
-      ...(await buildPasswordResetSupportRequestMeta(request)),
+      ...buildClientPasswordResetSupportMeta(await buildPasswordResetSupportRequestMeta(request)),
       request: {
         id: request.id,
-        email: request.email,
         expiresAt: request.expires_at,
         approvedAt: request.approved_at,
         deniedAt: request.denied_at,
@@ -820,7 +927,29 @@ export function createAuthRouter({ authRateLimit, resetRateLimit }) {
     return res.json({ success: true });
   });
 
-  router.post('/signout', authRequired, async (_req, res) => res.json({ success: true }));
+  router.post('/signout', authRateLimit, authRequired, async (req, res) => {
+    const deviceId = normalizeDeviceId(req.body?.deviceId);
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await invalidateUserSessions({ userId: req.user.userId, client, passwordChanged: false });
+      if (deviceId) {
+        await revokeTrustedDevice({
+          userId: req.user.userId,
+          email: req.user.email,
+          deviceId,
+          client,
+        });
+      }
+      await client.query('COMMIT');
+      return res.json({ success: true });
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  });
 
   return router;
 }
@@ -954,12 +1083,22 @@ function normalizeNativeAppCallback(value, returnTo) {
   try {
     const parsed = new URL(raw);
     const protocol = String(parsed.protocol || '').toLowerCase();
-    const isSupportedScheme = protocol === 'ryxen:' || protocol === 'crossapp:';
-    if (!isSupportedScheme || parsed.hostname !== 'auth' || parsed.pathname !== '/callback') {
-      return '';
+    const normalizedReturnTo = normalizeFrontendReturnTo(parsed.searchParams.get('returnTo') || returnTo);
+
+    if (protocol === 'ryxen:' || protocol === 'crossapp:') {
+      if (parsed.hostname !== 'auth' || parsed.pathname !== '/callback') {
+        return '';
+      }
+      parsed.protocol = 'ryxen:';
+      parsed.searchParams.set('returnTo', normalizedReturnTo);
+      parsed.hash = '';
+      return parsed.toString();
     }
-    parsed.protocol = 'ryxen:';
-    parsed.searchParams.set('returnTo', normalizeFrontendReturnTo(parsed.searchParams.get('returnTo') || returnTo));
+
+    const isApprovedAppLink = protocol === 'https:' && parsed.pathname === '/auth/callback' && NATIVE_APP_LINK_ORIGINS.includes(parsed.origin.toLowerCase());
+    if (!isApprovedAppLink) return '';
+
+    parsed.searchParams.set('returnTo', normalizedReturnTo);
     parsed.hash = '';
     return parsed.toString();
   } catch {
@@ -967,10 +1106,9 @@ function normalizeNativeAppCallback(value, returnTo) {
   }
 }
 
-function buildNativeAppAuthRedirectUrl(appCallback, { token = '', user = null, error = '' } = {}) {
+function buildNativeAppAuthRedirectUrl(appCallback, { authCode = '', error = '' } = {}) {
   const target = new URL(appCallback);
-  if (token) target.searchParams.set('authToken', token);
-  if (user) target.searchParams.set('authUser', encodeBase64Url(JSON.stringify(user)));
+  if (authCode) target.searchParams.set('authCode', authCode);
   if (error) target.searchParams.set('authError', error);
   return target.toString();
 }

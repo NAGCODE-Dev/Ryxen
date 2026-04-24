@@ -34,6 +34,7 @@ const defaults = {
       coreSports: ['cross'],
       betaSports: ['running', 'strength'],
       showBetaSports: false,
+      athleteReactShell: false,
     },
     sports: {
       cross: '/sports/cross/index.html',

@@ -19,6 +19,7 @@ import { migration as passwordResetSupportRequestsMigration } from './019_passwo
 import { migration as trustedDevicesMigration } from './020_trusted_devices.js';
 import { migration as refreshBenchmarkLibraryExpansionMigration } from './021_refresh_benchmark_library_expansion.js';
 import { migration as securityHardeningMigration } from './022_security_hardening.js';
+import { migration as authRedirectGrantsMigration } from './023_auth_redirect_grants.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -41,6 +42,7 @@ const MIGRATIONS = [
   trustedDevicesMigration,
   refreshBenchmarkLibraryExpansionMigration,
   securityHardeningMigration,
+  authRedirectGrantsMigration,
 ];
 
 export async function runMigrations() {

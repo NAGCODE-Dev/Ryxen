@@ -47,7 +47,25 @@ export async function extractTextFromImageFile(file, options = {}) {
     'OCR da imagem demorou demais. Tente uma imagem menor ou mais nítida.',
   );
 
-  return String(result || '').trim();
+  return cleanOcrWorkoutText(String(result || '').trim());
+}
+
+export function cleanOcrWorkoutText(text = '') {
+  const raw = String(text || '').replace(/\r/g, '\n').trim();
+  if (!raw) return '';
+
+  const normalizedText = raw
+    .replace(/\b(SEGUNDA|TER[ÇC]A|QUARTA|QU[1I]NTA|SEXTA|S[ÁA]BADO|SABADO|DOMINGO)\s+(MANH[ÃA]|MANHA|MANA|TARDE|TAR0E)\b/gi, '$1\n$2')
+    .replace(/\b(MANH[ÃA]|MANHA|MANA|TARDE|TAR0E)\s+(W[O0]D(?:\s*2)?|OPTIONAL|OPCIONAL|OPICIONAL|LOW INTENSITY MIX(?:\s*\d+)?|LOW INTENSITY ROW|GYMNASTICS(?:\s*\d+)?|ACESS[ÓO]RIOS|ACCESSORIES|CORE|SWIM)\b/gi, '$1\n$2');
+
+  const cleanedLines = collapseConsecutiveComparableLines(
+    normalizedText
+      .split('\n')
+      .map((line) => normalizeWorkoutOcrLine(line))
+      .filter(Boolean),
+  );
+
+  return cleanedLines.join('\n').trim();
 }
 
 export function mergeOcrTextVariants(structuralText = '', bodyText = '') {
@@ -109,19 +127,21 @@ export function mergeOcrTextVariants(structuralText = '', bodyText = '') {
 }
 
 export function normalizeOcrStructuralLine(line = '') {
-  const cleaned = String(line || '')
-    .trim()
-    .replace(/^[\[\]【】{}<>|()]+/g, '')
-    .replace(/[\[\]【】{}<>|()]+$/g, '')
-    .replace(/[.,;:]+$/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const cleaned = normalizeWorkoutOcrLineBase(line);
   const upper = cleaned.toUpperCase();
 
   if (/^SEMANA\s+\d+$/.test(upper)) return cleaned;
   if (/^(SEGUNDA|TERÇA|TERCA|QUARTA|QUINTA|SEXTA|SÁBADO|SABADO|DOMINGO)$/.test(upper)) return cleaned;
   if (upper === 'MANHÃ' || upper === 'MANHA' || /ANH[ÃA]$/.test(upper)) return 'MANHA';
   if (upper === 'TARDE' || /ARDE$/.test(upper)) return 'TARDE';
+  if (/^WOD(?:\s*2)?$/.test(upper)) return upper.replace(/\s+/g, ' ');
+  if (upper === 'OPTIONAL') return 'OPTIONAL';
+  if (/^LOW INTENSITY MIX(?:\s+\d+)?$/.test(upper)) return upper;
+  if (upper === 'LOW INTENSITY ROW') return 'LOW INTENSITY ROW';
+  if (/^GYMNASTICS(?:\s+\d+)?$/.test(upper)) return upper;
+  if (upper === 'ACCESSORIES') return 'ACCESSORIES';
+  if (upper === 'CORE') return 'CORE';
+  if (upper === 'SWIM') return 'SWIM';
 
   return cleaned;
 }
@@ -510,11 +530,7 @@ function normalizeOcrHintLine(line = '') {
     return structural;
   }
 
-  return String(line || '')
-    .trim()
-    .replace(/\s+/g, ' ')
-    .replace(/[.,;:]+$/g, '')
-    .trim();
+  return normalizeWorkoutOcrLineBase(line);
 }
 
 function isStructuralOcrLine(line = '') {
@@ -523,11 +539,64 @@ function isStructuralOcrLine(line = '') {
     || /^(SEGUNDA|TERÇA|TERCA|QUARTA|QUINTA|SEXTA|SÁBADO|SABADO|DOMINGO)$/.test(upper)
     || upper === 'MANHA'
     || upper === 'MANHÃ'
-    || upper === 'TARDE';
+    || upper === 'TARDE'
+    || /^WOD(?:\s*2)?$/.test(upper)
+    || upper === 'OPTIONAL'
+    || /^LOW INTENSITY MIX(?:\s+\d+)?$/.test(upper)
+    || upper === 'LOW INTENSITY ROW'
+    || /^GYMNASTICS(?:\s+\d+)?$/.test(upper)
+    || upper === 'ACCESSORIES'
+    || upper === 'CORE'
+    || upper === 'SWIM';
 }
 
 function getComparableOcrLineKey(line = '') {
   return normalizeOcrStructuralLine(line)
     .toUpperCase()
     .replace(/[^A-Z0-9À-ÿ]+/g, '');
+}
+
+function normalizeWorkoutOcrLine(line = '') {
+  const cleaned = normalizeWorkoutOcrLineBase(line);
+  if (!cleaned || isWorkoutOcrNoiseLine(cleaned)) return '';
+
+  const structural = normalizeOcrStructuralLine(cleaned);
+  if (isStructuralOcrLine(structural)) {
+    return structural;
+  }
+
+  return cleaned;
+}
+
+function normalizeWorkoutOcrLineBase(line = '') {
+  return String(line || '')
+    .trim()
+    .replace(/^[\[\]【】{}<>|()]+/g, '')
+    .replace(/[\[\]【】{}<>|()]+$/g, '')
+    .replace(/[.,;:]+$/g, '')
+    .replace(/\bW[O0]D\b/gi, 'WOD')
+    .replace(/^QU[1I]NTA$/i, 'QUINTA')
+    .replace(/^QUARTA[.,;:]?$/i, 'QUARTA')
+    .replace(/^MAN[HIL1]A$/i, 'MANHA')
+    .replace(/^MANA$/i, 'MANHA')
+    .replace(/^TAR0E$/i, 'TARDE')
+    .replace(/^\[?ARDE\]?$/i, 'TARDE')
+    .replace(/^\(?OP(?:TIONAL|CIONAL|ICIONAL)\)?$/i, 'OPTIONAL')
+    .replace(/\b0[B8]?JETIVO\b/gi, 'OBJETIVO')
+    .replace(/^OBJETIVO\s*[:=-]?\s*/i, 'OBJETIVO= ')
+    .replace(/\bIbs\b/gi, 'lbs')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isWorkoutOcrNoiseLine(line = '') {
+  const raw = String(line || '').trim();
+  if (!raw) return true;
+
+  return /^\d{1,2}:\d{2}$/.test(raw)
+    || /^RX[\W._+-].*$/i.test(raw)
+    || /^IMG-\d{8}-WA\d+/i.test(raw)
+    || /^BSB(?:\s+STRONG)?$/i.test(raw)
+    || /^(?:www\.)?bsbstrong\.com$/i.test(raw)
+    || /^#(?:trainwithapurpose|treinocomproposito)$/i.test(raw);
 }

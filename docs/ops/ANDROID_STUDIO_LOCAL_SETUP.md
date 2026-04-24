@@ -1,7 +1,8 @@
 # Android Studio Local Setup
 
 Nota:
-- o callback primário do app agora é `ryxen://auth/callback`; o callback `crossapp://auth/callback` continua aceito temporariamente para clientes antigos.
+- o callback primário do app agora é `https://ryxen-app.vercel.app/auth/callback` via Android App Links.
+- `ryxen://auth/callback` e `crossapp://auth/callback` continuam aceitos como fallback temporário para clientes antigos.
 
 Guia objetivo para rodar o app Android no emulador com comportamento o mais próximo possível do PWA.
 
@@ -218,6 +219,35 @@ Se faltar launcher, uma correção típica é:
 flatpak install flathub com.google.AndroidStudio
 ```
 
+## 7. Android App Links
+
+O app agora prefere callback HTTPS validado pelo sistema:
+
+```txt
+https://ryxen-app.vercel.app/auth/callback
+```
+
+Para o Android verificar esse link automaticamente, o domínio publicado precisa servir:
+
+```txt
+/.well-known/assetlinks.json
+```
+
+O build web já gera esse arquivo, mas você precisa informar as fingerprints SHA-256 do certificado usado no APK/AAB:
+
+```bash
+export RYXEN_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS='AA:BB:CC:...,11:22:33:...'
+```
+
+Se quiser trocar os hosts aceitos no APK:
+
+```bash
+export RYXEN_APP_LINK_HOST='ryxen-app.vercel.app'
+export RYXEN_LEGACY_APP_LINK_HOST='cross-app-six.vercel.app'
+```
+
+Sem a fingerprint correta, o fallback por custom scheme ainda funciona, mas o Android não vai marcar o domínio como verificado.
+
 Ou instalar manualmente em `~/android-studio`.
 
 ## 7. Auth local no emulador
@@ -260,7 +290,8 @@ Para o fluxo de login com Google funcionar no APK:
 
 - o backend deve estar publicamente acessível
 - `BACKEND_PUBLIC_URL` deve apontar para a URL pública correta
-- o callback `ryxen://auth/callback` precisa estar configurado no AndroidManifest
+- o callback `https://ryxen-app.vercel.app/auth/callback` precisa estar configurado no AndroidManifest como App Link
+- o domínio precisa servir `/.well-known/assetlinks.json` com a fingerprint correta do certificado Android
 - o Google OAuth precisa aceitar o fluxo configurado no backend
 
 Sem backend público, o login normal por email pode ser validado localmente, mas o OAuth Google tende a depender da infraestrutura externa.
@@ -273,7 +304,7 @@ Hoje a base já cobre:
 - launcher e splash sincronizados com o app icon oficial
 - build debug e release
 - back button nativo
-- callback `ryxen://auth/callback`
+- callback HTTPS por App Links com fallback temporário para `ryxen://auth/callback`
 - fallback automático de API para emulador Android
 - permissões de rede para `10.0.2.2` e `localhost`
 

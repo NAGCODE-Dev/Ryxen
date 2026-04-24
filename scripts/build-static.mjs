@@ -47,6 +47,10 @@ const runtimeConfig = deepMerge(fileConfig, {
   telemetryEnabled: readEnv('RYXEN_TELEMETRY_ENABLED', 'CROSSAPP_TELEMETRY_ENABLED') !== 'false',
   auth: {
     googleClientId: readEnv('RYXEN_GOOGLE_CLIENT_ID', 'CROSSAPP_GOOGLE_CLIENT_ID') || fileConfig?.auth?.googleClientId || '',
+    appLinkBaseUrl:
+      readEnv('RYXEN_APP_LINK_BASE_URL', 'CROSSAPP_APP_LINK_BASE_URL')
+      || fileConfig?.auth?.appLinkBaseUrl
+      || 'https://ryxen-app.vercel.app/auth/callback',
   },
   observability: {
     sentry: {
@@ -93,6 +97,9 @@ await patchHtml(path.join(distDir, 'index.html'));
 await patchHtml(path.join(distDir, 'sports/cross/index.html'));
 await patchHtml(path.join(distDir, 'sports/running/index.html'));
 await patchHtml(path.join(distDir, 'sports/strength/index.html'));
+await mkdir(path.join(distDir, 'auth/callback'), { recursive: true });
+await cp(path.join(distDir, 'sports/cross/index.html'), path.join(distDir, 'auth/callback/index.html'));
+await writeWellKnownFiles(distDir);
 
 console.log(`[build-static] dist ready at ${distDir}`);
 
@@ -158,4 +165,71 @@ function reportNativeApiResolution(config) {
       'Defina RYXEN_NATIVE_API_BASE_URL para produção/device ou RYXEN_NATIVE_TARGET=emulator para testes locais no Android emulator.',
     ].join(' '),
   );
+}
+
+async function writeWellKnownFiles(outputDir) {
+  const wellKnownDir = path.join(outputDir, '.well-known');
+  await mkdir(wellKnownDir, { recursive: true });
+
+  const androidFingerprints = parseCsv(
+    readEnv('RYXEN_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS', 'CROSSAPP_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS') || '',
+  );
+  if (!androidFingerprints.length) {
+    console.warn(
+      '[build-static] aviso: RYXEN_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS não definido. assetlinks.json será publicado vazio até a fingerprint oficial ser configurada.',
+    );
+  }
+
+  const assetLinks = androidFingerprints.length
+    ? [
+        {
+          relation: ['delegate_permission/common.handle_all_urls'],
+          target: {
+            namespace: 'android_app',
+            package_name: 'com.nagcode.ryxen',
+            sha256_cert_fingerprints: androidFingerprints,
+          },
+        },
+      ]
+    : [];
+
+  await writeFile(
+    path.join(wellKnownDir, 'assetlinks.json'),
+    `${JSON.stringify(assetLinks, null, 2)}\n`,
+    'utf8',
+  );
+
+  const iosAppId = String(
+    readEnv('RYXEN_IOS_APP_LINK_APP_ID', 'CROSSAPP_IOS_APP_LINK_APP_ID')
+    || 'TEAMID.com.nagcode.ryxen',
+  ).trim();
+  const appleAssociation = {
+    applinks: {
+      apps: [],
+      details: [
+        {
+          appIDs: [iosAppId],
+          components: [
+            {
+              '/': '/auth/callback',
+              comment: 'Native auth callback for Ryxen',
+            },
+          ],
+        },
+      ],
+    },
+  };
+
+  await writeFile(
+    path.join(wellKnownDir, 'apple-app-site-association'),
+    `${JSON.stringify(appleAssociation, null, 2)}\n`,
+    'utf8',
+  );
+}
+
+function parseCsv(value) {
+  return String(value || '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }

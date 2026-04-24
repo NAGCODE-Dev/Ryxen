@@ -5,6 +5,7 @@ import { importPRs } from '../core/usecases/importPRs.js';
 import { exportAppBackup, importAppBackup } from '../core/usecases/backupData.js';
 import { exportWorkout, importWorkout, importWorkoutAsWeeks } from '../core/usecases/exportWorkout.js';
 import { importPRsFromCSV, exportPRsToCSV, getCSVTemplate } from '../core/usecases/importPRsFromCSV.js';
+import { prepareImportTextForParsing } from './workoutHelpers.js';
 
 export function createImportExportDomain({
   getState,
@@ -74,7 +75,7 @@ export function createImportExportDomain({
     return fallbackDay;
   }
 
-  function summarizeWeeksForReview(weeks = [], source = 'text', fileName = '') {
+  function summarizeWeeksForReview(weeks = [], source = 'text', fileName = '', options = {}) {
     const normalizedWeeks = Array.isArray(weeks) ? weeks : [];
     const previewDays = [];
     let totalBlocks = 0;
@@ -114,6 +115,11 @@ export function createImportExportDomain({
       totalDays: previewDays.length,
       totalBlocks,
       days: previewDays.slice(0, 6),
+      reviewText: typeof options.reviewText === 'string' ? options.reviewText : '',
+      canEditText: Boolean(options.reviewText),
+      reviewHelp: options.reviewText
+        ? 'Se algum título, nome do PDF ou bloco entrou errado, edite o texto abaixo e reprocesse o preview.'
+        : '',
     };
   }
 
@@ -342,8 +348,17 @@ export function createImportExportDomain({
         fileSize: file.size,
         source: 'pdf',
       };
-      const review = summarizeWeeksForReview(parsedWeeks, 'pdf', file.name);
-      pendingImportReview = { parsedWeeks, metadata, review, eventName: 'pdf:uploaded' };
+      const reviewText = String(result?.data?.reviewText || '').trim();
+      const review = summarizeWeeksForReview(parsedWeeks, 'pdf', file.name, { reviewText });
+      pendingImportReview = {
+        parsedWeeks,
+        metadata,
+        review,
+        reviewText,
+        activeWeekNumber: getState().activeWeekNumber,
+        fallbackDay: getState().currentDay,
+        eventName: 'pdf:uploaded',
+      };
 
       emit('pdf:review', review);
       return { success: true, review };
@@ -372,6 +387,7 @@ export function createImportExportDomain({
       let rawText = '';
       let source = 'text';
       let parsedWeeks = [];
+      let reviewText = '';
 
       if (isImageFile(file)) {
         source = 'image';
@@ -434,16 +450,21 @@ export function createImportExportDomain({
           : 'Organizando treinos importados...',
       });
 
+      if (source !== 'structured-json') {
+        reviewText = prepareImportTextForParsing(rawText, { fileName: file.name });
+      }
+
       if (!parsedWeeks.length) {
         parsedWeeks = parseTextIntoWeeks(rawText, getState().activeWeekNumber, {
           fallbackDay: getState().currentDay,
+          fileName: file.name,
         });
       }
       if (!parsedWeeks.length) {
         throw new Error('Não foi possível identificar treinos no conteúdo importado');
       }
 
-      const review = summarizeWeeksForReview(parsedWeeks, source, file.name);
+      const review = summarizeWeeksForReview(parsedWeeks, source, file.name, { reviewText });
       pendingImportReview = {
         parsedWeeks,
         metadata: {
@@ -452,6 +473,9 @@ export function createImportExportDomain({
           source,
         },
         review,
+        reviewText,
+        activeWeekNumber: getState().activeWeekNumber,
+        fallbackDay: getState().currentDay,
         eventName: 'media:uploaded',
       };
 
@@ -479,6 +503,55 @@ export function createImportExportDomain({
 
   async function previewUniversalImport(file) {
     return handleUniversalImport(file);
+  }
+
+  async function reparsePendingImportReview(nextText) {
+    if (!pendingImportReview?.metadata) {
+      return { success: false, error: 'Nenhum preview pendente para revisar' };
+    }
+
+    const source = pendingImportReview.metadata?.source || 'arquivo';
+    const fileName = pendingImportReview.metadata?.fileName || '';
+    const progressEvent = pendingImportReview.eventName === 'pdf:uploaded' ? 'pdf:progress' : 'media:progress';
+    const reviewEvent = pendingImportReview.eventName === 'pdf:uploaded' ? 'pdf:review' : 'media:review';
+    const editedText = String(nextText || '').trim();
+
+    if (!editedText) {
+      return { success: false, error: 'Edite o texto antes de reprocessar o preview' };
+    }
+
+    emit(progressEvent, {
+      fileName,
+      type: source,
+      stage: 'import-reparse',
+      message: 'Organizando preview com suas correções...',
+    });
+
+    const reviewText = prepareImportTextForParsing(editedText, { fileName });
+    const parsedWeeks = parseTextIntoWeeks(reviewText, pendingImportReview.activeWeekNumber, {
+      fallbackDay: pendingImportReview.fallbackDay,
+      fileName,
+    });
+
+    if (!parsedWeeks.length) {
+      return { success: false, error: 'Ainda não consegui identificar treinos nesse texto revisado' };
+    }
+
+    const review = summarizeWeeksForReview(parsedWeeks, source, fileName, { reviewText });
+    pendingImportReview = {
+      ...pendingImportReview,
+      parsedWeeks,
+      reviewText,
+      review,
+    };
+
+    emit(reviewEvent, review);
+
+    return {
+      success: true,
+      review,
+      source,
+    };
   }
 
   async function commitPendingImportReview() {
@@ -839,5 +912,6 @@ export function createImportExportDomain({
     previewUniversalImport,
     commitPendingImportReview,
     cancelPendingImportReview,
+    reparsePendingImportReview,
   };
 }

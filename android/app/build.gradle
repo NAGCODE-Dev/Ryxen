@@ -11,6 +11,8 @@ def releaseStoreFilePath = envOrProperty('RYXEN_ANDROID_KEYSTORE_PATH')
 def releaseStorePassword = envOrProperty('RYXEN_ANDROID_KEYSTORE_PASSWORD')
 def releaseKeyAlias = envOrProperty('RYXEN_ANDROID_KEY_ALIAS')
 def releaseKeyPassword = envOrProperty('RYXEN_ANDROID_KEY_PASSWORD')
+def appLinkPrimaryHost = envOrProperty('RYXEN_APP_LINK_HOST') ?: 'ryxen-app.vercel.app'
+def appLinkLegacyHost = envOrProperty('RYXEN_LEGACY_APP_LINK_HOST') ?: 'cross-app-six.vercel.app'
 def hasReleaseSigning = [
     releaseStoreFilePath,
     releaseStorePassword,
@@ -39,6 +41,10 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders = [
+            ryxenAppLinkHost: appLinkPrimaryHost,
+            ryxenLegacyAppLinkHost: appLinkLegacyHost,
+        ]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

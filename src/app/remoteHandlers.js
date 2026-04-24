@@ -80,7 +80,7 @@ export function createRemoteHandlers({
       return signInWithGoogle(payload);
     },
 
-    handleStartGoogleRedirect(payload) {
+    async handleStartGoogleRedirect(payload) {
       return startGoogleRedirect(payload);
     },
 

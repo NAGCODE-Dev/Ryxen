@@ -31,3 +31,12 @@ test('coach login shell renders cleanly', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Entrar' })).toBeVisible();
   await expect(page.getByRole('button', { name: /Continuar com Google/i })).toBeVisible();
 });
+
+test('athlete react shell renders today pilot cleanly', async ({ page }) => {
+  await page.goto('/athlete/', { waitUntil: 'domcontentloaded' });
+
+  await expect(page).toHaveTitle(/Ryxen Athlete/i);
+  await expect(page.getByRole('heading', { name: /Editorial Today/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Importar plano/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Abrir legado/i })).toBeVisible();
+});

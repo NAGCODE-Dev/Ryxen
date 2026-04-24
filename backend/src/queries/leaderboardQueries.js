@@ -89,21 +89,27 @@ export function buildLeaderboardDisplayName({ name = '', email = '' } = {}, { re
   return maskEmailAddress(email) || `Atleta #${rank}`;
 }
 
-export function formatLeaderboardResult(row, index, { showPrivateAthleteData = false } = {}) {
+export function formatLeaderboardResult(row, index, {
+  showPrivateAthleteData = false,
+  scopedToGym = false,
+} = {}) {
   const rank = index + 1;
+  const exposeCompetitiveMetadata = showPrivateAthleteData || scopedToGym;
   return {
     id: row.id,
-    gym_id: row.gym_id ?? null,
-    gym_name: row.gym_name || null,
+    gym_id: exposeCompetitiveMetadata ? (row.gym_id ?? null) : null,
+    gym_name: exposeCompetitiveMetadata ? (row.gym_name || null) : null,
     score_display: row.score_display,
-    score_value: row.score_value,
+    score_value: exposeCompetitiveMetadata ? row.score_value : null,
     tiebreak_seconds: row.tiebreak_seconds,
-    created_at: row.created_at,
+    created_at: exposeCompetitiveMetadata ? row.created_at : null,
     name: buildLeaderboardDisplayName(row, {
       revealIdentity: showPrivateAthleteData,
       rank,
     }),
-    identityVisibility: showPrivateAthleteData ? 'gym_manager' : 'redacted',
+    identityVisibility: showPrivateAthleteData
+      ? 'gym_manager'
+      : (scopedToGym ? 'gym_member' : 'redacted'),
     rank,
   };
 }
@@ -185,6 +191,7 @@ export async function getBenchmarkLeaderboard({ slug, sportType, gymId, limit, s
     benchmark,
     results: result.rows.map((row, index) => formatLeaderboardResult(row, index, {
       showPrivateAthleteData,
+      scopedToGym: Number.isFinite(gymId),
     })),
   };
 }

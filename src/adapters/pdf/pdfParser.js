@@ -3,7 +3,7 @@
  * @param {string} rawText - Texto bruto do PDF
  * @returns {string} Texto limpo
  */
-export function cleanPdfText(rawText) {
+export function cleanPdfText(rawText, options = {}) {
   if (!rawText || typeof rawText !== 'string') {
     return '';
   }
@@ -46,7 +46,56 @@ export function cleanPdfText(rawText) {
   // Remove linhas completamente vazias
   cleaned = cleaned.split('\n')
     .filter(line => line.length > 0)
+    .filter(line => !shouldDropImportNoiseLine(line, options))
     .join('\n');
   
   return cleaned.trim();
+}
+
+function shouldDropImportNoiseLine(line, options = {}) {
+  const raw = String(line || '').trim();
+  if (!raw) return true;
+
+  const normalized = normalizeImportNoiseComparable(raw);
+  if (!normalized) return true;
+
+  if (looksLikeImportedFileName(raw)) return true;
+  if (matchesSelectedFileName(raw, options?.fileName)) return true;
+
+  return false;
+}
+
+function looksLikeImportedFileName(line) {
+  const raw = String(line || '').trim();
+  if (!raw) return false;
+
+  if (/\.(pdf|png|jpe?g|webp|heic|txt|csv|xlsx?|ods|mp4|mov|avi|mkv)\b/i.test(raw)) return true;
+  if (/^img[-_ ]?\d{6,}/i.test(raw)) return true;
+  if (/^rx[._-]/i.test(raw) && /bsbstrong/i.test(raw)) return true;
+
+  return false;
+}
+
+function matchesSelectedFileName(line, fileName = '') {
+  const comparableLine = normalizeImportNoiseComparable(line);
+  const comparableFileName = normalizeImportNoiseComparable(stripFileExtension(fileName));
+
+  if (!comparableLine || !comparableFileName || comparableFileName.length < 8) {
+    return false;
+  }
+
+  return comparableLine.includes(comparableFileName)
+    || comparableFileName.includes(comparableLine);
+}
+
+function stripFileExtension(fileName = '') {
+  return String(fileName || '').replace(/\.[a-z0-9]{2,5}$/i, '');
+}
+
+function normalizeImportNoiseComparable(value = '') {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '');
 }

@@ -236,6 +236,7 @@ test('preview e confirmação de importação salvam semanas apenas após confir
           fileSize: 321,
           source: 'pdf',
         },
+        reviewText: 'SEMANA 19\nQUARTA\nMANHA\nWOD\n12 AMRAP',
       },
     }),
     saveParsedWeeks: async (weeks, metadata) => {
@@ -262,6 +263,7 @@ test('preview e confirmação de importação salvam semanas apenas após confir
   assert.equal(previewResult.success, true);
   assert.equal(savedPayloads.length, 0);
   assert.equal(previewResult.review.weeksCount, 1);
+  assert.match(previewResult.review.reviewText, /SEMANA 19/i);
 
   const commitResult = await domain.commitPendingImportReview();
 
@@ -270,6 +272,45 @@ test('preview e confirmação de importação salvam semanas apenas após confir
   assert.deepEqual(selected, [19]);
   assert.equal(emitted.some(([name]) => name === 'pdf:review'), true);
   assert.equal(emitted.some(([name]) => name === 'pdf:uploaded'), true);
+});
+
+test('review ativo permite reprocessar texto corrigido antes de salvar', async () => {
+  const parseCalls = [];
+  const { domain, emitted } = createDomain({
+    parseTextIntoWeeks: (text, activeWeekNumber, options = {}) => {
+      parseCalls.push({ text, activeWeekNumber, options });
+      if (/quinta/i.test(text)) {
+        return [{
+          weekNumber: 24,
+          workouts: [{ day: 'Quinta', blocks: [{ type: 'OPTIONAL', lines: ['800m SWIM'] }] }],
+        }];
+      }
+      return [{
+        weekNumber: 24,
+        workouts: [{ day: 'Quarta', blocks: [{ type: 'WOD', lines: ['12 AMRAP'] }] }],
+      }];
+    },
+  });
+
+  const previewResult = await domain.previewUniversalImport({
+    name: 'RX.2P.24semanas+2.BSBSTRONG.pdf.txt',
+    type: 'text/plain',
+    size: 180,
+    async text() {
+      return 'RX.2P.24semanas+2.BSBSTRONG.pdf\nQUARTA\nMANHA\nWOD\n12 AMRAP';
+    },
+  });
+
+  assert.equal(previewResult.success, true);
+  assert.doesNotMatch(previewResult.review.reviewText, /RX\.2P/i);
+  assert.equal(parseCalls[0].options.fileName, 'RX.2P.24semanas+2.BSBSTRONG.pdf.txt');
+
+  const reparseResult = await domain.reparsePendingImportReview('QUINTA\nTARDE\nOPTIONAL\n800m SWIM');
+
+  assert.equal(reparseResult.success, true);
+  assert.match(reparseResult.review.reviewText, /^QUINTA$/m);
+  assert.equal(reparseResult.review.days.some((day) => day.day === 'Quinta'), true);
+  assert.equal(emitted.filter(([name]) => name === 'media:review').length, 2);
 });
 
 test('confirmação de importação reposiciona o Hoje sem gravar override manual quando o dia atual não existe no arquivo', async () => {

@@ -4,6 +4,20 @@
   "ignoreCommand": "node scripts/vercel-ignore-build.mjs",
   "headers": [
     {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
+      "source": "/.well-known/apple-app-site-association",
+      "headers": [
+        { "key": "Content-Type", "value": "application/json; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=300" }
+      ]
+    },
+    {
       "source": "/sw.js",
       "headers": [
         { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
@@ -19,6 +33,9 @@
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "https://crossapp-znmj.onrender.com/$1" },
+    { "source": "/auth/callback", "destination": "/auth/callback/index.html" },
+    { "source": "/athlete", "destination": "/athlete/index.html" },
+    { "source": "/athlete/", "destination": "/athlete/index.html" },
     { "source": "/sports/cross", "destination": "/sports/cross/index.html" },
     { "source": "/sports/cross/", "destination": "/sports/cross/index.html" },
     { "source": "/sports/running", "destination": "/sports/running/index.html" },

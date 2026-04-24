@@ -1,5 +1,7 @@
 import crypto from 'crypto';
 
+import { sanitizeRequestPath } from './securityRedaction.js';
+
 const rateBuckets = new Map();
 
 export function attachRequestMeta(req, res, next) {
@@ -32,7 +34,7 @@ export function attachRequestLogger(req, res, next) {
     console.error('[backend:request]', JSON.stringify({
       requestId: req.requestId,
       method: req.method,
-      path: req.originalUrl,
+      path: sanitizeRequestPath(req),
       statusCode: res.statusCode,
       durationMs,
       userId: req.user?.userId || null,
@@ -46,6 +48,13 @@ export function attachRequestLogger(req, res, next) {
 export function createRateLimiter({ windowMs, maxRequests, keyPrefix, keyResolver = null }) {
   return (req, res, next) => {
     const now = Date.now();
+    if (rateBuckets.size > 5000) {
+      for (const [bucketKey, bucket] of rateBuckets.entries()) {
+        if (!bucket || now > bucket.resetAt) {
+          rateBuckets.delete(bucketKey);
+        }
+      }
+    }
     const resolvedKey = keyResolver ? keyResolver(req) : (req.ip || 'unknown');
     const key = `${keyPrefix}:${String(resolvedKey || req.ip || 'unknown').trim().toLowerCase()}`;
     const bucket = rateBuckets.get(key);

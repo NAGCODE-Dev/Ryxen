@@ -8,6 +8,7 @@ let createAdminOpsRouter;
 let createBillingRouter;
 let createGymRouter;
 let createLeaderboardRouter;
+let createTelemetryRouter;
 let hasBackendRuntime = false;
 
 try {
@@ -16,6 +17,7 @@ try {
   ({ createBillingRouter } = await import('../backend/src/routes/billingRoutes.js'));
   ({ createGymRouter } = await import('../backend/src/routes/gymRoutes.js'));
   ({ createLeaderboardRouter } = await import('../backend/src/routes/leaderboardRoutes.js'));
+  ({ createTelemetryRouter } = await import('../backend/src/routes/telemetryRoutes.js'));
   hasBackendRuntime = true;
 } catch (error) {
   console.warn('[route-security-hardening] dependências do backend ausentes; testes de rota serão pulados:', error?.message || error);
@@ -272,4 +274,32 @@ routeTest('leaderboard respeita contexto de permissao ao decidir dados privados'
   assert.equal(capturedCalls[0].gymId, 3);
   assert.equal(capturedCalls[0].limit, 12);
   assert.equal(capturedCalls[0].showPrivateAthleteData, false);
+});
+
+routeTest('telemetry exige sessão autenticada antes de gravar eventos', async () => {
+  const router = createTelemetryRouter({
+    telemetryRateLimit: (req, res, next) => {
+      void req;
+      void res;
+      return next();
+    },
+    authMiddleware: (req, res) => {
+      void req;
+      return res.status(401).json({ error: 'Token ausente' });
+    },
+  });
+
+  await withServer(router, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/ingest`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ items: [{ type: 'event', name: 'boot' }] }),
+    });
+    const payload = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(payload.error, 'Token ausente');
+  });
 });

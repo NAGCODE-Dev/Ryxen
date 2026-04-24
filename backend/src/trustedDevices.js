@@ -3,7 +3,7 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import { pool } from './db.js';
 import { normalizeEmail } from './devAccess.js';
 
-const TRUSTED_DEVICE_TTL_MS = 180 * 24 * 60 * 60 * 1000;
+const TRUSTED_DEVICE_TTL_MS = Math.max(Number(process.env.TRUSTED_DEVICE_TTL_DAYS || 45), 1) * 24 * 60 * 60 * 1000;
 
 function hashTrustedToken(token) {
   return createHash('sha256').update(String(token || '')).digest('hex');
@@ -135,6 +135,39 @@ export async function revokeTrustedDevicesForUser({ userId, client = null }) {
      WHERE user_id = $1
        AND revoked_at IS NULL`,
     [normalizedUserId],
+  );
+
+  return {
+    revokedCount: Number(result.rowCount || 0),
+  };
+}
+
+export async function revokeTrustedDevice({ userId, email = '', deviceId = '', client = null }) {
+  const normalizedUserId = Number(userId);
+  const normalizedEmail = normalizeEmail(email);
+  const normalizedDeviceId = String(deviceId || '').trim();
+  if (!Number.isFinite(normalizedUserId) || normalizedUserId <= 0) {
+    return { revokedCount: 0 };
+  }
+
+  const params = [normalizedUserId];
+  const where = ['user_id = $1', 'revoked_at IS NULL'];
+  if (normalizedEmail) {
+    params.push(normalizedEmail);
+    where.push(`email = $${params.length}`);
+  }
+  if (normalizedDeviceId) {
+    params.push(normalizedDeviceId);
+    where.push(`device_id = $${params.length}`);
+  }
+
+  const queryable = getQueryable(client);
+  const result = await queryable.query(
+    `UPDATE trusted_devices
+     SET revoked_at = NOW(),
+         updated_at = NOW()
+     WHERE ${where.join(' AND ')}`,
+    params,
   );
 
   return {

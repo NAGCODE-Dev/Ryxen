@@ -104,7 +104,18 @@ export function renderAthleteImportModal(state = {}, helpers = {}) {
                   </div>
                 `).join('')}
               </div>
+              ${review.canEditText ? `
+                <div class="import-reviewEditor">
+                  <div class="import-reviewItemHead">
+                    <strong>Revisão ativa</strong>
+                    <span>Texto que o parser vai ler</span>
+                  </div>
+                  ${review.reviewHelp ? `<p class="import-reviewText">${escapeHtml(review.reviewHelp)}</p>` : ''}
+                  <textarea class="add-input import-reviewTextarea" id="ui-importReviewText" rows="10" spellcheck="false">${escapeHtml(review.reviewText || '')}</textarea>
+                </div>
+              ` : ''}
               <div class="page-actions">
+                ${review.canEditText ? '<button class="btn-secondary" data-action="import:reparse" type="button">Reprocessar preview</button>' : ''}
                 <button class="btn-primary" data-action="import:confirm" type="button">Salvar importação</button>
                 <button class="btn-secondary" data-action="import:cancel-review" type="button">Descartar preview</button>
               </div>

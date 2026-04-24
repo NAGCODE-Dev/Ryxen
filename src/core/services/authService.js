@@ -7,6 +7,8 @@ const LEGACY_PROFILE_KEY = 'crossapp-user-profile';
 const TRUSTED_DEVICE_ID_KEY = 'ryxen-trusted-device-id';
 const TRUSTED_DEVICE_MAP_KEY = 'ryxen-trusted-device-map';
 const LAST_AUTH_EMAIL_KEY = 'ryxen-last-auth-email';
+const AUTH_REDIRECT_PROOF_KEY = 'ryxen-auth-redirect-proof';
+const AUTH_REDIRECT_PROOF_TTL_MS = 10 * 60 * 1000;
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
@@ -55,13 +57,17 @@ export async function signInWithGoogle(payload) {
   return res;
 }
 
-export function startGoogleRedirect(payload = {}) {
+export async function startGoogleRedirect(payload = {}) {
   const returnTo = String(payload.returnTo || `${window.location.pathname}${window.location.search}`).trim() || '/sports/cross/index.html';
   const target = buildGoogleRedirectUrl();
   const nativeAppCallback = buildNativeAppAuthCallbackUrl(returnTo);
   target.searchParams.set('returnTo', returnTo);
   if (nativeAppCallback) {
+    const proof = await createPendingAuthRedirectProof(returnTo);
     target.searchParams.set('appCallback', nativeAppCallback);
+    target.searchParams.set('deviceId', proof.deviceId);
+    target.searchParams.set('codeChallenge', proof.codeChallenge);
+    target.searchParams.set('codeChallengeMethod', proof.codeChallengeMethod);
   }
   window.location.assign(target.toString());
 }
@@ -116,9 +122,126 @@ export function getLastAuthEmail() {
   }
 }
 
+function getPendingAuthRedirectProof() {
+  try {
+    const raw = localStorage.getItem(AUTH_REDIRECT_PROOF_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (!parsed || typeof parsed !== 'object') return null;
+    const deviceId = String(parsed.deviceId || '').trim();
+    const verifier = String(parsed.verifier || '').trim();
+    const codeChallenge = String(parsed.codeChallenge || '').trim();
+    const codeChallengeMethod = String(parsed.codeChallengeMethod || '').trim().toUpperCase();
+    const createdAt = Number(parsed.createdAt || 0);
+    if (!deviceId || !verifier || !codeChallenge || !createdAt) return null;
+    if (deviceId !== getOrCreateTrustedDeviceId()) return null;
+    if ((Date.now() - createdAt) > AUTH_REDIRECT_PROOF_TTL_MS) return null;
+    return {
+      deviceId,
+      verifier,
+      codeChallenge,
+      codeChallengeMethod: codeChallengeMethod === 'PLAIN' ? 'PLAIN' : 'S256',
+      createdAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function savePendingAuthRedirectProof(proof) {
+  try {
+    localStorage.setItem(AUTH_REDIRECT_PROOF_KEY, JSON.stringify(proof || null));
+  } catch {
+    // no-op
+  }
+}
+
+function clearPendingAuthRedirectProof() {
+  try {
+    localStorage.removeItem(AUTH_REDIRECT_PROOF_KEY);
+  } catch {
+    // no-op
+  }
+}
+
+async function createPendingAuthRedirectProof(returnTo) {
+  const deviceId = getOrCreateTrustedDeviceId();
+  const verifier = createUrlSafeRandomString(64);
+  const challenge = await buildPkceCodeChallenge(verifier);
+  const proof = {
+    deviceId,
+    verifier,
+    codeChallenge: challenge.codeChallenge,
+    codeChallengeMethod: challenge.codeChallengeMethod,
+    createdAt: Date.now(),
+    returnTo: normalizeReturnTo(returnTo),
+  };
+  savePendingAuthRedirectProof(proof);
+  return proof;
+}
+
+async function buildPkceCodeChallenge(verifier) {
+  const normalizedVerifier = String(verifier || '').trim();
+  if (!normalizedVerifier) {
+    throw new Error('Verifier de autenticação inválido');
+  }
+
+  try {
+    const subtle = globalThis.crypto?.subtle;
+    if (!subtle) {
+      return {
+        codeChallenge: normalizedVerifier,
+        codeChallengeMethod: 'PLAIN',
+      };
+    }
+
+    const digest = await subtle.digest('SHA-256', new TextEncoder().encode(normalizedVerifier));
+    return {
+      codeChallenge: bytesToBase64Url(new Uint8Array(digest)),
+      codeChallengeMethod: 'S256',
+    };
+  } catch {
+    return {
+      codeChallenge: normalizedVerifier,
+      codeChallengeMethod: 'PLAIN',
+    };
+  }
+}
+
+function createUrlSafeRandomString(length = 64) {
+  const targetLength = Math.max(Number(length) || 64, 43);
+  try {
+    const bytes = new Uint8Array(Math.ceil((targetLength * 3) / 4));
+    globalThis.crypto?.getRandomValues?.(bytes);
+    const encoded = bytesToBase64Url(bytes);
+    if (encoded.length >= targetLength) {
+      return encoded.slice(0, targetLength);
+    }
+  } catch {
+    // no-op
+  }
+
+  let fallback = '';
+  while (fallback.length < targetLength) {
+    fallback += `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  }
+  return fallback.replace(/[^A-Za-z0-9\-._~]/g, 'a').slice(0, targetLength);
+}
+
+function bytesToBase64Url(bytes) {
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(bytes).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+  }
+
+  let binary = '';
+  bytes.forEach((value) => {
+    binary += String.fromCharCode(value);
+  });
+  return window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
 export async function signOut() {
   try {
-    await apiRequest('/auth/signout', { method: 'POST' });
+    await apiRequest('/auth/signout', { method: 'POST', body: withTrustedDevicePayload({}) });
   } catch {
     // logout local mesmo se backend falhar
   } finally {
@@ -141,21 +264,22 @@ export function hasStoredSession() {
   return !!getAuthToken();
 }
 
-export function applyAuthRedirectFromLocation() {
+export async function applyAuthRedirectFromLocation() {
   return applyAuthRedirectFromUrl(window.location.href, { cleanupCurrentLocation: true });
 }
 
-export function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = false } = {}) {
+export async function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = false } = {}) {
   try {
     const url = new URL(urlString, window.location.href);
     const hashParams = new URLSearchParams((url.hash || '').replace(/^#/, ''));
     const searchParams = new URLSearchParams(url.search || '');
     const token = String(hashParams.get('authToken') || searchParams.get('authToken') || '').trim();
+    const authCode = String(hashParams.get('authCode') || searchParams.get('authCode') || '').trim();
     const encodedUser = String(hashParams.get('authUser') || searchParams.get('authUser') || '').trim();
-    const authError = String(hashParams.get('authError') || searchParams.get('authError') || '').trim();
-    const returnTo = normalizeReturnTo(searchParams.get('returnTo'));
+    let authError = String(hashParams.get('authError') || searchParams.get('authError') || '').trim();
+    let returnTo = normalizeReturnTo(searchParams.get('returnTo'));
 
-    if (!token && !encodedUser && !authError) {
+    if (!token && !authCode && !encodedUser && !authError) {
       return { success: false, handled: false };
     }
 
@@ -164,15 +288,52 @@ export function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = f
       user = parseBase64UrlJson(encodedUser);
     }
 
-    if (token) setAuthToken(token);
-    if (user) {
-      saveStoredProfile(user);
-      saveLastAuthEmail(user.email);
-      setErrorMonitorUser(user);
+    let resolvedToken = token;
+    let resolvedUser = user;
+    if (authCode && !resolvedToken && !authError) {
+      const proof = getPendingAuthRedirectProof();
+      if (!proof?.verifier || !proof?.deviceId) {
+        clearPendingAuthRedirectProof();
+        authError = 'Sessão de autenticação expirada. Inicie o login novamente.';
+      }
+    }
+
+    if (authCode && !resolvedToken && !authError) {
+      try {
+        const proof = getPendingAuthRedirectProof();
+        const exchange = await requestWithPathFallback(['/auth/redirect/exchange'], {
+          method: 'POST',
+          body: withTrustedDevicePayload({
+            authCode,
+            authVerifier: proof?.verifier || '',
+            deviceId: proof?.deviceId || getOrCreateTrustedDeviceId(),
+          }),
+        });
+        handleAuthResponse(exchange);
+        clearPendingAuthRedirectProof();
+        resolvedToken = String(exchange?.token || '').trim();
+        resolvedUser = exchange?.user || null;
+        if (exchange?.returnTo) {
+          returnTo = normalizeReturnTo(exchange.returnTo);
+        }
+      } catch (error) {
+        if (Number(error?.status) >= 400 && Number(error?.status) < 500) {
+          clearPendingAuthRedirectProof();
+        }
+        authError = String(error?.message || 'Não foi possível concluir a autenticação').trim();
+      }
+    } else {
+      if (resolvedToken) setAuthToken(resolvedToken);
+      if (resolvedUser) {
+        saveStoredProfile(resolvedUser);
+        saveLastAuthEmail(resolvedUser.email);
+        setErrorMonitorUser(resolvedUser);
+      }
     }
 
     if (cleanupCurrentLocation) {
       url.hash = '';
+      url.searchParams.delete('authCode');
       url.searchParams.delete('authToken');
       url.searchParams.delete('authUser');
       url.searchParams.delete('authError');
@@ -183,8 +344,8 @@ export function applyAuthRedirectFromUrl(urlString, { cleanupCurrentLocation = f
     return {
       success: !authError,
       handled: true,
-      token,
-      user,
+      token: resolvedToken,
+      user: resolvedUser,
       error: authError || '',
       returnTo,
     };
@@ -347,9 +508,30 @@ export function buildGoogleRedirectUrl() {
 
 function buildNativeAppAuthCallbackUrl(returnTo) {
   if (!isNativePlatform()) return '';
-  const callback = new URL('ryxen://auth/callback');
+  const callbackBaseUrl = getNativeAppCallbackBaseUrl();
+  if (!callbackBaseUrl) return '';
+  const callback = new URL(callbackBaseUrl);
   callback.searchParams.set('returnTo', normalizeReturnTo(returnTo));
   return callback.toString();
+}
+
+function getNativeAppCallbackBaseUrl() {
+  const cfg = getRuntimeConfig();
+  const appLinkBaseUrl = String(cfg?.auth?.appLinkBaseUrl || '').trim();
+  if (appLinkBaseUrl) {
+    try {
+      const parsed = new URL(appLinkBaseUrl);
+      if (parsed.protocol === 'https:' && parsed.pathname === '/auth/callback') {
+        parsed.search = '';
+        parsed.hash = '';
+        return parsed.toString();
+      }
+    } catch {
+      // fallback below
+    }
+  }
+
+  return 'ryxen://auth/callback';
 }
 
 function normalizeReturnTo(value) {

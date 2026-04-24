@@ -49,6 +49,15 @@ test('formatLeaderboardResult só expõe identidade completa para gestor autoriz
   assert.equal(publicView.name, 'João P.');
   assert.equal(publicView.identityVisibility, 'redacted');
   assert.equal('email' in publicView, false);
+  assert.equal(publicView.gym_name, null);
+  assert.equal(publicView.score_value, null);
+  assert.equal(publicView.created_at, null);
+
+  const scopedView = formatLeaderboardResult(row, 0, { showPrivateAthleteData: false, scopedToGym: true });
+  assert.equal(scopedView.identityVisibility, 'gym_member');
+  assert.equal(scopedView.gym_name, 'Ryxen');
+  assert.equal(scopedView.score_value, 511);
+  assert.equal(scopedView.created_at, '2026-04-23T10:00:00.000Z');
 
   const managerView = formatLeaderboardResult(row, 0, { showPrivateAthleteData: true });
   assert.equal(managerView.name, 'João Pedro');

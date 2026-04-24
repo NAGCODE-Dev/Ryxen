@@ -111,7 +111,7 @@ export function detectBlockType(line) {
   if (upper === 'WOD 2') return 'WOD 2';
   if (upper === 'MANHÃ' || upper === 'MANHA') return 'MANHÃ';
   if (upper === 'TARDE') return 'TARDE';
-  if (upper.includes('OPTIONAL')) return 'OPTIONAL';
+  if (upper.includes('OPTIONAL') || upper.includes('OPCIONAL') || upper.includes('OPICIONAL')) return 'OPTIONAL';
   if (/AMRAP|FOR TIME|EMOM/.test(upper)) return 'TIMED_WOD';
 
   return null;
@@ -139,6 +139,7 @@ export function shouldSkipLine(line) {
 
   return (
     /^RX\./i.test(normalized) ||
+    /^\d{1,2}:\d{2}$/.test(normalized) ||
     !/[A-Za-zÀ-ÿ0-9]/.test(normalized) ||
     lower.includes('gmail.com') ||
     lower.includes('hotmail.com') ||
@@ -359,13 +360,15 @@ function normalizeParserLines(weekText) {
 }
 
 function normalizeHeadingToken(line = '') {
-  return String(line || '')
+  return normalizeStructuralHeadingArtifacts(
+    String(line || '')
     .trim()
     .replace(/^[\[\]【】{}<>|()]+/g, '')
     .replace(/[\[\]【】{}<>|()]+$/g, '')
     .replace(/[.,;:]+$/g, '')
     .replace(/\s+/g, ' ')
-    .trim();
+    .trim(),
+  );
 }
 
 function normalizeFallbackDay(day) {
@@ -388,7 +391,15 @@ function normalizeOcrArtifacts(line = '') {
     .replace(/\bREST(?=\d)/gi, 'REST ')
     .replace(/^REST AS NEC[A-Z]+$/i, 'REST AS NECESSARY')
     .replace(/^\[?ARDE\]?$/i, 'TARDE')
-    .replace(/^\[(SEGUNDA|TERÇA|TERCA|QUARTA|QUINTA|SEXTA|SÁBADO|SABADO|DOMINGO|MANHÃ|MANHA|TARDE|WOD(?:\s*2)?)\]$/i, '$1');
+    .replace(/^QU[1I]NTA$/i, 'QUINTA')
+    .replace(/^QUARTA[.,;:]?$/i, 'QUARTA')
+    .replace(/^MAN[HIL1]A$/i, 'MANHA')
+    .replace(/^MANA$/i, 'MANHA')
+    .replace(/^TAR0E$/i, 'TARDE')
+    .replace(/^\(?OP(?:TIONAL|CIONAL|ICIONAL)\)?$/i, 'OPTIONAL')
+    .replace(/\b0[B8]?JETIVO\b/gi, 'OBJETIVO')
+    .replace(/^OBJETIVO\s*[:=-]?\s*/i, 'OBJETIVO= ')
+    .replace(/^\[(SEGUNDA|TERÇA|TERCA|QUARTA|QUINTA|SEXTA|SÁBADO|SABADO|DOMINGO|MANHÃ|MANHA|TARDE|WOD(?:\s*2)?|OPTIONAL)\]$/i, '$1');
 
   return normalizeSpaces(normalized);
 }
@@ -513,9 +524,20 @@ function isCadenceLine(line = '') {
 function mapLegacyBlockTypeToStructuredType(type) {
   const upper = String(type || '').trim().toUpperCase();
   if (upper.includes('WOD')) return 'WOD';
-  if (upper === 'OPTIONAL') return 'OPTIONAL';
+  if (upper === 'OPTIONAL' || upper === 'OPCIONAL' || upper === 'OPICIONAL') return 'OPTIONAL';
   if (upper === 'TIMED_WOD') return 'WOD';
   return upper || 'DEFAULT';
+}
+
+function normalizeStructuralHeadingArtifacts(line = '') {
+  return String(line || '')
+    .replace(/^QU[1I]NTA$/i, 'QUINTA')
+    .replace(/^MAN[HIL1]A$/i, 'MANHA')
+    .replace(/^MANA$/i, 'MANHA')
+    .replace(/^TAR0E$/i, 'TARDE')
+    .replace(/^W[O0]D$/i, 'WOD')
+    .replace(/^(OPCIONAL|OPICIONAL)$/i, 'OPTIONAL')
+    .trim();
 }
 
 function buildStructuredBlock({ type, title, period, lines, hints = {} }) {
@@ -556,18 +578,18 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
     const line = lines[index];
     const upper = line.toUpperCase();
 
-    const amrapMatch = upper.match(/^(\d+)\s*['’`´]?\s*AMRAP\b/);
+    const amrapMatch = matchTimedFormatMinutes(upper, 'AMRAP');
     if (amrapMatch) {
       format = 'amrap';
-      timeCapMinutes = Number(amrapMatch[1]);
+      timeCapMinutes = amrapMatch;
       items.push({ type: 'format', format, timeCapMinutes, raw: line });
       continue;
     }
 
-    const emomMatch = upper.match(/^(\d+)\s*['’`´]?\s*EMOM\b/);
+    const emomMatch = matchTimedFormatMinutes(upper, 'EMOM');
     if (emomMatch) {
       format = 'emom';
-      timeCapMinutes = Number(emomMatch[1]);
+      timeCapMinutes = emomMatch;
       items.push({ type: 'format', format, timeCapMinutes, raw: line });
       continue;
     }
@@ -578,10 +600,10 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
       continue;
     }
 
-    const forTimeCapMatch = upper.match(/^(\d+)\s*['’`´]?\s*FOR TIME\b/);
+    const forTimeCapMatch = matchTimedFormatMinutes(upper, 'FOR TIME');
     if (forTimeCapMatch) {
       format = 'for_time';
-      timeCapMinutes = Number(forTimeCapMatch[1]);
+      timeCapMinutes = forTimeCapMatch;
       items.push({ type: 'format', format, timeCapMinutes, raw: line });
       continue;
     }
@@ -764,6 +786,16 @@ function parseStructuredBlockContent({ type, title, period, lines, hints = {} })
     optional: optionalSummary,
     items,
   };
+}
+
+function matchTimedFormatMinutes(upperLine, label) {
+  const escapedLabel = label.replace(/\s+/g, '\\s+');
+  const pattern = new RegExp(
+    `^(\\d+)\\s*(?:['’\`´]|MIN(?:UTO(?:S)?)?|MINS?|MINUTES?)?\\s*${escapedLabel}\\b`,
+    'i',
+  );
+  const match = String(upperLine || '').match(pattern);
+  return match ? Number(match[1]) : null;
 }
 
 function parseMovementLine(line) {
@@ -1385,8 +1417,15 @@ function buildEngineSummary(items, context = {}) {
   const roundsItem = items.find((item) => item.type === 'rounds');
   const workItem = items.find((item) => item.type === 'engine_work');
   const restItem = items.find((item) => item.type === 'rest' && item.durationMinutes);
+  const intervalMovements = items
+    .filter((item) => item.type === 'engine_work')
+    .map((item) => buildEngineIntervalMovement(item));
   const movementItems = items
     .filter((item) => item.type === 'movement')
+    .filter((item) => {
+      if (!context.title) return true;
+      return normalizeHeadingToken(item.raw || item.displayName || item.name || '') !== normalizeHeadingToken(context.title);
+    })
     .map((item) => ({
       name: item.name || '',
       displayName: item.displayName || item.name || '',
@@ -1400,6 +1439,7 @@ function buildEngineSummary(items, context = {}) {
       drill: item.drill || null,
       equipment: item.equipment || null,
     }));
+  const mergedMovements = dedupeEngineMovements([...intervalMovements, ...movementItems]);
   const constraints = items
     .filter((item) => item.type === 'constraint')
     .map((item) => ({
@@ -1419,9 +1459,64 @@ function buildEngineSummary(items, context = {}) {
     modality: workItem?.modality || null,
     workNotes: workItem?.notes || null,
     restMinutes: restItem?.durationMinutes || null,
-    movements: movementItems,
+    movements: mergedMovements,
     constraints,
   };
+}
+
+function buildEngineIntervalMovement(item) {
+  const rawModality = String(item?.modality || '').trim();
+  const normalized = normalizeMovementName(rawModality);
+  const baseName = simplifyEngineModalityName(normalized.canonicalName || rawModality);
+  const intensity = extractEngineIntensity(rawModality);
+  const notes = [item?.notes, intensity].filter(Boolean).join(' | ') || null;
+
+  return {
+    name: baseName || normalized.name || rawModality,
+    displayName: rawModality || normalized.displayName || baseName || '',
+    canonicalName: baseName || normalized.canonicalName || rawModality,
+    canonicalSlug: (baseName || normalized.canonicalName || rawModality || '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, ''),
+    reps: null,
+    distanceMeters: null,
+    durationMinutes: item?.durationMinutes || null,
+    notes,
+    paceTarget: null,
+    intensity: intensity || null,
+    drill: null,
+    equipment: null,
+  };
+}
+
+function dedupeEngineMovements(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    const key = [
+      item?.canonicalSlug || item?.name || item?.displayName || '',
+      item?.durationMinutes || '',
+      item?.distanceMeters || '',
+      item?.notes || '',
+    ].join('|');
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+function simplifyEngineModalityName(value) {
+  const cleaned = String(value || '')
+    .toLowerCase()
+    .replace(/\b(?:suave(?:s)?|moderad[oa]s?|leve(?:s)?|forte(?:s)?|easy|recovery)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || String(value || '').trim().toLowerCase();
+}
+
+function extractEngineIntensity(value) {
+  const normalized = String(value || '').toLowerCase();
+  const matches = normalized.match(/\b(?:suave(?:s)?|moderad[oa]s?|leve(?:s)?|forte(?:s)?|easy|recovery)\b/g);
+  return matches ? matches.join(' ') : null;
 }
 
 function buildOptionalSummary(items, context = {}) {

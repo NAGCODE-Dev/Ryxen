@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/node';
 
 import { APP_ENV, APP_RELEASE, SENTRY_DSN } from './config.js';
+import { redactSensitiveValue } from './securityRedaction.js';
 
 let sentryReady = false;
 
@@ -51,7 +52,7 @@ export function captureBackendError(error, context = {}) {
 
 function sanitize(value) {
   try {
-    return JSON.parse(JSON.stringify(value || {}));
+    return redactSensitiveValue(JSON.parse(JSON.stringify(value || {})));
   } catch {
     return { note: 'unserializable_context' };
   }

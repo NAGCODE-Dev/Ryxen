@@ -9,7 +9,9 @@ import {
 
 export async function handleAthleteImportAction(action, context) {
   const {
+    root,
     toast,
+    applyUiState,
     finalizeUiChange,
     getAppBridge,
     getUiState,
@@ -68,6 +70,32 @@ export async function handleAthleteImportAction(action, context) {
         },
       });
       toast?.('Preview descartado');
+      return true;
+    }
+
+    case 'import:reparse': {
+      const textField = root?.querySelector?.('#ui-importReviewText');
+      const reviewText = String(textField?.value || '').trim();
+
+      if (!reviewText) {
+        toast?.('Edite o texto antes de reprocessar o preview');
+        return true;
+      }
+
+      await applyUiState({
+        importStatus: {
+          active: true,
+          tone: 'working',
+          title: 'Reprocessando preview',
+          message: 'Aplicando suas correções no texto...',
+          step: 'organize',
+        },
+      }, { render: false });
+
+      const result = await getAppBridge().reparseImportReview(reviewText);
+      if (!result?.success) throw new Error(result?.error || 'Falha ao reprocessar preview');
+
+      toast?.('Preview atualizado');
       return true;
     }
 

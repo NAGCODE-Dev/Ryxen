@@ -547,11 +547,24 @@
   gap: 10px;
 }
 
+.import-reviewEditor {
+  display: grid;
+  gap: 10px;
+}
+
 .import-reviewItem {
   padding: 12px 14px;
   border-radius: 16px;
   border: 1px solid var(--line);
   background: var(--bg-surface-2);
+}
+
+.import-reviewTextarea {
+  min-height: 220px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.5;
+  resize: vertical;
 }
 
 .workout-line:last-child {

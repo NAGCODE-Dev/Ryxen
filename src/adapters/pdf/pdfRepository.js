@@ -34,7 +34,7 @@ export async function savePdf(file) {
       return { success: false, error: 'PDF vazio ou com muito pouco texto' };
     }
 
-    const cleanedText = cleanPdfText(rawText);
+    const cleanedText = cleanPdfText(rawText, { fileName: file?.name || '' });
     const parsedWeeks = parseMultiWeekPdf(cleanedText);
 
     logDebug('📦 Semanas parseadas do PDF:', parsedWeeks.map(w => w.weekNumber));
@@ -243,7 +243,7 @@ export async function saveMultiWeekPdf(file, options = {}) {
     logDebug('📝 Texto bruto extraído:', rawText.length, 'chars');
     logDebug('📝 Primeiros 200 chars:', rawText.substring(0, 200));
 
-    const cleanedText = cleanPdfText(rawText);
+    const cleanedText = cleanPdfText(rawText, { fileName: file?.name || '' });
     logDebug('🧹 Texto limpo:', cleanedText.length, 'chars');
     logDebug('🧹 Primeiros 200 chars:', cleanedText.substring(0, 200));
 
@@ -339,7 +339,7 @@ export async function previewMultiWeekPdf(file, options = {}) {
       return { success: false, error: 'PDF vazio ou com muito pouco texto' };
     }
 
-    const cleanedText = cleanPdfText(rawText);
+    const cleanedText = cleanPdfText(rawText, { fileName: file?.name || '' });
 
     options.onProgress?.({
       stage: 'pdf-parse',
@@ -374,6 +374,7 @@ export async function previewMultiWeekPdf(file, options = {}) {
       data: {
         parsedWeeks,
         metadata,
+        reviewText: cleanedText,
       },
     };
   } catch (error) {

@@ -39,12 +39,17 @@ export const FRONTEND_ORIGIN_ALIASES = Array.from(new Set([
   ...DEFAULT_FRONTEND_ORIGIN_ALIASES,
   ...parseList(process.env.FRONTEND_ORIGIN_ALIASES || ''),
 ]));
+export const NATIVE_APP_LINK_ORIGINS = Array.from(new Set(parseList(
+  process.env.NATIVE_APP_LINK_ORIGINS
+  || 'https://ryxen-app.vercel.app,https://cross-app-six.vercel.app',
+)));
 export const NATIVE_APP_ORIGINS = parseList(process.env.NATIVE_APP_ORIGINS || 'capacitor://localhost,https://localhost,http://localhost,ionic://localhost');
 export const ALLOWED_ORIGINS = FRONTEND_ORIGIN === '*'
   ? '*'
   : Array.from(new Set([
       ...parseList(FRONTEND_ORIGIN),
       ...FRONTEND_ORIGIN_ALIASES,
+      ...NATIVE_APP_LINK_ORIGINS,
       ...NATIVE_APP_ORIGINS,
     ]));
 export const SUPPORT_EMAIL = String(process.env.SUPPORT_EMAIL || 'nagcode.contact@gmail.com').toLowerCase().trim();
@@ -52,10 +57,7 @@ export const ADMIN_EMAILS = Array.from(new Set([
   ...parseList(process.env.ADMIN_EMAILS || ''),
   SUPPORT_EMAIL,
 ]));
-export const DEV_EMAILS = Array.from(new Set([
-  ...parseList(process.env.DEV_EMAILS || ''),
-  SUPPORT_EMAIL,
-]));
+export const DEV_EMAILS = Array.from(new Set(parseList(process.env.DEV_EMAILS || '')));
 export const EXPOSE_RESET_CODE = String(process.env.EXPOSE_RESET_CODE || 'false').trim().toLowerCase() === 'true';
 export const TRUST_PROXY = parseTrustProxy(process.env.TRUST_PROXY, IS_PRODUCTION);
 export const DEFAULT_BILLING_SUCCESS_URL = String(process.env.BILLING_SUCCESS_URL || FRONTEND_ORIGIN || 'http://localhost:8000').trim();
@@ -97,6 +99,10 @@ export function validateConfig() {
   if (IS_PRODUCTION) {
     if (!JWT_SECRET || JWT_SECRET === 'change-me' || JWT_SECRET === 'change-me-local') {
       throw new Error('JWT_SECRET forte é obrigatório em produção');
+    }
+
+    if (EXPOSE_RESET_CODE) {
+      throw new Error('EXPOSE_RESET_CODE não pode ficar ativo em produção');
     }
 
     if (!FRONTEND_ORIGIN || FRONTEND_ORIGIN === '*') {

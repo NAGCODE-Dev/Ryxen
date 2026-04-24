@@ -5,8 +5,14 @@ import {
   parseWeekText,
 } from '../adapters/pdf/customPdfParser.js';
 
+export function prepareImportTextForParsing(rawText, options = {}) {
+  return cleanPdfText(String(rawText || ''), {
+    fileName: options?.fileName || '',
+  });
+}
+
 export function parseTextIntoWeeks(rawText, activeWeekNumber = null, options = {}) {
-  const cleaned = cleanPdfText(String(rawText || ''));
+  const cleaned = prepareImportTextForParsing(rawText, options);
   if (!cleaned || cleaned.length < 20) return [];
 
   let weeks = parseMultiWeekPdf(cleaned);

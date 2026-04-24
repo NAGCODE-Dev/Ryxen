@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { classifyUniversalImportFile } from '../src/app/importFileTypes.js';
 import { parseTextIntoWeeks } from '../src/app/workoutHelpers.js';
-import { isImageFile, mergeOcrTextVariants } from '../src/adapters/media/ocrReader.js';
+import { cleanOcrWorkoutText, isImageFile, mergeOcrTextVariants } from '../src/adapters/media/ocrReader.js';
 import {
   isVideoFile,
   mergeDistinctOcrChunks,
@@ -218,6 +218,108 @@ SUPINO PEGADA FECHADA
   assert.equal(walkingLunge.parsed.accessories[0].sets, 3);
   assert.equal(walkingLunge.parsed.accessories[0].reps, 12);
   assert.match(walkingLunge.parsed.accessories[0].notes, /passadas/i);
+});
+
+test('OCR de screenshot de pdf limpa chrome, corrige headings sujos e preserva blocos de quinta', () => {
+  const rawOcr = `
+18:52
+RX.2P.24semanas+2.BSBSTRONG...
+QUARTA
+MANHA
+W0D
+(3-3)(5-5)(7-7)(9-9)(7-7)(5-5)(3-3)
+MUs (ou BMU)
+DL 225-155Ibs
+0bjetivo- sub 10
+TAR0E
+W0D
+16 MIN AMRAP
+15 CAL ROW
+20 CTBS
+15 GHD SIT UPs
+40 DUS
+Objetivo Acima de 4 rounds
+QU1NTA
+MANA
+www.bsbstrong.com
+BSB
+STRONG
+LOW INTENSITY MIX
+(6x)
+3 MIN RUN SUAVES
+1 MIN ROW MODERADO
+Direto para
+(5x)
+3 MIN ROW SUAVES
+1 MIN RUN MODERADO
+TARDE
+OPICIONAL
+800m SWIM
+  `.trim();
+
+  const cleaned = cleanOcrWorkoutText(rawOcr);
+  const weeks = parseTextIntoWeeks(cleaned, 24);
+
+  assert.doesNotMatch(cleaned, /^18:52$/m);
+  assert.doesNotMatch(cleaned, /^RX\.2P/m);
+  assert.match(cleaned, /^QUINTA$/m);
+  assert.match(cleaned, /^OPTIONAL$/m);
+  assert.match(cleaned, /^OBJETIVO= sub 10$/mi);
+  assert.match(cleaned, /^OBJETIVO= Acima de 4 rounds$/mi);
+
+  assert.equal(weeks.length, 1);
+  assert.equal(weeks[0].workouts.length, 2);
+
+  const wednesday = weeks[0].workouts.find((workout) => workout.day === 'Quarta');
+  const thursday = weeks[0].workouts.find((workout) => workout.day === 'Quinta');
+
+  assert.ok(wednesday);
+  assert.ok(thursday);
+
+  const morningWod = wednesday.blocks.find((block) => block.type === 'WOD' && block.period === 'manhã');
+  const afternoonWod = wednesday.blocks.find((block) => block.type === 'WOD' && block.period === 'tarde');
+  const engine = thursday.blocks.find((block) => block.type === 'ENGINE');
+  const optional = thursday.blocks.find((block) => block.type === 'OPTIONAL');
+
+  assert.ok(morningWod);
+  assert.ok(afternoonWod);
+  assert.equal(morningWod.parsed.goal, 'sub 10');
+  assert.equal(afternoonWod.parsed.format, 'amrap');
+  assert.equal(afternoonWod.parsed.timeCapMinutes, 16);
+  assert.equal(afternoonWod.parsed.goal, 'Acima de 4 rounds');
+
+  assert.ok(engine);
+  assert.equal(engine.parsed.engine.rounds, 6);
+  assert.equal(engine.parsed.engine.movements.some((item) => item.name === 'run' && item.durationMinutes === 3), true);
+  assert.equal(engine.parsed.engine.movements.some((item) => item.name === 'row' && item.durationMinutes === 1), true);
+
+  assert.ok(optional);
+  assert.equal(optional.parsed.optional.modality, 'swim');
+  assert.equal(optional.parsed.optional.segments.some((segment) => segment.distanceMeters === 800), true);
+});
+
+test('parse textual ignora nome de arquivo/título de pdf quando ele entra no texto', () => {
+  const text = `
+RX.2P.24semanas+2.BSBSTRONG.pdf
+SEMANA 24
+QUARTA
+MANHA
+WOD
+12 AMRAP
+10 WALL BALL
+20 DUS
+  `.trim();
+
+  const weeks = parseTextIntoWeeks(text, 24, {
+    fileName: 'RX.2P.24semanas+2.BSBSTRONG.pdf',
+  });
+
+  assert.equal(weeks.length, 1);
+  assert.equal(weeks[0].weekNumber, 24);
+  assert.equal(weeks[0].workouts.length, 1);
+  assert.equal(weeks[0].workouts[0].day, 'Quarta');
+  assert.equal(weeks[0].workouts[0].blocks[0].parsed.format, 'amrap');
+  assert.equal(weeks[0].workouts[0].blocks[0].parsed.timeCapMinutes, 12);
 });
 
 test('json cru de treino salvo não entra no parser textual universal', () => {

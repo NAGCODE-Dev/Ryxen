@@ -32,21 +32,29 @@ function boot() {
   const lastSport = getLastSport();
   const selectedSport = availableSports.some((sport) => sport.value === lastSport) ? lastSport : fallbackSport;
   const lastSportUrl = sports[selectedSport] || sports.cross || '/sports/cross/index.html';
+  const athleteEntryUrl = cfg?.app?.rollout?.athleteReactShell === true ? '/athlete/' : lastSportUrl;
   const coachUrl = '/coach/index.html';
   const shouldAutoSkipHub = shouldSkipHub(availableSports);
 
   if (isNativePlatform()) {
     setLastSport(selectedSport);
-    window.location.replace(lastSportUrl);
+    window.location.replace(athleteEntryUrl);
     return;
   }
 
   if (shouldAutoSkipHub) {
-    window.location.replace(resolveEntryUrl({ selectedSport, athleteUrl: lastSportUrl, coachUrl }));
+    window.location.replace(resolveEntryUrl({ selectedSport, athleteUrl: athleteEntryUrl, coachUrl }));
     return;
   }
 
-  root.innerHTML = renderHub({ sports, availableSports, lastSport: selectedSport, lastSportUrl, coachUrl });
+  root.innerHTML = renderHub({
+    sports,
+    availableSports,
+    lastSport: selectedSport,
+    lastSportUrl: athleteEntryUrl,
+    coachUrl,
+    athleteReactShell: cfg?.app?.rollout?.athleteReactShell === true,
+  });
   bindEvents(root, sports);
   markHubAsSeen();
 }
@@ -96,8 +104,9 @@ function bindEvents(root, sports) {
     if (target.name !== 'hub-sport') return;
 
     const sport = target.value;
-    const nextUrl = sports[sport] || '/sports/cross/index.html';
     const primary = root.querySelector('[data-hub-primary]');
+    const useAthleteReactShell = primary?.getAttribute('data-athlete-react-shell') === 'true';
+    const nextUrl = useAthleteReactShell ? '/athlete/' : (sports[sport] || '/sports/cross/index.html');
     if (primary) {
       primary.setAttribute('data-nav-href', nextUrl);
       primary.textContent = 'Entrar no app do atleta';
@@ -121,10 +130,10 @@ function bindWordmarkFallback(root) {
   });
 }
 
-function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl }) {
+function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl, athleteReactShell = false }) {
   const selectedSport = lastSport || 'cross';
   return `
-    <main class="hub-shell">
+    <main class="hub-shell" data-athlete-react-shell="${athleteReactShell ? 'true' : 'false'}">
       <section class="hub-hero isolate">
         <div class="hub-heroGrid items-start xl:items-center">
           <div class="hub-heroMain max-w-3xl md:pr-6">
@@ -132,10 +141,10 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl 
             <div class="hub-kicker max-w-max border-white/10 bg-white/5 px-4">Atleta e coach</div>
             <h1 class="max-w-[12ch]">Escolha sua entrada</h1>
             <p class="hub-lead max-w-[42rem] text-base/8 md:text-[1.08rem]">
-              App do atleta e portal do coach no mesmo sistema.
+              ${athleteReactShell ? 'Nova shell editorial do atleta + portal do coach no mesmo sistema.' : 'App do atleta e portal do coach no mesmo sistema.'}
             </p>
             <div class="hub-actions sm:flex-row sm:items-center">
-              <button class="hub-primaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-hub-primary data-entry-target="athlete" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
+              <button class="hub-primaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-hub-primary data-entry-target="athlete" data-athlete-react-shell="${athleteReactShell ? 'true' : 'false'}" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
                 Entrar no app do atleta
               </button>
               <button class="hub-secondaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Entrar no portal do coach</button>

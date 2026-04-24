@@ -1,4 +1,5 @@
 import { getRuntimeConfig } from '../../config/runtime.js';
+import { getAuthToken } from './apiClient.js';
 
 const CONSENT_KEY = 'ryxen-consent';
 const LEGACY_CONSENT_KEY = 'crossapp-consent';
@@ -43,6 +44,8 @@ export async function flushTelemetry() {
   if (!cfg.telemetryEnabled) return;
   if (!hasTelemetryConsent()) return;
   if (!cfg.apiBaseUrl) return;
+  const authToken = getAuthToken();
+  if (!authToken) return;
 
   const queue = readQueue();
   if (!queue.length) return;
@@ -50,7 +53,10 @@ export async function flushTelemetry() {
   const url = `${cfg.apiBaseUrl.replace(/\/$/, '')}/telemetry/ingest`;
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${authToken}`,
+    },
     body: JSON.stringify({ items: queue }),
   });
 

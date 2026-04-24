@@ -101,6 +101,8 @@ test('modal de importação mostra review antes de salvar', () => {
             totalDays: 6,
             totalBlocks: 14,
             weekNumbers: [19, 20],
+            canEditText: true,
+            reviewText: 'QUARTA\nMANHA\nWOD\n12 AMRAP',
             days: [
               {
                 weekNumber: 19,
@@ -120,6 +122,9 @@ test('modal de importação mostra review antes de salvar', () => {
     assert.match(html, /Preview da importação/i);
     assert.match(html, /Salvar importação/i);
     assert.match(html, /Descartar preview/i);
+    assert.match(html, /Reprocessar preview/i);
+    assert.match(html, /Revisão ativa/i);
+    assert.match(html, /textarea/i);
     assert.match(html, /Quarta/i);
     assert.match(html, /6 rounds · 40s MUs · 20s rest/i);
     assert.match(html, /wall ball, double unders/i);

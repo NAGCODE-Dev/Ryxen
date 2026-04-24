@@ -1,0 +1,103 @@
+.ath-hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ath-legacyLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d7e6ff;
+  font-weight: 700;
+}
+
+.ath-heroAsideCard,
+.ath-roadmapCard,
+.ath-reviewDay,
+.ath-overviewStat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.ath-heroAsideCard strong,
+.ath-reviewDay strong,
+.ath-overviewStat strong {
+  font-family: var(--rx-display);
+  font-size: 1.12rem;
+}
+
+.ath-heroAsideLead {
+  color: #8ecbff;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.ath-overviewGrid,
+.ath-roadmapGrid,
+.ath-reviewMetrics {
+  display: grid;
+  gap: 12px;
+}
+
+.ath-overviewGrid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ath-roadmapGrid,
+.ath-reviewMetrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ath-overviewStat span,
+.ath-roadmapCard span,
+.ath-reviewDay span {
+  color: var(--rx-text-muted);
+  line-height: 1.5;
+}
+
+.ath-reviewLabel {
+  color: #8ecbff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.ath-reviewTextarea {
+  width: 100%;
+  min-height: 280px;
+  resize: vertical;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(2, 8, 17, 0.76);
+  color: #eef4ff;
+  padding: 18px;
+  line-height: 1.65;
+}
+
+.ath-reviewTextarea:focus-visible {
+  outline: 2px solid rgba(55, 166, 255, 0.56);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .ath-overviewGrid,
+  .ath-roadmapGrid,
+  .ath-reviewMetrics {
+    grid-template-columns: 1fr;
+  }
+}

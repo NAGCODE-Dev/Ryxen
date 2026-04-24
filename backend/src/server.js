@@ -24,6 +24,7 @@ import { startEmailWorker } from './mailer.js';
 import { captureBackendError, initBackendErrorMonitoring } from './sentry.js';
 import { startAccountDeletionWorker } from './accountDeletion.js';
 import { startOperationalRetentionWorker } from './retention.js';
+import { sanitizeRequestPath } from './securityRedaction.js';
 
 initBackendErrorMonitoring();
 const app = express();
@@ -77,7 +78,7 @@ app.use((err, req, res, _next) => {
     tags: { layer: 'backend', source: 'express' },
     request: {
       method: req?.method || null,
-      path: req?.originalUrl || req?.url || null,
+      path: sanitizeRequestPath(req),
       ip: req?.ip || null,
       userId: req?.user?.userId || null,
     },

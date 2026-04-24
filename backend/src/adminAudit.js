@@ -1,4 +1,5 @@
 import { logOpsEvent } from './opsEvents.js';
+import { sanitizeRequestPath } from './securityRedaction.js';
 
 function pickHeader(req, headerName) {
   return String(req?.headers?.[headerName] || '').trim() || null;
@@ -8,7 +9,7 @@ export function buildRequestAuditContext(req) {
   return {
     requestId: req?.requestId || null,
     method: req?.method || null,
-    path: req?.originalUrl || req?.url || null,
+    path: sanitizeRequestPath(req),
     ip: req?.ip || null,
     userAgent: pickHeader(req, 'user-agent'),
   };
