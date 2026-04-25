@@ -25,6 +25,12 @@ import { pool } from "../../lib/db";
 const PASSWORD_HASH_ROUNDS = 10;
 const SIGNUP_CODE_TTL_MS = 15 * 60 * 1000;
 const PASSWORD_RESET_CODE_TTL_MS = 15 * 60 * 1000;
+const AUTH_RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 10;
+const RESET_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RESET_RATE_LIMIT_MAX_REQUESTS = 6;
+
+const authRateBuckets = new Map<string, { count: number; resetAt: number }>();
 
 type SignInUserRow = {
   id: number;
@@ -67,6 +73,59 @@ function isExpired(value: string) {
 
 function shouldExposePreviewCode(email: string) {
   return process.env.NODE_ENV !== "production" || DEV_EMAILS.includes(email);
+}
+
+function pruneAuthRateBuckets(now: number) {
+  if (authRateBuckets.size <= 5000) return;
+
+  for (const [bucketKey, bucket] of authRateBuckets.entries()) {
+    if (!bucket || now > bucket.resetAt) {
+      authRateBuckets.delete(bucketKey);
+    }
+  }
+}
+
+function resolveRateLimitKey(request: Parameters<FastifyInstance["post"]>[1] extends never ? never : any) {
+  const email = normalizeEmail(request.body?.email);
+  const ip = (String(request.ip || request.headers["x-forwarded-for"] || "unknown")
+    .split(",")[0] ?? "unknown")
+    .trim()
+    .toLowerCase();
+  return `${ip}:${email || "anon"}`;
+}
+
+function createAuthRateLimitGuard({
+  windowMs,
+  maxRequests,
+}: {
+  windowMs: number;
+  maxRequests: number;
+}) {
+  return async function rateLimitGuard(
+    request: Parameters<FastifyInstance["post"]>[1] extends never ? never : any,
+    reply: { status: (code: number) => { send: (payload: Record<string, string>) => unknown } },
+  ) {
+    const now = Date.now();
+    pruneAuthRateBuckets(now);
+
+    const key = `${windowMs}:${maxRequests}:${resolveRateLimitKey(request)}`;
+    const bucket = authRateBuckets.get(key);
+    if (!bucket || now > bucket.resetAt) {
+      authRateBuckets.set(key, {
+        count: 1,
+        resetAt: now + windowMs,
+      });
+      return;
+    }
+
+    if (bucket.count >= maxRequests) {
+      return reply.status(429).send({
+        error: "Muitas tentativas. Tente novamente em instantes.",
+      });
+    }
+
+    bucket.count += 1;
+  };
 }
 
 async function countUsers() {
@@ -121,7 +180,16 @@ async function attachPendingMembershipsToUser(userId: number, email: string) {
 }
 
 export async function registerAuthRoutes(app: FastifyInstance) {
-  app.post("/signup", async (request, reply) => {
+  const authRateLimitGuard = createAuthRateLimitGuard({
+    windowMs: AUTH_RATE_LIMIT_WINDOW_MS,
+    maxRequests: AUTH_RATE_LIMIT_MAX_REQUESTS,
+  });
+  const resetRateLimitGuard = createAuthRateLimitGuard({
+    windowMs: RESET_RATE_LIMIT_WINDOW_MS,
+    maxRequests: RESET_RATE_LIMIT_MAX_REQUESTS,
+  });
+
+  app.post("/signup", { preHandler: authRateLimitGuard }, async (request, reply) => {
     const parsed = signUpRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
@@ -159,7 +227,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/signup/confirm", async (request, reply) => {
+  app.post("/signup/confirm", { preHandler: authRateLimitGuard }, async (request, reply) => {
     const parsed = signUpConfirmSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
@@ -226,7 +294,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/signin", async (request, reply) => {
+  app.post("/signin", { preHandler: authRateLimitGuard }, async (request, reply) => {
     const parsed = signInInputSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
@@ -256,7 +324,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/password-reset/request", async (request, reply) => {
+  app.post("/password-reset/request", { preHandler: resetRateLimitGuard }, async (request, reply) => {
     const parsed = passwordResetRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });
@@ -295,7 +363,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
     });
   });
 
-  app.post("/password-reset/confirm", async (request, reply) => {
+  app.post("/password-reset/confirm", { preHandler: resetRateLimitGuard }, async (request, reply) => {
     const parsed = passwordResetConfirmSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: parsed.error.flatten() });

@@ -38,7 +38,7 @@ export default defineConfig({
       './**/*.test.{js,jsx,mjs}',
       '../../packages/shared-web/**/*.test.{js,jsx,mjs}',
       '../../coach-portal/**/*.test.{js,jsx,mjs}',
-      '../../rebuild/packages/domain/**/*.test.{ts,tsx}',
+      '../../rebuild/packages/domain/src/**/*.test.{ts,tsx}',
     ],
   },
 });

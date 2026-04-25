@@ -224,10 +224,12 @@ export default function AthleteHomeScreen() {
         });
         setResultDraftState(
           persistedDraft.draftState?.source === "reused"
-            ? {
-                source: "reused",
-                workoutTitle: persistedDraft.draftState.workoutTitle,
-              }
+            ? persistedDraft.draftState.workoutTitle
+              ? {
+                  source: "reused",
+                  workoutTitle: persistedDraft.draftState.workoutTitle,
+                }
+              : { source: "reused" }
             : { source: "manual" },
         );
       } catch {

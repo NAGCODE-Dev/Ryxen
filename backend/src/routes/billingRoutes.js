@@ -30,6 +30,9 @@ import { logOpsEvent } from '../opsEvents.js';
 
 export function createBillingRouter({
   authMiddleware = authRequired,
+  billingReadRateLimit = (_req, _res, next) => next(),
+  billingWriteRateLimit = (_req, _res, next) => next(),
+  billingWebhookRateLimit = (_req, _res, next) => next(),
   logOpsEventFn = logOpsEvent,
   queueBillingClaimFn = queueBillingClaim,
   queueBillingReversalClaimFn = queueBillingReversalClaim,
@@ -40,12 +43,12 @@ export function createBillingRouter({
 } = {}) {
   const router = express.Router();
 
-  router.get('/status', authMiddleware, async (req, res) => {
+  router.get('/status', billingReadRateLimit, authMiddleware, async (req, res) => {
     const status = await getBillingStatusSnapshot(req.user.userId);
     return res.json(status);
   });
 
-  router.post('/checkout', authMiddleware, async (req, res) => {
+  router.post('/checkout', billingWriteRateLimit, authMiddleware, async (req, res) => {
     const { planId, provider } = req.body || {};
     if (!planId) {
       return res.status(400).json({ error: 'planId é obrigatório' });
@@ -66,7 +69,7 @@ export function createBillingRouter({
     return res.json({ checkoutUrl: DEFAULT_BILLING_SUCCESS_URL, mode: 'mock' });
   });
 
-  router.post('/kiwify/webhook', async (req, res) => {
+  router.post('/kiwify/webhook', billingWebhookRateLimit, async (req, res) => {
     const tokenTransport = describeWebhookTokenTransportFn(req);
     if (!validateWebhookTokenFn(req)) {
       await logOpsEventFn({
@@ -203,7 +206,7 @@ export function createBillingRouter({
     });
   });
 
-  router.get('/entitlements', authMiddleware, async (req, res) => {
+  router.get('/entitlements', billingReadRateLimit, authMiddleware, async (req, res) => {
     const snapshot = await getEntitlementsSnapshot({
       userId: req.user.userId,
       email: req.user.email,
@@ -212,7 +215,7 @@ export function createBillingRouter({
     return res.json(snapshot);
   });
 
-  router.post('/mock/activate', authMiddleware, async (req, res) => {
+  router.post('/mock/activate', billingWriteRateLimit, authMiddleware, async (req, res) => {
     if (!canUseDeveloperTools(req.user)) {
       return res.status(403).json({ error: 'Acesso restrito a admin ou ambiente de desenvolvimento' });
     }

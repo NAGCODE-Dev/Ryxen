@@ -49,7 +49,7 @@ function collectInstanceText(node: ReactTestInstance | string): string[] {
 
 function findPressableByLabel(root: ReactTestInstance, label: string) {
   return root
-    .findAll((node) => node.type === "Pressable")
+    .findAll((node) => String(node.type) === "Pressable")
     .find((node) => collectInstanceText(node).join(" ").includes(label));
 }
 
@@ -336,10 +336,13 @@ describe("athlete mobile home", () => {
       tree = create(<AthleteHomeScreen />);
     });
 
-    const textInputs = tree!.root.findAll((node) => node.type === "TextInput");
-    expect(textInputs[0].props.value).toBe("Rascunho salvo");
-    expect(textInputs[1].props.value).toBe("11 rounds");
-    expect(textInputs[2].props.value).toBe("Parei entre blocos");
+    const textInputs = tree!.root.findAll(
+      (node) => String(node.type) === "TextInput",
+    );
+    expect(textInputs).toHaveLength(3);
+    expect(textInputs[0]!.props.value).toBe("Rascunho salvo");
+    expect(textInputs[1]!.props.value).toBe("11 rounds");
+    expect(textInputs[2]!.props.value).toBe("Parei entre blocos");
 
     const text = collectText(tree!.toJSON()).join(" ");
     expect(text).toContain("Rascunho reaproveitado");

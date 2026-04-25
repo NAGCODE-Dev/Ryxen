@@ -7,13 +7,14 @@ import { normalizeSportType } from '../utils/sportType.js';
 
 export function createLeaderboardRouter({
   authMiddleware = authRequired,
+  leaderboardRateLimit = (_req, _res, next) => next(),
   getMembershipForUserFn = getMembershipForUser,
   canManageMembershipFn = canManageMembership,
   getBenchmarkLeaderboardFn = getBenchmarkLeaderboard,
 } = {}) {
   const router = express.Router();
 
-  router.get('/leaderboards/benchmarks/:slug', authMiddleware, async (req, res) => {
+  router.get('/leaderboards/benchmarks/:slug', leaderboardRateLimit, authMiddleware, async (req, res) => {
     const slug = String(req.params.slug || '').trim().toLowerCase();
     const sportType = normalizeSportType(req.query?.sportType);
     const gymId = req.query?.gymId !== undefined && req.query?.gymId !== '' ? Number(req.query.gymId) : null;

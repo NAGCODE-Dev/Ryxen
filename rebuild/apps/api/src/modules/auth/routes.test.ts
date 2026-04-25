@@ -146,4 +146,49 @@ describe("auth routes", () => {
 
     await app.close();
   });
+
+  it("rate limits repeated sign-in attempts", async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [],
+    });
+
+    vi.doMock("../../lib/db", () => ({
+      pool: { query },
+    }));
+    vi.doMock("bcryptjs", () => ({
+      default: {
+        compare: vi.fn(async () => false),
+        hash: vi.fn(async () => "hashed"),
+      },
+    }));
+    vi.doMock("../../lib/auth", () => ({
+      loadCurrentUser: vi.fn(),
+      requireAuthenticatedUser: vi.fn(),
+      signCompatibleToken: vi.fn(async () => "signed-token"),
+      toPublicUser: vi.fn(),
+    }));
+
+    const { registerAuthRoutes } = await import("./routes");
+    const app = Fastify();
+    await registerAuthRoutes(app);
+
+    let response = null;
+    for (let attempt = 0; attempt < 11; attempt += 1) {
+      response = await app.inject({
+        method: "POST",
+        url: "/signin",
+        payload: {
+          email: "athlete@ryxen.app",
+          password: "wrong-password",
+        },
+      });
+    }
+
+    expect(response?.statusCode).toBe(429);
+    expect(response?.json()).toEqual({
+      error: "Muitas tentativas. Tente novamente em instantes.",
+    });
+
+    await app.close();
+  });
 });

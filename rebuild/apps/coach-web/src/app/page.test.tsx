@@ -157,8 +157,10 @@ describe("coach web home", () => {
         node.props?.children === "Abrir treino",
     )[0];
 
+    expect(openWorkoutButton).toBeDefined();
+
     await act(async () => {
-      openWorkoutButton.props.onClick();
+      openWorkoutButton!.props.onClick();
     });
 
     const text = collectText(tree!.toJSON()).join(" ");

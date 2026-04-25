@@ -9,6 +9,8 @@ on:
 jobs:
   analyze:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     permissions:
       security-events: write
@@ -21,10 +23,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
+          cache: "npm"
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci || npm install
+        run: npm ci --ignore-scripts || npm install --ignore-scripts
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -37,6 +41,9 @@ jobs:
         with:
           languages: java
           build-mode: manual
+
+      - name: Prepare Android web assets
+        run: npm run build:android
 
       - name: Sync Capacitor Android project
         run: npx cap sync android
