@@ -18,7 +18,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node (necessário pro Capacitor)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -30,7 +30,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -38,7 +38,6 @@ jobs:
           languages: java
           build-mode: manual
 
-      # 🔥 ESSENCIAL (resolve seu erro)
       - name: Sync Capacitor Android project
         run: npx cap sync android
 
