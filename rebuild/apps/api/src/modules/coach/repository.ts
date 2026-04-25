@@ -675,7 +675,7 @@ export async function getWorkoutSummary(workoutId: number) {
         completedAt,
       };
     })
-    .filter(Boolean);
+    .filter((event): event is NonNullable<typeof event> => event !== null);
 
   const athleteDeliveries = athleteDeliveriesRes.rows
     .map((row) => {
@@ -696,7 +696,7 @@ export async function getWorkoutSummary(workoutId: number) {
         score: String(payload.score || "").trim() || undefined,
       };
     })
-    .filter(Boolean);
+    .filter((event): event is NonNullable<typeof event> => event !== null);
 
   return {
     id: String(row.id),
@@ -751,7 +751,7 @@ export async function listRecentCoachWorkouts(userId: number, limit = 5) {
       .map((id) => getWorkoutSummary(id)),
   );
 
-  return summaries.filter(Boolean);
+  return summaries.filter((event): event is NonNullable<typeof event> => event !== null);
 }
 
 export async function listCoachActivityFeed(userId: number, limit = 8) {
@@ -883,7 +883,7 @@ export async function listCoachActivityFeed(userId: number, limit = 8) {
         emphasis: "positive" as const,
       };
     })
-    .filter(Boolean);
+    .filter((event): event is NonNullable<typeof event> => event !== null);
 
   return [...workoutEvents, ...membershipEvents, ...responseEvents]
     .sort((left, right) => new Date(right.occurredAt).getTime() - new Date(left.occurredAt).getTime())
@@ -1070,5 +1070,5 @@ export async function listAthleteWorkoutResults(userId: number, limit = 8) {
         completedAt,
       };
     })
-    .filter(Boolean);
+    .filter((event): event is NonNullable<typeof event> => event !== null);
 }
