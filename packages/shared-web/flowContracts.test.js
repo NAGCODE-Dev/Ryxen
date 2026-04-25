@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
 function validateWorkout(w) {
-  return w && Array.isArray(w.blocks);
+  return Boolean(w && Array.isArray(w.blocks));
 }
 
 function validateOnboarding(o) {
-  return o && typeof o.profile === 'object';
+  return Boolean(o && typeof o.profile === 'object' && o.profile !== null);
 }
 
 describe('flow contracts', () => {
