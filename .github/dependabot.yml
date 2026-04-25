@@ -6,9 +6,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "security"
     groups:
       frontend-dev-deps:
         patterns:
@@ -53,6 +50,15 @@ updates:
       - dependency-name: "vite"
         update-types:
           - "version-update:semver-major"
+      - dependency-name: "react"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "react-dom"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "@sentry/browser"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "npm"
     directory: "/backend"
@@ -60,9 +66,6 @@ updates:
       interval: "weekly"
       day: "monday"
     open-pull-requests-limit: 5
-    labels:
-      - "dependencies"
-      - "security"
     groups:
       backend-safe-updates:
         patterns:

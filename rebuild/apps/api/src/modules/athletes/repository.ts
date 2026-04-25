@@ -1,5 +1,6 @@
 import { normalizeSportType } from "./sport-type";
 import { pool } from "../../lib/db";
+import { getEntitlementsSnapshot } from "../billing/repository";
 
 type SnapshotRow = {
   id: number;
@@ -22,6 +23,46 @@ function ensureObject(value: unknown) {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
+}
+
+export async function getAthleteOnboardingSnapshot(userId: number) {
+  const [userRes, entitlements] = await Promise.all([
+    pool.query<{ id: number; email: string; name: string | null; is_admin: boolean | null }>(
+      `SELECT id, email, name, is_admin
+       FROM users
+       WHERE id = $1
+       LIMIT 1`,
+      [userId],
+    ),
+    getEntitlementsSnapshot(userId),
+  ]);
+
+  const gyms = entitlements?.gymAccess || [];
+  const primaryGym = gyms[0] || null;
+  const canReceiveWorkout = gyms.some((gym) => gym.role === "athlete" && gym.status === "active");
+  const nextStep = primaryGym
+    ? canReceiveWorkout
+      ? "Seu acesso ao gym ja esta ativo. Assim que o coach publicar um treino, ele aparece no Today."
+      : "Seu gym foi encontrado, mas o acesso ainda nao esta ativo."
+    : "Voce ainda nao esta vinculado a um gym. Entre com o email convidado pelo coach para receber o treino.";
+
+  const user = userRes.rows[0];
+
+  return {
+    user: user
+      ? {
+          id: String(user.id),
+          email: user.email,
+          name: user.name,
+          isAdmin: !!user.is_admin,
+        }
+      : null,
+    entitlements,
+    gyms,
+    primaryGym,
+    canReceiveWorkout,
+    nextStep,
+  };
 }
 
 export async function getImportedPlan(userId: number) {
@@ -202,7 +243,7 @@ export async function syncMeasurementsSnapshot(
     label: string;
     unit: string;
     value: number;
-    notes?: string | null;
+    notes?: string | null | undefined;
     recordedAt: string;
   }>,
 ) {
@@ -256,7 +297,7 @@ export async function syncPrSnapshot(userId: number, prs: Record<string, number>
       [userId],
     );
 
-    const latestByExercise = new Map(
+    const latestByExercise = new Map<string, { value: number; source: string }>(
       latestRes.rows.map((row) => [
         String(row.exercise || "").trim().toUpperCase(),
         {

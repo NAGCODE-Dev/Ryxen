@@ -20,8 +20,8 @@ html, body { margin: 0; min-height: 100%; }
 body {
   font-family: "Manrope", "Segoe UI", sans-serif;
   background:
-    radial-gradient(circle at 0% 0%, rgba(168, 194, 247, 0.16), transparent 28%),
-    radial-gradient(circle at 100% 10%, rgba(217, 193, 168, 0.12), transparent 24%),
+    radial-gradient(circle at 0% 0%, rgba(168, 194, 247, 0.12), transparent 28%),
+    radial-gradient(circle at 100% 10%, rgba(217, 193, 168, 0.08), transparent 24%),
     linear-gradient(180deg, #0f141b 0%, #10151c 50%, #0d1117 100%);
   color: var(--hub-text);
 }
@@ -169,12 +169,58 @@ textarea {
   justify-content: center;
 }
 
+.hub-logoLockup {
+  display: block;
+  width: min(100%, 254px);
+  min-height: 66px;
+  margin-bottom: 18px;
+}
+
 .hub-wordmark {
   display: block;
-  width: min(100%, 272px);
+  width: min(100%, 252px);
   height: auto;
   aspect-ratio: 47 / 12;
-  margin-bottom: 14px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.hub-wordmark[src=""],
+.hub-wordmark:not([src]) {
+  display: none;
+}
+
+.hub-logoFallback {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  width: max-content;
+  min-height: 48px;
+  padding: 7px 14px 7px 8px;
+  border: 1px solid rgba(196, 210, 233, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f8fafc;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.hub-wordmark + .hub-logoFallback {
+  display: none;
+}
+
+.hub-wordmark[src=""] + .hub-logoFallback,
+.hub-wordmark:not([src]) + .hub-logoFallback {
+  display: inline-flex;
+}
+
+.hub-brandMark {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  box-shadow: 0 10px 24px rgba(66, 142, 255, 0.18);
 }
 
 .hub-kicker,
@@ -751,6 +797,88 @@ textarea {
   gap: 22px;
 }
 
+.hub-flowPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.6fr);
+  gap: 18px;
+  align-items: stretch;
+  padding: 20px;
+  border: 1px solid var(--hub-border);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(18, 24, 33, 0.86), rgba(12, 17, 24, 0.94)),
+    radial-gradient(circle at top left, rgba(66, 142, 255, 0.1), transparent 34%);
+  box-shadow: 0 20px 58px rgba(4, 8, 16, 0.2);
+}
+
+.hub-flowTrack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hub-flowStep {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  min-height: 188px;
+  padding: 18px;
+  border: 1px solid rgba(196, 210, 233, 0.1);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.hub-flowNumber {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(168, 194, 247, 0.12);
+  color: #dbeafe;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.hub-flowStep h3 {
+  margin: 12px 0 8px;
+  color: #f8fafc;
+  font-size: 1.18rem;
+  letter-spacing: -0.03em;
+}
+
+.hub-flowStep p {
+  margin: 0;
+  color: var(--hub-text-soft);
+  line-height: 1.55;
+}
+
+.hub-flowAside {
+  display: grid;
+  align-content: end;
+  gap: 12px;
+  min-height: 188px;
+  padding: 20px;
+  border: 1px solid rgba(196, 210, 233, 0.12);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(29, 36, 48, 0.92), rgba(13, 18, 26, 0.96));
+}
+
+.hub-flowAside strong {
+  color: #f8fafc;
+  font-size: clamp(1.25rem, 2.2vw, 1.85rem);
+  line-height: 1.08;
+  letter-spacing: -0.05em;
+}
+
+.hub-flowAside p {
+  margin: 0;
+  color: var(--hub-text-soft);
+  line-height: 1.6;
+}
+
 .hub-benefitRow {
   display: grid;
   gap: 10px;
@@ -823,6 +951,85 @@ textarea {
   align-items: flex-start;
 }
 
+.hub-sportPanel {
+  display: grid;
+  grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.hub-sportFocus,
+.hub-sportQueueItem {
+  border: 1px solid var(--hub-border);
+  background: linear-gradient(180deg, rgba(18, 24, 33, 0.88), rgba(14, 19, 27, 0.94));
+}
+
+.hub-sportFocus {
+  padding: 22px;
+  border-radius: 26px;
+  box-shadow: 0 18px 52px rgba(0, 0, 0, 0.18);
+}
+
+.hub-sportFocus h3 {
+  margin: 18px 0 10px;
+  color: #f8fafc;
+  font-size: clamp(1.65rem, 3vw, 2.45rem);
+  line-height: 1;
+  letter-spacing: -0.06em;
+}
+
+.hub-sportFocus p {
+  margin: 0;
+  max-width: 34ch;
+  color: var(--hub-text-soft);
+  line-height: 1.65;
+}
+
+.hub-sportQueue {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hub-sportQueueItem {
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+  min-height: 210px;
+  padding: 18px;
+  border-radius: 22px;
+}
+
+.hub-sportQueueItem.is-active {
+  border-color: var(--hub-border-strong);
+  background:
+    linear-gradient(180deg, rgba(28, 51, 87, 0.7), rgba(12, 18, 27, 0.96));
+}
+
+.hub-sportQueueItem span {
+  color: #f8fafc;
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.hub-sportQueueItem strong {
+  width: max-content;
+  padding: 7px 10px;
+  border: 1px solid var(--hub-border);
+  border-radius: 999px;
+  color: var(--hub-accent);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hub-sportQueueItem p {
+  margin: 0;
+  color: var(--hub-text-soft);
+  line-height: 1.55;
+}
+
 @media (max-width: 960px) {
   .hub-shell {
     width: min(100vw - 24px, 100%);
@@ -864,8 +1071,17 @@ textarea {
   .hub-heroSplit,
   .hub-grid-platform,
   .hub-grid-roles-main,
-  .hub-editorialListColumns {
+  .hub-editorialListColumns,
+  .hub-flowPanel,
+  .hub-flowTrack,
+  .hub-sportPanel,
+  .hub-sportQueue {
     grid-template-columns: 1fr;
+  }
+
+  .hub-flowStep,
+  .hub-sportQueueItem {
+    min-height: 0;
   }
 
   .hub-benefitRow {

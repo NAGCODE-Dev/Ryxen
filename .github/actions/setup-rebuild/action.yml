@@ -1,0 +1,64 @@
+name: Setup Rebuild
+description: Prepare the rebuild workspace for CI jobs
+
+inputs:
+  install-deps:
+    description: Install rebuild dependencies with pnpm
+    required: false
+    default: "false"
+  restore-artifact:
+    description: Restore the packaged rebuild node_modules artifact
+    required: false
+    default: "false"
+  artifact-name:
+    description: Artifact name used for packaged rebuild dependencies
+    required: false
+    default: "rebuild-node-modules"
+  artifact-path:
+    description: Filesystem path for the packaged rebuild dependencies artifact
+    required: false
+    default: "/tmp/rebuild-node-modules.tgz"
+
+runs:
+  using: composite
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10.7.0
+
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: "24"
+        cache: "pnpm"
+        cache-dependency-path: rebuild/pnpm-lock.yaml
+
+    - name: Install rebuild dependencies
+      if: inputs.install-deps == 'true'
+      shell: bash
+      working-directory: rebuild
+      run: pnpm install --frozen-lockfile
+
+    - name: Download rebuild dependencies artifact
+      if: inputs.restore-artifact == 'true'
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: /tmp
+
+    - name: Verify rebuild dependencies artifact
+      if: inputs.restore-artifact == 'true'
+      shell: bash
+      run: |
+        if [ ! -f "${{ inputs.artifact-path }}" ]; then
+          echo "Expected rebuild dependencies artifact at ${{ inputs.artifact-path }}, but it was not found."
+          echo "Make sure the rebuild-prepare job completed and uploaded the expected artifact."
+          exit 1
+        fi
+
+    - name: Restore rebuild dependencies
+      if: inputs.restore-artifact == 'true'
+      shell: bash
+      working-directory: rebuild
+      run: tar -xzf "${{ inputs.artifact-path }}" -C .

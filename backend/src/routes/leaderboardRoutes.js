@@ -8,6 +8,7 @@ import { normalizeSportType } from '../utils/sportType.js';
 
 export function createLeaderboardRouter({
   authMiddleware = authRequired,
+  leaderboardRateLimit = (_req, _res, next) => next(),
   getMembershipForUserFn = getMembershipForUser,
   canManageMembershipFn = canManageMembership,
   getBenchmarkLeaderboardFn = getBenchmarkLeaderboard,

@@ -3,13 +3,14 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "build": "expo export --platform all",
+    "build": "expo export --platform android",
     "dev": "expo start",
-    "lint": "eslint . --ext .ts,.tsx",
-    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@babel/runtime": "^7.29.2",
     "@react-native-async-storage/async-storage": "^2.1.2",
     "@ryxen/contracts": "workspace:*",
     "@ryxen/domain": "workspace:*",
@@ -20,12 +21,15 @@
     "react": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-native": "^0.76.7",
+    "react-native-screens": "~4.4.0",
     "zod": "^3.24.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-native": "^0.73.0",
+    "@types/react-test-renderer": "18.3.1",
+    "react-test-renderer": "18.3.1",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"
   }

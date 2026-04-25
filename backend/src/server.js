@@ -31,6 +31,12 @@ const app = express();
 const AUTH_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'auth', keyResolver: buildSensitiveRateLimitKey });
 const RESET_RATE_LIMIT = createRateLimiter({ windowMs: 15 * 60_000, maxRequests: 8, keyPrefix: 'reset', keyResolver: buildSensitiveRateLimitKey });
 const TELEMETRY_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 120, keyPrefix: 'telemetry' });
+const BILLING_READ_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 60, keyPrefix: 'billing-read', keyResolver: buildUserAwareRateLimitKey });
+const BILLING_WRITE_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 20, keyPrefix: 'billing-write', keyResolver: buildUserAwareRateLimitKey });
+const BILLING_WEBHOOK_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 120, keyPrefix: 'billing-webhook' });
+const GYM_READ_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 90, keyPrefix: 'gym-read', keyResolver: buildUserAwareRateLimitKey });
+const GYM_WRITE_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 30, keyPrefix: 'gym-write', keyResolver: buildUserAwareRateLimitKey });
+const LEADERBOARD_RATE_LIMIT = createRateLimiter({ windowMs: 60_000, maxRequests: 60, keyPrefix: 'leaderboard', keyResolver: buildUserAwareRateLimitKey });
 
 validateConfig();
 app.set('trust proxy', TRUST_PROXY);
@@ -45,11 +51,21 @@ app.use(applySecurityHeaders);
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use('/auth', createAuthRouter({ authRateLimit: AUTH_RATE_LIMIT, resetRateLimit: RESET_RATE_LIMIT }));
-app.use('/billing', createBillingRouter());
+app.use('/billing', createBillingRouter({
+  billingReadRateLimit: BILLING_READ_RATE_LIMIT,
+  billingWriteRateLimit: BILLING_WRITE_RATE_LIMIT,
+  billingWebhookRateLimit: BILLING_WEBHOOK_RATE_LIMIT,
+}));
 app.use('/telemetry', createTelemetryRouter({ telemetryRateLimit: TELEMETRY_RATE_LIMIT }));
 app.use('/benchmarks', createBenchmarkRouter({ resolveBenchmarkOrder }));
-app.use(createLeaderboardRouter());
-app.use(createGymRouter({ requireGymManager, slugify, enrichWorkoutWithBenchmark }));
+app.use(createLeaderboardRouter({ leaderboardRateLimit: LEADERBOARD_RATE_LIMIT }));
+app.use(createGymRouter({
+  requireGymManager,
+  slugify,
+  enrichWorkoutWithBenchmark,
+  gymReadRateLimit: GYM_READ_RATE_LIMIT,
+  gymWriteRateLimit: GYM_WRITE_RATE_LIMIT,
+}));
 app.use(createAthleteRouter({ buildBenchmarkTrendSeries, buildPrTrendSeries }));
 app.use(createAdminOpsRouter());
 
@@ -123,6 +139,10 @@ function resolveBenchmarkOrder(sort) {
 function buildSensitiveRateLimitKey(req) {
   const email = String(req.body?.email || req.query?.email || '').trim().toLowerCase();
   return `${req.ip || 'unknown'}:${email || 'anon'}`;
+}
+
+function buildUserAwareRateLimitKey(req) {
+  return `${req.user?.userId || 'anon'}:${req.ip || 'unknown'}`;
 }
 
 

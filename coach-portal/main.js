@@ -9,6 +9,7 @@ import '../coach/styles.css';
 
 const CoachWorkspace = React.lazy(() => import('./workspace.js'));
 const DEFAULT_COACH_RETURN_TO = '/coach/';
+const RYXEN_ICON_SRC = new URL('../branding/exports/ryxen-icon-64.png', import.meta.url).href;
 
 const STORAGE_KEYS = {
   token: 'ryxen-auth-token',
@@ -102,9 +103,18 @@ function App() {
     return React.createElement('div', { className: 'portal-shell auth-shell' },
       React.createElement('div', { className: 'auth-layout' },
         React.createElement('section', { className: 'auth-card' },
-          React.createElement('div', { className: 'eyebrow' }, 'Ryxen Coach'),
+          React.createElement('div', { className: 'auth-brandLockup' },
+            React.createElement('img', {
+              className: 'auth-brandMark',
+              src: RYXEN_ICON_SRC,
+              alt: '',
+              width: 64,
+              height: 64,
+            }),
+            React.createElement('span', null, 'Ryxen Coach')
+          ),
           React.createElement('h1', null, 'Coach Portal'),
-          React.createElement('p', { className: 'muted' }, 'Entre para publicar treinos, acompanhar atletas e consultar benchmarks.'),
+          React.createElement('p', { className: 'muted auth-cardLead' }, 'Entre para publicar treinos, acompanhar atletas e consultar benchmarks.'),
           error ? React.createElement('div', { className: 'notice error' }, error) : null,
           message ? React.createElement('div', { className: 'notice success' }, message) : null,
           React.createElement('form', { className: 'stack', onSubmit: handleLogin },
@@ -145,6 +155,11 @@ function App() {
           React.createElement('div', { className: 'eyebrow' }, 'Operação do coach'),
           React.createElement('h2', null, 'Portal do coach'),
           React.createElement('p', { className: 'muted auth-panelCopy' }, 'Treinos, grupos, atletas, benchmarks, rankings e acesso em uma área própria.'),
+          React.createElement('div', { className: 'auth-panelPreview', 'aria-hidden': 'true' },
+            React.createElement('span', null, 'Treino publicado'),
+            React.createElement('strong', null, 'Grupo RX'),
+            React.createElement('small', null, 'Hoje · Back Squat + Engine')
+          ),
           React.createElement('div', { className: 'auth-panelGrid' },
             authFeatureCard('Publique treinos', 'Envie programação para todos, grupos ou atletas específicos.'),
             authFeatureCard('Gerencie atletas', 'Centralize membros, grupos e contexto operacional do gym.'),

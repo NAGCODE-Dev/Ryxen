@@ -5,3 +5,6 @@ export * from "./coach";
 export * from "./billing";
 export * from "./benchmarks";
 export * from "./telemetry";
+export * from "./rebuild-status";
+export * from "./rebuild-feedback";
+export * from "./rebuild-errors";

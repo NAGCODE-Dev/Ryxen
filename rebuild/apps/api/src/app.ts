@@ -6,6 +6,7 @@ import { moduleRegistry } from "./module-registry";
 import { registerAthleteRoutes } from "./modules/athletes/routes";
 import { registerAuthRoutes } from "./modules/auth/routes";
 import { registerBillingRoutes } from "./modules/billing/routes";
+import { registerCoachRoutes } from "./modules/coach/routes";
 
 export async function buildApp() {
   assertApiConfig();
@@ -28,9 +29,10 @@ export async function buildApp() {
 
   await app.register(registerAuthRoutes, { prefix: "/auth" });
   await app.register(registerBillingRoutes, { prefix: "/billing" });
+  await app.register(registerCoachRoutes);
   await app.register(registerAthleteRoutes);
 
-  const implementedModules = new Set(["auth", "athletes", "billing"]);
+  const implementedModules = new Set(["auth", "athletes", "billing", "gyms", "workouts"]);
   for (const module of moduleRegistry) {
     app.log.info(
       {

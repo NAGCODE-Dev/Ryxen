@@ -37,6 +37,8 @@ export default defineConfig({
     include: [
       './**/*.test.{js,jsx,mjs}',
       '../../packages/shared-web/**/*.test.{js,jsx,mjs}',
+      '../../coach-portal/**/*.test.{js,jsx,mjs}',
+      '../../rebuild/packages/domain/src/**/*.test.{ts,tsx}',
     ],
   },
 });

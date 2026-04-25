@@ -82,13 +82,13 @@ export function createGoogleSignInHelpers({
       googleInitializedClientId = clientId;
     }
     googleApi.accounts.id.renderButton(buttonEl, {
-      theme: 'filled_black',
+      theme: 'outline',
       size: 'large',
       type: 'standard',
       shape: 'pill',
-      text: ui.authMode === 'signup' ? 'signup_with' : 'signin_with',
+      text: ui.authMode === 'signup' ? 'signup_with' : 'continue_with',
       logo_alignment: 'left',
-      width: Math.max(220, Math.min(buttonEl.clientWidth || 320, 360)),
+      width: Math.max(240, Math.min(buttonEl.clientWidth || 360, 420)),
       locale: 'pt-BR',
     });
   }

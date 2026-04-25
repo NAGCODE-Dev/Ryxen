@@ -9,8 +9,8 @@ const LEGACY_HUB_SEEN_KEY = 'crossapp-hub-seen-v1';
 const ENTRY_TARGET_KEY = 'ryxen-entry-target';
 const LEGACY_ENTRY_TARGET_KEY = 'crossapp-entry-target';
 const WORDMARK_SOURCES = [
-  './branding/exports/ryxen-logo-horizontal.png',
-  '/branding/exports/ryxen-logo-horizontal.png',
+  './branding/exports/ryxen-logo-white.png',
+  '/branding/exports/ryxen-logo-white.png',
   './branding/exports/ryxen-logo-horizontal-alt.png',
   '/branding/exports/ryxen-logo-horizontal-alt.png',
 ];
@@ -125,7 +125,10 @@ function bindWordmarkFallback(root) {
 
   image.addEventListener('error', () => {
     sourceIndex += 1;
-    if (sourceIndex >= WORDMARK_SOURCES.length) return;
+    if (sourceIndex >= WORDMARK_SOURCES.length) {
+      image.removeAttribute('src');
+      return;
+    }
     image.src = WORDMARK_SOURCES[sourceIndex];
   });
 }
@@ -137,17 +140,28 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl,
       <section class="hub-hero isolate">
         <div class="hub-heroGrid items-start xl:items-center">
           <div class="hub-heroMain max-w-3xl md:pr-6">
-            <img class="hub-wordmark w-[212px] md:w-[256px]" data-hub-wordmark src="./branding/exports/ryxen-logo-horizontal.png" alt="Ryxen" width="940" height="240" fetchpriority="high">
+            <div class="hub-logoLockup">
+              <img class="hub-wordmark" data-hub-wordmark src="./branding/exports/ryxen-logo-white.png" alt="Ryxen" width="940" height="240" fetchpriority="high">
+              <span class="hub-logoFallback" aria-hidden="true">
+                <img class="hub-brandMark" src="./branding/exports/ryxen-icon-64.png" alt="" width="64" height="64" fetchpriority="high">
+                <span>Ryxen</span>
+              </span>
+            </div>
             <div class="hub-kicker max-w-max border-white/10 bg-white/5 px-4">Atleta e coach</div>
-            <h1 class="max-w-[12ch]">Escolha sua entrada</h1>
+            <h1 class="max-w-[12ch]">Atleta ou coach</h1>
             <p class="hub-lead max-w-[42rem] text-base/8 md:text-[1.08rem]">
-              ${athleteReactShell ? 'Nova shell editorial do atleta + portal do coach no mesmo sistema.' : 'App do atleta e portal do coach no mesmo sistema.'}
+              ${athleteReactShell ? 'Treino do dia, evolução e publicação do coach em uma experiência direta.' : 'Treino do dia, evolução e publicação do coach em uma experiência direta.'}
             </p>
+            <div class="hub-proofRow">
+              <span>Cross ativo</span>
+              <span>Portal do coach</span>
+              <span>Login único</span>
+            </div>
             <div class="hub-actions sm:flex-row sm:items-center">
               <button class="hub-primaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-hub-primary data-entry-target="athlete" data-athlete-react-shell="${athleteReactShell ? 'true' : 'false'}" data-sport-link="${escapeHtml(selectedSport)}" data-nav-href="${escapeHtml(lastSportUrl)}">
-                Entrar no app do atleta
+                App do atleta
               </button>
-              <button class="hub-secondaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Entrar no portal do coach</button>
+              <button class="hub-secondaryAction inline-flex min-h-12 items-center justify-center px-6" type="button" data-entry-target="coach" data-nav-href="${escapeHtml(coachUrl)}">Portal do coach</button>
             </div>
           </div>
 
@@ -280,12 +294,19 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl,
             <div class="hub-sectionKicker">Fluxo</div>
             <h2>Leitura direta</h2>
           </div>
-          <p>Treino, evolução e operação sem telas extras.</p>
+          <p>O atleta abre o treino. O coach publica. O histórico fica junto.</p>
         </div>
-        <div class="hub-editorialList hub-editorialListColumns">
-          ${renderBenefitRow('Hoje', 'Treino do dia', 'Sessão e contexto na abertura do app.')}
-          ${renderBenefitRow('Evolução', 'Benchmarks e PRs', 'Histórico e referências no mesmo lugar.')}
-          ${renderBenefitRow('Coach', 'Publicação e gestão', 'Portal separado para operar o box.')}
+        <div class="hub-flowPanel">
+          <div class="hub-flowTrack" aria-label="Fluxo principal do Ryxen">
+            ${renderFlowStep('01', 'Hoje', 'Treino do dia', 'Sessão, blocos e contexto aparecem primeiro.')}
+            ${renderFlowStep('02', 'Evolução', 'Benchmarks e PRs', 'Histórico e referências acompanham o atleta.')}
+            ${renderFlowStep('03', 'Coach', 'Publicação e gestão', 'O portal opera grupos, atletas e programação.')}
+          </div>
+          <div class="hub-flowAside">
+            <span class="hub-cardMiniKicker">Sem troca de sistema</span>
+            <strong>Do treino publicado ao acompanhamento do atleta.</strong>
+            <p>Menos tela solta, mais continuidade entre coach, app e histórico.</p>
+          </div>
         </div>
       </section>
 
@@ -297,17 +318,7 @@ function renderHub({ sports, availableSports, lastSport, lastSportUrl, coachUrl,
           </div>
           <p>Running e Strength seguem a mesma base.</p>
         </div>
-        <div class="hub-grid hub-grid-platform hub-grid-platformEditorial">
-        ${availableSports.map((sport) => renderSportCard({
-          sport: sport.value,
-          title: sport.title,
-          description: sport.description,
-          status: sport.status,
-          href: sports[sport.value] || '/sports/cross/index.html',
-          selected: selectedSport === sport.value,
-          tier: sport.tier,
-        })).join('')}
-        </div>
+        ${renderSportOverview(availableSports, selectedSport)}
       </section>
 
       <section class="hub-section hub-section-cta">
@@ -354,6 +365,19 @@ function renderBenefitRow(title, kicker, description) {
   `;
 }
 
+function renderFlowStep(number, title, kicker, description) {
+  return `
+    <article class="hub-flowStep">
+      <span class="hub-flowNumber">${escapeHtml(number)}</span>
+      <div>
+        <div class="hub-cardMiniKicker">${escapeHtml(title)}</div>
+        <h3>${escapeHtml(kicker)}</h3>
+        <p>${escapeHtml(description)}</p>
+      </div>
+    </article>
+  `;
+}
+
 function renderRoleCard(title, description, bullets, ctaLabel, href, sport, highlight, entryTarget = 'athlete') {
   return `
     <article class="hub-card hub-roleCard ${highlight ? 'hub-roleCard-highlight' : ''}">
@@ -388,6 +412,49 @@ function renderSportCard({ sport, title, description, status, href, selected, ti
       </div>
       <div class="hub-platformMeta">${selected ? 'Entrada atual.' : 'Mesma base.'}</div>
     </article>
+  `;
+}
+
+function renderSportOverview(availableSports, selectedSport) {
+  const active = availableSports.find((sport) => sport.value === selectedSport) || availableSports[0] || {
+    value: 'cross',
+    title: 'Cross / Conditioning',
+    description: 'Treino do dia, benchmarks, histórico e coach.',
+    status: 'Ativo agora',
+    tier: 'core',
+  };
+  const modes = [
+    { value: 'cross', title: 'Cross / Conditioning', status: 'Ativo agora', copy: 'Treino do dia, benchmarks e coach.' },
+    { value: 'running', title: 'Running', status: 'Próximo', copy: 'Pace, distância e intervalos na mesma lógica.' },
+    { value: 'strength', title: 'Strength', status: 'Próximo', copy: 'Séries, reps, carga e progressão.' },
+  ];
+  const availableValues = new Set(availableSports.map((sport) => sport.value));
+
+  return `
+    <div class="hub-sportPanel">
+      <article class="hub-sportFocus">
+        <div class="hub-cardTop">
+          <span class="sport-badge">${escapeHtml(labelForSport(active.value))}</span>
+          <span class="hub-status">${escapeHtml(active.status)}${active.tier === 'beta' ? ' · Beta' : ''}</span>
+        </div>
+        <h3>${escapeHtml(active.title)}</h3>
+        <p>${escapeHtml(active.description)}</p>
+        <div class="hub-platformRail">
+          <span class="hub-platformDot hub-platformDot-active"></span>
+          <span class="hub-platformLine"></span>
+        </div>
+        <div class="hub-platformMeta">Entrada atual do atleta.</div>
+      </article>
+      <div class="hub-sportQueue" aria-label="Próximas modalidades">
+        ${modes.map((mode) => `
+          <div class="hub-sportQueueItem ${mode.value === active.value ? 'is-active' : ''}">
+            <span>${escapeHtml(mode.title)}</span>
+            <strong>${escapeHtml(availableValues.has(mode.value) ? mode.status : 'Em base')}</strong>
+            <p>${escapeHtml(mode.copy)}</p>
+          </div>
+        `).join('')}
+      </div>
+    </div>
   `;
 }
 

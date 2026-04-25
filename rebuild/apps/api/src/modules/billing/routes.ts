@@ -33,12 +33,20 @@ export async function registerBillingRoutes(app: FastifyInstance) {
       });
     }
 
-    const result = await createCheckoutIntent({
+    const checkoutInput: {
+      userId: number;
+      planId: string;
+      provider?: string;
+      successUrl?: string;
+    } = {
       userId: request.authUser!.userId,
       planId: parsed.data.planId,
-      provider: parsed.data.provider,
-      successUrl: parsed.data.successUrl,
-    });
+    };
+
+    if (parsed.data.provider) checkoutInput.provider = parsed.data.provider;
+    if (parsed.data.successUrl) checkoutInput.successUrl = parsed.data.successUrl;
+
+    const result = await createCheckoutIntent(checkoutInput);
 
     if ("error" in result) {
       return reply.status(400).send({ error: result.error });

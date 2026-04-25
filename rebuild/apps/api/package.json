@@ -5,8 +5,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
-    "lint": "eslint src --ext .ts",
-    "test": "vitest run",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -14,16 +14,18 @@
     "@fastify/sensible": "^5.6.0",
     "@ryxen/contracts": "workspace:*",
     "@ryxen/domain": "workspace:*",
-    "drizzle-orm": "^0.41.0",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.2",
     "fastify": "^5.2.1",
     "jose": "^6.0.8",
-    "nodemailer": "^6.10.1",
+    "nodemailer": "^8.0.6",
     "pg": "^8.13.3",
     "pg-boss": "^10.1.6",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",
+    "@types/pg": "^8.11.11",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.8"

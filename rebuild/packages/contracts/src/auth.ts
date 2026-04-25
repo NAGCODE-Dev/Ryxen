@@ -47,6 +47,12 @@ export const authMeResponseSchema = z.object({
   user: userProfileSchema,
 });
 
+export const authCodeDeliveryResponseSchema = z.object({
+  success: z.literal(true),
+  message: z.string().trim().min(1),
+  previewCode: z.string().trim().optional(),
+});
+
 export const signOutResponseSchema = z.object({
   success: z.literal(true),
 });
@@ -62,4 +68,8 @@ export const passwordResetConfirmSchema = z.object({
   code: z.string().trim().min(4),
   password: z.string().min(8),
   trustedDeviceToken: z.string().trim().optional(),
+});
+
+export const passwordResetConfirmResponseSchema = z.object({
+  success: z.literal(true),
 });

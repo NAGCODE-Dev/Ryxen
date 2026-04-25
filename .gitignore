@@ -19,6 +19,9 @@ npm-debug.log*
 # Build (caso adicione bundler no futuro)
 dist/
 build/
+.next/
+.turbo/
+*.tsbuildinfo
 
 # Cache do Service Worker
 sw-cache/

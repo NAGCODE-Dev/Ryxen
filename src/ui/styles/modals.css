@@ -681,10 +681,17 @@
 
 .auth-googleNativeButton {
   min-height: 52px;
-  border-radius: 18px;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: linear-gradient(180deg, rgba(25, 34, 48, 0.98), rgba(18, 24, 33, 0.98));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+  border-color: rgba(226, 232, 240, 0.84);
+  background: #f8fafc;
+  color: #111827;
+  box-shadow: 0 14px 32px rgba(4, 8, 16, 0.22);
+}
+
+.auth-googleNativeButton:hover {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #0f172a;
 }
 
 .quick-action[disabled],
@@ -707,10 +714,12 @@
   height: 28px;
   border-radius: 999px;
   background: #ffffff;
-  color: #0f172a;
+  color: #4285f4;
+  border: 1px solid rgba(15, 23, 42, 0.08);
   font-size: 0.9rem;
   font-weight: 800;
   flex: 0 0 auto;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.1);
 }
 
 .auth-googleCta,
@@ -730,16 +739,16 @@
 }
 
 #google-signin-button {
-  min-height: 40px;
+  min-height: 48px;
 }
 
 #google-signin-button,
 #google-signin-button > div {
   width: 100% !important;
-  min-height: 44px;
+  min-height: 48px;
   border-radius: 999px;
   overflow: hidden;
-  background: transparent !important;
+  background: #f8fafc !important;
 }
 
 .auth-googleHint {

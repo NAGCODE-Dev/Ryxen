@@ -9,6 +9,7 @@ const TRUSTED_DEVICE_MAP_KEY = 'ryxen-trusted-device-map';
 const LAST_AUTH_EMAIL_KEY = 'ryxen-last-auth-email';
 const AUTH_REDIRECT_PROOF_KEY = 'ryxen-auth-redirect-proof';
 const AUTH_REDIRECT_PROOF_TTL_MS = 10 * 60 * 1000;
+let pendingAuthRedirectProofMemory = null;
 
 export async function signUp(payload) {
   const res = await apiRequest('/auth/signup', { method: 'POST', body: payload });
@@ -124,7 +125,7 @@ export function getLastAuthEmail() {
 
 function getPendingAuthRedirectProof() {
   try {
-    const raw = localStorage.getItem(AUTH_REDIRECT_PROOF_KEY);
+    const raw = getAuthRedirectProofStorage().getItem(AUTH_REDIRECT_PROOF_KEY);
     const parsed = raw ? JSON.parse(raw) : null;
     if (!parsed || typeof parsed !== 'object') return null;
     const deviceId = String(parsed.deviceId || '').trim();
@@ -149,7 +150,7 @@ function getPendingAuthRedirectProof() {
 
 function savePendingAuthRedirectProof(proof) {
   try {
-    localStorage.setItem(AUTH_REDIRECT_PROOF_KEY, JSON.stringify(proof || null));
+    getAuthRedirectProofStorage().setItem(AUTH_REDIRECT_PROOF_KEY, JSON.stringify(proof || null));
   } catch {
     // no-op
   }
@@ -157,10 +158,33 @@ function savePendingAuthRedirectProof(proof) {
 
 function clearPendingAuthRedirectProof() {
   try {
+    getAuthRedirectProofStorage().removeItem(AUTH_REDIRECT_PROOF_KEY);
     localStorage.removeItem(AUTH_REDIRECT_PROOF_KEY);
   } catch {
     // no-op
   }
+}
+
+function getAuthRedirectProofStorage() {
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      return sessionStorage;
+    }
+  } catch {
+    // no-op
+  }
+
+  return {
+    getItem() {
+      return pendingAuthRedirectProofMemory;
+    },
+    setItem(_key, value) {
+      pendingAuthRedirectProofMemory = String(value || '');
+    },
+    removeItem() {
+      pendingAuthRedirectProofMemory = null;
+    },
+  };
 }
 
 async function createPendingAuthRedirectProof(returnTo) {

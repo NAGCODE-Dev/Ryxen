@@ -5,6 +5,9 @@ import {
   sportTypeSchema,
   timestampSchema,
 } from "./common";
+import { userProfileSchema } from "./auth";
+import { entitlementSnapshotSchema, gymAccessSnapshotSchema } from "./billing";
+import { workoutSummarySchema } from "./coach";
 
 export const importedWeekSchema = z.object({
   weekNumber: z.number().int().positive(),
@@ -109,4 +112,64 @@ export const importedPlanDeleteResponseSchema = z.object({
 export const benchmarkLibraryResponseSchema = z.object({
   benchmarks: z.array(z.record(z.any())),
   pagination: paginationSchema,
+});
+
+export const athleteTodayWorkoutResponseSchema = z.object({
+  todayWorkout: workoutSummarySchema.nullable(),
+  submittedResult: z
+    .object({
+      workoutId: z.union([z.string(), z.number()]),
+      summary: z.string().trim().min(1),
+      score: z.string().trim().optional(),
+      notes: z.string().trim().optional(),
+      completedAt: timestampSchema,
+    })
+    .nullable(),
+});
+
+export const athleteWorkoutResultInputSchema = z.object({
+  workoutId: z.union([z.string(), z.number()]),
+  summary: z.string().trim().min(1),
+  score: z.string().trim().default(""),
+  notes: z.string().trim().default(""),
+  completedAt: timestampSchema.optional(),
+});
+
+export const athleteWorkoutResultResponseSchema = z.object({
+  success: z.literal(true),
+  submittedResult: z.object({
+    workoutId: z.union([z.string(), z.number()]),
+    summary: z.string().trim().min(1),
+    score: z.string().trim().optional(),
+    notes: z.string().trim().optional(),
+    completedAt: timestampSchema,
+  }),
+});
+
+export const athleteWorkoutHistoryItemSchema = z.object({
+  workoutId: z.union([z.string(), z.number()]),
+  workoutTitle: z.string().trim().min(1),
+  gymName: z.string().trim().nullable().optional(),
+  scheduledDate: z.string().trim().optional(),
+  summary: z.string().trim().min(1),
+  score: z.string().trim().optional(),
+  notes: z.string().trim().optional(),
+  completedAt: timestampSchema,
+});
+
+export const athleteWorkoutHistoryResponseSchema = z.object({
+  results: z.array(athleteWorkoutHistoryItemSchema).default([]),
+});
+
+export const athleteOnboardingSnapshotSchema = z.object({
+  user: userProfileSchema,
+  entitlements: entitlementSnapshotSchema.nullable(),
+  gyms: z.array(gymAccessSnapshotSchema).default([]),
+  primaryGym: gymAccessSnapshotSchema.nullable(),
+  canReceiveWorkout: z.boolean(),
+  nextStep: z.string().trim().min(1),
+});
+
+export const athleteOnboardingResponseSchema = z.object({
+  snapshot: athleteOnboardingSnapshotSchema,
 });
