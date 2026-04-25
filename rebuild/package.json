@@ -4,10 +4,16 @@
   "packageManager": "pnpm@10.7.0",
   "scripts": {
     "build": "turbo run build",
+    "build:rebuild": "pnpm --filter @ryxen/api build && pnpm --filter @ryxen/coach-web build && pnpm --filter @ryxen/athlete-mobile build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "typecheck": "turbo run typecheck"
+    "test:rebuild": "pnpm test:rebuild-core && pnpm test:rebuild-ui",
+    "test:rebuild-core": "pnpm --filter @ryxen/contracts test && pnpm --filter @ryxen/domain test && pnpm --filter @ryxen/api test",
+    "test:rebuild-ui": "pnpm --filter @ryxen/coach-web test && pnpm --filter @ryxen/athlete-mobile test",
+    "typecheck": "turbo run typecheck",
+    "typecheck:rebuild": "pnpm --filter @ryxen/contracts typecheck && pnpm --filter @ryxen/domain typecheck && pnpm --filter @ryxen/api typecheck && pnpm --filter @ryxen/coach-web typecheck && pnpm --filter @ryxen/athlete-mobile typecheck",
+    "verify:rebuild": "pnpm typecheck:rebuild && pnpm test:rebuild && pnpm build:rebuild"
   },
   "devDependencies": {
     "turbo": "^2.0.12",

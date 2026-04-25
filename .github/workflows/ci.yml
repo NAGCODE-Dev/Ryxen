@@ -11,8 +11,28 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  REBUILD_NODE_MODULES_ARTIFACT: "rebuild-node-modules"
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      rebuild: ${{ steps.filter.outputs.rebuild }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect changed areas
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            rebuild:
+              - 'rebuild/**'
+              - '.github/workflows/ci.yml'
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +51,112 @@ jobs:
 
       - name: Run Tests
         run: npm test
+
+  rebuild-prepare:
+    needs: changes
+    if: needs.changes.outputs.rebuild == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rebuild workspace
+        uses: ./.github/actions/setup-rebuild
+        with:
+          install-deps: "true"
+
+      - name: Pack rebuild dependencies
+        run: tar -czf /tmp/rebuild-node-modules.tgz node_modules apps/*/node_modules packages/*/node_modules
+
+      - name: Upload rebuild dependencies
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.REBUILD_NODE_MODULES_ARTIFACT }}
+          path: /tmp/rebuild-node-modules.tgz
+          if-no-files-found: error
+
+  rebuild-typecheck:
+    needs: [changes, rebuild-prepare]
+    if: needs.changes.outputs.rebuild == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rebuild workspace
+        uses: ./.github/actions/setup-rebuild
+        with:
+          artifact-name: ${{ env.REBUILD_NODE_MODULES_ARTIFACT }}
+          restore-artifact: "true"
+
+      - name: Typecheck Rebuild
+        run: pnpm typecheck:rebuild
+
+  rebuild-test-core:
+    needs: [changes, rebuild-prepare]
+    if: needs.changes.outputs.rebuild == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rebuild workspace
+        uses: ./.github/actions/setup-rebuild
+        with:
+          artifact-name: ${{ env.REBUILD_NODE_MODULES_ARTIFACT }}
+          restore-artifact: "true"
+
+      - name: Test Rebuild Core
+        run: pnpm test:rebuild-core
+
+  rebuild-test-ui:
+    needs: [changes, rebuild-prepare]
+    if: needs.changes.outputs.rebuild == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rebuild workspace
+        uses: ./.github/actions/setup-rebuild
+        with:
+          artifact-name: ${{ env.REBUILD_NODE_MODULES_ARTIFACT }}
+          restore-artifact: "true"
+
+      - name: Test Rebuild UI
+        run: pnpm test:rebuild-ui
+
+  rebuild-build:
+    needs: [changes, rebuild-prepare]
+    if: needs.changes.outputs.rebuild == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rebuild
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup rebuild workspace
+        uses: ./.github/actions/setup-rebuild
+        with:
+          artifact-name: ${{ env.REBUILD_NODE_MODULES_ARTIFACT }}
+          restore-artifact: "true"
+
+      - name: Build Rebuild
+        run: pnpm build:rebuild
 
   build:
     runs-on: ubuntu-latest
