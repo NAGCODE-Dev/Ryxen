@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 import { sanitizeRequestPath } from './securityRedaction.js';
 
@@ -51,8 +51,9 @@ export function createRateLimiter({ windowMs, maxRequests, keyPrefix, keyResolve
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator(req) {
-      const resolvedKey = keyResolver ? keyResolver(req) : (req.ip || 'unknown');
-      return `${keyPrefix}:${String(resolvedKey || req.ip || 'unknown').trim().toLowerCase()}`;
+      const safeIpKey = ipKeyGenerator(req.ip || 'unknown');
+      const resolvedKey = keyResolver ? keyResolver(req) : safeIpKey;
+      return `${keyPrefix}:${String(resolvedKey || safeIpKey).trim().toLowerCase()}`;
     },
     handler(_req, res) {
       return res.status(429).json({
