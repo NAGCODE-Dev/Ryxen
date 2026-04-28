@@ -71,20 +71,32 @@ export function renderCoachAccessSection({
   canUseDeveloperTools,
   hasActiveCoachSubscription,
   gyms,
+  gymAccess = [],
 }) {
+  const athleteMemberships = (Array.isArray(gymAccess) ? gymAccess : []).filter((item) => item?.role === 'athlete');
+  const hasGymMembership = gyms.length > 0;
+  const membershipSummary = hasGymMembership
+    ? `${gyms.length} gym(s) vinculado(s)`
+    : 'Sem vínculo de gym';
+
   return `
     <div class="auth-intro">
       <div class="section-kicker">Coach</div>
       <p class="account-hint">${canCoachManage || canUseDeveloperTools
         ? 'Abra o portal do coach com a mesma conta.'
+        : hasGymMembership
+          ? 'Sua conta está vinculada a um gym. O portal completo só libera com permissão de gestão, mas seu vínculo e acesso de atleta continuam válidos.'
         : hasActiveCoachSubscription
           ? 'O acesso está ativo, mas o portal só libera com vínculo a um gym com permissão de gestão.'
           : 'O portal do coach só aparece quando a conta recebe acesso de gestão.'}</p>
       <div class="coach-pillRow">
         <span class="coach-pill ${canCoachManage ? 'isGood' : 'isWarn'}">${canCoachManage ? 'Portal disponível' : 'Portal indisponível'}</span>
         <span class="coach-pill ${canAthleteUseApp ? 'isGood' : 'isWarn'}">${canAthleteUseApp ? 'Atleta disponível' : 'Atleta indisponível'}</span>
-        <span class="coach-pill">${gyms.length} gym(s)</span>
+        <span class="coach-pill">${membershipSummary}</span>
       </div>
+      ${athleteMemberships.length ? `
+        <p class="account-hint">${athleteMemberships.length} vínculo(s) ativo(s) como atleta detectado(s).</p>
+      ` : ''}
       <div class="settings-actions coach-billingActions">
         ${!canCoachManage ? '<button class="btn-primary" data-action="billing:checkout" data-plan="coach" type="button">Abrir cobrança</button>' : ''}
         ${!canCoachManage && canUseDeveloperTools ? '<button class="btn-secondary" data-action="billing:activate-local" data-plan="coach" type="button">Ativar local</button>' : ''}

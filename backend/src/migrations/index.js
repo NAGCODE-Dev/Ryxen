@@ -20,6 +20,7 @@ import { migration as trustedDevicesMigration } from './020_trusted_devices.js';
 import { migration as refreshBenchmarkLibraryExpansionMigration } from './021_refresh_benchmark_library_expansion.js';
 import { migration as securityHardeningMigration } from './022_security_hardening.js';
 import { migration as authRedirectGrantsMigration } from './023_auth_redirect_grants.js';
+import { migration as explicitBackendOnlyRlsPoliciesMigration } from './024_explicit_backend_only_rls_policies.js';
 
 const MIGRATIONS = [
   baseSchemaMigration,
@@ -43,6 +44,7 @@ const MIGRATIONS = [
   refreshBenchmarkLibraryExpansionMigration,
   securityHardeningMigration,
   authRedirectGrantsMigration,
+  explicitBackendOnlyRlsPoliciesMigration,
 ];
 
 export async function runMigrations() {

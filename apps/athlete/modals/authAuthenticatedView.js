@@ -28,6 +28,7 @@ export function renderAuthenticatedAccountView({
   const canAthleteUseApp = entitlements.includes('athlete_app');
   const subscription = coachPortal?.subscription || null;
   const gyms = coachPortal?.gyms || [];
+  const gymAccess = coachPortal?.gymAccess || [];
   const planKey = subscription?.plan || subscription?.plan_id || 'free';
   const planName = formatSubscriptionPlanName(planKey);
   const planStatus = subscription?.status || 'inactive';
@@ -74,12 +75,13 @@ export function renderAuthenticatedAccountView({
             <button class="btn-primary" data-action="auth:signout" type="button">Sair</button>
           </div>
 
-          ${(canCoachManage || canUseDeveloperTools || hasActiveCoachSubscription) ? renderCoachAccessSection({
+          ${(canCoachManage || canUseDeveloperTools || hasActiveCoachSubscription || gyms.length || gymAccess.length) ? renderCoachAccessSection({
             canCoachManage,
             canAthleteUseApp,
             canUseDeveloperTools,
             hasActiveCoachSubscription,
             gyms,
+            gymAccess,
           }) : ''}
 
           ${notifications.length ? renderAccountNotificationsSection({

@@ -185,15 +185,28 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       ]);
 
       const gyms = gymsRes?.gyms || [];
+      const gymAccess = entitlementsRes?.gymAccess || [];
+      const gymAccessById = new Map(
+        gymAccess
+          .filter((item) => item?.gymId !== null && item?.gymId !== undefined)
+          .map((item) => [Number(item.gymId), item]),
+      );
       const selectedGymId = nextGymId || dashboard.selectedGymId || gyms[0]?.id || null;
       let members = [];
       let groups = [];
       let insights = null;
       if (selectedGymId) {
+        const selectedGymAccess = gymAccessById.get(Number(selectedGymId)) || null;
         const [membersRes, groupsRes, insightsRes] = await Promise.all([
-          apiRequest(`/gyms/${selectedGymId}/memberships`),
-          apiRequest(`/gyms/${selectedGymId}/groups?sportType=${encodeURIComponent(selectedSportType)}`),
-          apiRequest(`/gyms/${selectedGymId}/insights?sportType=${encodeURIComponent(selectedSportType)}`),
+          selectedGymAccess?.canCoachManage
+            ? apiRequest(`/gyms/${selectedGymId}/memberships`)
+            : coachRequestOptional(apiRequest, `/gyms/${selectedGymId}/memberships`, { memberships: [] }),
+          selectedGymAccess?.canCoachManage
+            ? apiRequest(`/gyms/${selectedGymId}/groups?sportType=${encodeURIComponent(selectedSportType)}`)
+            : coachRequestOptional(apiRequest, `/gyms/${selectedGymId}/groups?sportType=${encodeURIComponent(selectedSportType)}`, { groups: [] }),
+          selectedGymAccess?.canCoachManage
+            ? apiRequest(`/gyms/${selectedGymId}/insights?sportType=${encodeURIComponent(selectedSportType)}`)
+            : coachRequestOptional(apiRequest, `/gyms/${selectedGymId}/insights?sportType=${encodeURIComponent(selectedSportType)}`, null),
         ]);
         members = membersRes?.memberships || [];
         groups = groupsRes?.groups || [];
@@ -203,7 +216,7 @@ export default function CoachWorkspace({ profile: initialProfile = null, onLogou
       setDashboard({
         subscription,
         entitlements: entitlementsRes?.entitlements || [],
-        gymAccess: entitlementsRes?.gymAccess || [],
+        gymAccess,
         features: {
           competitions: !!competitionsRes,
           leaderboards: !!leaderboardProbe,

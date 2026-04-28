@@ -45,7 +45,7 @@ export async function coachRequestOptional(apiRequest, path, fallback = null, op
   try {
     return await apiRequest(path, options);
   } catch (error) {
-    if ([404, 405, 501].includes(Number(error?.status || 0))) {
+    if ([403, 404, 405, 501].includes(Number(error?.status || 0))) {
       return fallback;
     }
     throw error;

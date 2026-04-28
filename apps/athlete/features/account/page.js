@@ -45,6 +45,7 @@ export function renderAthleteAccountPage(state, helpers) {
     importUsage,
     canCoachManage,
     gyms,
+    gymAccess,
     athleteStats,
     athleteBenefitSource,
     athleteResults,
@@ -162,6 +163,7 @@ export function renderAthleteAccountPage(state, helpers) {
             ${renderAccountCoachPortalSection(renderPageFold, {
               canCoachManage,
               gymsCount: gyms.length,
+              athleteGymMemberships: (gymAccess || []).filter((item) => item?.role === 'athlete').length,
               renewAt,
               canUseDeveloperTools,
               formatDateShort,

@@ -49,6 +49,7 @@ export function renderAccountCoachPortalSection(renderPageFold, view) {
   const {
     canCoachManage = false,
     gymsCount = 0,
+    athleteGymMemberships = 0,
     renewAt = null,
     canUseDeveloperTools = false,
     formatDateShort,
@@ -63,7 +64,11 @@ export function renderAccountCoachPortalSection(renderPageFold, view) {
     <div class="coach-list coach-listCompact">
       <div class="coach-listItem static">
         <strong>Status do portal</strong>
-        <span>${canCoachManage ? `Disponível • ${gymsCount} gym(s) visível(is)` : 'Indisponível no estado atual'}</span>
+        <span>${canCoachManage
+          ? `Disponível • ${gymsCount} gym(s) visível(is)`
+          : athleteGymMemberships
+            ? `Sem gestão • ${athleteGymMemberships} vínculo(s) como atleta`
+            : 'Indisponível no estado atual'}</span>
       </div>
       <div class="coach-listItem static">
         <strong>Renovação</strong>

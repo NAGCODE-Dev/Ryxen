@@ -22,6 +22,7 @@ export function buildAthleteAccountPageState(state, helpers) {
   const accessEntitlements = coachPortal?.entitlements || [];
   const canCoachManage = accessEntitlements.includes('coach_portal');
   const gyms = coachPortal?.gyms || [];
+  const gymAccess = coachPortal?.gymAccess || [];
   const athleteStats = state?.__ui?.athleteOverview?.stats || {};
   const athleteBenefitSource = describeAthleteBenefitSource(athleteBenefits);
   const athleteResults = state?.__ui?.athleteOverview?.recentResults || [];
@@ -54,6 +55,7 @@ export function buildAthleteAccountPageState(state, helpers) {
     importUsage,
     canCoachManage,
     gyms,
+    gymAccess,
     athleteStats,
     athleteBenefitSource,
     athleteResults,
