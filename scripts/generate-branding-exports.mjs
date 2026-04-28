@@ -124,9 +124,9 @@ try {
     width: 940,
     height: 240,
     output: path.join(exportsDir, 'ryxen-logo-horizontal.png'),
-    fit: 'cover',
+    fit: 'contain',
     background: brandBackground,
-    objectPosition: 'center 49%',
+    objectPosition: 'center center',
   });
 
   await screenshotImage(browser, {
@@ -134,9 +134,9 @@ try {
     width: 470,
     height: 120,
     output: path.join(exportsDir, 'ryxen-logo-horizontal@2x-half.png'),
-    fit: 'cover',
+    fit: 'contain',
     background: brandBackground,
-    objectPosition: 'center 49%',
+    objectPosition: 'center center',
   });
 
   await screenshotImage(browser, {
@@ -144,9 +144,9 @@ try {
     width: 940,
     height: 240,
     output: path.join(exportsDir, 'ryxen-logo-horizontal-alt.png'),
-    fit: 'cover',
+    fit: 'contain',
     background: brandBackground,
-    objectPosition: 'center 49%',
+    objectPosition: 'center center',
   });
 
   for (const { dir, size } of androidLauncherSizes) {

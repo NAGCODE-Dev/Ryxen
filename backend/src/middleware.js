@@ -1,8 +1,7 @@
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 
 import { sanitizeRequestPath } from './securityRedaction.js';
-
-const rateBuckets = new Map();
 
 export function attachRequestMeta(req, res, next) {
   req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
@@ -46,34 +45,19 @@ export function attachRequestLogger(req, res, next) {
 }
 
 export function createRateLimiter({ windowMs, maxRequests, keyPrefix, keyResolver = null }) {
-  return (req, res, next) => {
-    const now = Date.now();
-    if (rateBuckets.size > 5000) {
-      for (const [bucketKey, bucket] of rateBuckets.entries()) {
-        if (!bucket || now > bucket.resetAt) {
-          rateBuckets.delete(bucketKey);
-        }
-      }
-    }
-    const resolvedKey = keyResolver ? keyResolver(req) : (req.ip || 'unknown');
-    const key = `${keyPrefix}:${String(resolvedKey || req.ip || 'unknown').trim().toLowerCase()}`;
-    const bucket = rateBuckets.get(key);
-
-    if (!bucket || now > bucket.resetAt) {
-      rateBuckets.set(key, {
-        count: 1,
-        resetAt: now + windowMs,
-      });
-      return next();
-    }
-
-    if (bucket.count >= maxRequests) {
+  return rateLimit({
+    windowMs,
+    limit: maxRequests,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator(req) {
+      const resolvedKey = keyResolver ? keyResolver(req) : (req.ip || 'unknown');
+      return `${keyPrefix}:${String(resolvedKey || req.ip || 'unknown').trim().toLowerCase()}`;
+    },
+    handler(_req, res) {
       return res.status(429).json({
         error: 'Muitas tentativas. Tente novamente em instantes.',
       });
-    }
-
-    bucket.count += 1;
-    return next();
-  };
+    },
+  });
 }

@@ -7,6 +7,10 @@ let sentryReady = false;
 
 export function initBackendErrorMonitoring() {
   if (!SENTRY_DSN || sentryReady) return false;
+  if (!isValidSentryDsn(SENTRY_DSN)) {
+    console.warn('[sentry] invalid backend DSN, skipping initialization');
+    return false;
+  }
 
   Sentry.init({
     dsn: SENTRY_DSN,
@@ -55,5 +59,14 @@ function sanitize(value) {
     return redactSensitiveValue(JSON.parse(JSON.stringify(value || {})));
   } catch {
     return { note: 'unserializable_context' };
+  }
+}
+
+function isValidSentryDsn(value) {
+  try {
+    const url = new URL(String(value || '').trim());
+    return ['http:', 'https:'].includes(url.protocol) && !!url.hostname && url.pathname.length > 1;
+  } catch {
+    return false;
   }
 }
